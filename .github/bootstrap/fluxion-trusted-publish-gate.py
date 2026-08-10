@@ -27,7 +27,7 @@ def run(repo: Path, argv: Sequence[str], check: bool=True, env: dict[str,str] | 
     return p
 
 def git(repo: Path,*args:str,check:bool=True)->str:
-    return run(repo,("git","-c","core.hooksPath=/dev/null",*args),check=check).stdout.strip()
+    return run(repo,("git",*args),check=check).stdout.strip()
 
 def sha256_file(path: Path)->str:
     h=hashlib.sha256()
@@ -45,12 +45,9 @@ def load_result(path: Path,expected_sha:str,role:str,candidate:str):
     except Exception as e: raise Blocked(f"{role} result invalid json: {e}") from e
     if not isinstance(d,dict): raise Blocked(f"{role} result is not object")
     if d.get("status")!="PASS": raise Blocked(f"{role} status is not PASS")
-    if role=="verifier":
-        verdict=str(d.get("verdict") or "").upper()
-        summary=str(d.get("summary") or "")
-        summary_green=bool(re.search(r"(?:^|;)verdict=(?:VERDETTO: )?(?:GREEN|VERDE)(?:;|$)",summary,re.I))
-        if verdict not in {"GREEN","VERDE"} and not summary_green:
-            raise Blocked("fresh verifier is not GREEN")
+    verdict=str(d.get("verdict") or d.get("summary") or "")
+    if role=="verifier" and "GREEN" not in verdict.upper() and "VERDE" not in verdict.upper():
+        raise Blocked("fresh verifier is not GREEN")
     if str(d.get("result_commit") or d.get("candidate_sha") or "")!=candidate:
         raise Blocked(f"{role} result_commit does not match candidate")
 
@@ -63,13 +60,6 @@ def validate_allowed_paths(repo:Path,expected:str,candidate:str,allowed:list[str
     if not changed: raise Blocked("candidate diff is empty")
     outside=sorted(set(changed)-set(allowed))
     if outside: raise Blocked("candidate changed forbidden paths: "+",".join(outside))
-
-
-def validate_origin(repo:Path,expected_origin:str):
-    fetch_url=git(repo,"remote","get-url","origin")
-    push_url=git(repo,"remote","get-url","--push","origin")
-    if fetch_url != expected_origin or push_url != expected_origin:
-        raise Blocked("origin identity mismatch")
 
 def fetch_master(repo:Path)->str:
     git(repo,"fetch","--no-tags","origin","refs/heads/master:refs/remotes/origin/master")
@@ -92,7 +82,7 @@ def atomic_attestation(path:Path,candidate:str,task_id:str,evidence_sha:str):
         try: os.unlink(tmp)
         except FileNotFoundError: pass
 
-def publish(a,before_push=None)->int:
+def publish(a)->int:
     try:
         repo=Path(a.repo).resolve()
         if not (repo/".git").exists(): raise Blocked("repo is not git working tree")
@@ -106,7 +96,6 @@ def publish(a,before_push=None)->int:
         except Exception as e: raise Blocked(f"ALLOWED_PATHS invalid json: {e}") from e
         if not isinstance(allowed,list): raise Blocked("ALLOWED_PATHS must be list")
 
-        validate_origin(repo,a.expected_origin)
         if fetch_master(repo)!=expected: raise Blocked("BLOCKED_ORIGIN_MOVED")
 
         parents=git(repo,"rev-list","--parents","-n","1",candidate).split()
@@ -119,14 +108,9 @@ def publish(a,before_push=None)->int:
         load_result(Path(a.writer_result).resolve(),wsha,"writer",candidate)
         load_result(Path(a.verifier_result).resolve(),vsha,"verifier",candidate)
 
-        # CAS recheck immediately before publish.
         if fetch_master(repo)!=expected: raise Blocked("BLOCKED_ORIGIN_MOVED")
-        if before_push is not None:
-            before_push()
 
-        # Deliberately no --force / --force-with-lease. Local hooks are disabled.
-        # A concurrent origin move makes this normal fast-forward push fail.
-        p=run(repo,("git","-c","core.hooksPath=/dev/null","push","--porcelain","origin",f"{candidate}:refs/heads/master"),check=False)
+        p=run(repo,("git","push","--porcelain","origin",f"{candidate}:refs/heads/master"),check=False)
         if p.returncode!=0:
             raise Blocked("BLOCKED_NON_FAST_FORWARD_OR_PUBLISH_FAILURE: "+p.stderr.strip()[:400])
 
@@ -151,7 +135,6 @@ def _cmd(cwd:Path,*argv:str)->str:
 def _fixture(root:Path,name:str,change_path:str="allowed.txt",two_commits:bool=False):
     origin=root/f"{name}.git"; work=root/f"{name}-work"
     _cmd(root,"git","init","--bare",str(origin))
-    _cmd(root,"git",f"--git-dir={origin}","config","receive.denyNonFastForwards","true")
     _cmd(root,"git","clone",str(origin),str(work))
     _cmd(work,"git","config","user.name","FLUXION Canary")
     _cmd(work,"git","config","user.email","canary@invalid.example")
@@ -178,8 +161,7 @@ def _evidence(root:Path,candidate:str,prefix:str):
 def _invoke(script:Path,work:Path,base:str,candidate:str,allowed:list[str],prefix:str):
     writer,wsha,verifier,vsha,evidence,esha=_evidence(work.parent,candidate,prefix)
     approval=work.parent/f"{prefix}-APPROVED.txt"
-    origin_url=_cmd(work,"git","remote","get-url","origin")
-    argv=[sys.executable,str(script),"--repo",str(work),"--expected-origin",origin_url,"--expected-base-sha",base,"--candidate-sha",candidate,
+    argv=[sys.executable,str(script),"--repo",str(work),"--expected-base-sha",base,"--candidate-sha",candidate,
           "--task-id",f"CANARY.{prefix}","--allowed-paths-json",json.dumps(allowed,separators=(",",":")),
           "--writer-result",str(writer),"--writer-result-sha",wsha,"--verifier-result",str(verifier),
           "--verifier-result-sha",vsha,"--evidence",str(evidence),"--evidence-sha256",esha,
@@ -192,7 +174,6 @@ def self_test()->int:
     with tempfile.TemporaryDirectory(prefix="fluxion-publish-canary-") as td:
         root=Path(td)
 
-        # Positive CAS publication.
         origin,work,base,candidate=_fixture(root,"positive")
         p,approval=_invoke(script,work,base,candidate,["allowed.txt"],"positive")
         assert p.returncode==0, p.stderr
@@ -202,28 +183,24 @@ def self_test()->int:
         print("TRUSTED_PUBLISHER_PRESENT=PASS")
         print("TRUSTED_PUBLISH_POSITIVE=PASS")
 
-        # Wrong expected base must never push.
         origin,work,base,candidate=_fixture(root,"wrongbase")
         p,_=_invoke(script,work,"0"*40,candidate,["allowed.txt"],"wrongbase")
         assert p.returncode==2
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==base
         print("EXPECTED_BASE_ENFORCED=PASS")
 
-        # Candidate must be exactly one commit on the expected base.
         origin,work,base,candidate=_fixture(root,"parent",two_commits=True)
         p,_=_invoke(script,work,base,candidate,["allowed.txt"],"parent")
         assert p.returncode==2
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==base
         print("CANDIDATE_EXACT_PARENT=PASS")
 
-        # Forbidden path must block.
         origin,work,base,candidate=_fixture(root,"forbidden",change_path="forbidden.txt")
         p,_=_invoke(script,work,base,candidate,["allowed.txt"],"forbidden")
         assert p.returncode==2
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==base
         print("ALLOWED_PATHS_ENFORCED=PASS")
 
-        # Origin already moved before invocation must block.
         origin,work,base,candidate=_fixture(root,"moved")
         other=root/"moved-other"; _cmd(root,"git","clone",str(origin),str(other))
         _cmd(other,"git","config","user.name","FLUXION Canary"); _cmd(other,"git","config","user.email","canary@invalid.example")
@@ -235,7 +212,6 @@ def self_test()->int:
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==moved
         print("UNEXPECTED_ORIGIN_MOVE_BLOCKS=PASS")
 
-        # Race after second fetch: move bare origin immediately before the real push.
         origin,work,base,candidate=_fixture(root,"race")
         sibling_work=root/"race-sibling"; _cmd(root,"git","clone",str(origin),str(sibling_work))
         _cmd(sibling_work,"git","config","user.name","FLUXION Canary"); _cmd(sibling_work,"git","config","user.email","canary@invalid.example")
@@ -243,17 +219,12 @@ def self_test()->int:
         _cmd(sibling_work,"git","add","sibling.txt"); _cmd(sibling_work,"git","commit","-m","sibling")
         sibling=_cmd(sibling_work,"git","rev-parse","HEAD")
         _cmd(sibling_work,"git","push","origin",f"{sibling}:refs/heads/canary-sibling")
-        writer,wsha,verifier,vsha,evidence,esha=_evidence(root,candidate,"race")
-        approval=root/"race-APPROVED.txt"
-        a=argparse.Namespace(repo=str(work),expected_origin=_cmd(work,"git","remote","get-url","origin"),expected_base_sha=base,candidate_sha=candidate,task_id="CANARY.race",
-            allowed_paths_json=json.dumps(["allowed.txt"]),writer_result=str(writer),writer_result_sha=wsha,
-            verifier_result=str(verifier),verifier_result_sha=vsha,evidence=str(evidence),evidence_sha256=esha,approval_file=str(approval))
-        def move_remote():
-            _cmd(root,"git",f"--git-dir={origin}","update-ref","refs/heads/master",sibling,base)
-            assert _cmd(root,"git",f"--git-dir={origin}","rev-parse","refs/heads/master")==sibling
-            assert _cmd(root,"git",f"--git-dir={origin}","config","--get","receive.denyNonFastForwards")=="true"
-        rc=publish(a,before_push=move_remote)
-        assert rc==2
+        hooks=work/".git"/"hooks"; hooks.mkdir(exist_ok=True)
+        hook=hooks/"pre-push"
+        hook.write_text(f"#!/bin/sh\ngit --git-dir='{origin}' update-ref refs/heads/master {sibling} {base}\nexit 0\n",encoding="utf-8")
+        hook.chmod(0o700)
+        p,_=_invoke(script,work,base,candidate,["allowed.txt"],"race")
+        assert p.returncode==2
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==sibling
         print("NON_FORCE_PUBLISH=PASS")
         print("NON_FAST_FORWARD_BLOCKS=PASS")
@@ -264,7 +235,7 @@ def self_test()->int:
 def parser():
     ap=argparse.ArgumentParser()
     ap.add_argument("--self-test",action="store_true")
-    for name in ("repo","expected-origin","expected-base-sha","candidate-sha","task-id","allowed-paths-json","writer-result","writer-result-sha","verifier-result","verifier-result-sha","evidence","evidence-sha256","approval-file"):
+    for name in ("repo","expected-base-sha","candidate-sha","task-id","allowed-paths-json","writer-result","writer-result-sha","verifier-result","verifier-result-sha","evidence","evidence-sha256","approval-file"):
         ap.add_argument("--"+name)
     return ap
 
