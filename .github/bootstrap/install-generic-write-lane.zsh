@@ -6,7 +6,7 @@ EXPECTED_BASE="${2:?expected canonical base required}"
 EXPECTED_ROUTER_OLD_SHA="318021ca9ef20a95013640fddf83709d5323b406f559c54f63a83e2aaa842066"
 EXPECTED_RO_SHA="563abeccf36ef3de2973fabdfbf1b75c7d34d2347872b9b098e40e63d40b26a9"
 EXPECTED_GENERIC_SRC_BLOB="c240e468d132a10ce09050add2a4300797112646"
-EXPECTED_ROUTER_SRC_BLOB="35066cd4780b53d776f3066beb3107545f32216b"
+EXPECTED_ROUTER_SRC_BLOB="e0a8074fadc9a536dce2af7992ee2849754f8c8a"
 EXPECTED_PUBLISH_GATE_BLOB="ca67e9dd932749e0ac2f8399eb1ff701289fde67"
 
 SRC="${1:?bootstrap source dir required}"
@@ -72,7 +72,6 @@ ORIGIN_HEAD="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
 CANON_STATUS="$(git -C "$REPO" status --porcelain)"
 [ "$CANON_HEAD" = "$EXPECTED_BASE" ] || { echo "STOP: canonical HEAD mismatch"; exit 2; }
 [ "$ORIGIN_HEAD" = "$EXPECTED_BASE" ] || { echo "STOP: origin/master mismatch"; exit 2; }
-
 RO_SHA="$(sha "$RO")"
 ROUTER_SHA="$(sha "$EXEC")"
 ROUTER_BLOB="$(blob "$EXEC")"
@@ -86,7 +85,6 @@ echo "GENERIC_BLOB_BEFORE=$GEN_BLOB"
 echo "PUBLISH_GATE_BLOB_BEFORE=$GATE_BLOB"
 echo "ACTIVATION_MARKER=$MARKER_STATE"
 [ "$RO_SHA" = "$EXPECTED_RO_SHA" ] || { echo "STOP: RO core SHA inatteso"; exit 2; }
-
 if [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_OLD_SHA" ] && [ "$GEN_BLOB" = "none" ] && [ "$GATE_BLOB" = "none" ] && [ "$MARKER_STATE" = "absent" ]; then
   INSTALL_STATE="CLEAN_OLD"
 elif [ "$ROUTER_BLOB" = "$EXPECTED_ROUTER_SRC_BLOB" ] && [ "$GEN_BLOB" = "$EXPECTED_GENERIC_SRC_BLOB" ] && [ "$GATE_BLOB" = "$EXPECTED_PUBLISH_GATE_BLOB" ] && [ "$MARKER_STATE" = "present" ]; then
@@ -97,7 +95,6 @@ else
   exit 2
 fi
 echo "INSTALL_STATE=$INSTALL_STATE"
-
 verify_local() {
   /bin/zsh -n "$GEN"
   python3 -m py_compile "$EXEC" "$GATE"
@@ -109,7 +106,6 @@ verify_local() {
   [ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$ORIGIN_HEAD" ] || return 2
   [ "$(git -C "$REPO" status --porcelain)" = "$CANON_STATUS" ] || return 2
 }
-
 if [ "$INSTALL_STATE" = "ALREADY_INSTALLED_EXACT" ]; then
   verify_local || { echo "STOP: exact installed state failed verification"; exit 2; }
   echo "GENERIC_WRITE_LANE_INSTALLED=YES"
@@ -121,7 +117,6 @@ if [ "$INSTALL_STATE" = "ALREADY_INSTALLED_EXACT" ]; then
   COMMITTED=1
   exit 0
 fi
-
 install -m 700 "$GEN_SRC" "$GEN_TMP"
 install -m 700 "$ROUTER_SRC" "$ROUTER_TMP"
 install -m 700 "$GATE_SRC" "$GATE_TMP"
