@@ -1,0 +1,101 @@
+name: FLUXION Generic Write Lane Bootstrap
+
+on:
+  push:
+    branches:
+      - bootstrap/fluxion-generic-write-lane-20260810
+    paths:
+      - '.github/workflows/fluxion-generic-write-bootstrap.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fluxion-generic-write-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    env:
+      TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
+      CHANNEL: FXD-824F35830C8A
+      BASE: 63b1b10637c2fa1acfcb03c94e930b71088d9221
+      FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
+    steps:
+      - name: Checkout isolated bootstrap branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install generic write lane locally
+        id: install
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          RUN_ROOT="$HOME/.local/share/fluxion-draft-bus/bootstrap-runs"
+          RUN_DIR="$RUN_ROOT/${TASK_ID}-${GITHUB_RUN_ID}"
+          mkdir -p "$RUN_DIR"
+          echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          /bin/zsh "$GITHUB_WORKSPACE/.github/bootstrap/install-generic-write-lane.zsh" \
+            "$GITHUB_WORKSPACE/.github/bootstrap" \
+            >"$RUN_DIR/install.stdout" 2>"$RUN_DIR/install.stderr"
+          rc=$?
+          echo "$rc" > "$RUN_DIR/install.rc"
+          cat "$RUN_DIR/install.stdout"
+          cat "$RUN_DIR/install.stderr" >&2
+          exit "$rc"
+
+      - name: Publish trusted bootstrap RESULT draft
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          DRAFT="$HOME/.local/bin/fluxion-draft-bus-secure"
+          test -x "$DRAFT"
+          test -n "${RUN_DIR:-}"
+          touch "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc"
+          rc="$(cat "$RUN_DIR/install.rc" 2>/dev/null || echo 2)"
+          if [ "$rc" = 0 ] && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"; then
+            status=PASS
+            verdict=VERDE
+          else
+            status=FAIL
+            verdict=ROSSO
+          fi
+          packet="$RUN_DIR/result-${TASK_ID}.zip"
+          (cd "$RUN_DIR" && zip -q "$packet" install.stdout install.stderr install.rc)
+          sha="$(shasum -a 256 "$packet" | awk '{print $1}')"
+          created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          result="$RUN_DIR/result.json"
+          python3 - "$result" "$created" "$status" "$verdict" "$sha" <<'PY'
+          import json,sys
+          p,created,status,verdict,sha=sys.argv[1:]
+          d={
+            "schema_version":1,
+            "channel":"FXD-824F35830C8A",
+            "kind":"RESULT",
+            "session_id":"GH-SELFHOSTED-GENERIC-WRITE-BOOTSTRAP",
+            "task_id":"WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810",
+            "created_at":created,
+            "base_commit":"63b1b10637c2fa1acfcb03c94e930b71088d9221",
+            "result_commit":"63b1b10637c2fa1acfcb03c94e930b71088d9221",
+            "status":status,
+            "packet_name":"result-WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810.zip",
+            "packet_sha256":sha,
+            "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;next_event=" + ("GENERIC_WRITE_LANE_CERT" if status=="PASS" else "SOL_ORCHESTRATOR_TRIAGE")
+          }
+          open(p,"w").write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          PY
+          "$DRAFT" create-result-draft "$result" "$packet"
+
+      - name: Enforce bootstrap success
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${RUN_DIR:-}"
+          test "$(cat "$RUN_DIR/install.rc")" = 0
+          grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"
