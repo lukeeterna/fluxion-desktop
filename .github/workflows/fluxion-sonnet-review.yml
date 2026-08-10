@@ -82,18 +82,29 @@ jobs:
           /tmp/actionlint \
             .github/workflows/fluxion-generic-write-bootstrap.yml \
             .github/workflows/fluxion-sonnet-review.yml
-          command -v zsh >/dev/null
+          echo "ACTIONLINT=PASS"
+
+          if ! command -v zsh >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq zsh
+          fi
+          zsh --version
           zsh -n .github/bootstrap/install-generic-write-lane.zsh
           zsh -n .github/bootstrap/fluxion-generic-write-executor
+          echo "ZSH_SYNTAX=PASS"
+
           python3 - <<'PY'
           from pathlib import Path
           p=Path('.github/bootstrap/fluxion-draft-bus-executor')
           compile(p.read_text(encoding='utf-8'), str(p), 'exec')
           PY
+          echo "PYTHON_WRAPPER_COMPILE=PASS"
+
           test "$(sha256sum .github/bootstrap/fluxion-generic-write-executor | awk '{print $1}')" = \
             "9a2ce8cdf594f104309f54ec488995af4631f75c5203b6dbe3d605bbafa4f154"
           test "$(sha256sum .github/bootstrap/fluxion-draft-bus-executor | awk '{print $1}')" = \
             "c33798d39023558918636674d5192ba702565f70b9f21d2589e4a9acb824adae"
+          echo "EXECUTOR_HASHES=PASS"
           echo "CONTROL_STATIC=PASS"
 
   control-selftest:
