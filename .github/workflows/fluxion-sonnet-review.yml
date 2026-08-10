@@ -72,6 +72,7 @@ jobs:
       - name: Validate workflow and bootstrap syntax
         run: |
           set -euo pipefail
+          git init -q
           cat > .github/actionlint.yaml <<'EOF'
           self-hosted-runner:
             labels:
@@ -175,7 +176,7 @@ jobs:
           BASE_TIP_SHA: ${{ steps.target.outputs.base_tip_sha }}
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules https://github.com/${GITHUB_REPOSITORY}.git control
+          git clone --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" control
           git -C control checkout --detach "$BASE_TIP_SHA"
           test "$(git -C control rev-parse HEAD)" = "$BASE_TIP_SHA"
 
@@ -185,7 +186,7 @@ jobs:
           HEAD_SHA: ${{ steps.target.outputs.head_sha }}
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules https://github.com/${GITHUB_REPOSITORY}.git target
+          git clone --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" target
           git -C target checkout --detach "$HEAD_SHA"
           test "$(git -C target rev-parse HEAD)" = "$HEAD_SHA"
           MERGE_BASE_SHA="$(git -C target merge-base "$BASE_TIP_SHA" "$HEAD_SHA")"
