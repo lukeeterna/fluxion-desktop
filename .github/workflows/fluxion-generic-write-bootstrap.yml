@@ -196,8 +196,12 @@ jobs:
 
           base_commit="$(cat "$RUN_DIR/align.head.before" 2>/dev/null || printf '%s' "$PRE_BASE")"
           result_commit="$(cat "$RUN_DIR/align.head.after" 2>/dev/null || printf '%s' "$base_commit")"
-          case "$base_commit" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) base_commit="$PRE_BASE" ;; esac
-          case "$result_commit" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) result_commit="$base_commit" ;; esac
+          python3 - "$base_commit" "$result_commit" <<'PY'
+          import re,sys
+          for name,value in zip(('base_commit','result_commit'), sys.argv[1:]):
+              if not re.fullmatch(r'[0-9a-f]{40}', value):
+                  raise SystemExit(f'{name} is not a 40-hex SHA')
+          PY
 
           packet="$RUN_DIR/result-${TASK_ID}.zip"
           (
@@ -269,6 +273,7 @@ jobs:
       - name: Rebuild and verify exact result evidence
         shell: bash
         env:
+          TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
           PACKET_B64: ${{ needs.bootstrap.outputs.packet_b64 }}
           RESULT_B64: ${{ needs.bootstrap.outputs.result_b64 }}
           EXPECTED_SHA256: ${{ needs.bootstrap.outputs.packet_sha256 }}
@@ -276,18 +281,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence
-          printf '%s' "$PACKET_B64" | base64 -d > "evidence/result-${{ env.TASK_ID }}.zip"
+          printf '%s' "$PACKET_B64" | base64 -d > "evidence/result-${TASK_ID}.zip"
           printf '%s' "$RESULT_B64" | base64 -d > evidence/result.json
-          actual="$(sha256sum "evidence/result-${{ env.TASK_ID }}.zip" | awk '{print $1}')"
+          actual="$(sha256sum "evidence/result-${TASK_ID}.zip" | awk '{print $1}')"
           test "$actual" = "$EXPECTED_SHA256"
           printf 'packet_sha256=%s\npublisher_rc=%s\ntransport=github-actions-artifact\n' \
             "$actual" "$PUBLISHER_RC" > evidence/MANIFEST.txt
-        env:
-          TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
-          PACKET_B64: ${{ needs.bootstrap.outputs.packet_b64 }}
-          RESULT_B64: ${{ needs.bootstrap.outputs.result_b64 }}
-          EXPECTED_SHA256: ${{ needs.bootstrap.outputs.packet_sha256 }}
-          PUBLISHER_RC: ${{ needs.bootstrap.outputs.publisher_rc }}
 
       - name: Upload connector-readable evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
