@@ -243,10 +243,12 @@ jobs:
 
           packet_b64="$(base64 < "$packet" | tr -d '\n')"
           result_b64="$(base64 < "$result" | tr -d '\n')"
-          printf 'packet_b64=%s\n' "$packet_b64" >> "$GITHUB_OUTPUT"
-          printf 'result_b64=%s\n' "$result_b64" >> "$GITHUB_OUTPUT"
-          printf 'packet_sha256=%s\n' "$sha" >> "$GITHUB_OUTPUT"
-          printf 'publisher_rc=%s\n' "$publisher_rc" >> "$GITHUB_OUTPUT"
+          {
+            printf 'packet_b64=%s\n' "$packet_b64"
+            printf 'result_b64=%s\n' "$result_b64"
+            printf 'packet_sha256=%s\n' "$sha"
+            printf 'publisher_rc=%s\n' "$publisher_rc"
+          } >> "$GITHUB_OUTPUT"
 
           cat "$RUN_DIR/publisher.stdout"
           cat "$RUN_DIR/publisher.stderr" >&2
