@@ -155,7 +155,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           claude_args: >-
             --model sonnet
-            --max-turns 3
+            --max-turns 10
             --disallowedTools "Bash,Edit,Write,Read,Grep,Glob,WebFetch,WebSearch,NotebookEdit,Task,TaskOutput,KillTask"
             --json-schema
             '{"type":"object","additionalProperties":false,"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"safe_to_merge":{"type":"string","enum":["yes","no"]},"next_action":{"type":"string"}},"required":["verdict","summary","findings","required_changes","safe_to_merge","next_action"]}'
