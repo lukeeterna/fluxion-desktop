@@ -1,4 +1,4 @@
-# retrigger: SOL-000021 classified prior bootstrap as GITHUB_RUN_NOT_STARTED
+# recovery: reuse FLUXION canonical push + workflow_dispatch trigger pattern
 name: FLUXION Generic Write Lane Bootstrap
 
 on:
@@ -7,6 +7,7 @@ on:
       - bootstrap/fluxion-generic-write-lane-20260810
     paths:
       - '.github/workflows/fluxion-generic-write-bootstrap.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
