@@ -5,15 +5,14 @@ EXPECTED_OS="11.7.10"
 EXPECTED_BASE="${2:?expected canonical base required}"
 EXPECTED_ROUTER_OLD_SHA="318021ca9ef20a95013640fddf83709d5323b406f559c54f63a83e2aaa842066"
 EXPECTED_RO_SHA="563abeccf36ef3de2973fabdfbf1b75c7d34d2347872b9b098e40e63d40b26a9"
-EXPECTED_GENERIC_SRC_BLOB="10c4b73f8bfc75332b5bb9d1852e51df8b01ce84"
-EXPECTED_ROUTER_SRC_SHA="967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33"
+EXPECTED_GENERIC_SRC_BLOB="c240e468d132a10ce09050add2a4300797112646"
+EXPECTED_ROUTER_SRC_BLOB="35066cd4780b53d776f3066beb3107545f32216b"
 EXPECTED_PUBLISH_GATE_BLOB="ca67e9dd932749e0ac2f8399eb1ff701289fde67"
 
 SRC="${1:?bootstrap source dir required}"
 GEN_SRC="$SRC/fluxion-generic-write-executor"
 ROUTER_SRC="$SRC/fluxion-draft-bus-executor"
 GATE_SRC="$SRC/fluxion-trusted-publish-gate.py"
-
 ROOT="$HOME/.local/share/fluxion-draft-bus"
 REPO="/Volumes/MontereyT7/FLUXION"
 EXEC="$HOME/.local/bin/fluxion-draft-bus-executor"
@@ -33,7 +32,6 @@ ROUTER_TMP="$EXEC.tmp-$STAMP"
 GATE_TMP="$GATE.tmp-$STAMP"
 MUTATED=0
 COMMITTED=0
-
 sha(){ shasum -a 256 "$1" | awk '{print $1}'; }
 blob(){ git hash-object --no-filters "$1"; }
 
@@ -54,23 +52,19 @@ trap rollback_if_needed EXIT
 
 echo "=== FLUXION GENERIC WRITE LANE BOOTSTRAP ==="
 echo "EXPECTED_BASE=$EXPECTED_BASE"
-
 [ "$(sw_vers -productVersion)" = "$EXPECTED_OS" ] || { echo "STOP: OS inatteso"; exit 2; }
 [ -f "$GEN_SRC" ] && [ -f "$ROUTER_SRC" ] && [ -f "$GATE_SRC" ] || { echo "STOP: bootstrap sources missing"; exit 2; }
 [ "$(blob "$GEN_SRC")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || { echo "STOP: generic source blob mismatch"; exit 2; }
-[ "$(sha "$ROUTER_SRC")" = "$EXPECTED_ROUTER_SRC_SHA" ] || { echo "STOP: router source SHA mismatch"; exit 2; }
+[ "$(blob "$ROUTER_SRC")" = "$EXPECTED_ROUTER_SRC_BLOB" ] || { echo "STOP: router source blob mismatch"; exit 2; }
 [ "$(blob "$GATE_SRC")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || { echo "STOP: publish gate source blob mismatch"; exit 2; }
-
 [ -x "$EXEC" ] || { echo "STOP: current router missing"; exit 2; }
 [ -x "$RO" ] || { echo "STOP: RO core missing"; exit 2; }
 [ -x "$DRAFT" ] || { echo "STOP: secure Gmail publisher missing"; exit 2; }
 [ -f "$PLIST" ] || { echo "STOP: executor LaunchAgent missing"; exit 2; }
 [ -d "$ROOT" ] || { echo "STOP: Draft Bus root missing"; exit 2; }
-
 if ps axww -o command= | grep -E '/[c]laude[[:space:]]+-p([[:space:]]|$)|(^|[[:space:]])[c]laude[[:space:]]+-p([[:space:]]|$)' >/dev/null; then
   echo "STOP: Claude headless active"; exit 2
 fi
-
 [ ! -e "$REPO/vos/STOP" ] || { echo "STOP: vos/STOP present"; exit 2; }
 [ "$(git -C "$REPO" branch --show-current)" = "master" ] || { echo "STOP: canonical branch is not master"; exit 2; }
 CANON_HEAD="$(git -C "$REPO" rev-parse HEAD)"
@@ -81,12 +75,13 @@ CANON_STATUS="$(git -C "$REPO" status --porcelain)"
 
 RO_SHA="$(sha "$RO")"
 ROUTER_SHA="$(sha "$EXEC")"
+ROUTER_BLOB="$(blob "$EXEC")"
 GEN_BLOB="none"; [ -f "$GEN" ] && GEN_BLOB="$(blob "$GEN")"
 GATE_BLOB="none"; [ -f "$GATE" ] && GATE_BLOB="$(blob "$GATE")"
 MARKER_STATE="absent"; [ -s "$ACTIVATED" ] && MARKER_STATE="present"
-
 echo "RO_CORE_SHA=$RO_SHA"
 echo "ROUTER_SHA_BEFORE=$ROUTER_SHA"
+echo "ROUTER_BLOB_BEFORE=$ROUTER_BLOB"
 echo "GENERIC_BLOB_BEFORE=$GEN_BLOB"
 echo "PUBLISH_GATE_BLOB_BEFORE=$GATE_BLOB"
 echo "ACTIVATION_MARKER=$MARKER_STATE"
@@ -94,7 +89,7 @@ echo "ACTIVATION_MARKER=$MARKER_STATE"
 
 if [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_OLD_SHA" ] && [ "$GEN_BLOB" = "none" ] && [ "$GATE_BLOB" = "none" ] && [ "$MARKER_STATE" = "absent" ]; then
   INSTALL_STATE="CLEAN_OLD"
-elif [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_SRC_SHA" ] && [ "$GEN_BLOB" = "$EXPECTED_GENERIC_SRC_BLOB" ] && [ "$GATE_BLOB" = "$EXPECTED_PUBLISH_GATE_BLOB" ] && [ "$MARKER_STATE" = "present" ]; then
+elif [ "$ROUTER_BLOB" = "$EXPECTED_ROUTER_SRC_BLOB" ] && [ "$GEN_BLOB" = "$EXPECTED_GENERIC_SRC_BLOB" ] && [ "$GATE_BLOB" = "$EXPECTED_PUBLISH_GATE_BLOB" ] && [ "$MARKER_STATE" = "present" ]; then
   INSTALL_STATE="ALREADY_INSTALLED_EXACT"
 else
   echo "INSTALL_STATE=BLOCKED_MIXED_STATE"
@@ -107,7 +102,7 @@ verify_local() {
   /bin/zsh -n "$GEN"
   python3 -m py_compile "$EXEC" "$GATE"
   [ "$(blob "$GEN")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || return 2
-  [ "$(sha "$EXEC")" = "$EXPECTED_ROUTER_SRC_SHA" ] || return 2
+  [ "$(blob "$EXEC")" = "$EXPECTED_ROUTER_SRC_BLOB" ] || return 2
   [ "$(blob "$GATE")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || return 2
   [ "$(sha "$RO")" = "$EXPECTED_RO_SHA" ] || return 2
   [ "$(git -C "$REPO" rev-parse HEAD)" = "$CANON_HEAD" ] || return 2
@@ -131,29 +126,24 @@ install -m 700 "$GEN_SRC" "$GEN_TMP"
 install -m 700 "$ROUTER_SRC" "$ROUTER_TMP"
 install -m 700 "$GATE_SRC" "$GATE_TMP"
 [ "$(blob "$GEN_TMP")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || { echo "STOP: staged generic blob mismatch"; exit 2; }
-[ "$(sha "$ROUTER_TMP")" = "$EXPECTED_ROUTER_SRC_SHA" ] || { echo "STOP: staged router SHA mismatch"; exit 2; }
+[ "$(blob "$ROUTER_TMP")" = "$EXPECTED_ROUTER_SRC_BLOB" ] || { echo "STOP: staged router blob mismatch"; exit 2; }
 [ "$(blob "$GATE_TMP")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || { echo "STOP: staged gate blob mismatch"; exit 2; }
 /bin/zsh -n "$GEN_TMP"
 python3 -m py_compile "$ROUTER_TMP" "$GATE_TMP"
-
 cp -p "$EXEC" "$BACKUP"
 echo "ROUTER_BACKUP=$BACKUP"
 mv "$GEN_TMP" "$GEN"
 mv "$GATE_TMP" "$GATE"
 mv "$ROUTER_TMP" "$EXEC"
 MUTATED=1
-
 MARKER_TMP="$ACTIVATED.tmp-$STAMP"
 date -u +%Y-%m-%dT%H:%M:%SZ > "$MARKER_TMP"
 chmod 600 "$MARKER_TMP"
 mv "$MARKER_TMP" "$ACTIVATED"
-
 verify_local || { echo "STOP: installed files failed verification"; exit 2; }
-
 launchctl kickstart -k "$DOMAIN/$LABEL"
 sleep 2
 launchctl print "$DOMAIN/$LABEL" > "$ROOT/launchctl-generic-write-$STAMP.txt"
-
 cat > "$REPORT" <<EOF
 installed_at=$STAMP
 base=$EXPECTED_BASE
@@ -161,6 +151,7 @@ install_state=INSTALLED_NOW
 ro_core_sha=$RO_SHA
 router_sha_before=$ROUTER_SHA
 router_sha_after=$(sha "$EXEC")
+router_blob_after=$(blob "$EXEC")
 generic_write_sha=$(sha "$GEN")
 generic_write_blob=$(blob "$GEN")
 trusted_publish_gate_sha=$(sha "$GATE")
@@ -171,13 +162,12 @@ publisher_boundary=trusted-non-llm
 canonical_repo_status_preserved=yes
 EOF
 chmod 600 "$REPORT"
-
 verify_local || { echo "STOP: post-restart verification failed"; exit 2; }
-
 COMMITTED=1
 echo "GENERIC_WRITE_SHA=$(sha "$GEN")"
 echo "GENERIC_WRITE_BLOB=$(blob "$GEN")"
 echo "ROUTER_SHA_AFTER=$(sha "$EXEC")"
+echo "ROUTER_BLOB_AFTER=$(blob "$EXEC")"
 echo "TRUSTED_PUBLISH_GATE_SHA=$(sha "$GATE")"
 echo "TRUSTED_PUBLISH_GATE_BLOB=$(blob "$GATE")"
 echo "GENERIC_WRITE_LANE_INSTALLED=YES"

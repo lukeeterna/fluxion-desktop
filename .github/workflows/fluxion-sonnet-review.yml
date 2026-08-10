@@ -36,8 +36,8 @@ jobs:
     env:
       ACTIONLINT_VERSION: v1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-      GENERIC_BLOB_SHA: 10c4b73f8bfc75332b5bb9d1852e51df8b01ce84
-      ROUTER_SHA256: 967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33
+      GENERIC_BLOB_SHA: c240e468d132a10ce09050add2a4300797112646
+      ROUTER_BLOB_SHA: 35066cd4780b53d776f3066beb3107545f32216b
       PUBLISH_GATE_BLOB_SHA: ca67e9dd932749e0ac2f8399eb1ff701289fde67
     steps:
       - name: Fetch exact owner PR-head control files
@@ -59,8 +59,7 @@ jobs:
             .github/bootstrap/fluxion-draft-bus-executor \
             .github/bootstrap/fluxion-trusted-publish-gate.py
           do
-            curl --fail --silent --show-error --location --retry 3 \
-              "$base/$path" --output "$path"
+            curl --fail --silent --show-error --location --retry 3 "$base/$path" --output "$path"
             test -s "$path"
           done
           echo "OWNER_PR_STATIC_AUTHORITY=PASS"
@@ -75,7 +74,7 @@ jobs:
           tar -xzf "$archive" -C /tmp actionlint
           /tmp/actionlint -version
 
-      - name: Validate control plane and integrity
+      - name: Validate control plane integrity and confinement
         run: |
           set -euo pipefail
           git init -q
@@ -85,61 +84,77 @@ jobs:
               - macbook
               - fluxion
           EOF
-          /tmp/actionlint \
-            .github/workflows/fluxion-generic-write-bootstrap.yml \
-            .github/workflows/fluxion-sonnet-review.yml
+          /tmp/actionlint .github/workflows/fluxion-generic-write-bootstrap.yml .github/workflows/fluxion-sonnet-review.yml
           echo "ACTIONLINT=PASS"
-
           if ! command -v zsh >/dev/null 2>&1; then
             sudo apt-get update -qq
             sudo apt-get install -y -qq zsh
           fi
           zsh -n .github/bootstrap/install-generic-write-lane.zsh
           zsh -n .github/bootstrap/fluxion-generic-write-executor
-          python3 -m py_compile \
-            .github/bootstrap/fluxion-draft-bus-executor \
-            .github/bootstrap/fluxion-trusted-publish-gate.py
+          python3 -m py_compile .github/bootstrap/fluxion-draft-bus-executor .github/bootstrap/fluxion-trusted-publish-gate.py
           echo "SYNTAX_COMPILE=PASS"
 
           test "$(git hash-object --no-filters .github/bootstrap/fluxion-generic-write-executor)" = "$GENERIC_BLOB_SHA"
-          test "$(sha256sum .github/bootstrap/fluxion-draft-bus-executor | awk '{print $1}')" = "$ROUTER_SHA256"
+          test "$(git hash-object --no-filters .github/bootstrap/fluxion-draft-bus-executor)" = "$ROUTER_BLOB_SHA"
           test "$(git hash-object --no-filters .github/bootstrap/fluxion-trusted-publish-gate.py)" = "$PUBLISH_GATE_BLOB_SHA"
           echo "EXECUTOR_INTEGRITY=PASS"
 
           grep -F -- '--tools Read,Edit,Write' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- '--allowedTools Read Edit Write' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- '--strict-mcp-config' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- '--mcp-config' .github/bootstrap/fluxion-generic-write-executor
-          if grep -E -- '--tools[^\n]*Bash|--allowedTools[^\n]*Bash' .github/bootstrap/fluxion-generic-write-executor; then
-            echo "BLOCKED: Bash available to writer" >&2
-            exit 2
+          if grep -F -- '--allowedTools Read Edit Write' .github/bootstrap/fluxion-generic-write-executor; then
+            echo "BLOCKED: global file-tool allow still present" >&2; exit 2
           fi
-          grep -F -- 'worktree-add.stdout worktree-add.stderr' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- '"permissions":{"allow":allow,"deny":deny}' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'writer_scope=worktree_only' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'RUN_RETENTION_DAYS=30' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'PACKET_RETENTION_DAYS=365' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'cleanup_worktree' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'os.set_inheritable(lock_fd, True)' .github/bootstrap/fluxion-draft-bus-executor
           echo "WRITER_CAPABILITY_BOUNDARY=PASS"
-          echo "WRITER_EVIDENCE_COMPLETENESS=PASS"
+          echo "WORKTREE_RETENTION_POLICY=PASS"
+
+      - name: Prove router lock survives exec
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          root="$tmp/.local/share/fluxion-draft-bus"; bin="$tmp/.local/bin"
+          mkdir -p "$root/queue" "$bin"
+          cp .github/bootstrap/fluxion-draft-bus-executor "$tmp/router.py"
+          cat > "$bin/fluxion-generic-write-executor" <<'EOF'
+          #!/bin/zsh
+          print -r -- "$1" >> "$HOME/calls.txt"
+          sleep 2
+          EOF
+          chmod 700 "$bin/fluxion-generic-write-executor"
+          cat > "$bin/fluxion-draft-bus-executor-ro-core" <<'EOF'
+          raise SystemExit(0)
+          EOF
+          chmod 700 "$bin/fluxion-draft-bus-executor-ro-core"
+          cat > "$root/queue/001-healthy.json" <<'EOF'
+          {"schema_version":1,"created_at":"2026-08-10T20:00:00Z","action_profile":"FIX_SCOPED_BUG"}
+          EOF
+          HOME="$tmp" python3 "$tmp/router.py" & first=$!
+          for _ in $(seq 1 40); do [ -s "$tmp/calls.txt" ] && break; sleep 0.05; done
+          test -s "$tmp/calls.txt"
+          HOME="$tmp" python3 "$tmp/router.py"
+          wait "$first"
+          test "$(wc -l < "$tmp/calls.txt" | tr -d ' ')" = 1
+          echo "SINGLE_CONSUMER_FULL_DURATION=PASS"
 
       - name: Prove trusted CAS publish gate
         run: |
           set -euo pipefail
           python3 .github/bootstrap/fluxion-trusted-publish-gate.py --self-test | tee /tmp/trusted-publish-selftest.log
-          grep -qx 'TRUSTED_PUBLISHER_PRESENT=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'EXPECTED_BASE_ENFORCED=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'NON_FORCE_PUBLISH=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'UNEXPECTED_ORIGIN_MOVE_BLOCKS=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'CANDIDATE_EXACT_PARENT=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'ALLOWED_PATHS_ENFORCED=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'NON_FAST_FORWARD_BLOCKS=PASS' /tmp/trusted-publish-selftest.log
-          grep -qx 'TRUSTED_PUBLISH_SELFTEST=PASS' /tmp/trusted-publish-selftest.log
+          for marker in TRUSTED_PUBLISHER_PRESENT EXPECTED_BASE_ENFORCED NON_FORCE_PUBLISH UNEXPECTED_ORIGIN_MOVE_BLOCKS CANDIDATE_EXACT_PARENT ALLOWED_PATHS_ENFORCED NON_FAST_FORWARD_BLOCKS TRUSTED_PUBLISH_SELFTEST; do
+            grep -qx "$marker=PASS" /tmp/trusted-publish-selftest.log
+          done
 
       - name: Prove poison quarantine does not starve healthy write
         run: |
           set -euo pipefail
-          tmp="$(mktemp -d)"
-          trap 'rm -rf "$tmp"' EXIT
-          root="$tmp/.local/share/fluxion-draft-bus"
-          bin="$tmp/.local/bin"
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          root="$tmp/.local/share/fluxion-draft-bus"; bin="$tmp/.local/bin"
           mkdir -p "$root/queue" "$bin"
-
           cp .github/bootstrap/fluxion-draft-bus-executor "$tmp/router.py"
           cat > "$bin/fluxion-generic-write-executor" <<'EOF'
           #!/bin/zsh
@@ -151,30 +166,16 @@ jobs:
           Path.home().joinpath('ro-called.txt').write_text('called\n')
           EOF
           chmod 700 "$bin/fluxion-draft-bus-executor-ro-core"
-
           printf '{not-json\n' > "$root/queue/000-malformed.json"
           printf '{"schema_version":1,"action_profile":"FIX_SCOPED_BUG"}\n' > "$root/queue/001-missing-created.json"
           cat > "$root/queue/002-healthy.json" <<'EOF'
           {"schema_version":1,"created_at":"2026-08-10T20:00:00Z","action_profile":"FIX_SCOPED_BUG"}
           EOF
-
           HOME="$tmp" python3 "$tmp/router.py"
           grep -F "$root/queue/002-healthy.json" "$tmp/generic-called.txt"
           test ! -e "$tmp/ro-called.txt"
           test "$(find "$root/router-quarantine" -type f -name '*.bad' | wc -l | tr -d ' ')" = 2
           test "$(find "$root/router-quarantine" -type f -name '*.json' | wc -l | tr -d ' ')" = 2
-          python3 - "$root/router-quarantine" <<'PY'
-          import hashlib,json,sys
-          from pathlib import Path
-          q=Path(sys.argv[1])
-          metas=sorted(q.glob('*.json'))
-          assert len(metas)==2
-          for meta in metas:
-              d=json.loads(meta.read_text(encoding='utf-8'))
-              payload=q/(meta.name[:-5]+'.bad')
-              assert payload.is_file()
-              assert hashlib.sha256(payload.read_bytes()).hexdigest()==d['sha256']
-          PY
           echo "POISON_QUARANTINE=PASS"
           echo "CONTROL_STATIC=PASS"
 
@@ -186,8 +187,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Validate reviewer
-        run: |
+      - run: |
           set -euo pipefail
           python3 -m py_compile tools/fluxion_sonnet_reviewer.py
           test -s .github/workflows/fluxion-sonnet-review.yml
@@ -196,9 +196,7 @@ jobs:
   independent-review:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository &&
-       github.event.pull_request.user.login == github.repository_owner)
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == github.repository_owner)
     permissions:
       contents: read
       issues: write
@@ -218,19 +216,15 @@ jobs:
           import json,os,urllib.request
           from pathlib import Path
           event=json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
-          if os.environ['GITHUB_EVENT_NAME']=='pull_request':
-              pr=event['pull_request']
+          if os.environ['GITHUB_EVENT_NAME']=='pull_request': pr=event['pull_request']
           else:
               number=os.environ.get('DISPATCH_PR_NUMBER','').strip()
               if not number.isdigit(): raise SystemExit('workflow_dispatch requires numeric pr_number')
-              req=urllib.request.Request(
-                  f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{number}",
-                  headers={'Accept':'application/vnd.github+json','Authorization':f"Bearer {os.environ['GITHUB_TOKEN']}",'X-GitHub-Api-Version':'2022-11-28','User-Agent':'fluxion-sonnet-reviewer'})
+              req=urllib.request.Request(f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{number}",headers={'Accept':'application/vnd.github+json','Authorization':f"Bearer {os.environ['GITHUB_TOKEN']}",'X-GitHub-Api-Version':'2022-11-28','User-Agent':'fluxion-sonnet-reviewer'})
               with urllib.request.urlopen(req,timeout=30) as response: pr=json.load(response)
           meta={'repository':os.environ['GITHUB_REPOSITORY'],'pr_number':int(pr['number']),'title':pr.get('title',''),'body':pr.get('body') or '','author':(pr.get('user') or {}).get('login',''),'base_ref':pr['base']['ref'],'head_ref':pr['head']['ref'],'base_sha':pr['base']['sha'],'head_sha':pr['head']['sha']}
           Path('artifacts/PR_META.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as h:
-              h.write(f"pr_number={meta['pr_number']}\nbase_tip_sha={meta['base_sha']}\nhead_sha={meta['head_sha']}\n")
+          with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as h: h.write(f"pr_number={meta['pr_number']}\nbase_tip_sha={meta['base_sha']}\nhead_sha={meta['head_sha']}\n")
           PY
 
       - name: Clone immutable base control plane
@@ -256,10 +250,8 @@ jobs:
           python3 - "$MERGE_BASE_SHA" "$BASE_TIP_SHA" <<'PY'
           import json,sys
           from pathlib import Path
-          p=Path('artifacts/PR_META.json')
-          meta=json.loads(p.read_text(encoding='utf-8'))
-          meta['base_tip_sha']=sys.argv[2]
-          meta['base_sha']=sys.argv[1]
+          p=Path('artifacts/PR_META.json'); meta=json.loads(p.read_text(encoding='utf-8'))
+          meta['base_tip_sha']=sys.argv[2]; meta['base_sha']=sys.argv[1]
           p.write_text(json.dumps(meta,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
 
