@@ -4,6 +4,7 @@ name: FLUXION Generic Write Lane Bootstrap
 on:
   push:
     branches:
+      - master
       - bootstrap/fluxion-generic-write-lane-20260810
     paths:
       - '.github/workflows/fluxion-generic-write-bootstrap.yml'
