@@ -33,7 +33,7 @@ jobs:
     env:
       ACTIONLINT_VERSION: v1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-      GENERIC_SHA256: b3bd8640ee4a30fc26a9eb4ea3c1ab5914f4d492206ff7da70ec44f53961bec3
+      GENERIC_BLOB_SHA: a96d94cdad206f76cf67508d839b2d0bc0eb94d4
       ROUTER_SHA256: 967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33
     steps:
       - name: Fetch exact PR-head control files
@@ -59,6 +59,60 @@ jobs:
               "$base/$path" --output "$path"
             test -s "$path"
           done
+
+      - name: Verify master merge protection is real
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+
+          repo=os.environ['GITHUB_REPOSITORY']
+          token=os.environ['GITHUB_TOKEN']
+          headers={
+              'Accept':'application/vnd.github+json',
+              'Authorization':f'Bearer {token}',
+              'X-GitHub-Api-Version':'2022-11-28',
+              'User-Agent':'fluxion-control-static',
+          }
+
+          def get(path):
+              req=urllib.request.Request(f'https://api.github.com/repos/{repo}{path}',headers=headers)
+              with urllib.request.urlopen(req,timeout=30) as response:
+                  return json.load(response)
+
+          branch=get('/branches/master')
+          rules=get('/rules/branches/master')
+          protected=bool(branch.get('protected'))
+          contexts=[]
+          classic=((branch.get('protection') or {}).get('required_status_checks') or {}).get('contexts') or []
+          contexts.extend(str(x) for x in classic if x)
+          for rule in rules if isinstance(rules,list) else []:
+              if rule.get('type')!='required_status_checks':
+                  continue
+              params=rule.get('parameters') or {}
+              for item in params.get('required_status_checks') or []:
+                  if isinstance(item,dict) and item.get('context'):
+                      contexts.append(str(item['context']))
+          contexts=sorted(set(contexts))
+          print('MASTER_PROTECTED='+('yes' if protected else 'no'))
+          print('MASTER_REQUIRED_CONTEXTS='+json.dumps(contexts,separators=(',',':')))
+
+          def has_job(job):
+              for context in contexts:
+                  tail=context.split(' / ')[-1].strip()
+                  if context==job or tail==job:
+                      return True
+              return False
+
+          if not protected:
+              raise SystemExit('BLOCKED: master is not protected')
+          missing=[x for x in ('control-static','independent-review') if not has_job(x)]
+          if missing:
+              raise SystemExit('BLOCKED: master does not require review gates: '+','.join(missing))
+          print('MASTER_MERGE_GATE=PASS')
+          PY
 
       - name: Install content-addressed actionlint
         run: |
@@ -102,7 +156,10 @@ jobs:
           PY
           echo "PYTHON_WRAPPER_COMPILE=PASS"
 
-          test "$(sha256sum .github/bootstrap/fluxion-generic-write-executor | awk '{print $1}')" = "$GENERIC_SHA256"
+          generic_blob="$(git hash-object --no-filters .github/bootstrap/fluxion-generic-write-executor)"
+          generic_sha256="$(sha256sum .github/bootstrap/fluxion-generic-write-executor | awk '{print $1}')"
+          printf 'GENERIC_BLOB=%s\nGENERIC_SHA256_OBSERVED=%s\n' "$generic_blob" "$generic_sha256"
+          test "$generic_blob" = "$GENERIC_BLOB_SHA"
           test "$(sha256sum .github/bootstrap/fluxion-draft-bus-executor | awk '{print $1}')" = "$ROUTER_SHA256"
           grep -F -- '--tools Read,Edit,Write' .github/bootstrap/fluxion-generic-write-executor
           grep -F -- '--allowedTools Read Edit Write' .github/bootstrap/fluxion-generic-write-executor
@@ -113,6 +170,9 @@ jobs:
             echo "BLOCKED: Bash is available to writer" >&2
             exit 2
           fi
+          grep -F -- "if: github.event_name == 'workflow_dispatch' || github.event.before == '63b1b10637c2fa1acfcb03c94e930b71088d9221'" \
+            .github/workflows/fluxion-generic-write-bootstrap.yml
+          echo "BOOTSTRAP_ONE_SHOT=PASS"
           echo "WRITER_CAPABILITY_BOUNDARY=PASS"
           echo "EXECUTOR_HASHES=PASS"
 
