@@ -45,8 +45,7 @@ def load_result(path: Path,expected_sha:str,role:str,candidate:str):
     except Exception as e: raise Blocked(f"{role} result invalid json: {e}") from e
     if not isinstance(d,dict): raise Blocked(f"{role} result is not object")
     if d.get("status")!="PASS": raise Blocked(f"{role} status is not PASS")
-    verdict=str(d.get("verdict") or d.get("summary") or "")
-    if role=="verifier" and "GREEN" not in verdict.upper() and "VERDE" not in verdict.upper():
+    if role=="verifier" and d.get("verdict") not in {"GREEN","VERDE"}:
         raise Blocked("fresh verifier is not GREEN")
     if str(d.get("result_commit") or d.get("candidate_sha") or "")!=candidate:
         raise Blocked(f"{role} result_commit does not match candidate")

@@ -18,8 +18,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 concurrency:
   group: fluxion-sonnet-${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}
@@ -27,26 +25,30 @@ concurrency:
 
 jobs:
   control-static:
-    if: github.event_name == 'pull_request'
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 7
     env:
       ACTIONLINT_VERSION: v1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-      GENERIC_BLOB_SHA: a96d94cdad206f76cf67508d839b2d0bc0eb94d4
+      GENERIC_BLOB_SHA: 10c4b73f8bfc75332b5bb9d1852e51df8b01ce84
       ROUTER_SHA256: 967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33
-      PUBLISH_GATE_BLOB_SHA: bd51a3da0f3276704f120ab9963abddc844e870d
+      PUBLISH_GATE_BLOB_SHA: ca67e9dd932749e0ac2f8399eb1ff701289fde67
     steps:
-      - name: Fetch exact PR-head control files
+      - name: Fetch exact owner PR-head control files
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
           set -euo pipefail
-          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || {
-            echo "BLOCKED: control-plane review requires same-repository head" >&2
-            exit 2
-          }
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY"
+          test "$PR_AUTHOR" = "$GITHUB_REPOSITORY_OWNER"
           mkdir -p .github/workflows .github/bootstrap
           base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HEAD_SHA}"
           for path in \
@@ -61,6 +63,7 @@ jobs:
               "$base/$path" --output "$path"
             test -s "$path"
           done
+          echo "OWNER_PR_STATIC_AUTHORITY=PASS"
 
       - name: Install content-addressed actionlint
         run: |
@@ -111,7 +114,9 @@ jobs:
             echo "BLOCKED: Bash available to writer" >&2
             exit 2
           fi
+          grep -F -- 'worktree-add.stdout worktree-add.stderr' .github/bootstrap/fluxion-generic-write-executor
           echo "WRITER_CAPABILITY_BOUNDARY=PASS"
+          echo "WRITER_EVIDENCE_COMPLETENESS=PASS"
 
       - name: Prove trusted CAS publish gate
         run: |
@@ -175,6 +180,8 @@ jobs:
 
   control-selftest:
     if: github.event_name == 'push'
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -187,7 +194,15 @@ jobs:
           echo "CONTROL_SELFTEST=PASS"
 
   independent-review:
-    if: github.event_name != 'push'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.user.login == github.repository_owner)
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

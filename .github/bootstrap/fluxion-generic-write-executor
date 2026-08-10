@@ -86,8 +86,8 @@ packetize_and_publish() {
     zip -q "$packet" \
       task.json task.txt claude.stream.jsonl claude.stderr claude.final.txt \
       claude.rc model.txt tool-use.txt validation.txt changed_paths.txt \
-      branch.txt worktree.txt diff-check.stdout diff-check.stderr \
-      staged-paths.txt commit.stdout commit.stderr
+      branch.txt worktree.txt worktree-add.stdout worktree-add.stderr \
+      diff-check.stdout diff-check.stderr staged-paths.txt commit.stdout commit.stderr
   )
   local psha
   psha="$(shasum -a 256 "$packet" | awk '{print $1}')"
@@ -105,6 +105,7 @@ PY
 ensure_evidence_files() {
   touch "$RUN/changed_paths.txt" "$RUN/staged-paths.txt" \
     "$RUN/diff-check.stdout" "$RUN/diff-check.stderr" \
+    "$RUN/worktree-add.stdout" "$RUN/worktree-add.stderr" \
     "$RUN/commit.stdout" "$RUN/commit.stderr" "$RUN/tool-use.txt" \
     "$RUN/model.txt" "$RUN/claude.stream.jsonl" "$RUN/claude.stderr" \
     "$RUN/claude.final.txt" "$RUN/claude.rc" "$RUN/task.txt" \
