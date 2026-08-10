@@ -1,13 +1,14 @@
-# recovery: reuse FLUXION canonical push + workflow_dispatch trigger pattern
 name: FLUXION Generic Write Lane Bootstrap
 
 on:
   push:
-    branches:
-      - master
-      - bootstrap/fluxion-generic-write-lane-20260810
+    branches: [master]
     paths:
+      - '.github/bootstrap/fluxion-draft-bus-executor'
+      - '.github/bootstrap/fluxion-generic-write-executor'
+      - '.github/bootstrap/install-generic-write-lane.zsh'
       - '.github/workflows/fluxion-generic-write-bootstrap.yml'
+      - '.github/workflows/fluxion-sonnet-review.yml'
   workflow_dispatch:
 
 permissions:
@@ -21,61 +22,197 @@ jobs:
   bootstrap:
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
+    outputs:
+      packet_b64: ${{ steps.publish.outputs.packet_b64 }}
+      result_b64: ${{ steps.publish.outputs.result_b64 }}
+      packet_sha256: ${{ steps.publish.outputs.packet_sha256 }}
+      publisher_rc: ${{ steps.publish.outputs.publisher_rc }}
     env:
       TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
       CHANNEL: FXD-824F35830C8A
-      BASE: 63b1b10637c2fa1acfcb03c94e930b71088d9221
+      PRE_BASE: 63b1b10637c2fa1acfcb03c94e930b71088d9221
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
-    steps:
-      - name: Checkout isolated bootstrap branch
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
-      - name: Install generic write lane locally
-        id: install
+    steps:
+      - name: Align canonical repository to reviewed master head
+        id: align
         shell: bash
         continue-on-error: true
         run: |
-          set -uo pipefail
+          set -u
           RUN_ROOT="$HOME/.local/share/fluxion-draft-bus/bootstrap-runs"
           RUN_DIR="$RUN_ROOT/${TASK_ID}-${GITHUB_RUN_ID}"
           mkdir -p "$RUN_DIR"
           echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
-          /bin/zsh "$GITHUB_WORKSPACE/.github/bootstrap/install-generic-write-lane.zsh" \
-            "$GITHUB_WORKSPACE/.github/bootstrap" \
-            >"$RUN_DIR/install.stdout" 2>"$RUN_DIR/install.stderr"
+
+          set +e
+          (
+            set -euo pipefail
+            REPO="$FLUXION_ROOT"
+            EXPECTED_PATHS="$RUN_DIR/expected-control-paths.txt"
+            cat > "$EXPECTED_PATHS" <<'EOF'
+          .github/bootstrap/fluxion-draft-bus-executor
+          .github/bootstrap/fluxion-generic-write-executor
+          .github/bootstrap/install-generic-write-lane.zsh
+          .github/workflows/fluxion-generic-write-bootstrap.yml
+          .github/workflows/fluxion-sonnet-review.yml
+          EOF
+
+            test -d "$REPO/.git"
+            test "$(git -C "$REPO" branch --show-current)" = master
+            remote="$(git -C "$REPO" remote get-url origin)"
+            case "$remote" in
+              https://github.com/lukeeterna/fluxion-desktop|https://github.com/lukeeterna/fluxion-desktop.git|git@github.com:lukeeterna/fluxion-desktop.git) ;;
+              *) echo "BLOCKED: origin mismatch" >&2; exit 2 ;;
+            esac
+
+            before_head="$(git -C "$REPO" rev-parse HEAD)"
+            before_origin="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
+            git -C "$REPO" status --porcelain > "$RUN_DIR/align.status.before"
+            printf '%s\n' "$before_head" > "$RUN_DIR/align.head.before"
+            printf '%s\n' "$before_origin" > "$RUN_DIR/align.origin.before"
+
+            python3 - "$RUN_DIR/align.status.before" <<'PY'
+          import sys
+          allowed={
+              'tools/VectCutAPI',
+              'src-tauri/fluxion.db',
+              'src-tauri/fluxion.db-shm',
+              'src-tauri/fluxion.db-wal',
+              'vos-out/decisions.jsonl',
+              '.claude/session_state.md',
+          }
+          for raw in open(sys.argv[1], encoding='utf-8'):
+              line=raw.rstrip('\n')
+              if not line:
+                  continue
+              path=line[3:]
+              if ' -> ' in path:
+                  path=path.split(' -> ',1)[1]
+              if path not in allowed:
+                  raise SystemExit(f'BLOCKED: unexpected dirty path: {path}')
+          PY
+
+            case "$before_head" in
+              "$PRE_BASE"|"$GITHUB_SHA") ;;
+              *) echo "BLOCKED: canonical HEAD is neither PRE_BASE nor GITHUB_SHA" >&2; exit 2 ;;
+            esac
+
+            git -C "$REPO" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master'
+            fetched="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
+            test "$fetched" = "$GITHUB_SHA" || { echo "BLOCKED: fetched origin/master != GITHUB_SHA" >&2; exit 2; }
+
+            git -C "$REPO" diff --name-only "$PRE_BASE..$GITHUB_SHA" | sort > "$RUN_DIR/align.changed-paths"
+            sort "$EXPECTED_PATHS" > "$RUN_DIR/expected-control-paths.sorted"
+            cmp -s "$RUN_DIR/align.changed-paths" "$RUN_DIR/expected-control-paths.sorted" || {
+              echo "BLOCKED: control-plane diff is not the exact approved path set" >&2
+              diff -u "$RUN_DIR/expected-control-paths.sorted" "$RUN_DIR/align.changed-paths" >&2 || true
+              exit 2
+            }
+
+            if [ "$before_head" = "$PRE_BASE" ]; then
+              git -C "$REPO" -c core.hooksPath=/dev/null merge --ff-only "$GITHUB_SHA"
+              align_state=FAST_FORWARDED
+            else
+              align_state=ALREADY_ALIGNED
+            fi
+
+            after_head="$(git -C "$REPO" rev-parse HEAD)"
+            after_origin="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
+            git -C "$REPO" status --porcelain > "$RUN_DIR/align.status.after"
+            printf '%s\n' "$after_head" > "$RUN_DIR/align.head.after"
+            printf '%s\n' "$after_origin" > "$RUN_DIR/align.origin.after"
+            printf '%s\n' "$align_state" > "$RUN_DIR/align.state"
+
+            test "$after_head" = "$GITHUB_SHA"
+            test "$after_origin" = "$GITHUB_SHA"
+            cmp -s "$RUN_DIR/align.status.before" "$RUN_DIR/align.status.after" || {
+              echo "BLOCKED: canonical dirty status changed during alignment" >&2
+              exit 2
+            }
+            echo "ALIGN_STATE=$align_state"
+            echo "CANONICAL_HEAD=$after_head"
+            echo "ORIGIN_MASTER=$after_origin"
+          ) > >(tee "$RUN_DIR/align.stdout") 2> >(tee "$RUN_DIR/align.stderr" >&2)
           rc=$?
-          echo "$rc" > "$RUN_DIR/install.rc"
-          cat "$RUN_DIR/install.stdout"
-          cat "$RUN_DIR/install.stderr" >&2
+          set -e
+          printf '%s\n' "$rc" > "$RUN_DIR/align.rc"
+          if [ "$rc" = 0 ]; then
+            echo "BASE=$GITHUB_SHA" >> "$GITHUB_ENV"
+          fi
+          exit "$rc"
+
+      - name: Install generic write lane locally
+        id: install
+        if: steps.align.outcome == 'success'
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          : "${RUN_DIR:?RUN_DIR missing}"
+          : "${BASE:?BASE missing}"
+          set +e
+          /bin/zsh "$FLUXION_ROOT/.github/bootstrap/install-generic-write-lane.zsh" \
+            "$FLUXION_ROOT/.github/bootstrap" "$BASE" \
+            > >(tee "$RUN_DIR/install.stdout") \
+            2> >(tee "$RUN_DIR/install.stderr" >&2)
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$RUN_DIR/install.rc"
           exit "$rc"
 
       - name: Publish trusted bootstrap RESULT draft
+        id: publish
         if: always()
         shell: bash
         run: |
           set -euo pipefail
           DRAFT="$HOME/.local/bin/fluxion-draft-bus-secure"
+          : "${RUN_DIR:?RUN_DIR missing}"
           test -x "$DRAFT"
-          test -n "${RUN_DIR:-}"
-          touch "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc"
-          rc="$(cat "$RUN_DIR/install.rc" 2>/dev/null || echo 2)"
-          if [ "$rc" = 0 ] && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"; then
+
+          touch \
+            "$RUN_DIR/align.stdout" "$RUN_DIR/align.stderr" "$RUN_DIR/align.rc" \
+            "$RUN_DIR/align.status.before" "$RUN_DIR/align.status.after" \
+            "$RUN_DIR/align.head.before" "$RUN_DIR/align.head.after" \
+            "$RUN_DIR/align.origin.before" "$RUN_DIR/align.origin.after" \
+            "$RUN_DIR/align.changed-paths" "$RUN_DIR/align.state" \
+            "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc"
+
+          align_rc="$(cat "$RUN_DIR/align.rc" 2>/dev/null || echo 2)"
+          install_rc="$(cat "$RUN_DIR/install.rc" 2>/dev/null || echo 2)"
+          install_state="$(grep '^INSTALL_STATE=' "$RUN_DIR/install.stdout" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+          [ -n "$install_state" ] || install_state=NOT_RUN
+
+          if [ "$align_rc" = 0 ] && [ "$install_rc" = 0 ] && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"; then
             status=PASS
             verdict=VERDE
+            next_event=GENERIC_WRITE_LANE_CERT
           else
             status=FAIL
             verdict=ROSSO
+            next_event=SOL_ORCHESTRATOR_TRIAGE
           fi
+
+          base_commit="$(cat "$RUN_DIR/align.head.before" 2>/dev/null || printf '%s' "$PRE_BASE")"
+          result_commit="$(cat "$RUN_DIR/align.head.after" 2>/dev/null || printf '%s' "$base_commit")"
+          case "$base_commit" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) base_commit="$PRE_BASE" ;; esac
+          case "$result_commit" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) result_commit="$base_commit" ;; esac
+
           packet="$RUN_DIR/result-${TASK_ID}.zip"
-          (cd "$RUN_DIR" && zip -q "$packet" install.stdout install.stderr install.rc)
+          (
+            cd "$RUN_DIR"
+            zip -q "$packet" \
+              align.stdout align.stderr align.rc align.status.before align.status.after \
+              align.head.before align.head.after align.origin.before align.origin.after \
+              align.changed-paths align.state install.stdout install.stderr install.rc
+          )
           sha="$(shasum -a 256 "$packet" | awk '{print $1}')"
           created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           result="$RUN_DIR/result.json"
-          python3 - "$result" "$created" "$status" "$verdict" "$sha" <<'PY'
+          python3 - "$result" "$created" "$status" "$verdict" "$sha" "$base_commit" "$result_commit" "$install_state" "$next_event" <<'PY'
           import json,sys
-          p,created,status,verdict,sha=sys.argv[1:]
+          p,created,status,verdict,sha,base,result,install_state,next_event=sys.argv[1:]
           d={
             "schema_version":1,
             "channel":"FXD-824F35830C8A",
@@ -83,22 +220,79 @@ jobs:
             "session_id":"GH-SELFHOSTED-GENERIC-WRITE-BOOTSTRAP",
             "task_id":"WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810",
             "created_at":created,
-            "base_commit":"63b1b10637c2fa1acfcb03c94e930b71088d9221",
-            "result_commit":"63b1b10637c2fa1acfcb03c94e930b71088d9221",
+            "base_commit":base,
+            "result_commit":result,
             "status":status,
             "packet_name":"result-WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810.zip",
             "packet_sha256":sha,
-            "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;next_event=" + ("GENERIC_WRITE_LANE_CERT" if status=="PASS" else "SOL_ORCHESTRATOR_TRIAGE")
+            "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;install_state={install_state};next_event={next_event}"
           }
-          open(p,"w").write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
+          open(p,"w",encoding="utf-8").write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
           PY
-          "$DRAFT" create-result-draft "$result" "$packet"
+
+          set +e
+          "$DRAFT" create-result-draft "$result" "$packet" \
+            >"$RUN_DIR/publisher.stdout" 2>"$RUN_DIR/publisher.stderr"
+          publisher_rc=$?
+          set -e
+          printf '%s\n' "$publisher_rc" > "$RUN_DIR/publisher.rc"
+
+          packet_b64="$(base64 < "$packet" | tr -d '\n')"
+          result_b64="$(base64 < "$result" | tr -d '\n')"
+          printf 'packet_b64=%s\n' "$packet_b64" >> "$GITHUB_OUTPUT"
+          printf 'result_b64=%s\n' "$result_b64" >> "$GITHUB_OUTPUT"
+          printf 'packet_sha256=%s\n' "$sha" >> "$GITHUB_OUTPUT"
+          printf 'publisher_rc=%s\n' "$publisher_rc" >> "$GITHUB_OUTPUT"
+
+          cat "$RUN_DIR/publisher.stdout"
+          cat "$RUN_DIR/publisher.stderr" >&2
+          test "$publisher_rc" = 0
 
       - name: Enforce bootstrap success
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${RUN_DIR:-}"
+          : "${RUN_DIR:?RUN_DIR missing}"
+          test "$(cat "$RUN_DIR/align.rc")" = 0
           test "$(cat "$RUN_DIR/install.rc")" = 0
           grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"
+          test "$(cat "$RUN_DIR/publisher.rc")" = 0
+
+  mirror-result:
+    name: Mirror bootstrap evidence for connector
+    if: always() && needs.bootstrap.outputs.packet_b64 != '' && needs.bootstrap.outputs.result_b64 != ''
+    needs: bootstrap
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Rebuild and verify exact result evidence
+        shell: bash
+        env:
+          PACKET_B64: ${{ needs.bootstrap.outputs.packet_b64 }}
+          RESULT_B64: ${{ needs.bootstrap.outputs.result_b64 }}
+          EXPECTED_SHA256: ${{ needs.bootstrap.outputs.packet_sha256 }}
+          PUBLISHER_RC: ${{ needs.bootstrap.outputs.publisher_rc }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          printf '%s' "$PACKET_B64" | base64 -d > "evidence/result-${{ env.TASK_ID }}.zip"
+          printf '%s' "$RESULT_B64" | base64 -d > evidence/result.json
+          actual="$(sha256sum "evidence/result-${{ env.TASK_ID }}.zip" | awk '{print $1}')"
+          test "$actual" = "$EXPECTED_SHA256"
+          printf 'packet_sha256=%s\npublisher_rc=%s\ntransport=github-actions-artifact\n' \
+            "$actual" "$PUBLISHER_RC" > evidence/MANIFEST.txt
+        env:
+          TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
+          PACKET_B64: ${{ needs.bootstrap.outputs.packet_b64 }}
+          RESULT_B64: ${{ needs.bootstrap.outputs.result_b64 }}
+          EXPECTED_SHA256: ${{ needs.bootstrap.outputs.packet_sha256 }}
+          PUBLISHER_RC: ${{ needs.bootstrap.outputs.publisher_rc }}
+
+      - name: Upload connector-readable evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: generic-write-bootstrap-${{ github.sha }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30
