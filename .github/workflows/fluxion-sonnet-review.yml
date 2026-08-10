@@ -26,6 +26,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  control-static:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      ACTIONLINT_VERSION: v1.7.12
+      ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+    steps:
+      - name: Fetch exact PR-head control files
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          set -euo pipefail
+          test "$HEAD_REPO" = "$GITHUB_REPOSITORY" || {
+            echo "BLOCKED: control-plane review requires same-repository head" >&2
+            exit 2
+          }
+          mkdir -p .github/workflows .github/bootstrap
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HEAD_SHA}"
+          for path in \
+            .github/workflows/fluxion-generic-write-bootstrap.yml \
+            .github/workflows/fluxion-sonnet-review.yml \
+            .github/bootstrap/install-generic-write-lane.zsh \
+            .github/bootstrap/fluxion-generic-write-executor \
+            .github/bootstrap/fluxion-draft-bus-executor
+          do
+            curl --fail --silent --show-error --location --retry 3 \
+              "$base/$path" --output "$path"
+            test -s "$path"
+          done
+
+      - name: Install content-addressed actionlint
+        run: |
+          set -euo pipefail
+          archive="/tmp/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          url="https://github.com/rhysd/actionlint/releases/download/${ACTIONLINT_VERSION}/actionlint_1.7.12_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 "$url" --output "$archive"
+          printf '%s  %s\n' "$ACTIONLINT_SHA256" "$archive" | sha256sum --check --strict
+          tar -xzf "$archive" -C /tmp actionlint
+          test -x /tmp/actionlint
+          /tmp/actionlint -version
+
+      - name: Validate workflow and bootstrap syntax
+        run: |
+          set -euo pipefail
+          cat > .github/actionlint.yaml <<'EOF'
+          self-hosted-runner:
+            labels:
+              - macbook
+              - fluxion
+          EOF
+          /tmp/actionlint \
+            .github/workflows/fluxion-generic-write-bootstrap.yml \
+            .github/workflows/fluxion-sonnet-review.yml
+          command -v zsh >/dev/null
+          zsh -n .github/bootstrap/install-generic-write-lane.zsh
+          zsh -n .github/bootstrap/fluxion-generic-write-executor
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('.github/bootstrap/fluxion-draft-bus-executor')
+          compile(p.read_text(encoding='utf-8'), str(p), 'exec')
+          PY
+          test "$(sha256sum .github/bootstrap/fluxion-generic-write-executor | awk '{print $1}')" = \
+            "9a2ce8cdf594f104309f54ec488995af4631f75c5203b6dbe3d605bbafa4f154"
+          test "$(sha256sum .github/bootstrap/fluxion-draft-bus-executor | awk '{print $1}')" = \
+            "c33798d39023558918636674d5192ba702565f70b9f21d2589e4a9acb824adae"
+          echo "CONTROL_STATIC=PASS"
+
   control-selftest:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
@@ -174,7 +243,7 @@ jobs:
 
       - name: Upload review evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: fluxion-sonnet-pr-${{ steps.target.outputs.pr_number }}-${{ steps.target.outputs.head_sha }}
           path: |
