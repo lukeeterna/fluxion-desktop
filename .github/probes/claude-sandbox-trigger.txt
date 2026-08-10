@@ -1,0 +1,3 @@
+schema_version=1
+purpose=claude-sandbox-negative-probe
+base=0d44f0d9d0ac440abafa069acc2d26929209a449
