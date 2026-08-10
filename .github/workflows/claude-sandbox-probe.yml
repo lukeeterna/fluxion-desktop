@@ -5,12 +5,19 @@ on:
     branches: [probe/claude-sandbox-21110-20260810]
     paths:
       - '.github/workflows/claude-sandbox-probe.yml'
+  pull_request:
+    branches: [probe/claude-sandbox-21110-20260810]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
 
 jobs:
   sandbox-probe:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.head.ref == 'probe/claude-sandbox-21110-trigger')
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 8
     steps:
