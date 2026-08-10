@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+# SECURITY POLICY: jobs that execute PR-head control-plane code are intentionally
+# restricted to same-repository PRs authored by the repository owner. Non-owner
+# or fork PRs cannot enter this privileged control-plane review path; proposed
+# control-plane changes must be re-authored by the owner onto a same-repo branch.
 concurrency:
   group: fluxion-sonnet-${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}
   cancel-in-progress: true
@@ -202,8 +206,6 @@ jobs:
       evidence_b64: ${{ steps.canary.outputs.evidence_b64 }}
     steps:
       - name: Install pinned Claude Code 2.1.110
-        env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           set -euo pipefail
           curl -fsSL https://claude.ai/install.sh | bash -s -- 2.1.110
