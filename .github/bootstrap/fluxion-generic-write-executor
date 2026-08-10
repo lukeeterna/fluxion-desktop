@@ -295,7 +295,7 @@ RC=$?
 set -e
 echo "$RC" > "$RUN/claude.rc"
 
-python3 - "$RUN/claude.stream.jsonl" "$RUN/claude.final.txt" "$RUN/model.txt" "$RUN/tool-use.txt" <<'PY'
+python3 - "$RUN/claude.stream.jsonl" "$RUN/claude.final.txt" "$RUN/model.txt" "$RUN/tool-use.txt" <<'PY' || fail "forbidden tool use or stream parse error"
 import json,sys
 stream,finalp,modelp,toolp=sys.argv[1:]
 final=""
@@ -333,7 +333,7 @@ grep -qi 'sonnet' "$RUN/model.txt" || fail "model not Sonnet"
 [ "$(git -C "$WT" branch --show-current)" = "$BRANCH" ] || fail "worktree branch mismatch"
 git -C "$WT" diff --cached --quiet || fail "Claude created staged changes"
 
-python3 - "$WT" "$RUN/changed_paths.txt" <<'PY'
+python3 - "$WT" "$RUN/changed_paths.txt" <<'PY' || fail "unsafe changed path shape"
 import subprocess,sys
 wt,out=sys.argv[1:]
 raw=subprocess.check_output(["git","-C",wt,"status","--porcelain"], text=True)
