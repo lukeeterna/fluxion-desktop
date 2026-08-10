@@ -7,7 +7,7 @@ EXPECTED_ROUTER_OLD_SHA="318021ca9ef20a95013640fddf83709d5323b406f559c54f63a83e2
 EXPECTED_RO_SHA="563abeccf36ef3de2973fabdfbf1b75c7d34d2347872b9b098e40e63d40b26a9"
 EXPECTED_GENERIC_SRC_BLOB="a96d94cdad206f76cf67508d839b2d0bc0eb94d4"
 EXPECTED_ROUTER_SRC_SHA="967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33"
-EXPECTED_PUBLISH_GATE_SHA="5c8343357fbafb547c47de0203ecfe9a10880b1602534de5b4372c805e94da1e"
+EXPECTED_PUBLISH_GATE_BLOB="bd51a3da0f3276704f120ab9963abddc844e870d"
 
 SRC="${1:?bootstrap source dir required}"
 GEN_SRC="$SRC/fluxion-generic-write-executor"
@@ -59,7 +59,7 @@ echo "EXPECTED_BASE=$EXPECTED_BASE"
 [ -f "$GEN_SRC" ] && [ -f "$ROUTER_SRC" ] && [ -f "$GATE_SRC" ] || { echo "STOP: bootstrap sources missing"; exit 2; }
 [ "$(blob "$GEN_SRC")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || { echo "STOP: generic source blob mismatch"; exit 2; }
 [ "$(sha "$ROUTER_SRC")" = "$EXPECTED_ROUTER_SRC_SHA" ] || { echo "STOP: router source SHA mismatch"; exit 2; }
-[ "$(sha "$GATE_SRC")" = "$EXPECTED_PUBLISH_GATE_SHA" ] || { echo "STOP: publish gate source SHA mismatch"; exit 2; }
+[ "$(blob "$GATE_SRC")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || { echo "STOP: publish gate source blob mismatch"; exit 2; }
 
 [ -x "$EXEC" ] || { echo "STOP: current router missing"; exit 2; }
 [ -x "$RO" ] || { echo "STOP: RO core missing"; exit 2; }
@@ -82,19 +82,19 @@ CANON_STATUS="$(git -C "$REPO" status --porcelain)"
 RO_SHA="$(sha "$RO")"
 ROUTER_SHA="$(sha "$EXEC")"
 GEN_BLOB="none"; [ -f "$GEN" ] && GEN_BLOB="$(blob "$GEN")"
-GATE_SHA="none"; [ -f "$GATE" ] && GATE_SHA="$(sha "$GATE")"
+GATE_BLOB="none"; [ -f "$GATE" ] && GATE_BLOB="$(blob "$GATE")"
 MARKER_STATE="absent"; [ -s "$ACTIVATED" ] && MARKER_STATE="present"
 
 echo "RO_CORE_SHA=$RO_SHA"
 echo "ROUTER_SHA_BEFORE=$ROUTER_SHA"
 echo "GENERIC_BLOB_BEFORE=$GEN_BLOB"
-echo "PUBLISH_GATE_SHA_BEFORE=$GATE_SHA"
+echo "PUBLISH_GATE_BLOB_BEFORE=$GATE_BLOB"
 echo "ACTIVATION_MARKER=$MARKER_STATE"
 [ "$RO_SHA" = "$EXPECTED_RO_SHA" ] || { echo "STOP: RO core SHA inatteso"; exit 2; }
 
-if [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_OLD_SHA" ] && [ "$GEN_BLOB" = "none" ] && [ "$GATE_SHA" = "none" ] && [ "$MARKER_STATE" = "absent" ]; then
+if [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_OLD_SHA" ] && [ "$GEN_BLOB" = "none" ] && [ "$GATE_BLOB" = "none" ] && [ "$MARKER_STATE" = "absent" ]; then
   INSTALL_STATE="CLEAN_OLD"
-elif [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_SRC_SHA" ] && [ "$GEN_BLOB" = "$EXPECTED_GENERIC_SRC_BLOB" ] && [ "$GATE_SHA" = "$EXPECTED_PUBLISH_GATE_SHA" ] && [ "$MARKER_STATE" = "present" ]; then
+elif [ "$ROUTER_SHA" = "$EXPECTED_ROUTER_SRC_SHA" ] && [ "$GEN_BLOB" = "$EXPECTED_GENERIC_SRC_BLOB" ] && [ "$GATE_BLOB" = "$EXPECTED_PUBLISH_GATE_BLOB" ] && [ "$MARKER_STATE" = "present" ]; then
   INSTALL_STATE="ALREADY_INSTALLED_EXACT"
 else
   echo "INSTALL_STATE=BLOCKED_MIXED_STATE"
@@ -108,7 +108,7 @@ verify_local() {
   python3 -m py_compile "$EXEC" "$GATE"
   [ "$(blob "$GEN")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || return 2
   [ "$(sha "$EXEC")" = "$EXPECTED_ROUTER_SRC_SHA" ] || return 2
-  [ "$(sha "$GATE")" = "$EXPECTED_PUBLISH_GATE_SHA" ] || return 2
+  [ "$(blob "$GATE")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || return 2
   [ "$(sha "$RO")" = "$EXPECTED_RO_SHA" ] || return 2
   [ "$(git -C "$REPO" rev-parse HEAD)" = "$CANON_HEAD" ] || return 2
   [ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$ORIGIN_HEAD" ] || return 2
@@ -132,7 +132,7 @@ install -m 700 "$ROUTER_SRC" "$ROUTER_TMP"
 install -m 700 "$GATE_SRC" "$GATE_TMP"
 [ "$(blob "$GEN_TMP")" = "$EXPECTED_GENERIC_SRC_BLOB" ] || { echo "STOP: staged generic blob mismatch"; exit 2; }
 [ "$(sha "$ROUTER_TMP")" = "$EXPECTED_ROUTER_SRC_SHA" ] || { echo "STOP: staged router SHA mismatch"; exit 2; }
-[ "$(sha "$GATE_TMP")" = "$EXPECTED_PUBLISH_GATE_SHA" ] || { echo "STOP: staged gate SHA mismatch"; exit 2; }
+[ "$(blob "$GATE_TMP")" = "$EXPECTED_PUBLISH_GATE_BLOB" ] || { echo "STOP: staged gate blob mismatch"; exit 2; }
 /bin/zsh -n "$GEN_TMP"
 python3 -m py_compile "$ROUTER_TMP" "$GATE_TMP"
 
@@ -164,6 +164,7 @@ router_sha_after=$(sha "$EXEC")
 generic_write_sha=$(sha "$GEN")
 generic_write_blob=$(blob "$GEN")
 trusted_publish_gate_sha=$(sha "$GATE")
+trusted_publish_gate_blob=$(blob "$GATE")
 router_backup=$BACKUP
 profiles=FIX_SCOPED_BUG,APPLY_EXISTING_UNIT
 publisher_boundary=trusted-non-llm
@@ -178,6 +179,7 @@ echo "GENERIC_WRITE_SHA=$(sha "$GEN")"
 echo "GENERIC_WRITE_BLOB=$(blob "$GEN")"
 echo "ROUTER_SHA_AFTER=$(sha "$EXEC")"
 echo "TRUSTED_PUBLISH_GATE_SHA=$(sha "$GATE")"
+echo "TRUSTED_PUBLISH_GATE_BLOB=$(blob "$GATE")"
 echo "GENERIC_WRITE_LANE_INSTALLED=YES"
 echo "TRUSTED_PUBLISH_GATE_INSTALLED=YES"
 echo "RO_CORE_PRESERVED=YES"

@@ -35,7 +35,7 @@ jobs:
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
       GENERIC_BLOB_SHA: a96d94cdad206f76cf67508d839b2d0bc0eb94d4
       ROUTER_SHA256: 967da5bec0e13413d0706ce03bd09bdb1f77e5b323159f5b2b9a3d994bf40d33
-      PUBLISH_GATE_SHA256: 5c8343357fbafb547c47de0203ecfe9a10880b1602534de5b4372c805e94da1e
+      PUBLISH_GATE_BLOB_SHA: bd51a3da0f3276704f120ab9963abddc844e870d
     steps:
       - name: Fetch exact PR-head control files
         env:
@@ -100,7 +100,7 @@ jobs:
 
           test "$(git hash-object --no-filters .github/bootstrap/fluxion-generic-write-executor)" = "$GENERIC_BLOB_SHA"
           test "$(sha256sum .github/bootstrap/fluxion-draft-bus-executor | awk '{print $1}')" = "$ROUTER_SHA256"
-          test "$(sha256sum .github/bootstrap/fluxion-trusted-publish-gate.py | awk '{print $1}')" = "$PUBLISH_GATE_SHA256"
+          test "$(git hash-object --no-filters .github/bootstrap/fluxion-trusted-publish-gate.py)" = "$PUBLISH_GATE_BLOB_SHA"
           echo "EXECUTOR_INTEGRITY=PASS"
 
           grep -F -- '--tools Read,Edit,Write' .github/bootstrap/fluxion-generic-write-executor
