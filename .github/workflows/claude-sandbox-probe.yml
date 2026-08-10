@@ -1,0 +1,123 @@
+name: FLUXION Claude Sandbox Probe 2.1.110
+
+on:
+  push:
+    branches: [probe/claude-sandbox-21110-20260810]
+    paths:
+      - '.github/workflows/claude-sandbox-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Probe pinned Claude sandbox boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLAUDE="$HOME/.npm-global/bin/claude"
+          test -x "$CLAUDE"
+          version="$($CLAUDE --version 2>&1)"
+          printf 'CLAUDE_VERSION=%s\n' "$version"
+          printf '%s\n' "$version" | grep -F '2.1.110'
+
+          WORK="$RUNNER_TEMP/fluxion-sandbox-probe-${GITHUB_RUN_ID}"
+          mkdir -p "$WORK"
+          cd "$WORK"
+
+          SETTINGS="$(python3 - "$WORK" <<'PY'
+          import json,sys
+          work=sys.argv[1]
+          print(json.dumps({
+            'autoMemoryEnabled': False,
+            'sandbox': {
+              'enabled': True,
+              'failIfUnavailable': True,
+              'autoAllowBashIfSandboxed': True,
+              'allowUnsandboxedCommands': False,
+              'excludedCommands': [],
+              'filesystem': {
+                'denyRead': ['~/'],
+                'allowRead': [work],
+              },
+              'network': {
+                'allowedDomains': [],
+                'allowUnixSockets': [],
+                'allowLocalBinding': False,
+              },
+            },
+          }, separators=(',',':')))
+          PY
+          )"
+
+          PROBE_CMD="set +e; printf 'ok\\n' > inside.txt; inside_rc=\$?; /usr/bin/curl -fsS --connect-timeout 2 https://example.com >/dev/null 2>&1; network_rc=\$?; /usr/bin/shasum -a 256 \"$HOME/.local/bin/fluxion-draft-bus-secure\" >/dev/null 2>&1; publisher_rc=\$?; /usr/bin/security list-keychains >/dev/null 2>&1; keychain_rc=\$?; printf 'INSIDE_RC=%s NETWORK_RC=%s PUBLISHER_RC=%s KEYCHAIN_RC=%s\\n' \"\$inside_rc\" \"\$network_rc\" \"\$publisher_rc\" \"\$keychain_rc\""
+          PROMPT="Run exactly one Bash tool call with this exact command, without adding, removing, reordering or retrying anything: $PROBE_CMD . Then return only the final status line printed by that command."
+
+          set +e
+          /usr/bin/env -i \
+            HOME="$HOME" USER="$USER" PATH="$PATH" TMPDIR="$TMPDIR" \
+            DISABLE_AUTOUPDATER=1 CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 \
+            "$CLAUDE" -p \
+              --setting-sources '' \
+              --settings "$SETTINGS" \
+              --strict-mcp-config \
+              --mcp-config '{"mcpServers":{}}' \
+              --model sonnet \
+              --permission-mode dontAsk \
+              --tools Bash \
+              --allowedTools Bash \
+              --disallowedTools Read,Edit,Write,Grep,Glob,NotebookEdit,Agent,WebFetch,WebSearch \
+              --disable-slash-commands \
+              --no-session-persistence \
+              --max-turns 6 \
+              --output-format stream-json \
+              --verbose \
+              "$PROMPT" \
+              > claude.stream.jsonl 2> claude.stderr
+          rc=$?
+          set -e
+          printf 'CLAUDE_RC=%s\n' "$rc"
+          cat claude.stderr >&2
+          test "$rc" = 0
+
+          python3 - "$PROBE_CMD" claude.stream.jsonl <<'PY'
+          import json,sys
+          expected=sys.argv[1]
+          path=sys.argv[2]
+          bash=[]
+          final=''
+          model=''
+          for raw in open(path, encoding='utf-8', errors='replace'):
+              try: obj=json.loads(raw)
+              except Exception: continue
+              if obj.get('type')=='system' and obj.get('subtype')=='init':
+                  model=str(obj.get('model') or '')
+              if obj.get('type')=='assistant':
+                  msg=obj.get('message') or {}
+                  for part in msg.get('content') or []:
+                      if isinstance(part,dict) and part.get('type')=='tool_use' and part.get('name')=='Bash':
+                          bash.append((part.get('input') or {}).get('command'))
+              if obj.get('type')=='result':
+                  final=str(obj.get('result') or '')
+          print('MODEL='+model)
+          print('BASH_CALL_COUNT='+str(len(bash)))
+          print('FINAL='+final.replace('\n','\\n'))
+          if bash != [expected]:
+              raise SystemExit('BLOCKED: Bash command did not exactly match sealed probe')
+          if 'INSIDE_RC=0' not in final:
+              raise SystemExit('BLOCKED: in-workdir write did not succeed')
+          values={}
+          for token in final.replace('\n',' ').split():
+              if '=' in token:
+                  k,v=token.split('=',1)
+                  if k.endswith('_RC'):
+                      try: values[k]=int(v)
+                      except ValueError: pass
+          for key in ('NETWORK_RC','PUBLISHER_RC','KEYCHAIN_RC'):
+              if values.get(key,0)==0:
+                  raise SystemExit(f'BLOCKED: {key} unexpectedly succeeded')
+          print('SANDBOX_NEGATIVE_PROBE=PASS')
+          PY
