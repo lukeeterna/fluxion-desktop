@@ -81,6 +81,34 @@ def atomic_attestation(path:Path,candidate:str,task_id:str,evidence_sha:str):
         try: os.unlink(tmp)
         except FileNotFoundError: pass
 
+def load_attestation(path:Path)->tuple[str,str,str]:
+    if not path.is_file(): raise Blocked("APPROVAL_FILE_MISSING")
+    values={}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        key,sep,value=raw.partition("=")
+        if sep and key: values[key]=value
+    approved=require_hex("APPROVED_SHA",values.get("APPROVED_SHA",""),HEX40)
+    evidence=require_hex("EVIDENCE_SHA256",values.get("EVIDENCE_SHA256",""),HEX64)
+    task=values.get("APPROVED_TASK","")
+    if not task or len(task)>160: raise Blocked("APPROVED_TASK invalid")
+    return approved,task,evidence
+
+def assert_approved(a)->int:
+    try:
+        repo=Path(a.repo).resolve()
+        if not (repo/".git").exists(): raise Blocked("repo is not git working tree")
+        approved,task,evidence=load_attestation(Path(a.approval_file).resolve())
+        current=fetch_master(repo)
+        if current!=approved: raise Blocked("UNATTESTED_MASTER")
+        print(f"APPROVED_SHA={approved}")
+        print(f"APPROVED_TASK={task}")
+        print(f"EVIDENCE_SHA256={evidence}")
+        print("APPROVED_MASTER=PASS")
+        return 0
+    except Blocked as e:
+        print(f"APPROVED_MASTER=BLOCKED reason={e}",file=sys.stderr)
+        return 2
+
 def publish(a)->int:
     try:
         repo=Path(a.repo).resolve()
@@ -168,6 +196,10 @@ def _invoke(script:Path,work:Path,base:str,candidate:str,allowed:list[str],prefi
     p=subprocess.run(argv,text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
     return p,approval
 
+def _assert_invoke(script:Path,work:Path,approval:Path):
+    return subprocess.run([sys.executable,str(script),"--assert-approved","--repo",str(work),"--approval-file",str(approval)],
+                          text=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
+
 def self_test()->int:
     script=Path(__file__).resolve()
     with tempfile.TemporaryDirectory(prefix="fluxion-publish-canary-") as td:
@@ -179,8 +211,25 @@ def self_test()->int:
         assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==candidate
         att=approval.read_text(encoding="utf-8")
         assert f"APPROVED_SHA={candidate}" in att
+        ap=_assert_invoke(script,work,approval)
+        assert ap.returncode==0, ap.stderr
+        assert "APPROVED_MASTER=PASS" in ap.stdout
         print("TRUSTED_PUBLISHER_PRESENT=PASS")
         print("TRUSTED_PUBLISH_POSITIVE=PASS")
+
+        other=root/"positive-unattested"; _cmd(root,"git","clone",str(origin),str(other))
+        _cmd(other,"git","config","user.name","FLUXION Canary"); _cmd(other,"git","config","user.email","canary@invalid.example")
+        (other/"unattested.txt").write_text("unattested\n",encoding="utf-8")
+        _cmd(other,"git","add","unattested.txt"); _cmd(other,"git","commit","-m","unattested master")
+        unattested=_cmd(other,"git","rev-parse","HEAD")
+        _cmd(other,"git","push","origin","master")
+        approval_before=approval.read_bytes()
+        ap=_assert_invoke(script,work,approval)
+        assert ap.returncode==2
+        assert "UNATTESTED_MASTER" in ap.stderr
+        assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==unattested
+        assert approval.read_bytes()==approval_before
+        print("UNATTESTED_MASTER_BLOCKS=PASS")
 
         origin,work,base,candidate=_fixture(root,"wrongbase")
         p,_=_invoke(script,work,"0"*40,candidate,["allowed.txt"],"wrongbase")
@@ -234,6 +283,7 @@ def self_test()->int:
 def parser():
     ap=argparse.ArgumentParser()
     ap.add_argument("--self-test",action="store_true")
+    ap.add_argument("--assert-approved",action="store_true")
     for name in ("repo","expected-base-sha","candidate-sha","task-id","allowed-paths-json","writer-result","writer-result-sha","verifier-result","verifier-result-sha","evidence","evidence-sha256","approval-file"):
         ap.add_argument("--"+name)
     return ap
@@ -241,7 +291,11 @@ def parser():
 def main():
     a=parser().parse_args()
     if a.self_test: return self_test()
-    missing=[k for k,v in vars(a).items() if k!="self_test" and not v]
+    if a.assert_approved:
+        if not a.repo or not a.approval_file:
+            print("APPROVED_MASTER=BLOCKED reason=missing repo or approval-file",file=sys.stderr); return 2
+        return assert_approved(a)
+    missing=[k for k,v in vars(a).items() if k not in {"self_test","assert_approved"} and not v]
     if missing:
         print("TRUSTED_PUBLISH_GATE=BLOCKED reason=missing arguments: "+",".join(missing),file=sys.stderr); return 2
     return publish(a)
