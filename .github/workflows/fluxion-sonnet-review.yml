@@ -42,7 +42,7 @@ jobs:
     env:
       ACTIONLINT_VERSION: v1.7.12
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
-      GENERIC_BLOB_SHA: c240e468d132a10ce09050add2a4300797112646
+      GENERIC_BLOB_SHA: 65f2b3d5a2d584d49c65f73c85bc01b1ce258003
       ROUTER_BLOB_SHA: e0a8074fadc9a536dce2af7992ee2849754f8c8a
       PUBLISH_GATE_BLOB_SHA: c91ab0af3948ff6c1105ec679e66abfd88c08a43
     steps:
@@ -114,7 +114,13 @@ jobs:
           grep -F -- 'PACKET_RETENTION_DAYS=365' .github/bootstrap/fluxion-generic-write-executor
           grep -F -- 'cleanup_worktree' .github/bootstrap/fluxion-generic-write-executor
           grep -F -- 'os.set_inheritable(lock_fd, True)' .github/bootstrap/fluxion-draft-bus-executor
+          grep -F -- 'generic-write-claude-pin.json' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'resolve_claude_runtime' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- '/usr/bin/codesign' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'EXPECTED_CLAUDE_VERSION="2.1.110"' .github/bootstrap/install-generic-write-lane.zsh
+          grep -F -- 'MUTATED=1' .github/bootstrap/install-generic-write-lane.zsh
           echo "WRITER_CAPABILITY_BOUNDARY=PASS"
+          echo "CLAUDE_RUNTIME_PIN=PASS"
           echo "WORKTREE_RETENTION_POLICY=PASS"
 
       - name: Prove router lock survives exec
@@ -189,7 +195,7 @@ jobs:
           set -euo pipefail
           python3 - "$HEAD_SHA" "$GITHUB_RUN_ID" > /tmp/control-static.json <<'PY'
           import json,sys
-          print(json.dumps({"schema_version":1,"kind":"CONTROL_STATIC_EVIDENCE","head_sha":sys.argv[1],"run_id":sys.argv[2],"status":"PASS","markers":["OWNER_PR_STATIC_AUTHORITY=PASS","ACTIONLINT=PASS","SYNTAX_COMPILE=PASS","EXECUTOR_INTEGRITY=PASS","WRITER_CAPABILITY_BOUNDARY=PASS","WORKTREE_RETENTION_POLICY=PASS","SINGLE_CONSUMER_FULL_DURATION=PASS","TRUSTED_PUBLISH_SELFTEST=PASS","UNATTESTED_MASTER_BLOCKS=PASS","POISON_QUARANTINE=PASS","UTC_TIMESTAMP_ORDER=PASS","CONTROL_STATIC=PASS"]},sort_keys=True,separators=(',',':')))
+          print(json.dumps({"schema_version":1,"kind":"CONTROL_STATIC_EVIDENCE","head_sha":sys.argv[1],"run_id":sys.argv[2],"status":"PASS","markers":["OWNER_PR_STATIC_AUTHORITY=PASS","ACTIONLINT=PASS","SYNTAX_COMPILE=PASS","EXECUTOR_INTEGRITY=PASS","WRITER_CAPABILITY_BOUNDARY=PASS","CLAUDE_RUNTIME_PIN=PASS","WORKTREE_RETENTION_POLICY=PASS","SINGLE_CONSUMER_FULL_DURATION=PASS","TRUSTED_PUBLISH_SELFTEST=PASS","UNATTESTED_MASTER_BLOCKS=PASS","POISON_QUARANTINE=PASS","UTC_TIMESTAMP_ORDER=PASS","CONTROL_STATIC=PASS"]},sort_keys=True,separators=(',',':')))
           PY
           printf 'evidence_b64=%s\n' "$(base64 -w0 /tmp/control-static.json)" >> "$GITHUB_OUTPUT"
 
@@ -343,8 +349,17 @@ jobs:
 
   independent-review:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login == github.repository_owner)
+      always() &&
+      (
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository &&
+          github.event.pull_request.user.login == github.repository_owner &&
+          needs.control-static.result == 'success' &&
+          needs.writer-capability-behavior.result == 'success'
+        )
+      )
     needs: [control-static, writer-capability-behavior]
     permissions:
       contents: read
@@ -411,6 +426,7 @@ jobs:
           python3 control/tools/fluxion_sonnet_reviewer.py prepare target artifacts artifacts/PR_META.json 2>&1 | tee artifacts/PREPARE.log
 
       - name: Seal independently observed execution evidence
+        if: github.event_name == 'pull_request'
         env:
           STATIC_B64: ${{ needs.control-static.outputs.evidence_b64 }}
           CAP_B64: ${{ needs.writer-capability-behavior.outputs.evidence_b64 }}
