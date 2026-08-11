@@ -98,19 +98,43 @@ jobs:
           echo "WRITER_CAN_LAUNCH_REVIEW=NO"
           echo "FRESH_REVIEW_ROOT_OF_TRUST=NO"
 
-      - name: Prove no Claude install or update path in Mac canary
+      - name: Prove trusted Mac behavioral canary wiring and E1 pin
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          text=Path('.github/bootstrap/fluxion-generic-write-executor').read_text(encoding='utf-8')
+          installer=Path('.github/bootstrap/install-generic-write-lane.zsh').read_text(encoding='utf-8')
+          generic=Path('.github/bootstrap/fluxion-generic-write-executor').read_text(encoding='utf-8')
           forbidden=['install'+'.'+'sh','npm'+' install','brew'+' install','curl'+'|'+'bash']
-          found=[x for x in forbidden if x in text]
-          if found: raise SystemExit('install/update path present in canary: '+','.join(found))
-          if 'EXPECTED_CLAUDE_VERSION="2.1.110"' not in text: raise SystemExit('exact Claude pin missing')
-          if 'codesign' not in text or "d.get('sha256')" not in text: raise SystemExit('path/version/sha/codesign attestation incomplete')
+          found=[x for x in forbidden if x in installer]
+          if found: raise SystemExit('install/update path present in behavioral canary: '+','.join(found))
+          required=[
+              'EXPECTED_CLAUDE_VERSION="2.1.110"',
+              'verify_pin_file "$CLAUDE_PIN" "$CLAUDE_REAL" "$CLAUDE_SHA"',
+              '/usr/bin/codesign --verify --verbose=2 "$CLAUDE_REAL"',
+              'WRITER_CAPABILITY_BEHAVIOR=PASS',
+              'OUTSIDE_WRITE_BLOCKED=PASS',
+              'BASH_CAPABILITY_ABSENT=PASS',
+              'REVIEW_NO_TOOLS_BEHAVIOR=PASS',
+              '--tools Read,Edit,Write',
+              '--tools ""',
+          ]
+          missing=[x for x in required if x not in installer]
+          if missing: raise SystemExit('behavioral canary wiring missing: '+','.join(missing))
+          if "d.get('sha256')" not in generic or '/usr/bin/codesign' not in generic:
+              raise SystemExit('steady-state Claude pin enforcement incomplete')
+          call='behavioral_canary || { echo "STOP: trusted Mac behavioral canary failed"; exit 2; }'
+          activation='date -u +%Y-%m-%dT%H:%M:%SZ > "$ACTIVATED"'
+          call_pos=installer.rfind(call)
+          activation_pos=installer.find(activation)
+          if call_pos < 0 or activation_pos < 0 or call_pos >= activation_pos:
+              raise SystemExit('activation is not strictly after behavioral canary')
+          if installer.count(call) < 2:
+              raise SystemExit('behavioral canary not enforced on install and exact reinstall')
           print('NO_INSTALL_PATH_IN_CANARY=PASS')
           print('CLAUDE_RUNTIME_PIN=PASS')
+          print('BEHAVIORAL_CANARY_WIRED_TO_TRUSTED_MAC=PASS')
+          print('ACTIVATION_AFTER_BEHAVIORAL_CANARY=PASS')
           PY
 
       - name: Prove trusted CAS gate and E2 semantics
@@ -192,6 +216,7 @@ jobs:
             'EXACT_CONTROL_FETCH=PASS','PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT','PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED',
             'SYNTAX_COMPILE=PASS','EXECUTOR_INTEGRITY=PASS','WRITER_CAPABILITY_BOUNDARY=PASS','WRITER_CAN_LAUNCH_REVIEW=NO',
             'FRESH_REVIEW_ROOT_OF_TRUST=NO','NO_INSTALL_PATH_IN_CANARY=PASS','CLAUDE_RUNTIME_PIN=PASS',
+            'BEHAVIORAL_CANARY_WIRED_TO_TRUSTED_MAC=PASS','ACTIVATION_AFTER_BEHAVIORAL_CANARY=PASS',
             'TRUSTED_PUBLISH_GATE_CANARIES=PASS','DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS','SINGLE_CONSUMER_FULL_DURATION=PASS',
             'POISON_QUARANTINE=PASS','UTC_TIMESTAMP_ORDER=PASS','CONTROL_STATIC=PASS'
           ]
