@@ -34,19 +34,13 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Verify PR workflow has no privileged verifier boundary
+      - name: Verify PR workflow has no privileged model boundary
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('.github/workflows/fluxion-sonnet-review.yml')
-          text=p.read_text(encoding='utf-8')
-          forbidden=[
-              'CLAUDE_CODE_'+'OAUTH_TOKEN',
-              'anthropics/'+'claude-code-action',
-              'secrets'+'.',
-              'self'+'-hosted',
-          ]
+          text=Path('.github/workflows/fluxion-sonnet-review.yml').read_text(encoding='utf-8')
+          forbidden=['CLAUDE_CODE_'+'OAUTH_TOKEN','anthropics/'+'claude-code-action','secrets'+'.','self'+'-hosted']
           found=[x for x in forbidden if x in text]
           if found: raise SystemExit('forbidden PR workflow authority: '+','.join(found))
           print('PR_WORKFLOW_CLAUDE_SECRET=ABSENT')
@@ -60,7 +54,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq zsh
 
-      - name: Syntax, integrity and verifier trust boundary
+      - name: Syntax, integrity and deterministic trust boundary
         run: |
           set -euo pipefail
           /bin/zsh -n .github/bootstrap/fluxion-generic-write-executor
@@ -79,30 +73,46 @@ jobs:
           test "$gate_blob" = "$expected_gate"
           echo "EXECUTOR_INTEGRITY=PASS"
 
+          grep -F -- 'EXPECTED_CLAUDE_VERSION="2.1.110"' .github/bootstrap/fluxion-generic-write-executor
           grep -F -- '--tools Read,Edit,Write' .github/bootstrap/fluxion-generic-write-executor
           grep -F -- '--tools ""' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- 'WRITER_CAN_LAUNCH_VERIFIER' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- 'VERIFIER_DOSSIER_PIN' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- 'VERIFIER_NO_MUTATION' .github/bootstrap/fluxion-generic-write-executor
-          grep -F -- 'dossier_sha256' .github/bootstrap/fluxion-trusted-publish-gate.py
-          grep -F -- "verifier.get('tools_used')" .github/bootstrap/fluxion-trusted-publish-gate.py
+          grep -F -- 'fresh_review_root_of_trust=no' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'FRESH_REVIEW_RED' .github/bootstrap/fluxion-trusted-publish-gate.py
+          grep -F -- 'DETERMINISTIC_REQUIRED' .github/bootstrap/fluxion-trusted-publish-gate.py
+          grep -F -- "review.get('tools_used')" .github/bootstrap/fluxion-trusted-publish-gate.py
           echo "WRITER_CAPABILITY_BOUNDARY=PASS"
-          echo "WRITER_CAN_LAUNCH_VERIFIER=NO"
-          echo "VERIFIER_TRUST_BOUNDARY=PASS"
+          echo "WRITER_CAN_LAUNCH_REVIEW=NO"
+          echo "FRESH_REVIEW_ROOT_OF_TRUST=NO"
 
-      - name: Prove trusted CAS gate including dossier pin
+      - name: Prove no Claude install or update path in Mac canary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          text=Path('.github/bootstrap/fluxion-generic-write-executor').read_text(encoding='utf-8')
+          forbidden=['install'+'.'+'sh','npm'+' install','brew'+' install','curl'+'|'+'bash']
+          found=[x for x in forbidden if x in text]
+          if found: raise SystemExit('install/update path present in canary: '+','.join(found))
+          if 'EXPECTED_CLAUDE_VERSION="2.1.110"' not in text: raise SystemExit('exact Claude pin missing')
+          if 'codesign' not in text or "d.get('sha256')" not in text: raise SystemExit('path/version/sha/codesign attestation incomplete')
+          print('NO_INSTALL_PATH_IN_CANARY=PASS')
+          print('CLAUDE_RUNTIME_PIN=PASS')
+          PY
+
+      - name: Prove trusted CAS gate and E2 semantics
         run: |
           set -euo pipefail
           python3 .github/bootstrap/fluxion-trusted-publish-gate.py --self-test | tee /tmp/publish-selftest.log
           for marker in \
             TRUSTED_PUBLISHER_PRESENT EXPECTED_BASE_ENFORCED NON_FORCE_PUBLISH \
             UNEXPECTED_ORIGIN_MOVE_BLOCKS CANDIDATE_EXACT_PARENT ALLOWED_PATHS_ENFORCED \
-            NON_FAST_FORWARD_BLOCKS UNATTESTED_MASTER_BLOCKS VERIFIER_PROVENANCE_ENFORCED \
-            VERIFIER_DOSSIER_PIN_ENFORCED TRUSTED_PUBLISH_SELFTEST
+            NON_FAST_FORWARD_BLOCKS UNATTESTED_MASTER_BLOCKS REVIEW_DOSSIER_PIN_ENFORCED \
+            FRESH_REVIEW_RED_BLOCKS FRESH_REVIEW_NON_RED_NOT_ROOT_OF_TRUST TRUSTED_PUBLISH_SELFTEST
           do
             grep -qx "$marker=PASS" /tmp/publish-selftest.log
           done
           echo "TRUSTED_PUBLISH_GATE_CANARIES=PASS"
+          echo "DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS"
 
       - name: Prove router full-duration lock
         run: |
@@ -165,10 +175,10 @@ jobs:
           python3 - "$head" > CONTROL_STATIC.json <<'PY'
           import json,sys
           markers=[
-            'PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT',
-            'PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED','SYNTAX_COMPILE=PASS','EXECUTOR_INTEGRITY=PASS',
-            'WRITER_CAPABILITY_BOUNDARY=PASS','WRITER_CAN_LAUNCH_VERIFIER=NO','VERIFIER_TRUST_BOUNDARY=PASS',
-            'TRUSTED_PUBLISH_GATE_CANARIES=PASS','SINGLE_CONSUMER_FULL_DURATION=PASS',
+            'PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT','PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED',
+            'SYNTAX_COMPILE=PASS','EXECUTOR_INTEGRITY=PASS','WRITER_CAPABILITY_BOUNDARY=PASS','WRITER_CAN_LAUNCH_REVIEW=NO',
+            'FRESH_REVIEW_ROOT_OF_TRUST=NO','NO_INSTALL_PATH_IN_CANARY=PASS','CLAUDE_RUNTIME_PIN=PASS',
+            'TRUSTED_PUBLISH_GATE_CANARIES=PASS','DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS','SINGLE_CONSUMER_FULL_DURATION=PASS',
             'POISON_QUARANTINE=PASS','UTC_TIMESTAMP_ORDER=PASS','CONTROL_STATIC=PASS'
           ]
           print(json.dumps({'schema_version':1,'kind':'CONTROL_STATIC_EVIDENCE','head_sha':sys.argv[1],'status':'PASS','markers':markers},sort_keys=True,separators=(',',':')))
