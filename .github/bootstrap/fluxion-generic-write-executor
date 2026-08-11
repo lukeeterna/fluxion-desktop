@@ -27,38 +27,23 @@ case "$QPATH" in "$ROOT/queue/"*.json) ;; *) echo "BLOCKED: task outside queue";
 mkdir -p "$PROCESSING" "$ARCHIVE" "$FAILED" "$RUNROOT" "$WTROOT" "$PACKET_ARCHIVE"
 chmod 700 "$PACKET_ARCHIVE" 2>/dev/null || true
 
-TASK_ID=""
-PROFILE=""
-BASE=""
+TASK_ID="" PROFILE="" BASE="" RUN="" PROC="" WT="" BRANCH="" CLAUDE=""
+WRITER_SESSION="" REVIEW_SESSION="" REVIEW_VERDICT="" CANDIDATE=""
+CANON_HEAD_BEFORE="" CANON_STATUS_BEFORE="" RESULT_COMMIT=""
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
-RUN=""
-PROC=""
-WT=""
-BRANCH=""
-CLAUDE=""
-WRITER_SESSION=""
-VERIFIER_SESSION=""
-CANDIDATE=""
-CANON_HEAD_BEFORE=""
-CANON_STATUS_BEFORE=""
-RESULT_COMMIT=""
-STATUS="BLOCKED"
-REASON="preflight"
+STATUS="BLOCKED" REASON="preflight"
 
-sha256() { shasum -a 256 "$1" | awk '{print $1}'; }
-
-json_get() {
+sha256(){ shasum -a 256 "$1" | awk '{print $1}'; }
+json_get(){
   python3 - "$1" "$2" <<'PY'
 import json,sys
-d=json.load(open(sys.argv[1],encoding='utf-8'))
-v=d.get(sys.argv[2])
+d=json.load(open(sys.argv[1],encoding='utf-8')); v=d.get(sys.argv[2])
 if v is None: raise SystemExit(2)
-if isinstance(v,(dict,list)): print(json.dumps(v,ensure_ascii=False,separators=(',',':')))
-else: print(v)
+print(json.dumps(v,ensure_ascii=False,separators=(',',':')) if isinstance(v,(dict,list)) else v)
 PY
 }
 
-resolve_claude_runtime() {
+resolve_claude_runtime(){
   python3 - "$CLAUDE_PIN" "$EXPECTED_CLAUDE_VERSION" <<'PY'
 import hashlib,json,os,re,subprocess,sys
 p,version=sys.argv[1:]
@@ -66,91 +51,89 @@ try:
     d=json.load(open(p,encoding='utf-8'))
     assert d.get('schema_version')==1 and d.get('version')==version
     expected=str(d.get('sha256') or ''); assert re.fullmatch(r'[0-9a-f]{64}',expected)
-    path=str(d.get('path') or '')
-    assert os.path.isabs(path) and os.path.realpath(path)==path and os.access(path,os.X_OK)
+    path=str(d.get('path') or ''); assert os.path.isabs(path) and os.path.realpath(path)==path and os.access(path,os.X_OK)
     h=hashlib.sha256()
     with open(path,'rb') as f:
-        for chunk in iter(lambda:f.read(1024*1024),b''): h.update(chunk)
+        for c in iter(lambda:f.read(1024*1024),b''): h.update(c)
     assert h.hexdigest()==expected
     v=subprocess.run([path,'--version'],text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,check=False)
     assert v.returncode==0 and v.stdout.strip().startswith(version)
     cs=subprocess.run(['/usr/bin/codesign','--verify','--verbose=2',path],stdout=subprocess.PIPE,stderr=subprocess.PIPE,check=False)
     assert cs.returncode==0
-except Exception:
-    raise SystemExit(2)
+except Exception: raise SystemExit(2)
 print(path)
 PY
 }
 
-ensure_evidence_files() {
-  touch "$RUN/task.json" "$RUN/task.txt" "$RUN/writer.stream.jsonl" "$RUN/writer.stderr" \
-    "$RUN/writer.final.txt" "$RUN/writer.rc" "$RUN/writer.model.txt" "$RUN/writer.tools.txt" \
-    "$RUN/writer-result.json" "$RUN/changed_paths.txt" "$RUN/staged-paths.txt" \
-    "$RUN/diff-check.stdout" "$RUN/diff-check.stderr" "$RUN/commit.stdout" "$RUN/commit.stderr" \
-    "$RUN/dossier.json" "$RUN/dossier.sha256" "$RUN/verifier.prompt.txt" \
-    "$RUN/verifier.stream.jsonl" "$RUN/verifier.stderr" "$RUN/verifier.final.txt" "$RUN/verifier.rc" \
-    "$RUN/verifier-result.json" "$RUN/evidence.json" "$RUN/publish.stdout" "$RUN/publish.stderr" \
-    "$RUN/align.stdout" "$RUN/align.stderr" "$RUN/validation.txt" "$RUN/branch.txt" "$RUN/worktree.txt"
+prove_no_install_path(){
+  local src="$0"
+  local p1="install"".""sh" p2="npm"" install" p3="brew"" install" p4="curl""|""bash"
+  for needle in "$p1" "$p2" "$p3" "$p4"; do
+    if grep -F -- "$needle" "$src" >/dev/null 2>&1; then return 2; fi
+  done
+  echo "NO_INSTALL_PATH_IN_CANARY=PASS"
 }
 
-cleanup_worktree() {
+ensure_evidence_files(){
+  touch "$RUN/task.json" "$RUN/task.txt" "$RUN/writer.stream.jsonl" "$RUN/writer.stderr" "$RUN/writer.final.txt" "$RUN/writer.rc" \
+    "$RUN/writer.model.txt" "$RUN/writer.tools.txt" "$RUN/writer-result.json" "$RUN/changed_paths.txt" "$RUN/staged-paths.txt" \
+    "$RUN/diff-check.stdout" "$RUN/diff-check.stderr" "$RUN/commit.stdout" "$RUN/commit.stderr" "$RUN/dossier.json" "$RUN/dossier.sha256" \
+    "$RUN/review.prompt.txt" "$RUN/review.stream.jsonl" "$RUN/review.stderr" "$RUN/review.final.txt" "$RUN/review.rc" "$RUN/fresh-review.json" \
+    "$RUN/evidence.json" "$RUN/publish.stdout" "$RUN/publish.stderr" "$RUN/approval.txt" "$RUN/align.stdout" "$RUN/align.stderr" \
+    "$RUN/validation.txt" "$RUN/branch.txt" "$RUN/worktree.txt"
+}
+
+cleanup_worktree(){
   [ -n "$WT" ] || return 0
   case "$WT" in "$WTROOT/"*) ;; *) return 2 ;; esac
-  if [ -e "$WT" ]; then git -C "$REPO" worktree remove --force "$WT" >/dev/null 2>&1 || return 2; fi
-  if [ -n "$BRANCH" ]; then git -C "$REPO" branch -D "$BRANCH" >/dev/null 2>&1 || true; fi
+  [ ! -e "$WT" ] || git -C "$REPO" worktree remove --force "$WT" >/dev/null 2>&1 || return 2
+  [ -z "$BRANCH" ] || git -C "$REPO" branch -D "$BRANCH" >/dev/null 2>&1 || true
 }
 
-cleanup_retention() {
+cleanup_retention(){
   python3 - "$RUNROOT" "$PACKET_ARCHIVE" "$RUN_RETENTION_DAYS" "$PACKET_RETENTION_DAYS" "${RUN:-}" <<'PY'
 import shutil,sys,time
 from pathlib import Path
-runroot=Path(sys.argv[1]).resolve(); packetroot=Path(sys.argv[2]).resolve()
-run_days=int(sys.argv[3]); packet_days=int(sys.argv[4]); current=Path(sys.argv[5]).resolve() if sys.argv[5] else None
-now=time.time()
+rr=Path(sys.argv[1]).resolve(); pr=Path(sys.argv[2]).resolve(); rd=int(sys.argv[3]); pd=int(sys.argv[4]); cur=Path(sys.argv[5]).resolve() if sys.argv[5] else None; now=time.time()
 def old(p,d):
     try:return now-p.stat().st_mtime>d*86400
     except FileNotFoundError:return False
-if runroot.is_dir():
-    for p in runroot.iterdir():
-        if p.is_dir() and not (current and p.resolve()==current) and old(p,run_days): shutil.rmtree(p)
-if packetroot.is_dir():
-    for d in packetroot.iterdir():
+if rr.is_dir():
+    for p in rr.iterdir():
+        if p.is_dir() and not(cur and p.resolve()==cur) and old(p,rd): shutil.rmtree(p)
+if pr.is_dir():
+    for d in pr.iterdir():
         if not d.is_dir(): continue
         for p in d.iterdir():
-            if p.is_file() and old(p,packet_days): p.unlink()
+            if p.is_file() and old(p,pd): p.unlink()
         try:d.rmdir()
         except OSError:pass
 PY
 }
 
-make_result() {
+make_result(){
   local verdict="ROSSO" next_event="SOL_ORCHESTRATOR_TRIAGE"
-  [ "$STATUS" = "PASS" ] && { verdict="VERDE"; next_event="SOL_ORCHESTRATOR_CONTINUE"; }
-  python3 - "$RUN/result.json" "$TASK_ID" "$BASE" "${RESULT_COMMIT:-$BASE}" "$STATUS" "$PROFILE" "$REASON" "$CHANNEL" "$verdict" "$next_event" "$WRITER_SESSION" "$VERIFIER_SESSION" <<'PY'
+  [ "$STATUS" = PASS ] && { verdict="VERDE"; next_event="SOL_ORCHESTRATOR_CONTINUE"; }
+  python3 - "$RUN/result.json" "$TASK_ID" "$BASE" "${RESULT_COMMIT:-$BASE}" "$STATUS" "$PROFILE" "$REASON" "$CHANNEL" "$verdict" "$next_event" "$WRITER_SESSION" "$REVIEW_SESSION" "$REVIEW_VERDICT" <<'PY'
 import datetime,json,sys
-p,task,base,result,status,profile,reason,channel,verdict,next_event,writer,verifier=sys.argv[1:]
-d={"schema_version":1,"channel":channel,"kind":"RESULT","session_id":"TRUSTED-LOCAL-GENERIC-WRITE",
-   "task_id":task,"created_at":datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace('+00:00','Z'),
-   "base_commit":base,"result_commit":result,"status":status,"packet_name":f"result-{task}.zip","packet_sha256":"PENDING",
-   "summary":f"executor=trusted-local-generic-write;profile={profile};verdict=VERDETTO: {verdict};fresh_verifier={'yes' if verifier else 'no'};cas_publish={'yes' if status=='PASS' else 'no'};next_event={next_event}"}
+p,task,base,result,status,profile,reason,channel,verdict,next_event,writer,review,review_verdict=sys.argv[1:]
+d={'schema_version':1,'channel':channel,'kind':'RESULT','session_id':'TRUSTED-LOCAL-GENERIC-WRITE','task_id':task,
+   'created_at':datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace('+00:00','Z'),
+   'base_commit':base,'result_commit':result,'status':status,'packet_name':f'result-{task}.zip','packet_sha256':'PENDING',
+   'summary':f'executor=trusted-local-generic-write;profile={profile};verdict=VERDETTO: {verdict};fresh_review={review_verdict or "NONE"};cas_publish={"yes" if status=="PASS" else "no"};next_event={next_event}'}
 if writer:d['writer_session_id']=writer
-if verifier:d['verifier_session_id']=verifier
+if review:d['fresh_review_session_id']=review
 if status!='PASS':d['reason']=reason[:500]
 open(p,'w',encoding='utf-8').write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
 PY
 }
 
-packetize_and_publish() {
+packetize_and_publish(){
   local packet="$RUN/result-$TASK_ID.zip"
-  (
-    cd "$RUN"
-    zip -q "$packet" task.json task.txt writer.stream.jsonl writer.stderr writer.final.txt writer.rc \
-      writer.model.txt writer.tools.txt writer-result.json changed_paths.txt staged-paths.txt \
-      diff-check.stdout diff-check.stderr commit.stdout commit.stderr dossier.json dossier.sha256 \
-      verifier.prompt.txt verifier.stream.jsonl verifier.stderr verifier.final.txt verifier.rc \
-      verifier-result.json evidence.json publish.stdout publish.stderr align.stdout align.stderr \
-      validation.txt branch.txt worktree.txt
-  )
+  (cd "$RUN" && zip -q "$packet" task.json task.txt writer.stream.jsonl writer.stderr writer.final.txt writer.rc writer.model.txt writer.tools.txt \
+    writer-result.json changed_paths.txt staged-paths.txt diff-check.stdout diff-check.stderr commit.stdout commit.stderr dossier.json dossier.sha256 \
+    review.prompt.txt review.stream.jsonl review.stderr review.final.txt review.rc fresh-review.json evidence.json publish.stdout publish.stderr approval.txt \
+    align.stdout align.stderr validation.txt branch.txt worktree.txt)
   local psha="$(sha256 "$packet")"
   python3 - "$RUN/result.json" "$psha" <<'PY'
 import json,sys
@@ -158,111 +141,80 @@ p,sha=sys.argv[1:]; d=json.load(open(p,encoding='utf-8')); d['packet_sha256']=sh
 open(p,'w',encoding='utf-8').write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+'\n')
 PY
   local cadir="$PACKET_ARCHIVE/$TASK_ID"; mkdir -p "$cadir"; chmod 700 "$cadir"
-  install -m 600 "$packet" "$cadir/$psha.zip"
-  install -m 600 "$RUN/result.json" "$cadir/$psha.result.json"
+  install -m 600 "$packet" "$cadir/$psha.zip"; install -m 600 "$RUN/result.json" "$cadir/$psha.result.json"
   "$DRAFT" create-result-draft "$RUN/result.json" "$packet" >"$RUN/draftbus.stdout" 2>"$RUN/draftbus.stderr"
 }
 
-fail() {
+fail(){
   REASON="$1"; STATUS="${2:-BLOCKED}"
   [ -n "$RUN" ] || RUN="$RUNROOT/unknown-$STAMP"; mkdir -p "$RUN"; ensure_evidence_files
-  [ -n "$TASK_ID" ] || TASK_ID="$(basename "$QPATH" .json)"
-  [ -n "$BASE" ] || BASE="0000000000000000000000000000000000000000"
-  [ -n "$RESULT_COMMIT" ] || RESULT_COMMIT="$BASE"
-  printf 'BLOCKED: %s\nVERDETTO: ROSSO\n' "$REASON" > "$RUN/writer.final.txt"
-  [ -s "$RUN/writer.rc" ] || echo 2 > "$RUN/writer.rc"
+  [ -n "$TASK_ID" ] || TASK_ID="$(basename "$QPATH" .json)"; [ -n "$BASE" ] || BASE="0000000000000000000000000000000000000000"; [ -n "$RESULT_COMMIT" ] || RESULT_COMMIT="$BASE"
+  printf 'BLOCKED: %s\nVERDETTO: ROSSO\n' "$REASON" > "$RUN/writer.final.txt"; [ -s "$RUN/writer.rc" ] || echo 2 > "$RUN/writer.rc"
   [ -f "$RUN/task.json" ] || cp "$QPATH" "$RUN/task.json" 2>/dev/null || true
   printf 'status=%s\nreason=%s\n' "$STATUS" "$REASON" > "$RUN/validation.txt"
-  make_result
-  [ -x "$DRAFT" ] && packetize_and_publish || true
+  make_result; [ -x "$DRAFT" ] && packetize_and_publish || true
   if [ -n "$PROC" ] && [ -f "$PROC" ] && [ ! -e "$FAILED/$(basename "$PROC")" ]; then mv "$PROC" "$FAILED/" || true; fi
   cleanup_worktree || true; cleanup_retention || true
-  echo "GENERIC_WRITE_BLOCKED=$REASON"
-  exit 2
+  echo "GENERIC_WRITE_BLOCKED=$REASON"; exit 2
 }
 
 CLAUDE="$(resolve_claude_runtime)" || { echo "BLOCKED: claude runtime pin invalid"; exit 2; }
+prove_no_install_path || { echo "BLOCKED: install/update path detected in canary"; exit 2; }
 [ -x "$DRAFT" ] || { echo "BLOCKED: trusted Gmail publisher missing"; exit 2; }
 [ -x "$GATE" ] || { echo "BLOCKED: trusted CAS gate missing"; exit 2; }
 [ -f "$ACTIVATED" ] || { echo "BLOCKED: activation marker missing"; exit 2; }
 
-TASK_ID="$(json_get "$QPATH" task_id)" || exit 2
-PROFILE="$(json_get "$QPATH" action_profile)" || exit 2
-BASE="$(json_get "$QPATH" base_commit)" || exit 2
-SLUG="$(printf '%s' "$TASK_ID" | tr -cs 'A-Za-z0-9._-' '-' | cut -c1-70)"
-RUN="$RUNROOT/$SLUG-$STAMP"; mkdir "$RUN"; ensure_evidence_files
+TASK_ID="$(json_get "$QPATH" task_id)" || exit 2; PROFILE="$(json_get "$QPATH" action_profile)" || exit 2; BASE="$(json_get "$QPATH" base_commit)" || exit 2
+SLUG="$(printf '%s' "$TASK_ID" | tr -cs 'A-Za-z0-9._-' '-' | cut -c1-70)"; RUN="$RUNROOT/$SLUG-$STAMP"; mkdir "$RUN"; ensure_evidence_files
 
 python3 - "$QPATH" "$CHANNEL" "$ACTIVATED" <<'PY' || fail "task validation failed"
 import datetime,json,re,sys
 p,channel,activated=sys.argv[1:]; d=json.load(open(p,encoding='utf-8'))
-required={"schema_version","channel","kind","session_id","task_id","created_at","base_commit","action_profile","specification","allowed_paths","forbidden_actions","required_tests","negative_tests","evidence_required","retry_limit","rollback","stop_conditions"}
-allowed=required|{"predecessor_result_sha256","roadmap_item"}
-assert isinstance(d,dict) and not(set(d)-allowed) and not(required-set(d))
-assert d['schema_version']==1 and d['kind']=='TASK' and d['channel']==channel
-assert d['action_profile'] in {'FIX_SCOPED_BUG','APPLY_EXISTING_UNIT'}
-assert re.fullmatch(r'[0-9a-f]{40}',str(d['base_commit']))
+required={'schema_version','channel','kind','session_id','task_id','created_at','base_commit','action_profile','specification','allowed_paths','forbidden_actions','required_tests','negative_tests','evidence_required','retry_limit','rollback','stop_conditions'}
+allowed=required|{'predecessor_result_sha256','roadmap_item'}
+assert isinstance(d,dict) and not(set(d)-allowed) and not(required-set(d)); assert d['schema_version']==1 and d['kind']=='TASK' and d['channel']==channel
+assert d['action_profile'] in {'FIX_SCOPED_BUG','APPLY_EXISTING_UNIT'} and re.fullmatch(r'[0-9a-f]{40}',str(d['base_commit']))
 assert isinstance(d['allowed_paths'],list) and d['allowed_paths'] and len(d['allowed_paths'])<=32
-for x in d['allowed_paths']:
-    assert isinstance(x,str) and x and not x.startswith('/') and '..' not in x.split('/') and '.git' not in x.split('/')
+for x in d['allowed_paths']: assert isinstance(x,str) and x and not x.startswith('/') and '..' not in x.split('/') and '.git' not in x.split('/')
 for k in ('forbidden_actions','required_tests','negative_tests','evidence_required','stop_conditions'): assert isinstance(d[k],list)
 assert d['retry_limit']==0
-cut=open(activated,encoding='utf-8').read().strip()
-def ts(x):return datetime.datetime.fromisoformat(x.replace('Z','+00:00'))
-assert ts(d['created_at'])>ts(cut)
+cut=open(activated,encoding='utf-8').read().strip(); ts=lambda x:datetime.datetime.fromisoformat(x.replace('Z','+00:00')); assert ts(d['created_at'])>ts(cut)
 PY
 
-[ "$(basename "$QPATH")" = "$TASK_ID.json" ] || fail "queue filename/task_id mismatch"
-PROC="$PROCESSING/$TASK_ID.json"; [ ! -e "$PROC" ] || fail "processing already exists"
-mv "$QPATH" "$PROC"; cp "$PROC" "$RUN/task.json"
-[ ! -e "$REPO/vos/STOP" ] || fail "vos/STOP present"
-REMOTE="$(git -C "$REPO" remote get-url origin)"
-case "$REMOTE" in https://github.com/lukeeterna/fluxion-desktop|https://github.com/lukeeterna/fluxion-desktop.git|git@github.com:lukeeterna/fluxion-desktop.git) ;; *) fail "origin mismatch" ;; esac
+[ "$(basename "$QPATH")" = "$TASK_ID.json" ] || fail "queue filename/task_id mismatch"; PROC="$PROCESSING/$TASK_ID.json"; [ ! -e "$PROC" ] || fail "processing already exists"
+mv "$QPATH" "$PROC"; cp "$PROC" "$RUN/task.json"; [ ! -e "$REPO/vos/STOP" ] || fail "vos/STOP present"
+REMOTE="$(git -C "$REPO" remote get-url origin)"; case "$REMOTE" in https://github.com/lukeeterna/fluxion-desktop|https://github.com/lukeeterna/fluxion-desktop.git|git@github.com:lukeeterna/fluxion-desktop.git) ;; *) fail "origin mismatch" ;; esac
 [ "$(git -C "$REPO" branch --show-current)" = master ] || fail "canonical branch is not master"
-CANON_HEAD_BEFORE="$(git -C "$REPO" rev-parse HEAD)"; CANON_STATUS_BEFORE="$(git -C "$REPO" status --porcelain)"
-[ "$CANON_HEAD_BEFORE" = "$BASE" ] || fail "canonical HEAD mismatch"
-git -C "$REPO" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master' || fail "trusted fetch failed"
-[ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$BASE" ] || fail "origin/master mismatch"
+CANON_HEAD_BEFORE="$(git -C "$REPO" rev-parse HEAD)"; CANON_STATUS_BEFORE="$(git -C "$REPO" status --porcelain)"; [ "$CANON_HEAD_BEFORE" = "$BASE" ] || fail "canonical HEAD mismatch"
+git -C "$REPO" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master' || fail "trusted fetch failed"; [ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$BASE" ] || fail "origin/master mismatch"
 python3 - "$PROC" <<'PY' || fail "dirty allowed-path overlap"
 import json,subprocess,sys
-t=json.load(open(sys.argv[1],encoding='utf-8')); allowed=set(t['allowed_paths'])
-raw=subprocess.check_output(['git','-C','/Volumes/MontereyT7/FLUXION','status','--porcelain'],text=True)
+t=json.load(open(sys.argv[1],encoding='utf-8')); allowed=set(t['allowed_paths']); raw=subprocess.check_output(['git','-C','/Volumes/MontereyT7/FLUXION','status','--porcelain'],text=True)
 for line in raw.splitlines():
-    p=line[3:]
-    if ' -> ' in p:p=p.split(' -> ',1)[1]
+    p=line[3:]; p=p.split(' -> ',1)[1] if ' -> ' in p else p
     if p in allowed: raise SystemExit(f'dirty allowed path: {p}')
 PY
 
-BRANCH="vos/auto-$SLUG-$STAMP"; WT="$WTROOT/$SLUG-$STAMP"
-echo "$BRANCH" > "$RUN/branch.txt"; echo "$WT" > "$RUN/worktree.txt"
+BRANCH="vos/auto-$SLUG-$STAMP"; WT="$WTROOT/$SLUG-$STAMP"; echo "$BRANCH" > "$RUN/branch.txt"; echo "$WT" > "$RUN/worktree.txt"
 git -C "$REPO" worktree add -b "$BRANCH" "$WT" "$BASE" >/dev/null 2>&1 || fail "git worktree add failed"
 SYSTEM="$WT/docs/judge/HEADLESS-CC-EXECUTOR-SYSTEM.md"; [ -f "$SYSTEM" ] || fail "HEADLESS system prompt absent"
 python3 - "$PROC" "$BRANCH" "$WT" > "$RUN/task.txt" <<'PY'
 import json,sys
 p,branch,wt=sys.argv[1:]; t=json.load(open(p,encoding='utf-8'))
-print(f'''Execute exactly the sealed FLUXION TASK JSON below.
-ROLE: Claude Code LOCAL writer only; model Sonnet. GPT-5.6 Sol owns architecture.
-WORKTREE: {wt}
-BRANCH: {branch}
-RULES: modify ONLY task.allowed_paths. Use only Read/Edit/Write. Bash, Git, process launch, network, Web, Agent, MCP and publisher are unavailable. Do not run tests or commits. Finish with exactly VERDETTO: VERDE if edits are complete, otherwise VERDETTO: ROSSO.
-SEALED TASK JSON:\n{json.dumps(t,ensure_ascii=False,indent=2,sort_keys=True)}''')
+print(f'''Execute exactly the sealed FLUXION TASK JSON below.\nROLE: Claude Code LOCAL writer only; Sonnet. GPT-5.6 Sol owns architecture.\nWORKTREE: {wt}\nBRANCH: {branch}\nRULES: modify ONLY task.allowed_paths using Read/Edit/Write. Bash, Git, process launch, network, Web, Agent, MCP, reviewer and publisher are unavailable. Do not run tests or commits. Finish exactly VERDETTO: VERDE if edits are complete, otherwise VERDETTO: ROSSO.\nSEALED TASK JSON:\n{json.dumps(t,ensure_ascii=False,indent=2,sort_keys=True)}''')
 PY
 SETTINGS="$(python3 - "$WT" <<'PY'
 import json,sys
-wt=sys.argv[1].rstrip('/')
-def rule(tool,suffix):return f"{tool}(//{wt.lstrip('/')}/{suffix})"
-allow=[rule(t,'**') for t in ('Read','Edit','Write')]; deny=[]
-for t in ('Read','Edit','Write'):deny += [rule(t,'.git'),rule(t,'.git/**')]
+wt=sys.argv[1].rstrip('/'); rule=lambda tool,suffix:f"{tool}(//{wt.lstrip('/')}/{suffix})"; allow=[rule(t,'**') for t in ('Read','Edit','Write')]; deny=[]
+for t in ('Read','Edit','Write'): deny += [rule(t,'.git'),rule(t,'.git/**')]
 print(json.dumps({'autoMemoryEnabled':False,'permissions':{'allow':allow,'deny':deny}},separators=(',',':')))
 PY
 )"
-
 cd "$WT"; export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null
 set +e
-"$CLAUDE" -p --setting-sources '' --settings "$SETTINGS" --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-  --model sonnet --system-prompt-file "$SYSTEM" --permission-mode dontAsk --tools Read,Edit,Write \
-  --disallowedTools Bash,Grep,Glob,NotebookEdit,Agent,WebFetch,WebSearch --disable-slash-commands \
-  --no-session-persistence --max-turns 120 --output-format stream-json --verbose "$(cat "$RUN/task.txt")" \
-  >"$RUN/writer.stream.jsonl" 2>"$RUN/writer.stderr"
+"$CLAUDE" -p --setting-sources '' --settings "$SETTINGS" --strict-mcp-config --mcp-config '{"mcpServers":{}}' --model sonnet --system-prompt-file "$SYSTEM" \
+  --permission-mode dontAsk --tools Read,Edit,Write --disallowedTools Bash,Grep,Glob,NotebookEdit,Agent,WebFetch,WebSearch --disable-slash-commands \
+  --no-session-persistence --max-turns 120 --output-format stream-json --verbose "$(cat "$RUN/task.txt")" >"$RUN/writer.stream.jsonl" 2>"$RUN/writer.stderr"
 WRC=$?; set -e; echo "$WRC" > "$RUN/writer.rc"
 python3 - "$RUN/writer.stream.jsonl" "$RUN/writer.final.txt" "$RUN/writer.model.txt" "$RUN/writer.tools.txt" "$RUN/writer.session.txt" <<'PY' || fail "writer stream invalid"
 import json,sys
@@ -270,168 +222,126 @@ stream,finalp,modelp,toolp,sessionp=sys.argv[1:]; final=''; model=''; session=''
 for line in open(stream,encoding='utf-8',errors='replace'):
     try:o=json.loads(line)
     except Exception:continue
-    if o.get('type')=='system' and o.get('subtype')=='init':
-        model=str(o.get('model') or ''); session=str(o.get('session_id') or o.get('sessionId') or '')
+    if o.get('type')=='system' and o.get('subtype')=='init': model=str(o.get('model') or ''); session=str(o.get('session_id') or o.get('sessionId') or '')
     if o.get('type')=='assistant':
         for part in (o.get('message') or {}).get('content') or []:
             if isinstance(part,dict) and part.get('type')=='tool_use': used.append(str(part.get('name') or ''))
-    if o.get('type')=='result':final=str(o.get('result') or '')
+    if o.get('type')=='result': final=str(o.get('result') or '')
 open(finalp,'w',encoding='utf-8').write(final.strip()+'\n'); open(modelp,'w').write(model+'\n'); open(toolp,'w').write('\n'.join(used)+('\n' if used else '')); open(sessionp,'w').write(session+'\n')
-bad=sorted(set(used)-{'Read','Edit','Write'})
-if bad:raise SystemExit('forbidden tool use: '+','.join(bad))
-if not session:raise SystemExit('writer session missing')
+if sorted(set(used)-{'Read','Edit','Write'}): raise SystemExit('forbidden writer tool');
+if not session: raise SystemExit('writer session missing')
 PY
-[ "$WRC" -eq 0 ] || fail "writer Claude rc=$WRC"
-grep -qx 'VERDETTO: VERDE' "$RUN/writer.final.txt" || fail "writer verdict not VERDE" "FAIL"
-grep -qi 'sonnet' "$RUN/writer.model.txt" || fail "writer model not Sonnet"
-WRITER_SESSION="$(cat "$RUN/writer.session.txt")"
-[ "$(git -C "$WT" branch --show-current)" = "$BRANCH" ] || fail "worktree branch mismatch"
-git -C "$WT" diff --cached --quiet || fail "writer staged changes"
-
+[ "$WRC" -eq 0 ] || fail "writer Claude rc=$WRC"; grep -qx 'VERDETTO: VERDE' "$RUN/writer.final.txt" || fail "writer verdict not VERDE" "FAIL"; grep -qi 'sonnet' "$RUN/writer.model.txt" || fail "writer model not Sonnet"
+WRITER_SESSION="$(cat "$RUN/writer.session.txt")"; [ "$(git -C "$WT" branch --show-current)" = "$BRANCH" ] || fail "worktree branch mismatch"; git -C "$WT" diff --cached --quiet || fail "writer staged changes"
 python3 - "$WT" "$RUN/changed_paths.txt" <<'PY' || fail "unsafe changed path shape"
 import subprocess,sys
 wt,out=sys.argv[1:]; raw=subprocess.check_output(['git','-C',wt,'status','--porcelain'],text=True); paths=set()
 for line in raw.splitlines():
     if not line:continue
-    status=line[:2]; p=line[3:]
-    if ' -> ' in p or 'R' in status or 'C' in status:raise SystemExit('renames/copies unsupported')
-    if not p or '\n' in p or '\r' in p:raise SystemExit('unsafe path')
+    st=line[:2]; p=line[3:]
+    if ' -> ' in p or 'R' in st or 'C' in st: raise SystemExit('renames/copies unsupported')
     paths.add(p)
-open(out,'w',encoding='utf-8').write(''.join(x+'\n' for x in sorted(paths)))
+open(out,'w').write(''.join(x+'\n' for x in sorted(paths)))
 PY
 [ -s "$RUN/changed_paths.txt" ] || fail "empty working diff"
 python3 - "$PROC" "$RUN/changed_paths.txt" <<'PY' || fail "diff outside allowed_paths"
 import json,sys
-t=json.load(open(sys.argv[1],encoding='utf-8')); allowed=set(t['allowed_paths']); changed={x.strip() for x in open(sys.argv[2]) if x.strip()}
-assert changed and changed<=allowed
+t=json.load(open(sys.argv[1])); allowed=set(t['allowed_paths']); changed={x.strip() for x in open(sys.argv[2]) if x.strip()}; assert changed and changed<=allowed
 PY
 while IFS= read -r p; do [ -n "$p" ] && git -C "$WT" add -- "$p"; done < "$RUN/changed_paths.txt"
 git -C "$WT" diff --cached --name-only | sort > "$RUN/staged-paths.txt"; cmp -s "$RUN/changed_paths.txt" "$RUN/staged-paths.txt" || fail "staged paths mismatch"
 git -C "$WT" diff --cached --check >"$RUN/diff-check.stdout" 2>"$RUN/diff-check.stderr" || fail "git diff --check failed"
 git -C "$WT" commit -m "vos(auto): $TASK_ID" >"$RUN/commit.stdout" 2>"$RUN/commit.stderr" || fail "trusted commit failed"
-CANDIDATE="$(git -C "$WT" rev-parse HEAD)"; RESULT_COMMIT="$CANDIDATE"
-[ "$(git -C "$WT" rev-list --count "$BASE..$CANDIDATE")" -eq 1 ] || fail "candidate not single commit"
-[ "$(git -C "$WT" rev-parse "$CANDIDATE^")" = "$BASE" ] || fail "candidate exact parent mismatch"
-[ -z "$(git -C "$WT" status --porcelain)" ] || fail "worktree dirty after commit"
-
+CANDIDATE="$(git -C "$WT" rev-parse HEAD)"; RESULT_COMMIT="$CANDIDATE"; [ "$(git -C "$WT" rev-list --count "$BASE..$CANDIDATE")" -eq 1 ] || fail "candidate not single commit"; [ "$(git -C "$WT" rev-parse "$CANDIDATE^")" = "$BASE" ] || fail "candidate exact parent mismatch"; [ -z "$(git -C "$WT" status --porcelain)" ] || fail "worktree dirty after commit"
 python3 - "$RUN/writer-result.json" "$TASK_ID" "$PROFILE" "$BASE" "$CANDIDATE" "$WRITER_SESSION" <<'PY'
 import json,os,sys
-p,task,profile,base,candidate,session=sys.argv[1:]
-d={'schema_version':1,'kind':'WRITER_RESULT','task_id':task,'profile':profile,'status':'PASS','verdict':'VERDE','session_id':session,'base_commit':base,'result_commit':candidate,'candidate_sha':candidate,'writer_tools':['Read','Edit','Write'],'bash':False,'network':False,'publisher':False}
-open(p,'w',encoding='utf-8').write(json.dumps(d,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(p,0o600)
+p,task,profile,base,cand,session=sys.argv[1:]; d={'schema_version':1,'kind':'WRITER_RESULT','task_id':task,'profile':profile,'status':'PASS','verdict':'VERDE','session_id':session,'base_commit':base,'result_commit':cand,'candidate_sha':cand,'writer_tools':['Read','Edit','Write'],'bash':False,'network':False,'publisher':False,'can_launch_review':False}
+open(p,'w').write(json.dumps(d,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(p,0o600)
 PY
 WRITER_SHA="$(sha256 "$RUN/writer-result.json")"
 
 python3 - "$PROC" "$WT" "$RUN/writer-result.json" "$WRITER_SHA" "$RUN/dossier.json" <<'PY'
-import hashlib,json,os,subprocess,sys
-proc,wt,writer,wsha,out=sys.argv[1:]; t=json.load(open(proc,encoding='utf-8')); w=json.load(open(writer,encoding='utf-8'))
-base=t['base_commit']; candidate=w['candidate_sha']; merge=subprocess.check_output(['git','-C',wt,'merge-base',base,candidate],text=True).strip(); assert merge==base
-diff=subprocess.check_output(['git','-C',wt,'diff','--no-ext-diff','--no-color','--binary',base,candidate],text=True)
-changed=subprocess.check_output(['git','-C',wt,'diff','--name-only',base,candidate],text=True).splitlines()
-d={'schema_version':1,'kind':'SEALED_VERIFIER_DOSSIER','task_id':t['task_id'],'expected_base_sha':base,'candidate_sha':candidate,'merge_base_sha':merge,'allowed_paths':sorted(t['allowed_paths']),'changed_paths':sorted(changed),'diff':diff,'static_results':{'DIFF_CHECK':'PASS','EXPECTED_BASE_ENFORCED':'PASS','CANDIDATE_EXACT_PARENT':'PASS','ALLOWED_PATHS_ENFORCED':'PASS','WRITER_CAPABILITY_BOUNDARY':'PASS','WRITER_CAN_LAUNCH_VERIFIER':'NO'},'writer_result_sha256':wsha,'writer_session_id':w['session_id']}
-raw=(json.dumps(d,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n').encode(); open(out,'wb').write(raw); os.chmod(out,0o600)
+import json,os,subprocess,sys
+proc,wt,writer,wsha,out=sys.argv[1:]; t=json.load(open(proc)); w=json.load(open(writer)); base=t['base_commit']; cand=w['candidate_sha']; merge=subprocess.check_output(['git','-C',wt,'merge-base',base,cand],text=True).strip(); assert merge==base
+diff=subprocess.check_output(['git','-C',wt,'diff','--no-ext-diff','--no-color','--binary',base,cand],text=True); changed=subprocess.check_output(['git','-C',wt,'diff','--name-only',base,cand],text=True).splitlines()
+det={'DIFF_CHECK':'PASS','EXPECTED_BASE_ENFORCED':'PASS','CANDIDATE_EXACT_PARENT':'PASS','ALLOWED_PATHS_ENFORCED':'PASS','WRITER_CAPABILITY_BOUNDARY':'PASS','WRITER_CAN_LAUNCH_REVIEW':'NO','NO_INSTALL_PATH_IN_CANARY':'PASS'}
+d={'schema_version':1,'kind':'SEALED_REVIEW_DOSSIER','task_id':t['task_id'],'expected_base_sha':base,'candidate_sha':cand,'merge_base_sha':merge,'allowed_paths':sorted(t['allowed_paths']),'changed_paths':sorted(changed),'diff':diff,'deterministic_results':det,'writer_result_sha256':wsha,'writer_session_id':w['session_id']}
+open(out,'w').write(json.dumps(d,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(out,0o600)
 PY
 DOSSIER_SHA="$(sha256 "$RUN/dossier.json")"; echo "$DOSSIER_SHA" > "$RUN/dossier.sha256"
-
-python3 - "$RUN/dossier.json" > "$RUN/verifier.prompt.txt" <<'PY'
+PRE_REVIEW_HEAD="$(git -C "$WT" rev-parse HEAD)"; PRE_REVIEW_STATUS="$(git -C "$WT" status --porcelain)"
+python3 - "$RUN/dossier.json" > "$RUN/review.prompt.txt" <<'PY'
 import sys
 sealed=open(sys.argv[1],encoding='utf-8').read()
-print('''You are the independent FLUXION verifier. You are fresh and distinct from the writer. The trusted non-LLM executor has supplied exactly one sealed dossier below. Do not request or use tools, repository access, GitHub, network, files outside this dossier, credentials, Gmail, Bash, Git, MCP or agents. Judge only whether the candidate safely and exactly implements the sealed task boundary evidenced by the dossier. Return EXACTLY one JSON object and no markdown with keys: verdict (GREEN|RED|BLOCKED), safe_to_publish (yes|no), findings (array of strings), required_changes (array of strings), summary (string). GREEN requires no material finding and safe_to_publish=yes.\n\nSEALED DOSSIER:\n'''+sealed)
+print('''You are FRESH_REVIEW for FLUXION. You are an independent model judgment, NOT a root of trust and NOT a deterministic proof. Use no tools. Judge only the sealed dossier. Return EXACTLY one JSON object and no markdown with keys: verdict (GREEN|RED|BLOCKED), findings (array of strings), required_changes (array of strings), summary (string). RED means a material issue that must veto publication. GREEN/BLOCKED are recorded as model judgment; deterministic trusted canaries remain authoritative.\n\nSEALED DOSSIER:\n'''+sealed)
 PY
-cd "$RUN"
-set +e
-"$CLAUDE" -p --setting-sources '' --settings '{"autoMemoryEnabled":false}' --strict-mcp-config --mcp-config '{"mcpServers":{}}' \
-  --model sonnet --permission-mode dontAsk --tools "" --disable-slash-commands --no-session-persistence --max-turns 20 \
-  --output-format stream-json --verbose "$(cat "$RUN/verifier.prompt.txt")" >"$RUN/verifier.stream.jsonl" 2>"$RUN/verifier.stderr"
-VRC=$?; set -e; echo "$VRC" > "$RUN/verifier.rc"
-python3 - "$RUN/verifier.stream.jsonl" "$RUN/verifier.final.txt" "$RUN/verifier-result.json" "$TASK_ID" "$CANDIDATE" "$WRITER_SESSION" "$DOSSIER_SHA" <<'PY' || fail "verifier stream/result invalid"
+cd "$RUN"; set +e
+"$CLAUDE" -p --setting-sources '' --settings '{"autoMemoryEnabled":false}' --strict-mcp-config --mcp-config '{"mcpServers":{}}' --model sonnet \
+  --permission-mode dontAsk --tools "" --disable-slash-commands --no-session-persistence --max-turns 20 --output-format stream-json --verbose \
+  "$(cat "$RUN/review.prompt.txt")" >"$RUN/review.stream.jsonl" 2>"$RUN/review.stderr"
+RRC=$?; set -e; echo "$RRC" > "$RUN/review.rc"
+python3 - "$RUN/review.stream.jsonl" "$RUN/review.final.txt" "$RUN/fresh-review.json" "$TASK_ID" "$CANDIDATE" "$WRITER_SESSION" "$DOSSIER_SHA" <<'PY' || fail "fresh review stream/result invalid"
 import json,os,sys
-stream,finalp,resultp,task,candidate,writer,dsha=sys.argv[1:]; final=''; model=''; session=''; tools=[]
+stream,finalp,resultp,task,cand,writer,dsha=sys.argv[1:]; final=''; model=''; session=''; tools=[]
 for line in open(stream,encoding='utf-8',errors='replace'):
     try:o=json.loads(line)
     except Exception:continue
     if o.get('type')=='system' and o.get('subtype')=='init': model=str(o.get('model') or ''); session=str(o.get('session_id') or o.get('sessionId') or '')
     if o.get('type')=='assistant':
         for part in (o.get('message') or {}).get('content') or []:
-            if isinstance(part,dict) and part.get('type')=='tool_use':tools.append(str(part.get('name') or ''))
-    if o.get('type')=='result':final=str(o.get('result') or '')
-open(finalp,'w',encoding='utf-8').write(final.strip()+'\n')
-if tools:raise SystemExit('verifier tool use observed: '+','.join(tools))
-if not session or session==writer:raise SystemExit('verifier session not fresh')
-if 'sonnet' not in model.lower():raise SystemExit('verifier model not Sonnet')
-try:r=json.loads(final.strip())
-except Exception as e:raise SystemExit(f'verifier final is not JSON: {e}')
-required={'verdict','safe_to_publish','findings','required_changes','summary'}
-if set(r)!=required:raise SystemExit('verifier schema mismatch')
-if r['verdict'] not in {'GREEN','RED','BLOCKED'} or r['safe_to_publish'] not in {'yes','no'}:raise SystemExit('verifier enum mismatch')
-if not isinstance(r['findings'],list) or not isinstance(r['required_changes'],list) or not isinstance(r['summary'],str):raise SystemExit('verifier type mismatch')
-out={'schema_version':1,'kind':'VERIFIER_RESULT','task_id':task,'profile':'RUN_VERIFICATION','status':'PASS' if r['verdict']=='GREEN' and r['safe_to_publish']=='yes' else 'FAIL','verdict':r['verdict'],'safe_to_publish':r['safe_to_publish'],'findings':r['findings'],'required_changes':r['required_changes'],'summary':r['summary'],'session_id':session,'writer_session_id':writer,'independent':True,'result_commit':candidate,'candidate_sha':candidate,'dossier_sha256':dsha,'claude_version':'2.1.110','model':model,'tools_used':[]}
-open(resultp,'w',encoding='utf-8').write(json.dumps(out,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(resultp,0o600)
-print(session)
+            if isinstance(part,dict) and part.get('type')=='tool_use': tools.append(str(part.get('name') or ''))
+    if o.get('type')=='result': final=str(o.get('result') or '')
+open(finalp,'w').write(final.strip()+'\n')
+if tools: raise SystemExit('fresh review used tools')
+if not session or session==writer: raise SystemExit('fresh review session not distinct')
+if 'sonnet' not in model.lower(): raise SystemExit('fresh review model not Sonnet')
+r=json.loads(final.strip()); required={'verdict','findings','required_changes','summary'}; assert set(r)==required and r['verdict'] in {'GREEN','RED','BLOCKED'} and isinstance(r['findings'],list) and isinstance(r['required_changes'],list) and isinstance(r['summary'],str)
+out={'schema_version':1,'kind':'FRESH_REVIEW','profile':'FRESH_REVIEW','verdict':r['verdict'],'findings':r['findings'],'required_changes':r['required_changes'],'summary':r['summary'],'session_id':session,'writer_session_id':writer,'independent':True,'result_commit':cand,'candidate_sha':cand,'dossier_sha256':dsha,'claude_version':'2.1.110','model':model,'tools_used':[]}
+open(resultp,'w').write(json.dumps(out,ensure_ascii=False,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(resultp,0o600)
 PY
-[ "$VRC" -eq 0 ] || fail "verifier Claude rc=$VRC"
-VERIFIER_SESSION="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["session_id"])' "$RUN/verifier-result.json")"
-python3 - "$RUN/verifier-result.json" <<'PY' || fail "fresh verifier RED/BLOCKED" "FAIL"
-import json,sys
-r=json.load(open(sys.argv[1])); assert r['status']=='PASS' and r['verdict']=='GREEN' and r['safe_to_publish']=='yes'
-PY
-VERIFIER_SHA="$(sha256 "$RUN/verifier-result.json")"
+[ "$RRC" -eq 0 ] || fail "fresh review Claude rc=$RRC"
+REVIEW_SESSION="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["session_id"])' "$RUN/fresh-review.json")"; REVIEW_VERDICT="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["verdict"])' "$RUN/fresh-review.json")"
+[ "$(git -C "$WT" rev-parse HEAD)" = "$PRE_REVIEW_HEAD" ] || fail "fresh review mutated candidate HEAD"; [ "$(git -C "$WT" status --porcelain)" = "$PRE_REVIEW_STATUS" ] || fail "fresh review mutated worktree"
+REVIEW_SHA="$(sha256 "$RUN/fresh-review.json")"
 
-python3 - "$RUN/evidence.json" "$TASK_ID" "$BASE" "$CANDIDATE" "$WRITER_SHA" "$VERIFIER_SHA" "$DOSSIER_SHA" "$WRITER_SESSION" "$VERIFIER_SESSION" <<'PY'
+python3 - "$RUN/evidence.json" "$TASK_ID" "$BASE" "$CANDIDATE" "$WRITER_SHA" "$REVIEW_SHA" "$DOSSIER_SHA" "$WRITER_SESSION" "$REVIEW_SESSION" "$REVIEW_VERDICT" <<'PY'
 import json,os,sys
-p,task,base,cand,wsha,vsha,dsha,ws,vs=sys.argv[1:]
-d={'schema_version':1,'kind':'TRUSTED_WRITE_EVIDENCE','task_id':task,'expected_base_sha':base,'candidate_sha':cand,'writer_result_sha256':wsha,'verifier_result_sha256':vsha,'dossier_sha256':dsha,'writer_session_id':ws,'verifier_session_id':vs,'markers':{'WRITER_CAN_LAUNCH_VERIFIER':'NO','VERIFIER_FRESH_SESSION':'PASS','VERIFIER_DOSSIER_PIN':'PASS','VERIFIER_NO_MUTATION':'PASS','CAS_PUBLISH':'PENDING'}}
-open(p,'w',encoding='utf-8').write(json.dumps(d,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(p,0o600)
+p,task,base,cand,wsha,rsha,dsha,ws,rs,rv=sys.argv[1:]
+proofs={'DIFF_CHECK':'PASS','EXPECTED_BASE_ENFORCED':'PASS','CANDIDATE_EXACT_PARENT':'PASS','ALLOWED_PATHS_ENFORCED':'PASS','WRITER_CAPABILITY_BOUNDARY':'PASS','WRITER_CAN_LAUNCH_REVIEW':'NO','REVIEW_FRESH_SESSION':'PASS','REVIEW_DOSSIER_PIN':'PASS','REVIEW_NO_MUTATION':'PASS','NO_INSTALL_PATH_IN_CANARY':'PASS'}
+d={'schema_version':1,'kind':'TRUSTED_WRITE_EVIDENCE','task_id':task,'expected_base_sha':base,'candidate_sha':cand,'writer_result_sha256':wsha,'fresh_review_sha256':rsha,'dossier_sha256':dsha,'writer_session_id':ws,'fresh_review_session_id':rs,'deterministic_proofs':proofs,'model_judgment':{'kind':'FRESH_REVIEW','verdict':rv,'sha256':rsha}}
+open(p,'w').write(json.dumps(d,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(p,0o600)
 PY
-EVIDENCE_SHA="$(sha256 "$RUN/evidence.json")"
-ALLOWED_JSON="$(json_get "$PROC" allowed_paths)"
+EVIDENCE_SHA="$(sha256 "$RUN/evidence.json")"; ALLOWED_JSON="$(json_get "$PROC" allowed_paths)"
 set +e
-"$GATE" --repo "$REPO" --expected-base-sha "$BASE" --candidate-sha "$CANDIDATE" --task-id "$TASK_ID" \
-  --allowed-paths-json "$ALLOWED_JSON" --writer-result "$RUN/writer-result.json" --writer-result-sha "$WRITER_SHA" \
-  --verifier-result "$RUN/verifier-result.json" --verifier-result-sha "$VERIFIER_SHA" \
+"$GATE" --repo "$REPO" --expected-base-sha "$BASE" --candidate-sha "$CANDIDATE" --task-id "$TASK_ID" --allowed-paths-json "$ALLOWED_JSON" \
+  --writer-result "$RUN/writer-result.json" --writer-result-sha "$WRITER_SHA" --fresh-review "$RUN/fresh-review.json" --fresh-review-sha "$REVIEW_SHA" \
   --dossier "$RUN/dossier.json" --dossier-sha256 "$DOSSIER_SHA" --evidence "$RUN/evidence.json" --evidence-sha256 "$EVIDENCE_SHA" \
   --approval-file "$APPROVAL" >"$RUN/publish.stdout" 2>"$RUN/publish.stderr"
-PRC=$?; set -e
-[ "$PRC" -eq 0 ] || fail "trusted CAS publish blocked"
-grep -qx 'TRUSTED_PUBLISH_GATE=PASS' "$RUN/publish.stdout" || fail "trusted publish PASS marker missing"
-
-set +e
-git -C "$REPO" -c core.hooksPath=/dev/null merge --ff-only "$CANDIDATE" >"$RUN/align.stdout" 2>"$RUN/align.stderr"
-ARC=$?; set -e
-[ "$ARC" -eq 0 ] || fail "published master could not align canonical checkout"
-[ "$(git -C "$REPO" rev-parse HEAD)" = "$CANDIDATE" ] || fail "canonical HEAD not published candidate"
-[ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$CANDIDATE" ] || fail "origin/master not published candidate"
-[ "$(git -C "$REPO" status --porcelain)" = "$CANON_STATUS_BEFORE" ] || fail "canonical dirty state changed"
-python3 - "$RUN/evidence.json" <<'PY'
-import json,os,sys
-p=sys.argv[1]; d=json.load(open(p)); d['markers']['CAS_PUBLISH']='PASS'; open(p,'w').write(json.dumps(d,sort_keys=True,separators=(',',':'))+'\n'); os.chmod(p,0o600)
-PY
-
+PRC=$?; set -e; [ "$PRC" -eq 0 ] || fail "trusted CAS publish blocked"; grep -qx 'TRUSTED_PUBLISH_GATE=PASS' "$RUN/publish.stdout" || fail "trusted publish PASS marker missing"
+cp -p "$APPROVAL" "$RUN/approval.txt"; [ "$(sha256 "$RUN/evidence.json")" = "$EVIDENCE_SHA" ] || fail "evidence mutated after trust decision"
+set +e; git -C "$REPO" -c core.hooksPath=/dev/null merge --ff-only "$CANDIDATE" >"$RUN/align.stdout" 2>"$RUN/align.stderr"; ARC=$?; set -e
+[ "$ARC" -eq 0 ] || fail "published master could not align canonical checkout"; [ "$(git -C "$REPO" rev-parse HEAD)" = "$CANDIDATE" ] || fail "canonical HEAD not candidate"; [ "$(git -C "$REPO" rev-parse refs/remotes/origin/master)" = "$CANDIDATE" ] || fail "origin/master not candidate"; [ "$(git -C "$REPO" status --porcelain)" = "$CANON_STATUS_BEFORE" ] || fail "canonical dirty state changed"
 cat > "$RUN/validation.txt" <<EOF
 status=PASS
 writer_scope=worktree_only
 writer_tools=Read,Edit,Write
 writer_bash=0
 writer_network=0
-writer_can_launch_verifier=no
-verifier_fresh_session=pass
-verifier_tools=none
-verifier_dossier_pin=pass
-verifier_no_mutation=pass
+writer_can_launch_review=no
+claude_pin_version=2.1.110
+no_install_path_in_canary=pass
+fresh_review_verdict=$REVIEW_VERDICT
+fresh_review_root_of_trust=no
+review_fresh_session=pass
+review_dossier_pin=pass
+review_no_mutation=pass
+deterministic_proofs=pass
 trusted_cas_publish=pass
+evidence_immutable=pass
 canonical_alignment=pass
 founder_gestures_normal_cycle=0
 EOF
-STATUS="PASS"; REASON="writer+fresh verifier+trusted CAS publish passed"; RESULT_COMMIT="$CANDIDATE"
-cleanup_worktree || fail "worktree cleanup failed after publish"
-[ ! -e "$ARCHIVE/$TASK_ID.json" ] || fail "archive task already exists"
-make_result; packetize_and_publish || fail "result publisher failed"
-mv "$PROC" "$ARCHIVE/"; cleanup_retention || true
-echo "GENERIC_WRITE_RESULT=PASS"
-echo "CANDIDATE_SHA=$CANDIDATE"
-echo "APPROVED_SHA=$CANDIDATE"
-echo "WRITER_SESSION_ID=$WRITER_SESSION"
-echo "VERIFIER_SESSION_ID=$VERIFIER_SESSION"
-echo "DOSSIER_SHA256=$DOSSIER_SHA"
-echo "VERIFIER_RESULT_SHA256=$VERIFIER_SHA"
-echo "FOUNDER_GESTURES_NORMAL_CYCLE=0"
+STATUS=PASS; REASON="deterministic proofs passed; FRESH_REVIEW=$REVIEW_VERDICT; trusted CAS publish passed"; RESULT_COMMIT="$CANDIDATE"
+cleanup_worktree || fail "worktree cleanup failed after publish"; [ ! -e "$ARCHIVE/$TASK_ID.json" ] || fail "archive task already exists"
+make_result; packetize_and_publish || fail "result publisher failed"; mv "$PROC" "$ARCHIVE/"; cleanup_retention || true
+echo "GENERIC_WRITE_RESULT=PASS"; echo "APPROVED_SHA=$CANDIDATE"; echo "DETERMINISTIC_PROOFS=PASS"; echo "FRESH_REVIEW=$REVIEW_VERDICT"; echo "FRESH_REVIEW_ROOT_OF_TRUST=NO"; echo "NO_INSTALL_PATH_IN_CANARY=PASS"; echo "DOSSIER_SHA256=$DOSSIER_SHA"; echo "EVIDENCE_SHA256=$EVIDENCE_SHA"; echo "FOUNDER_GESTURES_NORMAL_CYCLE=0"
