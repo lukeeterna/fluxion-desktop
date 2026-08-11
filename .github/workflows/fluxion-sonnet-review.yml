@@ -399,24 +399,49 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'],'a',encoding='utf-8') as h: h.write(f"pr_number={meta['pr_number']}\nbase_tip_sha={meta['base_sha']}\nhead_sha={meta['head_sha']}\n")
           PY
 
-      - name: Clone immutable base control plane
+      - name: Fetch immutable base reviewer
         env:
           BASE_TIP_SHA: ${{ steps.target.outputs.base_tip_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" control
-          git -C control checkout --detach "$BASE_TIP_SHA"
-          test "$(git -C control rev-parse HEAD)" = "$BASE_TIP_SHA"
+          mkdir -p control/tools
+          python3 - <<'PY'
+          import base64,json,os,urllib.parse,urllib.request
+          from pathlib import Path
+          repo=os.environ['GITHUB_REPOSITORY']; sha=os.environ['BASE_TIP_SHA']; token=os.environ['GITHUB_TOKEN']
+          path='tools/fluxion_sonnet_reviewer.py'
+          url=f"https://api.github.com/repos/{repo}/contents/{path}?ref={urllib.parse.quote(sha,safe='')}"
+          req=urllib.request.Request(url,headers={'Accept':'application/vnd.github+json','Authorization':f'Bearer {token}','X-GitHub-Api-Version':'2022-11-28','User-Agent':'fluxion-sonnet-reviewer'})
+          with urllib.request.urlopen(req,timeout=30) as response: data=json.load(response)
+          if data.get('encoding')!='base64': raise SystemExit('reviewer content encoding mismatch')
+          content=base64.b64decode(data['content'])
+          Path('control/tools/fluxion_sonnet_reviewer.py').write_bytes(content)
+          PY
+          test -s control/tools/fluxion_sonnet_reviewer.py
+          python3 -m py_compile control/tools/fluxion_sonnet_reviewer.py
+          echo "BASE_REVIEWER_FETCH=PASS"
 
-      - name: Clone sealed PR head and normalize merge-base
+      - name: Fetch sealed PR graph without checkout and normalize merge-base
         env:
           BASE_TIP_SHA: ${{ steps.target.outputs.base_tip_sha }}
           HEAD_SHA: ${{ steps.target.outputs.head_sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules "https://github.com/${GITHUB_REPOSITORY}.git" target
-          git -C target checkout --detach "$HEAD_SHA"
+          mkdir target
+          git -C target init -q
+          git -C target remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -C target config http.https://github.com/.extraheader "AUTHORIZATION: basic $auth"
+          git -C target config remote.origin.promisor true
+          git -C target config remote.origin.partialclonefilter blob:none
+          git -C target -c protocol.version=2 fetch --no-tags --filter=blob:none origin "$BASE_TIP_SHA" "$HEAD_SHA"
+          git -C target update-ref refs/review/base "$BASE_TIP_SHA"
+          git -C target update-ref refs/review/head "$HEAD_SHA"
+          git -C target update-ref --no-deref HEAD "$HEAD_SHA"
           test "$(git -C target rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git -C target rev-parse refs/review/base)" = "$BASE_TIP_SHA"
           MERGE_BASE_SHA="$(git -C target merge-base "$BASE_TIP_SHA" "$HEAD_SHA")"
           test -n "$MERGE_BASE_SHA"
           python3 - "$MERGE_BASE_SHA" "$BASE_TIP_SHA" <<'PY'
@@ -426,6 +451,7 @@ jobs:
           meta['base_tip_sha']=sys.argv[2]; meta['base_sha']=sys.argv[1]
           p.write_text(json.dumps(meta,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           PY
+          echo "SEALED_GRAPH_FETCH=PASS"
 
       - name: Prepare sealed deterministic dossier
         id: prepare
