@@ -248,10 +248,12 @@ jobs:
           "$binary" --version | tee /tmp/claude-version.txt
           grep -F '2.1.110' /tmp/claude-version.txt
 
-          printf 'VERIFIED_CLAUDE=%s\n' "$binary" >> "$GITHUB_ENV"
-          printf 'CLAUDE_RELEASE_INTEGRITY=PASS\n' >> "$GITHUB_ENV"
-          printf 'CLAUDE_SIGNING_KEY_FINGERPRINT=%s\n' "$expected_fpr" >> "$GITHUB_ENV"
-          printf 'CLAUDE_BINARY_SHA256=%s\n' "$checksum" >> "$GITHUB_ENV"
+          {
+            printf 'VERIFIED_CLAUDE=%s\n' "$binary"
+            printf 'CLAUDE_RELEASE_INTEGRITY=PASS\n'
+            printf 'CLAUDE_SIGNING_KEY_FINGERPRINT=%s\n' "$expected_fpr"
+            printf 'CLAUDE_BINARY_SHA256=%s\n' "$checksum"
+          } >> "$GITHUB_ENV"
           echo "CLAUDE_SIGNING_KEY_FINGERPRINT=PASS"
           echo "CLAUDE_MANIFEST_SIGNATURE=PASS"
           echo "CLAUDE_BINARY_SHA256=PASS"
