@@ -44,7 +44,7 @@ jobs:
       ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
       GENERIC_BLOB_SHA: c240e468d132a10ce09050add2a4300797112646
       ROUTER_BLOB_SHA: e0a8074fadc9a536dce2af7992ee2849754f8c8a
-      PUBLISH_GATE_BLOB_SHA: ca67e9dd932749e0ac2f8399eb1ff701289fde67
+      PUBLISH_GATE_BLOB_SHA: c91ab0af3948ff6c1105ec679e66abfd88c08a43
     steps:
       - name: Fetch exact owner PR-head control files
         env:
@@ -147,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 .github/bootstrap/fluxion-trusted-publish-gate.py --self-test | tee /tmp/trusted-publish-selftest.log
-          for marker in TRUSTED_PUBLISHER_PRESENT EXPECTED_BASE_ENFORCED NON_FORCE_PUBLISH UNEXPECTED_ORIGIN_MOVE_BLOCKS CANDIDATE_EXACT_PARENT ALLOWED_PATHS_ENFORCED NON_FAST_FORWARD_BLOCKS TRUSTED_PUBLISH_SELFTEST; do
+          for marker in TRUSTED_PUBLISHER_PRESENT EXPECTED_BASE_ENFORCED NON_FORCE_PUBLISH UNEXPECTED_ORIGIN_MOVE_BLOCKS CANDIDATE_EXACT_PARENT ALLOWED_PATHS_ENFORCED NON_FAST_FORWARD_BLOCKS UNATTESTED_MASTER_BLOCKS TRUSTED_PUBLISH_SELFTEST; do
             grep -qx "$marker=PASS" /tmp/trusted-publish-selftest.log
           done
 
@@ -189,7 +189,7 @@ jobs:
           set -euo pipefail
           python3 - "$HEAD_SHA" "$GITHUB_RUN_ID" > /tmp/control-static.json <<'PY'
           import json,sys
-          print(json.dumps({"schema_version":1,"kind":"CONTROL_STATIC_EVIDENCE","head_sha":sys.argv[1],"run_id":sys.argv[2],"status":"PASS","markers":["OWNER_PR_STATIC_AUTHORITY=PASS","ACTIONLINT=PASS","SYNTAX_COMPILE=PASS","EXECUTOR_INTEGRITY=PASS","WRITER_CAPABILITY_BOUNDARY=PASS","WORKTREE_RETENTION_POLICY=PASS","SINGLE_CONSUMER_FULL_DURATION=PASS","TRUSTED_PUBLISH_SELFTEST=PASS","POISON_QUARANTINE=PASS","UTC_TIMESTAMP_ORDER=PASS","CONTROL_STATIC=PASS"]},sort_keys=True,separators=(',',':')))
+          print(json.dumps({"schema_version":1,"kind":"CONTROL_STATIC_EVIDENCE","head_sha":sys.argv[1],"run_id":sys.argv[2],"status":"PASS","markers":["OWNER_PR_STATIC_AUTHORITY=PASS","ACTIONLINT=PASS","SYNTAX_COMPILE=PASS","EXECUTOR_INTEGRITY=PASS","WRITER_CAPABILITY_BOUNDARY=PASS","WORKTREE_RETENTION_POLICY=PASS","SINGLE_CONSUMER_FULL_DURATION=PASS","TRUSTED_PUBLISH_SELFTEST=PASS","UNATTESTED_MASTER_BLOCKS=PASS","POISON_QUARANTINE=PASS","UTC_TIMESTAMP_ORDER=PASS","CONTROL_STATIC=PASS"]},sort_keys=True,separators=(',',':')))
           PY
           printf 'evidence_b64=%s\n' "$(base64 -w0 /tmp/control-static.json)" >> "$GITHUB_OUTPUT"
 
