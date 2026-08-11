@@ -154,6 +154,33 @@ jobs:
           printf '%s\n' "$rc" > "$RUN_DIR/install.rc"
           exit "$rc"
 
+      - name: Verify idempotent second install
+        id: reinstall
+        if: steps.install.outcome == 'success'
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          : "${RUN_DIR:?RUN_DIR missing}"
+          : "${BASE:?BASE missing}"
+          before_generic="$(shasum -a 256 "$HOME/.local/bin/fluxion-generic-write-executor" | awk '{print $1}')"
+          before_router="$(shasum -a 256 "$HOME/.local/bin/fluxion-draft-bus-executor" | awk '{print $1}')"
+          before_gate="$(shasum -a 256 "$HOME/.local/bin/fluxion-trusted-publish-gate" | awk '{print $1}')"
+          set +e
+          /bin/zsh "$FLUXION_ROOT/.github/bootstrap/install-generic-write-lane.zsh" \
+            "$FLUXION_ROOT/.github/bootstrap" "$BASE" \
+            > >(tee "$RUN_DIR/reinstall.stdout") \
+            2> >(tee "$RUN_DIR/reinstall.stderr" >&2)
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$RUN_DIR/reinstall.rc"
+          test "$rc" = 0
+          grep -qx 'ALREADY_INSTALLED_EXACT' "$RUN_DIR/reinstall.stdout"
+          test "$before_generic" = "$(shasum -a 256 "$HOME/.local/bin/fluxion-generic-write-executor" | awk '{print $1}')"
+          test "$before_router" = "$(shasum -a 256 "$HOME/.local/bin/fluxion-draft-bus-executor" | awk '{print $1}')"
+          test "$before_gate" = "$(shasum -a 256 "$HOME/.local/bin/fluxion-trusted-publish-gate" | awk '{print $1}')"
+          echo 'BOOTSTRAP_IDEMPOTENCE=PASS'
+
       - name: Publish trusted bootstrap RESULT draft
         id: publish
         if: always()
@@ -170,15 +197,18 @@ jobs:
             "$RUN_DIR/align.head.before" "$RUN_DIR/align.head.after" \
             "$RUN_DIR/align.origin.before" "$RUN_DIR/align.origin.after" \
             "$RUN_DIR/align.changed-paths" "$RUN_DIR/align.state" \
-            "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc"
+            "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc" \
+            "$RUN_DIR/reinstall.stdout" "$RUN_DIR/reinstall.stderr" "$RUN_DIR/reinstall.rc"
 
           align_rc="$(cat "$RUN_DIR/align.rc" 2>/dev/null || echo 2)"
           install_rc="$(cat "$RUN_DIR/install.rc" 2>/dev/null || echo 2)"
+          reinstall_rc="$(cat "$RUN_DIR/reinstall.rc" 2>/dev/null || echo 2)"
           install_state="$(grep '^INSTALL_STATE=' "$RUN_DIR/install.stdout" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
           [ -n "$install_state" ] || install_state=NOT_RUN
 
-          if [ "$align_rc" = 0 ] && [ "$install_rc" = 0 ] \
+          if [ "$align_rc" = 0 ] && [ "$install_rc" = 0 ] && [ "$reinstall_rc" = 0 ] \
              && grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout" \
+             && grep -qx 'ALREADY_INSTALLED_EXACT' "$RUN_DIR/reinstall.stdout" \
              && grep -qx 'TRUSTED_PUBLISH_GATE_INSTALLED=YES' "$RUN_DIR/install.stdout"; then
             status=PASS; verdict=VERDE; next_event=GENERIC_WRITE_LANE_CERT
           else
@@ -200,7 +230,8 @@ jobs:
             zip -q "$packet" \
               align.stdout align.stderr align.rc align.status.before align.status.after \
               align.head.before align.head.after align.origin.before align.origin.after \
-              align.changed-paths align.state install.stdout install.stderr install.rc
+              align.changed-paths align.state install.stdout install.stderr install.rc \
+              reinstall.stdout reinstall.stderr reinstall.rc
           )
           sha="$(shasum -a 256 "$packet" | awk '{print $1}')"
           created="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -215,7 +246,7 @@ jobs:
             "created_at":created,"base_commit":base,"result_commit":result,"status":status,
             "packet_name":"result-WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810.zip",
             "packet_sha256":sha,
-            "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;install_state={install_state};next_event={next_event}"
+            "summary":f"executor=github-selfhosted-bootstrap;profile=INFRASTRUCTURE_BOOTSTRAP;verdict=VERDETTO: {verdict};publisher_boundary=trusted-non-llm;install_state={install_state};idempotence={'PASS' if status=='PASS' else 'UNKNOWN'};next_event={next_event}"
           }
           open(p,"w",encoding="utf-8").write(json.dumps(d,ensure_ascii=False,indent=2,sort_keys=True)+"\n")
           PY
@@ -242,7 +273,9 @@ jobs:
           set -euo pipefail
           test "$(cat "$RUN_DIR/align.rc")" = 0
           test "$(cat "$RUN_DIR/install.rc")" = 0
+          test "$(cat "$RUN_DIR/reinstall.rc")" = 0
           grep -qx 'INSTALL_RESULT=PASS' "$RUN_DIR/install.stdout"
+          grep -qx 'ALREADY_INSTALLED_EXACT' "$RUN_DIR/reinstall.stdout"
           grep -qx 'TRUSTED_PUBLISH_GATE_INSTALLED=YES' "$RUN_DIR/install.stdout"
           test "$(cat "$RUN_DIR/publisher.rc")" = 0
 
