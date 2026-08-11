@@ -1,190 +1,236 @@
-name: FLUXION Sonnet Review Gate
+name: FLUXION Control Plane Static Gate
 
 on:
-  push:
-    branches: [master]
-    paths:
-      - .github/workflows/fluxion-sonnet-review.yml
-      - tools/fluxion_sonnet_reviewer.py
   pull_request:
     branches: [master]
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [master]
+    paths:
+      - .github/bootstrap/fluxion-draft-bus-executor
+      - .github/bootstrap/fluxion-generic-write-executor
+      - .github/bootstrap/fluxion-trusted-publish-gate.py
+      - .github/bootstrap/install-generic-write-lane.zsh
+      - .github/workflows/fluxion-generic-write-bootstrap.yml
+      - .github/workflows/fluxion-sonnet-review.yml
   workflow_dispatch:
-    inputs:
-      pr_number:
-        description: Pull request number to review
-        required: true
-        type: string
 
 permissions:
   contents: read
-  issues: write
-  pull-requests: write
 
 concurrency:
-  group: fluxion-sonnet-${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}
+  group: fluxion-control-static-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  control-selftest:
-    if: github.event_name == 'push'
+  control-static:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Checkout control plane
-        uses: actions/checkout@v4
-      - name: Validate reviewer
-        run: |
-          set -euo pipefail
-          python3 -m py_compile tools/fluxion_sonnet_reviewer.py
-          test -s .github/workflows/fluxion-sonnet-review.yml
-          echo "CONTROL_SELFTEST PASS"
-
-  independent-review:
-    if: github.event_name != 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Resolve sealed PR metadata
-        id: target
+      - name: Fetch exact control-plane files without checkout
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISPATCH_PR_NUMBER: ${{ inputs.pr_number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          mkdir -p artifacts
+          mkdir -p .github/bootstrap .github/workflows
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HEAD_SHA}"
+          for path in \
+            .github/bootstrap/fluxion-draft-bus-executor \
+            .github/bootstrap/fluxion-generic-write-executor \
+            .github/bootstrap/fluxion-trusted-publish-gate.py \
+            .github/bootstrap/install-generic-write-lane.zsh \
+            .github/workflows/fluxion-generic-write-bootstrap.yml \
+            .github/workflows/fluxion-sonnet-review.yml
+          do
+            curl --fail --silent --show-error --location --retry 3 "$base/$path" --output "$path"
+            test -s "$path"
+          done
+          printf '%s\n' "$HEAD_SHA" > HEAD_SHA.txt
+          echo "EXACT_CONTROL_FETCH=PASS"
+
+      - name: Verify PR workflow has no privileged model boundary
+        run: |
+          set -euo pipefail
           python3 - <<'PY'
-          import json
-          import os
-          import urllib.request
           from pathlib import Path
-
-          event_name = os.environ["GITHUB_EVENT_NAME"]
-          event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
-          if event_name == "pull_request":
-              pr = event["pull_request"]
-          else:
-              number = os.environ.get("DISPATCH_PR_NUMBER", "").strip()
-              if not number.isdigit():
-                  raise SystemExit("workflow_dispatch requires numeric pr_number")
-              request = urllib.request.Request(
-                  f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/pulls/{number}",
-                  headers={
-                      "Accept": "application/vnd.github+json",
-                      "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
-                      "X-GitHub-Api-Version": "2022-11-28",
-                      "User-Agent": "fluxion-sonnet-headless-reviewer",
-                  },
-              )
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  pr = json.load(response)
-
-          meta = {
-              "repository": os.environ["GITHUB_REPOSITORY"],
-              "pr_number": int(pr["number"]),
-              "title": pr.get("title", ""),
-              "body": pr.get("body") or "",
-              "author": (pr.get("user") or {}).get("login", ""),
-              "base_ref": pr["base"]["ref"],
-              "head_ref": pr["head"]["ref"],
-              "base_sha": pr["base"]["sha"],
-              "head_sha": pr["head"]["sha"],
-          }
-          Path("artifacts/PR_META.json").write_text(
-              json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
-              handle.write(f"pr_number={meta['pr_number']}\n")
-              handle.write(f"base_tip_sha={meta['base_sha']}\n")
-              handle.write(f"head_sha={meta['head_sha']}\n")
+          text=Path('.github/workflows/fluxion-sonnet-review.yml').read_text(encoding='utf-8')
+          forbidden=['CLAUDE_CODE_'+'OAUTH_TOKEN','anthropics/'+'claude-code-action','secrets'+'.','self'+'-hosted']
+          found=[x for x in forbidden if x in text]
+          if found: raise SystemExit('forbidden PR workflow authority: '+','.join(found))
+          print('PR_WORKFLOW_CLAUDE_SECRET=ABSENT')
+          print('PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT')
+          print('PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED')
           PY
 
-      - name: Clone immutable base control plane
-        env:
-          BASE_TIP_SHA: ${{ steps.target.outputs.base_tip_sha }}
+      - name: Install syntax checker dependency
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules https://github.com/${GITHUB_REPOSITORY}.git control
-          git -C control checkout --detach "$BASE_TIP_SHA"
-          test "$(git -C control rev-parse HEAD)" = "$BASE_TIP_SHA"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zsh
 
-      - name: Clone sealed PR head and normalize merge-base
-        env:
-          BASE_TIP_SHA: ${{ steps.target.outputs.base_tip_sha }}
-          HEAD_SHA: ${{ steps.target.outputs.head_sha }}
+      - name: Syntax, integrity and deterministic trust boundary
         run: |
           set -euo pipefail
-          git clone --no-recurse-submodules https://github.com/${GITHUB_REPOSITORY}.git target
-          git -C target checkout --detach "$HEAD_SHA"
-          test "$(git -C target rev-parse HEAD)" = "$HEAD_SHA"
-          MERGE_BASE_SHA="$(git -C target merge-base "$BASE_TIP_SHA" "$HEAD_SHA")"
-          test -n "$MERGE_BASE_SHA"
-          python3 - "$MERGE_BASE_SHA" "$BASE_TIP_SHA" <<'PY'
-          import json
-          import sys
+          /bin/zsh -n .github/bootstrap/fluxion-generic-write-executor
+          /bin/zsh -n .github/bootstrap/install-generic-write-lane.zsh
+          python3 -m py_compile .github/bootstrap/fluxion-draft-bus-executor .github/bootstrap/fluxion-trusted-publish-gate.py
+          echo "SYNTAX_COMPILE=PASS"
+
+          generic_blob="$(git hash-object --no-filters .github/bootstrap/fluxion-generic-write-executor)"
+          router_blob="$(git hash-object --no-filters .github/bootstrap/fluxion-draft-bus-executor)"
+          gate_blob="$(git hash-object --no-filters .github/bootstrap/fluxion-trusted-publish-gate.py)"
+          expected_generic="$(sed -n 's/^EXPECTED_GENERIC_SRC_BLOB="\([0-9a-f]*\)"$/\1/p' .github/bootstrap/install-generic-write-lane.zsh)"
+          expected_router="$(sed -n 's/^EXPECTED_ROUTER_SRC_BLOB="\([0-9a-f]*\)"$/\1/p' .github/bootstrap/install-generic-write-lane.zsh)"
+          expected_gate="$(sed -n 's/^EXPECTED_PUBLISH_GATE_BLOB="\([0-9a-f]*\)"$/\1/p' .github/bootstrap/install-generic-write-lane.zsh)"
+          test "$generic_blob" = "$expected_generic"
+          test "$router_blob" = "$expected_router"
+          test "$gate_blob" = "$expected_gate"
+          echo "EXECUTOR_INTEGRITY=PASS"
+
+          grep -F -- 'EXPECTED_CLAUDE_VERSION="2.1.110"' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- '--tools Read,Edit,Write' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- '--tools ""' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'fresh_review_root_of_trust=no' .github/bootstrap/fluxion-generic-write-executor
+          grep -F -- 'FRESH_REVIEW_RED' .github/bootstrap/fluxion-trusted-publish-gate.py
+          grep -F -- 'DETERMINISTIC_REQUIRED' .github/bootstrap/fluxion-trusted-publish-gate.py
+          grep -F -- "review.get('tools_used')" .github/bootstrap/fluxion-trusted-publish-gate.py
+          echo "WRITER_CAPABILITY_BOUNDARY=PASS"
+          echo "WRITER_CAN_LAUNCH_REVIEW=NO"
+          echo "FRESH_REVIEW_ROOT_OF_TRUST=NO"
+
+      - name: Prove trusted Mac behavioral canary wiring and E1 pin
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
           from pathlib import Path
-
-          path = Path("artifacts/PR_META.json")
-          meta = json.loads(path.read_text(encoding="utf-8"))
-          meta["base_tip_sha"] = sys.argv[2]
-          meta["base_sha"] = sys.argv[1]
-          path.write_text(
-              json.dumps(meta, ensure_ascii=False, indent=2) + "\n",
-              encoding="utf-8",
-          )
-          print(f"MERGE_BASE={sys.argv[1]} BASE_TIP={sys.argv[2]}")
+          installer=Path('.github/bootstrap/install-generic-write-lane.zsh').read_text(encoding='utf-8')
+          generic=Path('.github/bootstrap/fluxion-generic-write-executor').read_text(encoding='utf-8')
+          forbidden=['install'+'.'+'sh','npm'+' install','brew'+' install','curl'+'|'+'bash']
+          found=[x for x in forbidden if x in installer]
+          if found: raise SystemExit('install/update path present in behavioral canary: '+','.join(found))
+          required=[
+              'EXPECTED_CLAUDE_VERSION="2.1.110"',
+              'verify_pin_file "$CLAUDE_PIN" "$CLAUDE_REAL" "$CLAUDE_SHA"',
+              '/usr/bin/codesign --verify --verbose=2 "$CLAUDE_REAL"',
+              'WRITER_CAPABILITY_BEHAVIOR=PASS',
+              'OUTSIDE_WRITE_BLOCKED=PASS',
+              'BASH_CAPABILITY_ABSENT=PASS',
+              'REVIEW_NO_TOOLS_BEHAVIOR=PASS',
+              '--tools Read,Edit,Write',
+              '--tools ""',
+          ]
+          missing=[x for x in required if x not in installer]
+          if missing: raise SystemExit('behavioral canary wiring missing: '+','.join(missing))
+          if "d.get('sha256')" not in generic or '/usr/bin/codesign' not in generic:
+              raise SystemExit('steady-state Claude pin enforcement incomplete')
+          call='behavioral_canary || { echo "STOP: trusted Mac behavioral canary failed"; exit 2; }'
+          activation='date -u +%Y-%m-%dT%H:%M:%SZ > "$ACTIVATED"'
+          call_pos=installer.rfind(call)
+          activation_pos=installer.find(activation)
+          if call_pos < 0 or activation_pos < 0 or call_pos >= activation_pos:
+              raise SystemExit('activation is not strictly after behavioral canary')
+          if installer.count(call) < 2:
+              raise SystemExit('behavioral canary not enforced on install and exact reinstall')
+          print('NO_INSTALL_PATH_IN_CANARY=PASS')
+          print('CLAUDE_RUNTIME_PIN=PASS')
+          print('BEHAVIORAL_CANARY_WIRED_TO_TRUSTED_MAC=PASS')
+          print('ACTIVATION_AFTER_BEHAVIORAL_CANARY=PASS')
           PY
 
-      - name: Prepare sealed deterministic dossier
-        id: prepare
+      - name: Prove trusted CAS gate and E2 semantics
         run: |
-          set -o pipefail
-          python3 control/tools/fluxion_sonnet_reviewer.py \
-            prepare target artifacts artifacts/PR_META.json \
-            2>&1 | tee artifacts/PREPARE.log
+          set -euo pipefail
+          python3 .github/bootstrap/fluxion-trusted-publish-gate.py --self-test | tee /tmp/publish-selftest.log
+          for marker in \
+            TRUSTED_PUBLISHER_PRESENT EXPECTED_BASE_ENFORCED NON_FORCE_PUBLISH \
+            UNEXPECTED_ORIGIN_MOVE_BLOCKS CANDIDATE_EXACT_PARENT ALLOWED_PATHS_ENFORCED \
+            NON_FAST_FORWARD_BLOCKS UNATTESTED_MASTER_BLOCKS REVIEW_DOSSIER_PIN_ENFORCED \
+            FRESH_REVIEW_RED_BLOCKS FRESH_REVIEW_NON_RED_NOT_ROOT_OF_TRUST TRUSTED_PUBLISH_SELFTEST
+          do
+            grep -qx "$marker=PASS" /tmp/publish-selftest.log
+          done
+          echo "TRUSTED_PUBLISH_GATE_CANARIES=PASS"
+          echo "DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS"
 
-      - name: Run fresh no-tools Sonnet review
-        id: sonnet
-        if: steps.prepare.outputs.invoke_model == 'true'
-        continue-on-error: true
-        uses: anthropics/claude-code-action/base-action@v1
-        with:
-          prompt_file: ${{ steps.prepare.outputs.prompt_path }}
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          claude_args: >-
-            --model sonnet
-            --max-turns 3
-            --disallowedTools "Bash,Edit,Write,Read,Grep,Glob,WebFetch,WebSearch,NotebookEdit,Task,TaskOutput,KillTask"
-            --json-schema
-            '{"type":"object","additionalProperties":false,"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"safe_to_merge":{"type":"string","enum":["yes","no"]},"next_action":{"type":"string"}},"required":["verdict","summary","findings","required_changes","safe_to_merge","next_action"]}'
-
-      - name: Validate and publish content-addressed verdict
-        if: always() && steps.prepare.outcome == 'success'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MODEL_STEP_OUTCOME: ${{ steps.sonnet.outcome }}
-          STRUCTURED_OUTPUT: ${{ steps.sonnet.outputs.structured_output }}
+      - name: Prove router full-duration lock
         run: |
-          set -o pipefail
-          python3 control/tools/fluxion_sonnet_reviewer.py \
-            finalize target artifacts artifacts/PR_META.json \
-            2>&1 | tee artifacts/FINALIZE.log
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          root="$tmp/.local/share/fluxion-draft-bus"; bin="$tmp/.local/bin"
+          mkdir -p "$root/queue" "$bin"
+          cp .github/bootstrap/fluxion-draft-bus-executor "$tmp/router.py"
+          cat > "$bin/fluxion-generic-write-executor" <<'EOF'
+          #!/bin/zsh
+          print -r -- "$1" >> "$HOME/calls.txt"
+          sleep 2
+          EOF
+          chmod 700 "$bin/fluxion-generic-write-executor"
+          printf 'raise SystemExit(0)\n' > "$bin/fluxion-draft-bus-executor-ro-core"
+          chmod 700 "$bin/fluxion-draft-bus-executor-ro-core"
+          cat > "$root/queue/healthy.json" <<'EOF'
+          {"schema_version":1,"created_at":"2026-08-11T18:00:00Z","action_profile":"FIX_SCOPED_BUG"}
+          EOF
+          HOME="$tmp" python3 "$tmp/router.py" & first=$!
+          for _ in $(seq 1 40); do [ -s "$tmp/calls.txt" ] && break; sleep 0.05; done
+          test -s "$tmp/calls.txt"
+          HOME="$tmp" python3 "$tmp/router.py"
+          wait "$first"
+          test "$(wc -l < "$tmp/calls.txt" | tr -d ' ')" = 1
+          echo "SINGLE_CONSUMER_FULL_DURATION=PASS"
 
-      - name: Upload review evidence
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Prove poison quarantine and UTC ordering
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+          root="$tmp/.local/share/fluxion-draft-bus"; bin="$tmp/.local/bin"
+          mkdir -p "$root/queue" "$bin"
+          cp .github/bootstrap/fluxion-draft-bus-executor "$tmp/router.py"
+          cat > "$bin/fluxion-generic-write-executor" <<'EOF'
+          #!/bin/zsh
+          print -r -- "$1" > "$HOME/generic-called.txt"
+          EOF
+          chmod 700 "$bin/fluxion-generic-write-executor"
+          printf 'raise SystemExit(0)\n' > "$bin/fluxion-draft-bus-executor-ro-core"
+          chmod 700 "$bin/fluxion-draft-bus-executor-ro-core"
+          printf '{bad-json\n' > "$root/queue/000-bad.json"
+          printf '{"schema_version":1,"action_profile":"FIX_SCOPED_BUG"}\n' > "$root/queue/001-missing-time.json"
+          cat > "$root/queue/002-later.json" <<'EOF'
+          {"schema_version":1,"created_at":"2026-08-11T20:00:00Z","action_profile":"FIX_SCOPED_BUG"}
+          EOF
+          cat > "$root/queue/003-earlier-offset.json" <<'EOF'
+          {"schema_version":1,"created_at":"2026-08-11T21:00:00+02:00","action_profile":"FIX_SCOPED_BUG"}
+          EOF
+          HOME="$tmp" python3 "$tmp/router.py"
+          grep -F "$root/queue/003-earlier-offset.json" "$tmp/generic-called.txt"
+          test "$(find "$root/router-quarantine" -type f -name '*.bad' | wc -l | tr -d ' ')" = 2
+          echo "POISON_QUARANTINE=PASS"
+          echo "UTC_TIMESTAMP_ORDER=PASS"
+
+      - name: Emit content-addressable static evidence
+        run: |
+          set -euo pipefail
+          head="$(cat HEAD_SHA.txt)"
+          python3 - "$head" > CONTROL_STATIC.json <<'PY'
+          import json,sys
+          markers=[
+            'EXACT_CONTROL_FETCH=PASS','PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT','PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED',
+            'SYNTAX_COMPILE=PASS','EXECUTOR_INTEGRITY=PASS','WRITER_CAPABILITY_BOUNDARY=PASS','WRITER_CAN_LAUNCH_REVIEW=NO',
+            'FRESH_REVIEW_ROOT_OF_TRUST=NO','NO_INSTALL_PATH_IN_CANARY=PASS','CLAUDE_RUNTIME_PIN=PASS',
+            'BEHAVIORAL_CANARY_WIRED_TO_TRUSTED_MAC=PASS','ACTIVATION_AFTER_BEHAVIORAL_CANARY=PASS',
+            'TRUSTED_PUBLISH_GATE_CANARIES=PASS','DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS','SINGLE_CONSUMER_FULL_DURATION=PASS',
+            'POISON_QUARANTINE=PASS','UTC_TIMESTAMP_ORDER=PASS','CONTROL_STATIC=PASS'
+          ]
+          print(json.dumps({'schema_version':1,'kind':'CONTROL_STATIC_EVIDENCE','head_sha':sys.argv[1],'status':'PASS','markers':markers},sort_keys=True,separators=(',',':')))
+          PY
+          sha256sum CONTROL_STATIC.json | awk '{print $1}' > CONTROL_STATIC.sha256
+          echo "CONTROL_STATIC=PASS"
+
+      - name: Upload static evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: fluxion-sonnet-pr-${{ steps.target.outputs.pr_number }}-${{ steps.target.outputs.head_sha }}
+          name: fluxion-control-static-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            artifacts/PR_META.json
-            artifacts/AUDIT.json
-            artifacts/AUDIT.sha256
-            artifacts/PROMPT.sha256
-            artifacts/RESULT.json
-            artifacts/RESULT.sha256
-            artifacts/PREPARE.log
-            artifacts/FINALIZE.log
-          if-no-files-found: warn
+            CONTROL_STATIC.json
+            CONTROL_STATIC.sha256
+          if-no-files-found: error
           retention-days: 30
