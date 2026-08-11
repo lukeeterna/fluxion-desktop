@@ -27,12 +27,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout exact source without persisted credentials
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 1
-          persist-credentials: false
+      - name: Fetch exact control-plane files without checkout
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p .github/bootstrap .github/workflows
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${HEAD_SHA}"
+          for path in \
+            .github/bootstrap/fluxion-draft-bus-executor \
+            .github/bootstrap/fluxion-generic-write-executor \
+            .github/bootstrap/fluxion-trusted-publish-gate.py \
+            .github/bootstrap/install-generic-write-lane.zsh \
+            .github/workflows/fluxion-generic-write-bootstrap.yml \
+            .github/workflows/fluxion-sonnet-review.yml
+          do
+            curl --fail --silent --show-error --location --retry 3 "$base/$path" --output "$path"
+            test -s "$path"
+          done
+          printf '%s\n' "$HEAD_SHA" > HEAD_SHA.txt
+          echo "EXACT_CONTROL_FETCH=PASS"
 
       - name: Verify PR workflow has no privileged model boundary
         run: |
@@ -171,11 +185,11 @@ jobs:
       - name: Emit content-addressable static evidence
         run: |
           set -euo pipefail
-          head="$(git rev-parse HEAD)"
+          head="$(cat HEAD_SHA.txt)"
           python3 - "$head" > CONTROL_STATIC.json <<'PY'
           import json,sys
           markers=[
-            'PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT','PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED',
+            'EXACT_CONTROL_FETCH=PASS','PR_WORKFLOW_CLAUDE_SECRET=ABSENT','PR_WORKFLOW_PRIVILEGED_SECRET=ABSENT','PR_EVENT_TO_PRIVILEGED_MAC=BLOCKED',
             'SYNTAX_COMPILE=PASS','EXECUTOR_INTEGRITY=PASS','WRITER_CAPABILITY_BOUNDARY=PASS','WRITER_CAN_LAUNCH_REVIEW=NO',
             'FRESH_REVIEW_ROOT_OF_TRUST=NO','NO_INSTALL_PATH_IN_CANARY=PASS','CLAUDE_RUNTIME_PIN=PASS',
             'TRUSTED_PUBLISH_GATE_CANARIES=PASS','DETERMINISTIC_PROOFS_AUTHORITATIVE=PASS','SINGLE_CONSUMER_FULL_DURATION=PASS',
@@ -189,7 +203,7 @@ jobs:
       - name: Upload static evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: fluxion-control-static-${{ github.sha }}
+          name: fluxion-control-static-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             CONTROL_STATIC.json
             CONTROL_STATIC.sha256
