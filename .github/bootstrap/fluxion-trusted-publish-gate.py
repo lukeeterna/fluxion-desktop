@@ -3,6 +3,18 @@
 
 Non-LLM root of trust for publishing reviewed candidates to origin/master.
 It never force-pushes and never retries a compare-and-swap failure.
+
+Trust boundary for result provenance:
+- writer/verifier result JSON is produced by the trusted local runtime after the
+  model process exits, not by the model itself;
+- Claude writer has no Bash/Git/network/publisher capability and is confined to
+  its isolated worktree, so it cannot invoke this gate or write these result files;
+- this gate requires result files owned by the current trusted OS account and
+  not group/world-writable, verifies their caller-supplied content SHA-256, binds
+  both results to the exact candidate, and requires a fresh verifier marked
+  independent with a distinct session bound to the writer session;
+- the local runtime account is explicitly part of the TCB. This mechanism does
+  not claim to defend against compromise of that same trusted OS account.
 """
 from __future__ import annotations
 import argparse
@@ -39,16 +51,31 @@ def require_hex(name,value,rx):
     if not rx.fullmatch(value): raise Blocked(f"{name} malformed")
     return value
 
+def validate_local_result_file(path:Path,role:str):
+    if not path.is_file(): raise Blocked(f"{role} result is not a regular file")
+    st=path.stat()
+    if st.st_uid!=os.getuid(): raise Blocked(f"{role} result owner mismatch")
+    if st.st_mode & 0o022: raise Blocked(f"{role} result is group/world writable")
+    parent=path.parent.stat()
+    if parent.st_uid!=os.getuid(): raise Blocked(f"{role} result directory owner mismatch")
+    if parent.st_mode & 0o022: raise Blocked(f"{role} result directory is group/world writable")
+
 def load_result(path: Path,expected_sha:str,role:str,candidate:str):
+    validate_local_result_file(path,role)
     if sha256_file(path)!=expected_sha: raise Blocked(f"{role} result sha mismatch")
     try: d=json.loads(path.read_text(encoding="utf-8"))
     except Exception as e: raise Blocked(f"{role} result invalid json: {e}") from e
     if not isinstance(d,dict): raise Blocked(f"{role} result is not object")
     if d.get("status")!="PASS": raise Blocked(f"{role} status is not PASS")
-    if role=="verifier" and d.get("verdict") not in {"GREEN","VERDE"}:
-        raise Blocked("fresh verifier is not GREEN")
+    session=str(d.get("session_id") or "").strip()
+    if not session or len(session)>200: raise Blocked(f"{role} session_id missing or invalid")
+    if role=="verifier":
+        if d.get("verdict") not in {"GREEN","VERDE"}: raise Blocked("fresh verifier is not GREEN")
+        if d.get("independent") is not True: raise Blocked("fresh verifier is not marked independent")
+        if d.get("profile")!="RUN_VERIFICATION": raise Blocked("fresh verifier profile mismatch")
     if str(d.get("result_commit") or d.get("candidate_sha") or "")!=candidate:
         raise Blocked(f"{role} result_commit does not match candidate")
+    return d
 
 def validate_allowed_paths(repo:Path,expected:str,candidate:str,allowed:list[str]):
     if not allowed or not all(isinstance(x,str) and x for x in allowed): raise Blocked("allowed_paths invalid")
@@ -132,8 +159,15 @@ def publish(a)->int:
 
         evidence=Path(a.evidence).resolve()
         if sha256_file(evidence)!=esha: raise Blocked("evidence sha mismatch")
-        load_result(Path(a.writer_result).resolve(),wsha,"writer",candidate)
-        load_result(Path(a.verifier_result).resolve(),vsha,"verifier",candidate)
+        writer_path=Path(a.writer_result).resolve()
+        verifier_path=Path(a.verifier_result).resolve()
+        if writer_path==verifier_path: raise Blocked("writer/verifier result path collision")
+        writer=load_result(writer_path,wsha,"writer",candidate)
+        verifier=load_result(verifier_path,vsha,"verifier",candidate)
+        if verifier.get("writer_session_id")!=writer.get("session_id"):
+            raise Blocked("verifier is not bound to writer session")
+        if verifier.get("session_id")==writer.get("session_id"):
+            raise Blocked("verifier session is not fresh/distinct")
 
         if fetch_master(repo)!=expected: raise Blocked("BLOCKED_ORIGIN_MOVED")
 
@@ -178,15 +212,17 @@ def _fixture(root:Path,name:str,change_path:str="allowed.txt",two_commits:bool=F
     candidate=_cmd(work,"git","rev-parse","HEAD")
     return origin,work,base,candidate
 
-def _evidence(root:Path,candidate:str,prefix:str):
+def _evidence(root:Path,candidate:str,prefix:str,verifier_independent:bool=True):
     writer=root/f"{prefix}-writer.json"; verifier=root/f"{prefix}-verifier.json"; evidence=root/f"{prefix}-evidence.bin"
-    writer.write_text(json.dumps({"status":"PASS","result_commit":candidate,"verdict":"VERDE"},sort_keys=True)+"\n",encoding="utf-8")
-    verifier.write_text(json.dumps({"status":"PASS","result_commit":candidate,"verdict":"GREEN"},sort_keys=True)+"\n",encoding="utf-8")
+    writer_session=f"writer-{prefix}"
+    writer.write_text(json.dumps({"status":"PASS","result_commit":candidate,"verdict":"VERDE","session_id":writer_session},sort_keys=True)+"\n",encoding="utf-8")
+    verifier.write_text(json.dumps({"status":"PASS","result_commit":candidate,"verdict":"GREEN","session_id":f"verifier-{prefix}","writer_session_id":writer_session,"independent":verifier_independent,"profile":"RUN_VERIFICATION"},sort_keys=True)+"\n",encoding="utf-8")
     evidence.write_bytes(b"content-addressed-evidence\n")
+    writer.chmod(0o600); verifier.chmod(0o600); evidence.chmod(0o600)
     return writer,sha256_file(writer),verifier,sha256_file(verifier),evidence,sha256_file(evidence)
 
-def _invoke(script:Path,work:Path,base:str,candidate:str,allowed:list[str],prefix:str):
-    writer,wsha,verifier,vsha,evidence,esha=_evidence(work.parent,candidate,prefix)
+def _invoke(script:Path,work:Path,base:str,candidate:str,allowed:list[str],prefix:str,verifier_independent:bool=True):
+    writer,wsha,verifier,vsha,evidence,esha=_evidence(work.parent,candidate,prefix,verifier_independent)
     approval=work.parent/f"{prefix}-APPROVED.txt"
     argv=[sys.executable,str(script),"--repo",str(work),"--expected-base-sha",base,"--candidate-sha",candidate,
           "--task-id",f"CANARY.{prefix}","--allowed-paths-json",json.dumps(allowed,separators=(",",":")),
@@ -217,18 +253,30 @@ def self_test()->int:
         print("TRUSTED_PUBLISHER_PRESENT=PASS")
         print("TRUSTED_PUBLISH_POSITIVE=PASS")
 
+        origin,work,base,candidate=_fixture(root,"provenance")
+        p,_=_invoke(script,work,base,candidate,["allowed.txt"],"provenance",verifier_independent=False)
+        assert p.returncode==2
+        assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==base
+        print("VERIFIER_PROVENANCE_ENFORCED=PASS")
+
         other=root/"positive-unattested"; _cmd(root,"git","clone",str(origin),str(other))
         _cmd(other,"git","config","user.name","FLUXION Canary"); _cmd(other,"git","config","user.email","canary@invalid.example")
-        (other/"unattested.txt").write_text("unattested\n",encoding="utf-8")
-        _cmd(other,"git","add","unattested.txt"); _cmd(other,"git","commit","-m","unattested master")
-        unattested=_cmd(other,"git","rev-parse","HEAD")
-        _cmd(other,"git","push","origin","master")
-        approval_before=approval.read_bytes()
-        ap=_assert_invoke(script,work,approval)
+        # Use a separately attested positive fixture for unattested-master testing.
+        origin_u,work_u,base_u,candidate_u=_fixture(root,"unattested-positive")
+        p_u,approval_u=_invoke(script,work_u,base_u,candidate_u,["allowed.txt"],"unattested-positive")
+        assert p_u.returncode==0, p_u.stderr
+        other_u=root/"unattested-other"; _cmd(root,"git","clone",str(origin_u),str(other_u))
+        _cmd(other_u,"git","config","user.name","FLUXION Canary"); _cmd(other_u,"git","config","user.email","canary@invalid.example")
+        (other_u/"unattested.txt").write_text("unattested\n",encoding="utf-8")
+        _cmd(other_u,"git","add","unattested.txt"); _cmd(other_u,"git","commit","-m","unattested master")
+        unattested=_cmd(other_u,"git","rev-parse","HEAD")
+        _cmd(other_u,"git","push","origin","master")
+        approval_before=approval_u.read_bytes()
+        ap=_assert_invoke(script,work_u,approval_u)
         assert ap.returncode==2
         assert "UNATTESTED_MASTER" in ap.stderr
-        assert _cmd(work,"git","ls-remote","origin","refs/heads/master").split()[0]==unattested
-        assert approval.read_bytes()==approval_before
+        assert _cmd(work_u,"git","ls-remote","origin","refs/heads/master").split()[0]==unattested
+        assert approval_u.read_bytes()==approval_before
         print("UNATTESTED_MASTER_BLOCKS=PASS")
 
         origin,work,base,candidate=_fixture(root,"wrongbase")
