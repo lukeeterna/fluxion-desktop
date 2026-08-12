@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.event_name == 'workflow_dispatch' || github.event.before == '63b1b10637c2fa1acfcb03c94e930b71088d9221'
+    if: github.event_name == 'workflow_dispatch' || github.event.before == '32de8d9966702b7c00ce0d451a9a482366c95ee3'
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
     outputs:
@@ -98,7 +98,7 @@ jobs:
               *) echo "BLOCKED: canonical HEAD is neither PRE_BASE nor trusted candidate" >&2; exit 2 ;;
             esac
 
-            git -C "$REPO" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master'
+            git --git-dir="$REPO/.git" fetch --no-tags origin 'refs/heads/master:refs/remotes/origin/master'
             fetched="$(git -C "$REPO" rev-parse refs/remotes/origin/master)"
             test "$fetched" = "$GITHUB_SHA" || { echo "BLOCKED: fetched origin/master != event SHA" >&2; exit 2; }
 
