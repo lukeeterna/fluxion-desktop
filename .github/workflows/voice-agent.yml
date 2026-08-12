@@ -229,113 +229,113 @@ jobs:
         working-directory: voice-agent
         run: |
           python -c "
-from src.booking_state_machine import BookingStateMachine, BookingState
+          from src.booking_state_machine import BookingStateMachine, BookingState
 
-# Test initialization
-sm = BookingStateMachine()
-assert sm.context.state == BookingState.IDLE, 'Initial state should be IDLE'
+          # Test initialization
+          sm = BookingStateMachine()
+          assert sm.context.state == BookingState.IDLE, 'Initial state should be IDLE'
 
-# Test all 23 states exist
-states = list(BookingState)
-assert len(states) == 23, f'Expected 23 states, got {len(states)}'
+          # Test all 23 states exist
+          states = list(BookingState)
+          assert len(states) == 23, f'Expected 23 states, got {len(states)}'
 
-print('✓ State Machine: 23 states verified')
-print('✓ Smoke test passed')
-"
+          print('✓ State Machine: 23 states verified')
+          print('✓ Smoke test passed')
+          "
       
       - name: Smoke Test - Disambiguation Handler
         working-directory: voice-agent
         run: |
           python -c "
-from src.disambiguation_handler import DisambiguationHandler, is_phonetically_similar
+          from src.disambiguation_handler import DisambiguationHandler, is_phonetically_similar
 
-dh = DisambiguationHandler()
+          dh = DisambiguationHandler()
 
-# Test phonetic similarity
-assert is_phonetically_similar('gino', 'gigio') == True, 'Gino/Gigio should be similar'
-assert is_phonetically_similar('mario', 'maria') == True, 'Mario/Maria should be similar'
-assert is_phonetically_similar('marco', 'matteo') == False, 'Marco/Matteo should not be similar'
+          # Test phonetic similarity
+          assert is_phonetically_similar('gino', 'gigio') == True, 'Gino/Gigio should be similar'
+          assert is_phonetically_similar('mario', 'maria') == True, 'Mario/Maria should be similar'
+          assert is_phonetically_similar('marco', 'matteo') == False, 'Marco/Matteo should not be similar'
 
-print('✓ Phonetic matching: working')
-print('✓ Disambiguation smoke test passed')
-"
+          print('✓ Phonetic matching: working')
+          print('✓ Disambiguation smoke test passed')
+          "
       
       - name: Smoke Test - Intent Classification
         working-directory: voice-agent
         run: |
           python -c "
-from src.intent_classifier import classify_intent, IntentCategory
+          from src.intent_classifier import classify_intent, IntentCategory
 
-# Test intents
-result = classify_intent('Vorrei prenotare')
-assert result.category == IntentCategory.PRENOTAZIONE, f'Expected PRENOTAZIONE, got {result.category}'
-assert result.confidence > 0.7, f'Low confidence: {result.confidence}'
+          # Test intents
+          result = classify_intent('Vorrei prenotare')
+          assert result.category == IntentCategory.PRENOTAZIONE, f'Expected PRENOTAZIONE, got {result.category}'
+          assert result.confidence > 0.7, f'Low confidence: {result.confidence}'
 
-result = classify_intent('Voglio cancellare')
-assert result.category == IntentCategory.CANCELLAZIONE
+          result = classify_intent('Voglio cancellare')
+          assert result.category == IntentCategory.CANCELLAZIONE
 
-result = classify_intent('Sì, confermo')
-assert result.category == IntentCategory.CONFERMA
+          result = classify_intent('Sì, confermo')
+          assert result.category == IntentCategory.CONFERMA
 
-print('✓ Intent classification: working')
-print('✓ Intent smoke test passed')
-"
+          print('✓ Intent classification: working')
+          print('✓ Intent smoke test passed')
+          "
       
       - name: Smoke Test - Turn Tracker
         working-directory: voice-agent
         run: |
           python -c "
-from src.turn_tracker import FluxionTurnTracker, TurnRecord, TurnMetrics
+          from src.turn_tracker import FluxionTurnTracker, TurnRecord, TurnMetrics
 
-# Test in-memory DB
- tracker = FluxionTurnTracker(':memory:')
+          # Test in-memory DB
+          tracker = FluxionTurnTracker(':memory:')
 
-# Create test turn
-turn = TurnRecord(
-    session_id='test_session',
-    conversation_id='test_conv',
-    turn_number=1,
-    user_input_raw='Vorrei prenotare',
-    intent_detected='PRENOTAZIONE'
-)
-turn.metrics.latency_ms = 450
+          # Create test turn
+          turn = TurnRecord(
+              session_id='test_session',
+              conversation_id='test_conv',
+              turn_number=1,
+              user_input_raw='Vorrei prenotare',
+              intent_detected='PRENOTAZIONE'
+          )
+          turn.metrics.latency_ms = 450
 
-# Log turn
-turn_id = tracker.log_turn(turn)
-assert turn_id is not None, 'Turn ID should not be None'
+          # Log turn
+          turn_id = tracker.log_turn(turn)
+          assert turn_id is not None, 'Turn ID should not be None'
 
-# Retrieve turn
-retrieved = tracker.get_turn(turn_id)
-assert retrieved is not None, 'Should retrieve turn'
-assert retrieved.intent_detected == 'PRENOTAZIONE'
+          # Retrieve turn
+          retrieved = tracker.get_turn(turn_id)
+          assert retrieved is not None, 'Should retrieve turn'
+          assert retrieved.intent_detected == 'PRENOTAZIONE'
 
-print('✓ Turn Tracker: working')
-print('✓ Turn tracker smoke test passed')
-"
+          print('✓ Turn Tracker: working')
+          print('✓ Turn tracker smoke test passed')
+          "
       
       - name: Smoke Test - Latency Optimizer
         working-directory: voice-agent
         run: |
           python -c "
-from src.latency_optimizer import FluxionLatencyOptimizer, LatencyMetrics
+          from src.latency_optimizer import FluxionLatencyOptimizer, LatencyMetrics
 
-# Test initialization (without API key for smoke test)
-opt = FluxionLatencyOptimizer('test-key')
+          # Test initialization (without API key for smoke test)
+          opt = FluxionLatencyOptimizer('test-key')
 
-# Test metrics tracking
-metrics = opt.start_tracking()
-assert metrics is not None
+          # Test metrics tracking
+          metrics = opt.start_tracking()
+          assert metrics is not None
 
-opt.record_metric('stt', 200)
-opt.record_metric('llm', 500)
+          opt.record_metric('stt', 200)
+          opt.record_metric('llm', 500)
 
-final = opt.end_tracking()
-assert final.stt_ms == 200
-assert final.llm_ms == 500
+          final = opt.end_tracking()
+          assert final.stt_ms == 200
+          assert final.llm_ms == 500
 
-print('✓ Latency Optimizer: working')
-print('✓ Latency optimizer smoke test passed')
-"
+          print('✓ Latency Optimizer: working')
+          print('✓ Latency optimizer smoke test passed')
+          "
 
   # ==========================================================================
   # JOB 6: Performance Benchmarks
@@ -366,37 +366,37 @@ print('✓ Latency optimizer smoke test passed')
         run: |
           echo "=== Running Performance Tests ==="
           python -c "
-import time
-import tracemalloc
-from src.booking_state_machine import BookingStateMachine, BookingState
+          import time
+          import tracemalloc
+          from src.booking_state_machine import BookingStateMachine, BookingState
 
-# Latency test
-start = time.time()
-sm = BookingStateMachine()
-sm.handle_input('Vorrei prenotare')
-elapsed = (time.time() - start) * 1000
+          # Latency test
+          start = time.time()
+          sm = BookingStateMachine()
+          sm.handle_input('Vorrei prenotare')
+          elapsed = (time.time() - start) * 1000
 
-print(f'✓ State machine latency: {elapsed:.1f}ms')
-assert elapsed < 1000, f'Too slow: {elapsed}ms'
+          print(f'✓ State machine latency: {elapsed:.1f}ms')
+          assert elapsed < 1000, f'Too slow: {elapsed}ms'
 
-# Memory test
-tracemalloc.start()
-sessions = []
-for i in range(100):
-    sm = BookingStateMachine()
-    sm.context.session_id = f'test_{i}'
-    sm.handle_input('Test')
-    sessions.append(sm)
+          # Memory test
+          tracemalloc.start()
+          sessions = []
+          for i in range(100):
+              sm = BookingStateMachine()
+              sm.context.session_id = f'test_{i}'
+              sm.handle_input('Test')
+              sessions.append(sm)
 
-current, peak = tracemalloc.get_traced_memory()
-tracemalloc.stop()
+          current, peak = tracemalloc.get_traced_memory()
+          tracemalloc.stop()
 
-memory_per_session = current / 100
-print(f'✓ Memory per session: {memory_per_session / 1024:.1f}KB')
-assert memory_per_session < 1_000_000, f'Too much memory: {memory_per_session}'
+          memory_per_session = current / 100
+          print(f'✓ Memory per session: {memory_per_session / 1024:.1f}KB')
+          assert memory_per_session < 1_000_000, f'Too much memory: {memory_per_session}'
 
-print('✓ Performance tests passed')
-"
+          print('✓ Performance tests passed')
+          "
 
   # ==========================================================================
   # JOB 7: Security Scan
@@ -471,23 +471,23 @@ print('✓ Performance tests passed')
           
           # Create startup scripts (Unix + Windows)
           cat > dist/fluxion-voice-agent/start.sh << 'EOF'
-#!/bin/bash
-cd "$(dirname "$0")"
-python -m venv venv
-source venv/bin/activate
-pip install -q -r requirements.txt
-python main.py "$@"
-EOF
+          #!/bin/bash
+          cd "$(dirname "$0")"
+          python -m venv venv
+          source venv/bin/activate
+          pip install -q -r requirements.txt
+          python main.py "$@"
+          EOF
           chmod +x dist/fluxion-voice-agent/start.sh
 
           cat > dist/fluxion-voice-agent/start.bat << 'EOF'
-@echo off
-cd /d "%~dp0"
-python -m venv venv
-call venv\Scripts\activate.bat
-pip install -q -r requirements-windows.txt
-python main.py %*
-EOF
+          @echo off
+          cd /d "%~dp0"
+          python -m venv venv
+          call venv\Scripts\activate.bat
+          pip install -q -r requirements-windows.txt
+          python main.py %*
+          EOF
           
           # Create package
           cd dist
