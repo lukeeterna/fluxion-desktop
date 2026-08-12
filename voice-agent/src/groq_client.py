@@ -104,6 +104,19 @@ class GroqClient:
         err_str = str(e)
         return '429' in err_str or 'rate_limit' in err_str.lower() or '503' in err_str
 
+    @staticmethod
+    def _normalize_transcription_response(response: Any) -> str:
+        """Normalize Groq STT text responses without leaking object reprs downstream."""
+        if isinstance(response, str):
+            return response.strip()
+
+        text = response.get("text") if isinstance(response, dict) else getattr(response, "text", None)
+        if not isinstance(text, str):
+            raise TypeError(
+                f"Unsupported Groq transcription response type: {type(response).__name__}"
+            )
+        return text.strip()
+
     async def transcribe_audio(
         self,
         audio_data: bytes,
@@ -155,7 +168,7 @@ class GroqClient:
                 self.client.audio.transcriptions.create,
                 **create_kwargs,
             )
-            return response.strip()
+            return self._normalize_transcription_response(response)
         except Exception as e:
             raise RuntimeError(f"STT failed: {e}")
 
