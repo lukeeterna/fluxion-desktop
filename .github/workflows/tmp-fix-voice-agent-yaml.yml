@@ -1,0 +1,43 @@
+name: TEMP Fix Voice Agent YAML
+on:
+  push:
+    branches: [fix/voice-agent-yaml-block-indentation-20260812]
+    paths: [.github/workflows/tmp-fix-voice-agent-yaml.yml]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/voice-agent-yaml-block-indentation-20260812
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/tmp-fix-voice-agent-yaml.py
+            .github/workflows/tmp-fix-voice-agent-yaml.yml
+            .github/workflows/voice-agent.yml
+          sparse-checkout-cone-mode: false
+      - name: Repair exact YAML bytes
+        run: python3 .github/tmp-fix-voice-agent-yaml.py
+      - name: Validate YAML and diff
+        run: |
+          set -euo pipefail
+          ruby -r psych -e 'Psych.parse_file(ARGV[0]); puts "YAML_PARSE=PASS"' .github/workflows/voice-agent.yml
+          git diff --check
+          test "$(git diff --name-only)" = '.github/workflows/voice-agent.yml'
+      - name: Commit one-file repair
+        run: |
+          set -euo pipefail
+          rm .github/tmp-fix-voice-agent-yaml.py .github/workflows/tmp-fix-voice-agent-yaml.yml
+          git add -A -- .github/tmp-fix-voice-agent-yaml.py .github/workflows/tmp-fix-voice-agent-yaml.yml .github/workflows/voice-agent.yml
+          staged="$(git diff --cached --name-only | sort)"
+          printf '%s\n' "$staged"
+          printf '%s\n' "$staged" | grep -qx '.github/workflows/voice-agent.yml'
+          bad="$(printf '%s\n' "$staged" | grep -Ev '^(\.github/tmp-fix-voice-agent-yaml\.py|\.github/workflows/tmp-fix-voice-agent-yaml\.yml|\.github/workflows/voice-agent\.yml)$' || true)"
+          test -z "$bad"
+          test ! -e .github/tmp-fix-voice-agent-yaml.py
+          test ! -e .github/workflows/tmp-fix-voice-agent-yaml.yml
+          git -c core.hooksPath=/dev/null -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(ci): repair voice-agent YAML block indentation'
+          git push origin HEAD:fix/voice-agent-yaml-block-indentation-20260812
