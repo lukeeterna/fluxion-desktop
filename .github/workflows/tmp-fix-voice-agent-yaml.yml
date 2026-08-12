@@ -1,4 +1,4 @@
-name: TEMP Fix Voice Agent YAML
+name: TEMP Fix Voice Agent YAML v2
 on:
   push:
     branches: [fix/voice-agent-yaml-block-indentation-20260812]
