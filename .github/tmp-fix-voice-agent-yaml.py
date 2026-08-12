@@ -23,7 +23,10 @@ for line in lines:
         continue
 
     marker = line.rstrip('\n')
-    out.append('          ' + line)
+    if marker == '':
+        out.append('\n' if line.endswith('\n') else '')
+    else:
+        out.append('          ' + line)
     if (mode == 'python' and marker == '"') or (mode == 'heredoc' and marker == 'EOF'):
         mode = None
 
