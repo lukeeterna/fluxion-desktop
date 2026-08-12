@@ -1,0 +1,579 @@
+name: FLUXION Soleur Hosted Engineering
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fluxion-soleur.yml'
+      - '.github/bootstrap/fluxion-soleur-adapter.py'
+  workflow_dispatch:
+    inputs:
+      task_json:
+        description: 'Canonical FLUXION TASK JSON object'
+        required: true
+        type: string
+  issues:
+    types: [labeled]
+
+concurrency:
+  group: fluxion-soleur-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: false
+
+env:
+  SOLEUR_REPOSITORY: jikig-ai/soleur
+  SOLEUR_COMMIT: 154302d32114abba3165ce47daefe5bfe508d02f
+  CLAUDE_BASE_ACTION_COMMIT: f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+  FLUXION_EXTERNAL_PUBLISH: SOL-000020
+
+jobs:
+  adapter-selftest:
+    name: Soleur adapter self-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout FLUXION
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Python self-test and static contract
+        run: |
+          python3 -m py_compile .github/bootstrap/fluxion-soleur-adapter.py
+          python3 .github/bootstrap/fluxion-soleur-adapter.py self-test
+          python3 .github/bootstrap/fluxion-soleur-adapter.py static-workflow \
+            --workflow .github/workflows/fluxion-soleur.yml
+
+      - name: Verify pinned Soleur overlay still applies
+        run: |
+          set -euo pipefail
+          SOLEUR_ROOT="$RUNNER_TEMP/soleur"
+          git init "$SOLEUR_ROOT"
+          git -C "$SOLEUR_ROOT" remote add origin "https://github.com/${SOLEUR_REPOSITORY}.git"
+          git -C "$SOLEUR_ROOT" fetch --depth=1 origin "$SOLEUR_COMMIT"
+          git -C "$SOLEUR_ROOT" checkout --detach "$SOLEUR_COMMIT"
+          python3 .github/bootstrap/fluxion-soleur-adapter.py overlay \
+            --soleur-root "$SOLEUR_ROOT"
+          grep -Fq 'FLUXION_SOLEUR_READY' "$SOLEUR_ROOT/plugins/soleur/skills/ship/SKILL.md"
+          grep -Fq '<promise>READY_FOR_SOL_000020</promise>' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
+          grep -Fq 'FLUXION_EXTERNAL_PUBLISH=PASS' "$SOLEUR_ROOT/plugins/soleur/skills/postmerge/SKILL.md"
+
+  engineer:
+    name: Soleur engineering / review / QA
+    needs: adapter-selftest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' &&
+       github.event.label.name == 'fluxion:auto' &&
+       github.event.issue.user.login == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    outputs:
+      task_id: ${{ steps.task.outputs.task_id }}
+      base_commit: ${{ steps.task.outputs.base_commit }}
+      source_head: ${{ steps.export.outputs.source_head }}
+      patch_sha256: ${{ steps.export.outputs.patch_sha256 }}
+    steps:
+      - name: Checkout canonical master read-only
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Freeze trusted adapter and task
+        id: task
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_TASK_JSON: ${{ inputs.task_json }}
+          ISSUE_TASK_JSON: ${{ github.event.issue.body }}
+        run: |
+          set -euo pipefail
+          cp .github/bootstrap/fluxion-soleur-adapter.py "$RUNNER_TEMP/fluxion-soleur-adapter.py"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          raw = os.environ.get('DISPATCH_TASK_JSON','') if os.environ.get('EVENT_NAME') == 'workflow_dispatch' else os.environ.get('ISSUE_TASK_JSON','')
+          if not raw.strip():
+              raise SystemExit('TASK JSON is empty')
+          Path(os.environ['RUNNER_TEMP'], 'task.json').write_text(raw.strip() + '\n', encoding='utf-8')
+          PY
+          CURRENT_MASTER="$(git rev-parse HEAD)"
+          python3 "$RUNNER_TEMP/fluxion-soleur-adapter.py" validate-task \
+            --input "$RUNNER_TEMP/task.json" \
+            --current-master "$CURRENT_MASTER"
+
+      - name: Build isolated local origin/main compatibility mirror
+        env:
+          BASE_COMMIT: ${{ steps.task.outputs.base_commit }}
+        run: |
+          set -euo pipefail
+          LOCAL_ORIGIN="$RUNNER_TEMP/fluxion-origin.git"
+          git init --bare "$LOCAL_ORIGIN"
+          git push "$LOCAL_ORIGIN" "$BASE_COMMIT:refs/heads/main"
+          git remote remove origin
+          git remote add origin "$LOCAL_ORIGIN"
+          git fetch origin main
+          git checkout -B main "$BASE_COMMIT"
+          test "$(git rev-parse origin/main)" = "$BASE_COMMIT"
+          test "$(git rev-parse HEAD)" = "$BASE_COMMIT"
+
+      - name: Load exact pinned Soleur and FLUXION overlay
+        run: |
+          set -euo pipefail
+          SOLEUR_ROOT="$RUNNER_TEMP/soleur"
+          git init "$SOLEUR_ROOT"
+          git -C "$SOLEUR_ROOT" remote add origin "https://github.com/${SOLEUR_REPOSITORY}.git"
+          git -C "$SOLEUR_ROOT" fetch --depth=1 origin "$SOLEUR_COMMIT"
+          git -C "$SOLEUR_ROOT" checkout --detach "$SOLEUR_COMMIT"
+          python3 "$RUNNER_TEMP/fluxion-soleur-adapter.py" overlay \
+            --soleur-root "$SOLEUR_ROOT"
+
+      - name: Build one-shot prompt from canonical TASK
+        env:
+          TASK_ID: ${{ steps.task.outputs.task_id }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          task_path = Path(os.environ['RUNNER_TEMP'], 'task.json')
+          task = json.loads(task_path.read_text(encoding='utf-8'))
+          prompt = f'''/soleur:one-shot --headless
+
+          You are executing a canonical FLUXION TASK inside an ephemeral GitHub-hosted Linux engineering lane.
+          Use Soleur's existing one-shot state machine; do not hand-roll plan/work/review/QA/compound.
+          The pinned FLUXION overlay replaces only Soleur's repository-specific ship/publication boundary.
+
+          CRITICAL FLUXION constraints:
+          - Canonical repository: lukeeterna/fluxion-desktop; canonical branch: master.
+          - In this ephemeral lane, local `main` and `origin/main` are compatibility aliases for the immutable TASK base.
+          - The `origin` remote is a local bare mirror. There is intentionally no credential or remote path capable of publishing FLUXION code.
+          - Never attempt to restore a GitHub write remote, push canonical code, create/merge a PR, or bypass the overlay.
+          - Treat TASK.allowed_paths as the only product-code output eligible for final materialization. Soleur planning/review artifacts may exist only as auxiliary local evidence and will not be published unless explicitly listed in allowed_paths.
+          - Honor forbidden_actions, required_tests, negative_tests, stop_conditions, and retry_limit=0 exactly.
+          - Finish only when the patched ship returns FLUXION_SOLEUR_READY and one-shot emits <promise>READY_FOR_SOL_000020</promise>.
+
+          Canonical TASK JSON follows:
+          {json.dumps(task, ensure_ascii=False, indent=2)}
+          '''
+          Path(os.environ['RUNNER_TEMP'], 'soleur-prompt.txt').write_text(prompt, encoding='utf-8')
+          PY
+
+      - name: Run pinned Soleur one-shot on GitHub-hosted Linux
+        id: soleur
+        uses: anthropics/claude-code-base-action@f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+        with:
+          prompt_file: ${{ runner.temp }}/soleur-prompt.txt
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: |
+            {
+              "env": {
+                "GH_TOKEN": "${{ github.token }}",
+                "GH_REPO": "lukeeterna/fluxion-desktop",
+                "FLUXION_TASK_FILE": "${{ runner.temp }}/task.json",
+                "FLUXION_ADAPTER": "${{ runner.temp }}/fluxion-soleur-adapter.py"
+              }
+            }
+          claude_args: |
+            --model sonnet
+            --max-turns 300
+            --permission-mode bypassPermissions
+            --allowedTools "Bash,Read,Edit,Write,Grep,Glob,Skill,Task"
+            --plugin-dir "${{ runner.temp }}/soleur/plugins/soleur"
+
+      - name: Require Soleur external-publisher completion marker
+        env:
+          EXECUTION_FILE: ${{ steps.soleur.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          test -n "$EXECUTION_FILE"
+          test -f "$EXECUTION_FILE"
+          grep -Fq 'READY_FOR_SOL_000020' "$EXECUTION_FILE"
+          grep -Fq 'FLUXION_SOLEUR_READY' "$EXECUTION_FILE"
+
+      - name: Export only the reviewed TASK-allowed diff
+        id: export
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/soleur-result"
+          python3 "$RUNNER_TEMP/fluxion-soleur-adapter.py" export \
+            --repo "$GITHUB_WORKSPACE" \
+            --task "$RUNNER_TEMP/task.json" \
+            --out-patch "$RUNNER_TEMP/soleur-result/soleur.patch" \
+            --out-meta "$RUNNER_TEMP/soleur-result/soleur-meta.json"
+          cp "$RUNNER_TEMP/task.json" "$RUNNER_TEMP/soleur-result/task.json"
+          cp "${{ steps.soleur.outputs.execution_file }}" "$RUNNER_TEMP/soleur-result/soleur-execution.json"
+
+      - name: Upload sealed engineering result
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-engineering-${{ github.run_id }}
+          path: ${{ runner.temp }}/soleur-result/
+          if-no-files-found: error
+          retention-days: 7
+
+  materialize-pr:
+    name: Deterministic materialization and evidence PR
+    needs: engineer
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    outputs:
+      candidate_sha: ${{ steps.materialize.outputs.candidate_sha }}
+      branch: ${{ steps.pr.outputs.branch }}
+      pr_number: ${{ steps.pr.outputs.pr_number }}
+      writer_session: ${{ steps.materialize.outputs.writer_session }}
+    steps:
+      - name: Checkout master with publication credential isolated from LLM
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Download sealed Soleur result
+        uses: actions/download-artifact@v4
+        with:
+          name: fluxion-soleur-engineering-${{ github.run_id }}
+          path: ${{ runner.temp }}/soleur-result
+
+      - name: Materialize exact reviewed patch as one exact-parent commit
+        id: materialize
+        run: |
+          set -euo pipefail
+          BASE="${{ needs.engineer.outputs.base_commit }}"
+          git checkout --detach "$BASE"
+          mkdir -p "$RUNNER_TEMP/trusted"
+          python3 .github/bootstrap/fluxion-soleur-adapter.py materialize \
+            --repo "$GITHUB_WORKSPACE" \
+            --task "$RUNNER_TEMP/soleur-result/task.json" \
+            --patch "$RUNNER_TEMP/soleur-result/soleur.patch" \
+            --meta "$RUNNER_TEMP/soleur-result/soleur-meta.json" \
+            --writer-out "$RUNNER_TEMP/trusted/writer-result.json"
+
+      - name: Push evidence branch and create draft PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TASK_ID: ${{ needs.engineer.outputs.task_id }}
+          BASE_COMMIT: ${{ needs.engineer.outputs.base_commit }}
+          CANDIDATE_SHA: ${{ steps.materialize.outputs.candidate_sha }}
+          PATCH_SHA: ${{ needs.engineer.outputs.patch_sha256 }}
+        run: |
+          set -euo pipefail
+          BRANCH="soleur/${TASK_ID}-${GITHUB_RUN_ID}"
+          git checkout -B "$BRANCH" "$CANDIDATE_SHA"
+          git push --set-upstream origin "$BRANCH"
+          cat > "$RUNNER_TEMP/pr-body.md" <<EOF
+          ## FLUXION SOL-000020 evidence PR
+
+          This draft PR is created deterministically from the TASK-allowed subset of the reviewed Soleur diff.
+          **Do not merge this PR manually.** SOL-000020 is the only publication authority.
+
+          - Task: `${TASK_ID}`
+          - Expected base: `${BASE_COMMIT}`
+          - Exact-parent candidate: `${CANDIDATE_SHA}`
+          - Soleur reviewed patch SHA-256: `${PATCH_SHA}`
+          - Soleur pin: `${SOLEUR_COMMIT}`
+          - Writer: deterministic materializer (no model, no network, no publisher capability)
+
+          CI on this PR is evidence only. After CI settles green, a fresh no-tools review is sealed and the existing trusted publisher gate decides whether `master` may advance.
+          EOF
+          PR_URL="$(gh pr create --draft --base master --head "$BRANCH" \
+            --title "vos(soleur): ${TASK_ID}" --body-file "$RUNNER_TEMP/pr-body.md")"
+          PR_NUMBER="$(gh pr view "$PR_URL" --json number --jq .number)"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "PR_URL=$PR_URL"
+
+      - name: Wait for PR CI to register and settle green
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          seen=0
+          for i in $(seq 1 180); do
+            json="$(gh pr checks "$PR_NUMBER" --json name,bucket 2>/dev/null || printf '[]')"
+            count="$(printf '%s' "$json" | jq 'length')"
+            if [ "$count" -gt 0 ]; then
+              seen=1
+              failed="$(printf '%s' "$json" | jq '[.[] | select(.bucket == "fail" or .bucket == "cancel")] | length')"
+              pending="$(printf '%s' "$json" | jq '[.[] | select(.bucket == "pending")] | length')"
+              echo "CI poll $i: checks=$count pending=$pending failed=$failed"
+              if [ "$failed" -gt 0 ]; then
+                printf '%s\n' "$json" | jq .
+                exit 1
+              fi
+              if [ "$pending" -eq 0 ]; then
+                echo "PR_CI=PASS checks=$count"
+                exit 0
+              fi
+            elif [ "$i" -eq 12 ]; then
+              echo "PR_CI=BLOCKED reason=no checks registered after 120s" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          echo "PR_CI=BLOCKED reason=timeout seen=$seen" >&2
+          exit 1
+
+      - name: Seal materialization artifact after green CI
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/soleur-result/task.json" "$RUNNER_TEMP/trusted/task.json"
+          cp "$RUNNER_TEMP/soleur-result/soleur-meta.json" "$RUNNER_TEMP/trusted/soleur-meta.json"
+          cp "$RUNNER_TEMP/soleur-result/soleur.patch" "$RUNNER_TEMP/trusted/soleur.patch"
+          cat > "$RUNNER_TEMP/trusted/pr.json" <<EOF
+          {"number":${{ steps.pr.outputs.pr_number }},"branch":"${{ steps.pr.outputs.branch }}","candidate_sha":"${{ steps.materialize.outputs.candidate_sha }}","ci":"PASS"}
+          EOF
+
+      - name: Upload CI-green exact-parent candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted/
+          if-no-files-found: error
+          retention-days: 7
+
+  fresh-review:
+    name: Fresh no-tools review of sealed candidate
+    needs: [engineer, materialize-pr]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      review_verdict: ${{ steps.wrap.outputs.review_verdict }}
+    steps:
+      - name: Checkout exact candidate read-only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.materialize-pr.outputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Download CI-green candidate evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: fluxion-soleur-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted
+
+      - name: Build sealed review dossier
+        id: dossier
+        run: |
+          set -euo pipefail
+          python3 .github/bootstrap/fluxion-soleur-adapter.py dossier \
+            --repo "$GITHUB_WORKSPACE" \
+            --task "$RUNNER_TEMP/trusted/task.json" \
+            --writer "$RUNNER_TEMP/trusted/writer-result.json" \
+            --out "$RUNNER_TEMP/trusted/dossier.json"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          dossier = Path(os.environ['RUNNER_TEMP'], 'trusted', 'dossier.json').read_text(encoding='utf-8')
+          prompt = '''You are the independent FRESH_REVIEW for FLUXION SOL-000020.\n\nYou have no tools and must not request or use any. Review only the sealed dossier below. The candidate already passed deterministic exact-base/exact-parent/allowed-path checks and PR CI. Your role is judgment, not publication authority.\n\nReturn exactly the requested structured object. Use GREEN when you find no concrete blocking defect in the supplied diff relative to the TASK contract; RED when there is a concrete correctness/security/contract defect that should block publication; BLOCKED only when the dossier itself is insufficient to form a judgment. Findings and required_changes must be concise lists.\n\nSEALED DOSSIER:\n''' + dossier
+          Path(os.environ['RUNNER_TEMP'], 'trusted', 'fresh-review-prompt.txt').write_text(prompt, encoding='utf-8')
+          PY
+
+      - name: Run fresh Sonnet review with no tools
+        id: review
+        uses: anthropics/claude-code-base-action@f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+        with:
+          prompt_file: ${{ runner.temp }}/trusted/fresh-review-prompt.txt
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model sonnet
+            --max-turns 20
+            --allowedTools ""
+            --json-schema '{"type":"object","additionalProperties":false,"required":["verdict","findings","required_changes","summary"],"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}}'
+
+      - name: Seal fresh review and trusted evidence
+        id: wrap
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.review.outputs.structured_output }}
+          REVIEW_SESSION_ID: ${{ steps.review.outputs.session_id }}
+          REVIEW_EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          WRITER_SESSION: ${{ needs.materialize-pr.outputs.writer_session }}
+          CANDIDATE_SHA: ${{ needs.materialize-pr.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          Path(os.environ['RUNNER_TEMP'], 'trusted', 'fresh-review-structured.json').write_text(os.environ['STRUCTURED_OUTPUT'].strip() + '\n', encoding='utf-8')
+          PY
+          python3 .github/bootstrap/fluxion-soleur-adapter.py wrap-review \
+            --structured "$RUNNER_TEMP/trusted/fresh-review-structured.json" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --out "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --session-id "$REVIEW_SESSION_ID" \
+            --writer-session "$WRITER_SESSION" \
+            --candidate "$CANDIDATE_SHA" \
+            --execution-file "$REVIEW_EXECUTION_FILE"
+          python3 .github/bootstrap/fluxion-soleur-adapter.py evidence \
+            --task "$RUNNER_TEMP/trusted/task.json" \
+            --writer "$RUNNER_TEMP/trusted/writer-result.json" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --review "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --out "$RUNNER_TEMP/trusted/evidence.json"
+          cp "$REVIEW_EXECUTION_FILE" "$RUNNER_TEMP/trusted/fresh-review-execution.json"
+
+      - name: Upload sealed trusted evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-trusted-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: SOL-000020 trusted non-LLM publish
+    needs: [engineer, materialize-pr, fresh-review]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    outputs:
+      approved_sha: ${{ steps.publish.outputs.approved_sha }}
+    steps:
+      - name: Checkout exact evidence candidate
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.materialize-pr.outputs.candidate_sha }}
+          fetch-depth: 0
+
+      - name: Download sealed evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: fluxion-soleur-trusted-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted
+
+      - name: Invoke existing trusted publisher unchanged
+        id: publish
+        env:
+          EXPECTED_BASE: ${{ needs.engineer.outputs.base_commit }}
+          CANDIDATE_SHA: ${{ needs.materialize-pr.outputs.candidate_sha }}
+          TASK_ID: ${{ needs.engineer.outputs.task_id }}
+        run: |
+          set -euo pipefail
+          WRITER_SHA="$(sha256sum "$RUNNER_TEMP/trusted/writer-result.json" | awk '{print $1}')"
+          REVIEW_SHA="$(sha256sum "$RUNNER_TEMP/trusted/fresh-review.json" | awk '{print $1}')"
+          DOSSIER_SHA="$(sha256sum "$RUNNER_TEMP/trusted/dossier.json" | awk '{print $1}')"
+          EVIDENCE_SHA="$(sha256sum "$RUNNER_TEMP/trusted/evidence.json" | awk '{print $1}')"
+          ALLOWED="$(python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          task=json.loads(Path(os.environ['RUNNER_TEMP'],'trusted','task.json').read_text())
+          print(json.dumps(task['allowed_paths'], separators=(',',':')))
+          PY
+          )"
+          python3 .github/bootstrap/fluxion-trusted-publish-gate.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --expected-base-sha "$EXPECTED_BASE" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --task-id "$TASK_ID" \
+            --allowed-paths-json "$ALLOWED" \
+            --writer-result "$RUNNER_TEMP/trusted/writer-result.json" \
+            --writer-result-sha "$WRITER_SHA" \
+            --fresh-review "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --fresh-review-sha "$REVIEW_SHA" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --dossier-sha256 "$DOSSIER_SHA" \
+            --evidence "$RUNNER_TEMP/trusted/evidence.json" \
+            --evidence-sha256 "$EVIDENCE_SHA" \
+            --approval-file "$RUNNER_TEMP/trusted/APPROVED_MASTER.txt" \
+            | tee "$RUNNER_TEMP/trusted/publish.log"
+          grep -Fq 'TRUSTED_PUBLISH_GATE=PASS' "$RUNNER_TEMP/trusted/publish.log"
+          echo "approved_sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Close evidence PR after trusted fast-forward publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.materialize-pr.outputs.pr_number }}
+          CANDIDATE_SHA: ${{ needs.materialize-pr.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          gh pr close "$PR_NUMBER" --comment "Published to master by SOL-000020 trusted gate at $CANDIDATE_SHA. The PR is evidence; it is intentionally not GitHub-merged."
+
+      - name: Upload approval attestation
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-approval-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/trusted/APPROVED_MASTER.txt
+            ${{ runner.temp }}/trusted/publish.log
+          if-no-files-found: error
+          retention-days: 30
+
+  postmerge:
+    name: Soleur post-publication verification
+    needs: [materialize-pr, publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: write
+    steps:
+      - name: Checkout approved master read-only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.publish.outputs.approved_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Load pinned Soleur postmerge overlay
+        run: |
+          set -euo pipefail
+          cp .github/bootstrap/fluxion-soleur-adapter.py "$RUNNER_TEMP/fluxion-soleur-adapter.py"
+          SOLEUR_ROOT="$RUNNER_TEMP/soleur"
+          git init "$SOLEUR_ROOT"
+          git -C "$SOLEUR_ROOT" remote add origin "https://github.com/${SOLEUR_REPOSITORY}.git"
+          git -C "$SOLEUR_ROOT" fetch --depth=1 origin "$SOLEUR_COMMIT"
+          git -C "$SOLEUR_ROOT" checkout --detach "$SOLEUR_COMMIT"
+          python3 "$RUNNER_TEMP/fluxion-soleur-adapter.py" overlay \
+            --soleur-root "$SOLEUR_ROOT"
+
+      - name: Run Soleur postmerge against SOL-000020 external publish
+        id: postmerge
+        uses: anthropics/claude-code-base-action@f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+        with:
+          prompt: "/soleur:postmerge ${{ needs.materialize-pr.outputs.pr_number }}"
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          settings: |
+            {
+              "env": {
+                "GH_TOKEN": "${{ github.token }}",
+                "GH_REPO": "lukeeterna/fluxion-desktop"
+              }
+            }
+          claude_args: |
+            --model sonnet
+            --max-turns 120
+            --permission-mode bypassPermissions
+            --allowedTools "Bash,Read,Grep,Glob,Skill,Task"
+            --plugin-dir "${{ runner.temp }}/soleur/plugins/soleur"
+
+      - name: Require final post-publication completion
+        env:
+          EXECUTION_FILE: ${{ steps.postmerge.outputs.execution_file }}
+          APPROVED_SHA: ${{ needs.publish.outputs.approved_sha }}
+        run: |
+          set -euo pipefail
+          test -f "$EXECUTION_FILE"
+          grep -Fq 'FLUXION_EXTERNAL_PUBLISH=PASS' "$EXECUTION_FILE"
+          grep -Fiq 'postmerge verification complete' "$EXECUTION_FILE"
+          git fetch origin master
+          test "$(git rev-parse origin/master)" = "$APPROVED_SHA"
+          echo "FLUXION_SOLEUR_PIPELINE=DONE approved_sha=$APPROVED_SHA"
