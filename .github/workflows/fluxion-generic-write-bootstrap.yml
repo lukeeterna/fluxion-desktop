@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.event_name == 'workflow_dispatch' || github.event.before == '0677c59c3cb90b8c57c683da17e3fa8e7143c8fd'
+    if: github.event_name == 'workflow_dispatch' || github.event.before == '70130f2d842ba4c2961f7621ef1f7b25cdf2f9c9'
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
     outputs:
@@ -32,7 +32,7 @@ jobs:
     env:
       TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
       CHANNEL: FXD-824F35830C8A
-      PRE_BASE: 0677c59c3cb90b8c57c683da17e3fa8e7143c8fd
+      PRE_BASE: 70130f2d842ba4c2961f7621ef1f7b25cdf2f9c9
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
 
     steps:
@@ -52,10 +52,8 @@ jobs:
             REPO="$FLUXION_ROOT"
             expected="$RUN_DIR/expected-control-paths.txt"
             cat > "$expected" <<'EOF'
-          .github/bootstrap/fluxion-generic-write-executor
           .github/bootstrap/install-generic-write-lane.zsh
           .github/workflows/fluxion-generic-write-bootstrap.yml
-          .github/workflows/fluxion-sonnet-review.yml
           EOF
 
             test -d "$REPO/.git"
