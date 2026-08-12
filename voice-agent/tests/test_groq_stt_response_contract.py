@@ -1,41 +1,4 @@
-from pathlib import Path
-
-SOURCE = Path("voice-agent/src/groq_client.py")
-TEST = Path("voice-agent/tests/test_groq_stt_response_contract.py")
-
-text = SOURCE.read_text(encoding="utf-8")
-
-fallback_start = text.index("        # Fallback to direct Groq API call\n")
-fallback_end = text.index("    async def generate_response(\n", fallback_start)
-fallback = text[fallback_start:fallback_end]
-old = "            return response.strip()\n"
-new = "            return self._normalize_transcription_response(response)\n"
-if fallback.count(old) != 1:
-    raise SystemExit("direct Groq fallback return contract mismatch")
-fallback = fallback.replace(old, new, 1)
-text = text[:fallback_start] + fallback + text[fallback_end:]
-
-anchor = "    async def transcribe_audio(\n"
-if text.count(anchor) != 1:
-    raise SystemExit("transcribe_audio anchor mismatch")
-helper = '''    @staticmethod
-    def _normalize_transcription_response(response: Any) -> str:
-        """Normalize Groq STT text responses without leaking object reprs downstream."""
-        if isinstance(response, str):
-            return response.strip()
-
-        text = response.get("text") if isinstance(response, dict) else getattr(response, "text", None)
-        if not isinstance(text, str):
-            raise TypeError(
-                f"Unsupported Groq transcription response type: {type(response).__name__}"
-            )
-        return text.strip()
-
-'''
-text = text.replace(anchor, helper + anchor, 1)
-SOURCE.write_text(text, encoding="utf-8")
-
-TEST.write_text('''import asyncio
+import asyncio
 import importlib
 import sys
 import types
@@ -93,4 +56,3 @@ class GroqSTTResponseContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-''', encoding="utf-8")
