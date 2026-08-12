@@ -1,0 +1,10 @@
+name: TEMP P0-B Smoke
+on:
+  push:
+    branches: [fix/p0b-stt-response-normalization-20260812]
+    paths: [.github/workflows/tmp-p0b-smoke.yml]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo P0B_SMOKE_PASS
