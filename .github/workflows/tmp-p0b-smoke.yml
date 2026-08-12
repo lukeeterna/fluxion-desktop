@@ -1,4 +1,4 @@
-name: TEMP P0-B Patch v3
+name: TEMP P0-B Patch v4
 on:
   push:
     branches: [fix/p0b-stt-response-normalization-20260812]
@@ -32,7 +32,14 @@ jobs:
         run: |
           set -euo pipefail
           rm .github/tmp-p0b-stt-patch.py .github/workflows/tmp-p0b-smoke.yml
-          git add -A
-          test "$(git diff --cached --name-only | sort)" = $'.github/tmp-p0b-stt-patch.py\n.github/workflows/tmp-p0b-smoke.yml\nvoice-agent/src/groq_client.py\nvoice-agent/tests/test_groq_stt_response_contract.py'
+          git add -A -- .github/tmp-p0b-stt-patch.py .github/workflows/tmp-p0b-smoke.yml voice-agent/src/groq_client.py voice-agent/tests/test_groq_stt_response_contract.py
+          staged="$(git diff --cached --name-only | sort)"
+          printf '%s\n' "$staged"
+          printf '%s\n' "$staged" | grep -qx 'voice-agent/src/groq_client.py'
+          printf '%s\n' "$staged" | grep -qx 'voice-agent/tests/test_groq_stt_response_contract.py'
+          bad="$(printf '%s\n' "$staged" | grep -Ev '^(\.github/tmp-p0b-stt-patch\.py|\.github/workflows/tmp-p0b-smoke\.yml|voice-agent/src/groq_client\.py|voice-agent/tests/test_groq_stt_response_contract\.py)$' || true)"
+          test -z "$bad"
+          test ! -e .github/tmp-p0b-stt-patch.py
+          test ! -e .github/workflows/tmp-p0b-smoke.yml
           git -c core.hooksPath=/dev/null -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'fix(stt): normalize Groq transcription responses'
           git push origin HEAD:fix/p0b-stt-response-normalization-20260812
