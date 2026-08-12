@@ -1,4 +1,4 @@
-name: TEMP P0-B Patch
+name: TEMP P0-B Patch v2
 on:
   push:
     branches: [fix/p0b-stt-response-normalization-20260812]
