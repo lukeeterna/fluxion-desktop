@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.event_name == 'workflow_dispatch' || github.event.before == 'b6c8eaa90a9fc629b6e28c9debd56a0619d3e5c3'
+    if: github.event_name == 'workflow_dispatch' || github.event.before == '0677c59c3cb90b8c57c683da17e3fa8e7143c8fd'
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
     outputs:
@@ -32,7 +32,7 @@ jobs:
     env:
       TASK_ID: WORKFLOW.WRITE-LANE.GENERIC-INSTALL.20260810
       CHANNEL: FXD-824F35830C8A
-      PRE_BASE: 63b1b10637c2fa1acfcb03c94e930b71088d9221
+      PRE_BASE: 0677c59c3cb90b8c57c683da17e3fa8e7143c8fd
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
 
     steps:
@@ -52,9 +52,7 @@ jobs:
             REPO="$FLUXION_ROOT"
             expected="$RUN_DIR/expected-control-paths.txt"
             cat > "$expected" <<'EOF'
-          .github/bootstrap/fluxion-draft-bus-executor
           .github/bootstrap/fluxion-generic-write-executor
-          .github/bootstrap/fluxion-trusted-publish-gate.py
           .github/bootstrap/install-generic-write-lane.zsh
           .github/workflows/fluxion-generic-write-bootstrap.yml
           .github/workflows/fluxion-sonnet-review.yml
@@ -231,9 +229,18 @@ jobs:
             "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc" \
             "$RUN_DIR/reinstall.stdout" "$RUN_DIR/reinstall.stderr" "$RUN_DIR/reinstall.rc"
 
-          align_rc="$(cat "$RUN_DIR/align.rc" 2>/dev/null || echo 2)"
-          install_rc="$(cat "$RUN_DIR/install.rc" 2>/dev/null || echo 2)"
-          reinstall_rc="$(cat "$RUN_DIR/reinstall.rc" 2>/dev/null || echo 2)"
+          read_rc() {
+            local f="$1"
+            if [ -s "$f" ]; then
+              cat "$f"
+            else
+              printf '2\n'
+            fi
+          }
+
+          align_rc="$(read_rc "$RUN_DIR/align.rc")"
+          install_rc="$(read_rc "$RUN_DIR/install.rc")"
+          reinstall_rc="$(read_rc "$RUN_DIR/reinstall.rc")"
           install_state="$(grep '^INSTALL_STATE=' "$RUN_DIR/install.stdout" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
           [ -n "$install_state" ] || install_state=NOT_RUN
 
