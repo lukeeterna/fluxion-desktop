@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   bootstrap:
-    if: github.event_name == 'workflow_dispatch' || github.event.before == '32de8d9966702b7c00ce0d451a9a482366c95ee3'
+    if: github.event_name == 'workflow_dispatch' || github.event.before == '87d0e0533b79df575e4fcbc1cf02c643e230b96e'
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 15
     outputs:
@@ -135,6 +135,33 @@ jobs:
           [ "$rc" = 0 ] && echo "BASE=$GITHUB_SHA" >> "$GITHUB_ENV"
           exit "$rc"
 
+      - name: Capture TCC evidence from the real runner context
+        id: tcc
+        if: steps.align.outcome == 'failure'
+        shell: bash
+        continue-on-error: true
+        run: |
+          set -u
+          : "${RUN_DIR:?RUN_DIR missing}"
+          start="$(date -v-5M '+%Y-%m-%d %H:%M:%S')"
+          end="$(date '+%Y-%m-%d %H:%M:%S')"
+          set +e
+          /usr/bin/log show --start "$start" --end "$end" \
+            --style compact \
+            --predicate '(process == "tccd") OR (subsystem == "com.apple.TCC")' \
+            > "$RUN_DIR/tcc.log" 2>&1
+          rc=$?
+          set -e
+          printf '%s\n' "$rc" > "$RUN_DIR/tcc.rc"
+          printf 'TCC_WINDOW_START=%s\nTCC_WINDOW_END=%s\n' "$start" "$end"
+          if [ "$rc" = 0 ] && [ -s "$RUN_DIR/tcc.log" ]; then
+            echo 'TCC_LOG=AVAILABLE'
+            tail -100 "$RUN_DIR/tcc.log" || true
+          else
+            echo 'TCC_LOG=UNAVAILABLE'
+          fi
+          exit 0
+
       - name: Install generic write lane and trusted publish gate
         id: install
         if: steps.align.outcome == 'success'
@@ -197,6 +224,7 @@ jobs:
             "$RUN_DIR/align.head.before" "$RUN_DIR/align.head.after" \
             "$RUN_DIR/align.origin.before" "$RUN_DIR/align.origin.after" \
             "$RUN_DIR/align.changed-paths" "$RUN_DIR/align.state" \
+            "$RUN_DIR/tcc.log" "$RUN_DIR/tcc.rc" \
             "$RUN_DIR/install.stdout" "$RUN_DIR/install.stderr" "$RUN_DIR/install.rc" \
             "$RUN_DIR/reinstall.stdout" "$RUN_DIR/reinstall.stderr" "$RUN_DIR/reinstall.rc"
 
@@ -215,8 +243,10 @@ jobs:
             status=FAIL; verdict=ROSSO; next_event=SOL_ORCHESTRATOR_TRIAGE
           fi
 
-          base_commit="$(cat "$RUN_DIR/align.head.before" 2>/dev/null || printf '%s' "$PRE_BASE")"
-          result_commit="$(cat "$RUN_DIR/align.head.after" 2>/dev/null || printf '%s' "$base_commit")"
+          base_commit="$(cat "$RUN_DIR/align.head.before" 2>/dev/null || true)"
+          [ -n "$base_commit" ] || base_commit="$PRE_BASE"
+          result_commit="$(cat "$RUN_DIR/align.head.after" 2>/dev/null || true)"
+          [ -n "$result_commit" ] || result_commit="$base_commit"
           python3 - "$base_commit" "$result_commit" <<'PY'
           import re,sys
           for name,value in zip(('base_commit','result_commit'),sys.argv[1:]):
@@ -230,7 +260,8 @@ jobs:
             zip -q "$packet" \
               align.stdout align.stderr align.rc align.status.before align.status.after \
               align.head.before align.head.after align.origin.before align.origin.after \
-              align.changed-paths align.state install.stdout install.stderr install.rc \
+              align.changed-paths align.state tcc.log tcc.rc \
+              install.stdout install.stderr install.rc \
               reinstall.stdout reinstall.stderr reinstall.rc
           )
           sha="$(shasum -a 256 "$packet" | awk '{print $1}')"
