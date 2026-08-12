@@ -79,8 +79,8 @@ PY
 }
 
 backup_one(){
-  local name="$1" path="$2"; mkdir -p "$BACKUP_DIR"
-  if [ -e "$path" ]; then cp -p "$path" "$BACKUP_DIR/$name"; touch "$BACKUP_DIR/$name.present"; fi
+  local name="$1" target="$2"; mkdir -p "$BACKUP_DIR"
+  if [ -e "$target" ]; then cp -p "$target" "$BACKUP_DIR/$name"; touch "$BACKUP_DIR/$name.present"; fi
 }
 
 verify_local(){
