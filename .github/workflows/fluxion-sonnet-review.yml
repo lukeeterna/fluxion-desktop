@@ -111,7 +111,7 @@ jobs:
           required=[
               'EXPECTED_CLAUDE_VERSION="2.1.110"',
               'verify_pin_file "$CLAUDE_PIN" "$CLAUDE_REAL" "$CLAUDE_SHA"',
-              '/usr/bin/codesign --verify --verbose=2 "$CLAUDE_REAL"',
+              'CLAUDE_RUNTIME_INTEGRITY=PASS',
               'WRITER_CAPABILITY_BEHAVIOR=PASS',
               'OUTSIDE_WRITE_BLOCKED=PASS',
               'BASH_CAPABILITY_ABSENT=PASS',
@@ -121,8 +121,12 @@ jobs:
           ]
           missing=[x for x in required if x not in installer]
           if missing: raise SystemExit('behavioral canary wiring missing: '+','.join(missing))
-          if "d.get('sha256')" not in generic or '/usr/bin/codesign' not in generic:
-              raise SystemExit('steady-state Claude pin enforcement incomplete')
+          required_generic=["d.get('sha256')",'os.path.realpath(path)==path','v.returncode==0']
+          missing_generic=[x for x in required_generic if x not in generic]
+          if missing_generic:
+              raise SystemExit('steady-state Claude pin enforcement incomplete:'+','.join(missing_generic))
+          if '/usr/bin/codesign' in installer or '/usr/bin/codesign' in generic:
+              raise SystemExit('incompatible Claude codesign gate still present')
           call='behavioral_canary || { echo "STOP: trusted Mac behavioral canary failed"; exit 2; }'
           activation='date -u +%Y-%m-%dT%H:%M:%SZ > "$ACTIVATED"'
           call_pos=installer.rfind(call)
