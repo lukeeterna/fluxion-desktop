@@ -4,10 +4,20 @@ SOURCE = Path("voice-agent/src/groq_client.py")
 TEST = Path("voice-agent/tests/test_groq_stt_response_contract.py")
 
 text = SOURCE.read_text(encoding="utf-8")
+
+fallback_start = text.index("        # Fallback to direct Groq API call\n")
+fallback_end = text.index("    async def generate_response(\n", fallback_start)
+fallback = text[fallback_start:fallback_end]
+old = "            return response.strip()\n"
+new = "            return self._normalize_transcription_response(response)\n"
+if fallback.count(old) != 1:
+    raise SystemExit("direct Groq fallback return contract mismatch")
+fallback = fallback.replace(old, new, 1)
+text = text[:fallback_start] + fallback + text[fallback_end:]
+
 anchor = "    async def transcribe_audio(\n"
 if text.count(anchor) != 1:
     raise SystemExit("transcribe_audio anchor mismatch")
-
 helper = '''    @staticmethod
     def _normalize_transcription_response(response: Any) -> str:
         """Normalize Groq STT text responses without leaking object reprs downstream."""
@@ -23,12 +33,6 @@ helper = '''    @staticmethod
 
 '''
 text = text.replace(anchor, helper + anchor, 1)
-
-old = "            return response.strip()\n"
-new = "            return self._normalize_transcription_response(response)\n"
-if text.count(old) != 1:
-    raise SystemExit("direct Groq return contract mismatch")
-text = text.replace(old, new, 1)
 SOURCE.write_text(text, encoding="utf-8")
 
 TEST.write_text('''import asyncio
