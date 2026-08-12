@@ -1,0 +1,34 @@
+name: FLUXION Hosted Claude Auth Probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fluxion-claude-auth-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: One-turn no-tools Claude probe
+        id: claude
+        uses: anthropics/claude-code-base-action@f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+        with:
+          prompt: 'Return exactly FLUXION_HOSTED_CLAUDE_AUTH=PASS and nothing else.'
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model sonnet
+            --max-turns 1
+            --allowedTools ""
+
+      - name: Require probe marker
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          test -f "$EXECUTION_FILE"
+          grep -Fq 'FLUXION_HOSTED_CLAUDE_AUTH=PASS' "$EXECUTION_FILE"
