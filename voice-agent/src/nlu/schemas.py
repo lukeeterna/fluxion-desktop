@@ -144,4 +144,5 @@ SARA_NLU_JSON_INSTRUCTION = """Rispondi SOLO con un JSON valido con questa strut
   "correction_field": "nome|cognome|servizio|data|ora|operatore|telefono|null",
   "confidence": 0.0-1.0
 }
-Includi solo le entità effettivamente menzionate. Ometti quelle non dette."""
+Includi solo le entità effettivamente menzionate. Ometti quelle non dette.
+Regola intent obbligatoria: una frase dichiarativa con cui il cliente richiede un servizio è PRENOTAZIONE anche se non usa la parola "prenotare". Esempio: "Ho bisogno di una consulenza legale" → PRENOTAZIONE con servizio="consulenza legale". Usa FAQ solo per domande informative esplicite (prezzi, orari, modalità, informazioni), non per richieste dirette di un servizio."""
