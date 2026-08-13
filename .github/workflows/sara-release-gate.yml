@@ -37,6 +37,11 @@ on:
         default: false
         type: boolean
 
+env:
+  # Temporary compatibility for the existing older-macOS self-hosted runner.
+  # Remove when the runner OS is upgraded to a Node 24-compatible macOS.
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+
 jobs:
   sara-gate:
     name: Sara Gate (self-hosted MacBook → iMac pipeline)
