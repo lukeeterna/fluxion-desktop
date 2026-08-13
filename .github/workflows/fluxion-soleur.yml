@@ -120,6 +120,7 @@ jobs:
           set -euo pipefail
           LOCAL_ORIGIN="$RUNNER_TEMP/fluxion-origin.git"
           git init --bare "$LOCAL_ORIGIN"
+          git --git-dir="$LOCAL_ORIGIN" config receive.shallowUpdate true
           git push "$LOCAL_ORIGIN" "$BASE_COMMIT:refs/heads/main"
           git remote remove origin
           git remote add origin "$LOCAL_ORIGIN"
