@@ -16,21 +16,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      actions: write
       contents: read
       issues: write
     env:
       GH_TOKEN: ${{ github.token }}
       TASK_JSON: ${{ github.event.issue.body }}
     steps:
-      - name: Validate issue body is JSON and dispatch Soleur
+      - name: Validate TASK and hand it to Soleur
         run: |
           set -euo pipefail
           printf '%s' "$TASK_JSON" | jq -e 'type == "object" and .kind == "TASK" and .channel == "FXD-824F35830C8A"' >/dev/null
-          payload="$(jq -n --arg task "$TASK_JSON" '{ref:"master",inputs:{task_json:$task}}')"
-          printf '%s' "$payload" | gh api \
-            --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            "repos/${GITHUB_REPOSITORY}/actions/workflows/fluxion-soleur.yml/dispatches" \
-            --input -
-          gh issue comment "${{ github.event.issue.number }}" --body "FLUXION_AUTO_DISPATCH=PASS — TASK inoltrato al workflow Soleur hosted su master."
+          gh label create 'fluxion:auto' \
+            --repo "$GITHUB_REPOSITORY" \
+            --color '1f883d' \
+            --description 'Canonical FLUXION TASK ready for hosted Soleur' \
+            --force
+          gh issue edit "${{ github.event.issue.number }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --add-label 'fluxion:auto'
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body 'FLUXION_AUTO_DISPATCH=PASS — TASK consegnato al workflow Soleur hosted tramite label interna fluxion:auto.'
