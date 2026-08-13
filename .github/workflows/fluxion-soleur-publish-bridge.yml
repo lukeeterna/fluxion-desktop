@@ -1,0 +1,330 @@
+name: FLUXION Soleur Publish Bridge
+
+on:
+  push:
+    branches:
+      - 'soleur/**'
+
+concurrency:
+  group: fluxion-soleur-publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  FLUXION_EXTERNAL_PUBLISH: SOL-000020
+
+jobs:
+  preflight:
+    name: Verify Soleur reviewed candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      issues: read
+    outputs:
+      task_id: ${{ steps.meta.outputs.task_id }}
+      run_id: ${{ steps.meta.outputs.run_id }}
+      issue_number: ${{ steps.meta.outputs.issue_number }}
+      base_commit: ${{ steps.meta.outputs.base_commit }}
+      candidate_sha: ${{ steps.meta.outputs.candidate_sha }}
+      writer_session: ${{ steps.meta.outputs.writer_session }}
+    steps:
+      - name: Checkout candidate read-only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Resolve TASK and prove upstream Soleur run
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          from pathlib import Path
+
+          ref = os.environ['REF_NAME']
+          m = re.fullmatch(r'soleur/(.+)-([0-9]+)', ref)
+          if not m:
+              raise SystemExit(f'BLOCKED: unexpected Soleur branch shape: {ref}')
+          task_id, run_id = m.group(1), m.group(2)
+
+          raw = subprocess.check_output([
+              'gh','issue','list','--repo',os.environ['GITHUB_REPOSITORY'],
+              '--state','all','--search',f'{task_id} in:title','--limit','100',
+              '--json','number,title'
+          ], text=True)
+          matches = [x for x in json.loads(raw) if x.get('title') == f'TASK {task_id}']
+          if len(matches) != 1:
+              raise SystemExit(f'BLOCKED: expected exactly one TASK issue for {task_id}, got {len(matches)}')
+          issue = matches[0]['number']
+          body = subprocess.check_output([
+              'gh','issue','view',str(issue),'--repo',os.environ['GITHUB_REPOSITORY'],
+              '--json','body','--jq','.body'
+          ], text=True)
+          Path(os.environ['RUNNER_TEMP'],'task.json').write_text(body.rstrip()+'\n', encoding='utf-8')
+
+          jobs = subprocess.check_output([
+              'gh','api',f'repos/{os.environ["GITHUB_REPOSITORY"]}/actions/runs/{run_id}/jobs'
+          ], text=True)
+          engineer = [j for j in json.loads(jobs).get('jobs',[]) if j.get('name') == 'Soleur engineering / review / QA']
+          if len(engineer) != 1 or engineer[0].get('conclusion') != 'success':
+              raise SystemExit('BLOCKED: upstream Soleur engineering/review/QA is not proven successful')
+
+          out = Path(os.environ['GITHUB_OUTPUT'])
+          with out.open('a', encoding='utf-8') as f:
+              f.write(f'task_id={task_id}\nrun_id={run_id}\nissue_number={issue}\n')
+          PY
+
+          CURRENT_MASTER="$(git ls-remote origin refs/heads/master | awk '{print $1}')"
+          python3 .github/bootstrap/fluxion-soleur-adapter.py validate-task \
+            --input "$RUNNER_TEMP/task.json" \
+            --current-master "$CURRENT_MASTER"
+
+          BASE_COMMIT="$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"task.json")))["base_commit"])')"
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          PARENT="$(git rev-parse HEAD^)"
+          test "$PARENT" = "$BASE_COMMIT"
+          git diff --check "$BASE_COMMIT" "$CANDIDATE_SHA"
+
+          WRITER_SESSION="soleur-reviewed-run-${{ steps.meta.outputs.run_id || 'pending' }}"
+          WRITER_SESSION="soleur-reviewed-run-$(python3 - <<'PY'
+          import os,re
+          m=re.fullmatch(r'soleur/(.+)-([0-9]+)', os.environ['REF_NAME'])
+          print(m.group(2))
+          PY
+          )"
+
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          task=json.loads(Path(os.environ['RUNNER_TEMP'],'task.json').read_text())
+          candidate=os.environ['CANDIDATE_SHA']
+          base=os.environ['BASE_COMMIT']
+          session=os.environ['WRITER_SESSION']
+          changed=os.environ['CHANGED_PATHS'].splitlines()
+          if not changed or not set(changed) <= set(task['allowed_paths']):
+              raise SystemExit(f'BLOCKED: candidate changed paths outside TASK allowed_paths: {changed}')
+          writer={
+              'schema_version':1,'kind':'WRITER_RESULT','task_id':task['task_id'],
+              'profile':'SOLEUR_HOSTED_REVIEWED_CANDIDATE','status':'PASS','verdict':'VERDE',
+              'session_id':session,'base_commit':base,'result_commit':candidate,
+              'candidate_sha':candidate,'writer_tools':[],'bash':False,'network':False,
+              'publisher':False,'can_launch_review':False
+          }
+          Path(os.environ['RUNNER_TEMP'],'writer-result.json').write_text(json.dumps(writer,sort_keys=True,separators=(',',':'))+'\n')
+          PY
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+          BASE_COMMIT: ${{ steps.meta.outputs.base_commit }}
+          WRITER_SESSION: ${{ steps.meta.outputs.writer_session }}
+          CHANGED_PATHS: ${{ steps.meta.outputs.changed_paths }}
+
+      - name: Seal deterministic dossier
+        id: dossier
+        run: |
+          set -euo pipefail
+          BASE_COMMIT="$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"task.json")))["base_commit"])')"
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          WRITER_SESSION="soleur-reviewed-run-${{ steps.meta.outputs.run_id }}"
+          CHANGED_PATHS="$(git diff --name-only "$BASE_COMMIT" "$CANDIDATE_SHA")"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          task=json.loads(Path(os.environ['RUNNER_TEMP'],'task.json').read_text())
+          changed=[x for x in os.environ['CHANGED_PATHS'].splitlines() if x]
+          if not changed or not set(changed) <= set(task['allowed_paths']):
+              raise SystemExit(f'BLOCKED: changed paths outside TASK allowed_paths: {changed}')
+          writer={
+              'schema_version':1,'kind':'WRITER_RESULT','task_id':task['task_id'],
+              'profile':'SOLEUR_HOSTED_REVIEWED_CANDIDATE','status':'PASS','verdict':'VERDE',
+              'session_id':os.environ['WRITER_SESSION'],'base_commit':os.environ['BASE_COMMIT'],
+              'result_commit':os.environ['CANDIDATE_SHA'],'candidate_sha':os.environ['CANDIDATE_SHA'],
+              'writer_tools':[],'bash':False,'network':False,'publisher':False,
+              'can_launch_review':False
+          }
+          Path(os.environ['RUNNER_TEMP'],'writer-result.json').write_text(json.dumps(writer,sort_keys=True,separators=(',',':'))+'\n')
+          PY
+          python3 .github/bootstrap/fluxion-soleur-adapter.py dossier \
+            --repo "$GITHUB_WORKSPACE" \
+            --task "$RUNNER_TEMP/task.json" \
+            --writer "$RUNNER_TEMP/writer-result.json" \
+            --out "$RUNNER_TEMP/dossier.json"
+          echo "base_commit=$BASE_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "candidate_sha=$CANDIDATE_SHA" >> "$GITHUB_OUTPUT"
+          echo "writer_session=$WRITER_SESSION" >> "$GITHUB_OUTPUT"
+        env:
+          CHANGED_PATHS: ${{ env.CHANGED_PATHS }}
+
+      - name: Build fresh-review prompt
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          dossier=Path(os.environ['RUNNER_TEMP'],'dossier.json').read_text(encoding='utf-8')
+          prompt='''You are FRESH_REVIEW for FLUXION SOL-000020. Use no tools. Judge only the sealed dossier below. Deterministic exact-base, exact-parent and allowed-path checks are already sealed and remain the root of trust. Return the requested structured object. RED only for a concrete defect that must veto publication; GREEN for no concrete blocking defect; BLOCKED only if the dossier is genuinely insufficient.\n\nSEALED DOSSIER:\n'''+dossier
+          Path(os.environ['RUNNER_TEMP'],'fresh-review-prompt.txt').write_text(prompt,encoding='utf-8')
+          PY
+
+      - name: Upload pre-review evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-bridge-preflight-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/task.json
+            ${{ runner.temp }}/writer-result.json
+            ${{ runner.temp }}/dossier.json
+            ${{ runner.temp }}/fresh-review-prompt.txt
+          if-no-files-found: error
+          retention-days: 7
+
+  fresh-review:
+    name: Fresh no-tools review
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    outputs:
+      verdict: ${{ steps.seal.outputs.verdict }}
+    steps:
+      - name: Checkout exact candidate read-only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.candidate_sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Download pre-review evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: fluxion-soleur-bridge-preflight-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted
+
+      - name: Independent Sonnet review with no tools
+        id: review
+        uses: anthropics/claude-code-base-action@f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb
+        with:
+          prompt_file: ${{ runner.temp }}/trusted/fresh-review-prompt.txt
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --model sonnet
+            --max-turns 20
+            --allowedTools ""
+            --json-schema '{"type":"object","additionalProperties":false,"required":["verdict","findings","required_changes","summary"],"properties":{"verdict":{"type":"string","enum":["GREEN","RED","BLOCKED"]},"findings":{"type":"array","items":{"type":"string"}},"required_changes":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}}}'
+
+      - name: Seal fresh review and trusted evidence
+        id: seal
+        env:
+          STRUCTURED_OUTPUT: ${{ steps.review.outputs.structured_output }}
+          REVIEW_SESSION_ID: ${{ steps.review.outputs.session_id }}
+          REVIEW_EXECUTION_FILE: ${{ steps.review.outputs.execution_file }}
+          WRITER_SESSION: ${{ needs.preflight.outputs.writer_session }}
+          CANDIDATE_SHA: ${{ needs.preflight.outputs.candidate_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          Path(os.environ['RUNNER_TEMP'],'trusted','fresh-review-structured.json').write_text(os.environ['STRUCTURED_OUTPUT'].strip()+'\n',encoding='utf-8')
+          PY
+          python3 .github/bootstrap/fluxion-soleur-adapter.py wrap-review \
+            --structured "$RUNNER_TEMP/trusted/fresh-review-structured.json" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --out "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --session-id "$REVIEW_SESSION_ID" \
+            --writer-session "$WRITER_SESSION" \
+            --candidate "$CANDIDATE_SHA" \
+            --execution-file "$REVIEW_EXECUTION_FILE"
+          python3 .github/bootstrap/fluxion-soleur-adapter.py evidence \
+            --task "$RUNNER_TEMP/trusted/task.json" \
+            --writer "$RUNNER_TEMP/trusted/writer-result.json" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --review "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --out "$RUNNER_TEMP/trusted/evidence.json"
+          VERDICT="$(python3 -c 'import json,os; print(json.load(open(os.path.join(os.environ["RUNNER_TEMP"],"trusted","fresh-review.json")))["verdict"])')"
+          echo "verdict=$VERDICT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload sealed trusted evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluxion-soleur-bridge-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: SOL-000020 trusted non-LLM publish
+    needs: [preflight, fresh-review]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout exact candidate with publisher credential
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.preflight.outputs.candidate_sha }}
+          fetch-depth: 2
+
+      - name: Download sealed trusted evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: fluxion-soleur-bridge-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/trusted
+
+      - name: Invoke existing trusted publisher unchanged
+        env:
+          EXPECTED_BASE: ${{ needs.preflight.outputs.base_commit }}
+          CANDIDATE_SHA: ${{ needs.preflight.outputs.candidate_sha }}
+          TASK_ID: ${{ needs.preflight.outputs.task_id }}
+        run: |
+          set -euo pipefail
+          WRITER_SHA="$(sha256sum "$RUNNER_TEMP/trusted/writer-result.json" | awk '{print $1}')"
+          REVIEW_SHA="$(sha256sum "$RUNNER_TEMP/trusted/fresh-review.json" | awk '{print $1}')"
+          DOSSIER_SHA="$(sha256sum "$RUNNER_TEMP/trusted/dossier.json" | awk '{print $1}')"
+          EVIDENCE_SHA="$(sha256sum "$RUNNER_TEMP/trusted/evidence.json" | awk '{print $1}')"
+          ALLOWED="$(python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          task=json.loads(Path(os.environ['RUNNER_TEMP'],'trusted','task.json').read_text())
+          print(json.dumps(task['allowed_paths'],separators=(',',':')))
+          PY
+          )"
+          python3 .github/bootstrap/fluxion-trusted-publish-gate.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --expected-base-sha "$EXPECTED_BASE" \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --task-id "$TASK_ID" \
+            --allowed-paths-json "$ALLOWED" \
+            --writer-result "$RUNNER_TEMP/trusted/writer-result.json" \
+            --writer-result-sha "$WRITER_SHA" \
+            --fresh-review "$RUNNER_TEMP/trusted/fresh-review.json" \
+            --fresh-review-sha "$REVIEW_SHA" \
+            --dossier "$RUNNER_TEMP/trusted/dossier.json" \
+            --dossier-sha256 "$DOSSIER_SHA" \
+            --evidence "$RUNNER_TEMP/trusted/evidence.json" \
+            --evidence-sha256 "$EVIDENCE_SHA" \
+            --approval-file "$RUNNER_TEMP/trusted/APPROVED_MASTER.txt" \
+            | tee "$RUNNER_TEMP/trusted/publish.log"
+          grep -Fq 'TRUSTED_PUBLISH_GATE=PASS' "$RUNNER_TEMP/trusted/publish.log"
+
+      - name: Verify master, close TASK and remove evidence branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.preflight.outputs.candidate_sha }}
+          ISSUE_NUMBER: ${{ needs.preflight.outputs.issue_number }}
+          TASK_ID: ${{ needs.preflight.outputs.task_id }}
+          EVIDENCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          git fetch origin master
+          test "$(git rev-parse origin/master)" = "$CANDIDATE_SHA"
+          gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --comment "${TASK_ID} published by SOL-000020 at ${CANDIDATE_SHA}; fresh review=${{ needs.fresh-review.outputs.verdict }}."
+          git push origin --delete "$EVIDENCE_BRANCH"
+          echo "FLUXION_SOLEUR_PIPELINE=DONE approved_sha=$CANDIDATE_SHA"
