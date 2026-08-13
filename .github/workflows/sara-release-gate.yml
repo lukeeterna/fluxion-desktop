@@ -1,8 +1,8 @@
 name: Sara Release Gate (Full)
 
 # Certification-only U1 runner for the current production candidate.
-# No product/Sara code is changed. The canonical repository already exists on T7,
-# so this avoids cloning the ~1.2 GB repository into the Actions workspace.
+# No product/Sara code is changed. The T7 repo is used only to launch the
+# existing gate script; the gate itself syncs the iMac to origin/master.
 
 on:
   pull_request:
@@ -17,31 +17,23 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - name: Pre-flight — canonical T7 + orchestrator
-        run: |
-          set -e
-          test -d "/Volumes/MontereyT7/FLUXION" || { echo "::error::T7 non montato"; exit 2; }
-          test -x "/Volumes/MontereyT7/FLUXION/scripts/sara-release-gate.sh" || { echo "::error::sara-release-gate.sh mancante/non eseguibile"; exit 2; }
-          test -f "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py" || { echo "::error::VOS orchestrator mancante"; exit 2; }
-          cd /Volumes/MontereyT7/FLUXION
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::repo canonico dirty; U1 fail-closed"
-            git status --short
-            exit 2
-          fi
-          echo "OK pre-flight"
-
-      - name: Pin canonical repository to production candidate
+      - name: Pre-flight — canonical master + gate script
         env:
           TARGET_SHA: 4aadf5590f030e6dd01b540063d13548be4234a8
         run: |
           set -e
-          cd /Volumes/MontereyT7/FLUXION
+          ROOT="/Volumes/MontereyT7/FLUXION"
+          test -d "$ROOT" || { echo "::error::T7 non montato"; exit 2; }
+          test -x "$ROOT/scripts/sara-release-gate.sh" || { echo "::error::sara-release-gate.sh mancante/non eseguibile"; exit 2; }
+          test -f "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py" || { echo "::error::VOS orchestrator mancante"; exit 2; }
+          cd "$ROOT"
           git fetch origin master --quiet
-          git checkout --quiet "$TARGET_SHA"
-          ACTUAL_SHA="$(git rev-parse HEAD)"
-          test "$ACTUAL_SHA" = "$TARGET_SHA" || { echo "::error::SHA mismatch: $ACTUAL_SHA"; exit 2; }
-          echo "Canonical HEAD: $ACTUAL_SHA"
+          REMOTE_SHA="$(git rev-parse origin/master)"
+          test "$REMOTE_SHA" = "$TARGET_SHA" || { echo "::error::origin/master moved: $REMOTE_SHA"; exit 2; }
+          git diff --quiet "$TARGET_SHA" -- scripts/sara-release-gate.sh || { echo "::error::local gate script differs from production candidate"; exit 2; }
+          echo "Canonical production candidate: $REMOTE_SHA"
+          echo "T7 non-product dirty state (informational only):"
+          git status --short -- tools/VectCutAPI vos-out/decisions.jsonl || true
 
       - name: Run U1 Sara stress gate — tier 3
         env:
