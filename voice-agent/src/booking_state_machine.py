@@ -1225,6 +1225,8 @@ class BookingStateMachine:
                 extracted.date.to_string("%Y-%m-%d"),
                 origin="backtracking_date_correction",
             ):
+                self._set_context_date(None, origin="backtracking_date_correction_rejected_clear")
+                self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_DATE,
@@ -3606,6 +3608,8 @@ class BookingStateMachine:
                 force_update=True,
             )
             if date_update_result is False:
+                self._set_context_date(None, origin="confirming_level1_correction_rejected_clear")
+                self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_DATE,
@@ -3767,6 +3771,8 @@ class BookingStateMachine:
                             date_result.to_string("%Y-%m-%d"),
                             origin="confirming_groq_date_correction",
                         ):
+                            self._set_context_date(None, origin="confirming_groq_date_correction_rejected_clear")
+                            self.context.date_display = None
                             self.context.state = BookingState.WAITING_DATE
                             return StateMachineResult(
                                 next_state=BookingState.WAITING_DATE,
