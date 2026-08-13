@@ -150,13 +150,14 @@ class TTSEngineSelector:
     ) -> TTSMode:
         """
         Resolve effective TTS mode from hardware caps and user preference.
-        AUTO with internet → QUALITY (Edge-TTS), else FAST (Piper).
+        AUTO always resolves to FAST (Piper). QUALITY/FAST preferences pass through.
         """
         if user_pref != TTSMode.AUTO:
             return user_pref
-        # Edge-TTS requires internet — if available and capable, use quality
-        if hw.get("capable") and _EDGE_TTS_AVAILABLE:
-            return TTSMode.QUALITY
+        # AUTO always resolves to Piper (FAST): measured P95 404.1ms on the
+        # production /api/voice/say endpoint vs Edge-TTS's P95 867ms, which
+        # fails the <800ms U3 latency SLO. QUALITY remains available via
+        # explicit user preference above.
         return TTSMode.FAST
 
     @staticmethod

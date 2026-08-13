@@ -80,19 +80,30 @@ class TestTTSEngineSelector:
         mode = TTSEngineSelector.get_mode_for_hardware(hw, TTSMode.QUALITY)
         assert mode == TTSMode.QUALITY
 
-    def test_get_mode_auto_capable_returns_quality(self):
-        """AUTO mode on capable hardware (RAM>=8GB, cores>=4) + edge_tts → QUALITY."""
-        if not _edge_tts_available():
-            pytest.skip("edge-tts not installed")
+    def test_get_mode_auto_capable_returns_fast(self):
+        """AUTO mode on capable hardware (RAM>=8GB, cores>=4) + edge_tts → FAST (U3 SLO fix).
+
+        Piper is measured at P95 404.1ms on the production /api/voice/say endpoint
+        (docs/perf/D3-voice-latency.md run S196) vs Edge-TTS's P95 867ms (run S191),
+        which fails the <800ms U3 hard SLO. AUTO now always resolves to the already
+        -proven-fast Piper path regardless of detected hardware capability or
+        edge_tts availability.
+        """
         hw = {"ram_gb": 16.0, "cpu_cores": 8, "avx2": True, "capable": True}
         mode = TTSEngineSelector.get_mode_for_hardware(hw, TTSMode.AUTO)
-        assert mode == TTSMode.QUALITY
+        assert mode == TTSMode.FAST
 
     def test_get_mode_auto_incapable_returns_fast(self):
         """AUTO mode on incapable hardware (RAM<8GB or cores<4) → FAST."""
         hw = {"ram_gb": 4.0, "cpu_cores": 4, "avx2": False, "capable": False}
         mode = TTSEngineSelector.get_mode_for_hardware(hw, TTSMode.AUTO)
         assert mode == TTSMode.FAST
+
+    def test_get_mode_quality_still_selects_quality_regardless_of_hardware(self):
+        """Explicit QUALITY preference is unaffected by the AUTO->FAST change."""
+        hw = {"ram_gb": 32.0, "cpu_cores": 16, "avx2": True, "capable": True}
+        mode = TTSEngineSelector.get_mode_for_hardware(hw, TTSMode.QUALITY)
+        assert mode == TTSMode.QUALITY
 
     def test_get_engine_fast_returns_piper(self):
         """get_engine(FAST) returns a PiperTTSEngine (or raises RuntimeError if piper absent)."""
@@ -106,6 +117,17 @@ class TestTTSEngineSelector:
         if not _piper_available():
             pytest.skip("Piper binary/model not available on this machine")
         engine = create_tts_engine(user_pref=TTSMode.FAST)
+        assert isinstance(engine, PiperTTSEngine)
+
+    def test_create_tts_engine_auto_returns_piper(self):
+        """create_tts_engine(AUTO) resolves to a real PiperTTSEngine end-to-end (U3 SLO fix).
+
+        Exercises the full create_tts_engine() -> get_mode_for_hardware() ->
+        get_engine() path, not just the mode-resolution function in isolation.
+        """
+        if not _piper_available():
+            pytest.skip("Piper binary/model not available on this machine")
+        engine = create_tts_engine(user_pref=TTSMode.AUTO)
         assert isinstance(engine, PiperTTSEngine)
 
 
