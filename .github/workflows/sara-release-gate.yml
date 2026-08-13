@@ -54,10 +54,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Repo gira sul MacBook in /Volumes/MontereyT7/FLUXION/.
-          # Il runner clona in _work/ ma orchestrator.py usa path canonico FLUXION_ROOT.
-          # Necessario per pattern git pull origin master su iMac.
-          fetch-depth: 0
+          # The gate uses /Volumes/MontereyT7/FLUXION as SSOT; workspace history is unnecessary.
+          fetch-depth: 1
 
       - name: Pre-flight — T7 mounted + repo canonico
         run: |
