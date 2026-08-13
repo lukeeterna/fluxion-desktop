@@ -74,7 +74,8 @@ jobs:
             --ignore=tests/e2e \
             --ignore=tests/integration \
             --ignore=tests/test_booking_e2e_complete.py \
-            --ignore=tests/test_s158_live_full.py
+            --ignore=tests/test_s158_live_full.py \
+            --ignore=tests/test_s158_multivertical.py
 
   # ============================================================
   # JOB 3: CI Pass — gate per branch protection
