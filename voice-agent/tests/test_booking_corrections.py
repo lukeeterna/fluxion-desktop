@@ -7,7 +7,7 @@ generic operator extraction, and follow-up responses.
 import pytest
 import sys
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Add parent src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -128,7 +128,7 @@ class TestB4ConfirmingCorrections:
         """'niente, meglio venerdì' → date updated, NOT cancelled"""
         sm = BookingStateMachine(
             vertical="salone",
-            reference_date=datetime(2026, 1, 27)
+            reference_date=datetime.now()
         )
         sm.context.state = BookingState.CONFIRMING
         sm.context.service = "taglio"
@@ -216,17 +216,18 @@ class TestB5ForceUpdate:
     def test_force_update_all_fields(self):
         """All fields are updatable with force_update"""
         sm = BookingStateMachine(vertical="salone")
+        future_date = (datetime.now() + timedelta(days=5)).strftime("%Y-%m-%d")
         sm._update_context_from_extraction(
             {
                 "service": "colore",
-                "date": "2026-02-01",
+                "date": future_date,
                 "time": "15:00",
                 "operator": "Marco"
             },
             force_update=True
         )
         assert sm.context.service == "colore"
-        assert sm.context.date == "2026-02-01"
+        assert sm.context.date == future_date
         assert sm.context.time == "15:00"
         assert sm.context.operator_name == "Marco"
 
