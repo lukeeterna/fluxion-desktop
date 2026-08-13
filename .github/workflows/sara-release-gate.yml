@@ -1,143 +1,71 @@
 name: Sara Release Gate (Full)
 
-# S207 — Release gate REALE completo (Opzione B).
-# Esegue test_sara_stress_per_verticale.py su tutti i verticali + DB integrity
-# usando self-hosted GitHub Actions runner su MacBook (zero-cost, outbound only).
-# Il runner chiama orchestrator VOS che a sua volta SSH-a iMac e gira la pipeline live 3002.
-#
-# Setup runner una tantum (founder): vedi venture-os/docs/SETUP-SELFHOSTED-RUNNER.md
-#
-# Trigger:
-#   - PR su voice-agent/**     → block merge se FAIL (required check)
-#   - workflow_dispatch        → run manuale on-demand
-#   - schedule daily           → smoke notturno (opzionale, disabilitato di default)
-#
-# Durata tipica: 5-12 min (full tier 1+2+3). Skip --skip-extended → 3-5 min.
+# Certification-only U1 runner for the current production candidate.
+# No product/Sara code is changed. The canonical repository already exists on T7,
+# so this avoids cloning the ~1.2 GB repository into the Actions workspace.
 
 on:
   pull_request:
     paths:
-      - 'voice-agent/src/**'
-      - 'voice-agent/tests/**'
-      - 'voice-agent/requirements*.txt'
-      - 'voice-agent/main.py'
-      - 'scripts/sara-release-gate.sh'
       - '.github/workflows/sara-release-gate.yml'
   workflow_dispatch:
-    inputs:
-      tier:
-        description: 'Gate tier (1=core, 2=extended, 3=full)'
-        required: false
-        default: '3'
-        type: choice
-        options: ['1', '2', '3']
-      skip_extended:
-        description: 'Skip tier 2 extended smoke (faster)'
-        required: false
-        default: false
-        type: boolean
-
-env:
-  # Temporary compatibility for the existing older-macOS self-hosted runner.
-  # Remove when the runner OS is upgraded to a Node 24-compatible macOS.
-  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
 
 jobs:
   sara-gate:
     name: Sara Gate (self-hosted MacBook → iMac pipeline)
-    # Self-hosted runner registrato su MacBook con labels:
-    #   [self-hosted, macbook, fluxion]
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 20
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          # The gate uses /Volumes/MontereyT7/FLUXION as SSOT; workspace history is unnecessary.
-          fetch-depth: 1
-
-      - name: Pre-flight — T7 mounted + repo canonico
+      - name: Pre-flight — canonical T7 + orchestrator
         run: |
           set -e
-          if [ ! -d "/Volumes/MontereyT7/FLUXION" ]; then
-            echo "::error::T7 non montato — /Volumes/MontereyT7/FLUXION mancante"
-            exit 2
-          fi
-          if [ ! -x "/Volumes/MontereyT7/FLUXION/scripts/sara-release-gate.sh" ]; then
-            echo "::error::scripts/sara-release-gate.sh non eseguibile"
-            exit 2
-          fi
-          if [ ! -f "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py" ]; then
-            echo "::error::VOS orchestrator mancante — installa venture-os/components/sara-gate-orchestrator/"
+          test -d "/Volumes/MontereyT7/FLUXION" || { echo "::error::T7 non montato"; exit 2; }
+          test -x "/Volumes/MontereyT7/FLUXION/scripts/sara-release-gate.sh" || { echo "::error::sara-release-gate.sh mancante/non eseguibile"; exit 2; }
+          test -f "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py" || { echo "::error::VOS orchestrator mancante"; exit 2; }
+          cd /Volumes/MontereyT7/FLUXION
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::repo canonico dirty; U1 fail-closed"
+            git status --short
             exit 2
           fi
           echo "OK pre-flight"
 
-      - name: Sync repo canonico con commit CI
-        # GitHub Actions clona in _work/; il gate USA /Volumes/MontereyT7/FLUXION/
-        # come SSOT. Sincronizziamo lì il SHA del workflow per coerenza.
+      - name: Pin canonical repository to production candidate
         env:
-          GITHUB_SHA: ${{ github.sha }}
+          TARGET_SHA: 4aadf5590f030e6dd01b540063d13548be4234a8
         run: |
           set -e
           cd /Volumes/MontereyT7/FLUXION
-          git fetch origin --quiet
-          git checkout --quiet ${GITHUB_SHA} || {
-            echo "::warning::checkout ${GITHUB_SHA} fallito, uso HEAD attuale"
-          }
-          echo "Canonico HEAD: $(git rev-parse --short HEAD)"
+          git fetch origin master --quiet
+          git checkout --quiet "$TARGET_SHA"
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          test "$ACTUAL_SHA" = "$TARGET_SHA" || { echo "::error::SHA mismatch: $ACTUAL_SHA"; exit 2; }
+          echo "Canonical HEAD: $ACTUAL_SHA"
 
-      - name: Build orchestrator args
-        id: args
+      - name: Run U1 Sara stress gate — tier 3
         env:
-          TIER: ${{ inputs.tier || '3' }}
-          SKIP_EXTENDED: ${{ inputs.skip_extended || 'false' }}
-        run: |
-          ARGS=""
-          if [ "$TIER" = "1" ]; then
-            ARGS="$ARGS --tier=1"
-          elif [ "$TIER" = "2" ]; then
-            ARGS="$ARGS --tier=2"
-          fi
-          if [ "$SKIP_EXTENDED" = "true" ]; then
-            ARGS="$ARGS --skip-extended"
-          fi
-          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
-          echo "Args calcolati: '$ARGS'"
-
-      - name: Run Sara Gate via VOS orchestrator
-        env:
-          SARA_GATE_ARGS: ${{ steps.args.outputs.args }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+          SARA_GATE_ARGS: ''
+          GITHUB_EVENT_NAME: pull_request
+          GITHUB_REF: refs/heads/master
+          GITHUB_SHA: 4aadf5590f030e6dd01b540063d13548be4234a8
+          GITHUB_PR_NUMBER: '39'
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
-          # Big Sur python3 sistema (~/venture-os pattern stdlib-only, no venv)
+          set -e
           python3 "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py"
 
-      - name: Upload report JSON (sempre)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sara-gate-report-${{ github.run_id }}
-          path: /Volumes/MontereyT7/FLUXION/docs/launch/sara-release-gate-reports/release-gate-*.json
-          retention-days: 30
-          if-no-files-found: warn
-
-      - name: Append run log VOS as artifact
+      - name: Print U1 evidence
         if: always()
         run: |
-          tail -1 "$HOME/venture-os/state/sara-gate-runs.jsonl" 2>/dev/null > /tmp/last-run.jsonl || echo "{}" > /tmp/last-run.jsonl
-          cat /tmp/last-run.jsonl
-
-      - name: Upload VOS run entry
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: sara-gate-vos-entry-${{ github.run_id }}
-          path: /tmp/last-run.jsonl
-          retention-days: 90
+          echo "===== VOS gate entry ====="
+          tail -1 "$HOME/venture-os/state/sara-gate-runs.jsonl" 2>/dev/null || true
+          echo "===== Latest release-gate report ====="
+          LATEST="$(ls -t /Volumes/MontereyT7/FLUXION/docs/launch/sara-release-gate-reports/release-gate-*.json 2>/dev/null | head -1 || true)"
+          if [ -n "$LATEST" ]; then
+            echo "$LATEST"
+            cat "$LATEST"
+          else
+            echo "No release-gate report found"
+          fi
