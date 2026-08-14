@@ -30,6 +30,7 @@ SOLEUR_BLOBS = {
     "plugins/soleur/skills/postmerge/SKILL.md": "e78cf2d86d74a13bc8315697886a3278ba68714c",
 }
 BASE_ACTION_COMMIT = "f1b5c5c49125f0e6adc48c1203ebd77f83ea9adb"
+SOLEUR_HANDOFF_BRANCH = "fluxion/soleur-reviewed-handoff"
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
 HEX64 = re.compile(r"^[0-9a-f]{64}$")
 SAFE_TASK_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
@@ -262,6 +263,16 @@ git rev-parse HEAD
 git status --porcelain
 ```
 
+Before emitting the readiness marker, preserve the reviewed commit under the one
+explicit FLUXION-local handoff ref.  This ref is local to the isolated hosted runner;
+it is not a publication action and the engineering lane still has no canonical write
+remote:
+
+```bash
+git branch -f fluxion/soleur-reviewed-handoff HEAD
+test "$(git rev-parse refs/heads/fluxion/soleur-reviewed-handoff)" = "$(git rev-parse HEAD)"
+```
+
 Then output exactly:
 
 ```text
@@ -370,19 +381,13 @@ def parse_local_branches(repo: Path) -> list[dict[str, str]]:
     return out
 
 
-def candidate_feature_refs(repo: Path) -> list[tuple[str, str]]:
-    refs: set[tuple[str, str]] = set()
-    for wt in parse_worktrees(repo):
-        branch = wt.get("branch", "").removeprefix("refs/heads/")
-        head = wt.get("HEAD", "")
-        if branch and branch not in {"main", "master"} and HEX40.fullmatch(head):
-            refs.add((branch, head))
-    for ref in parse_local_branches(repo):
-        branch = ref["branch"]
-        head = ref["HEAD"]
-        if branch not in {"main", "master"}:
-            refs.add((branch, head))
-    return sorted(refs)
+def durable_handoff_ref(repo: Path) -> tuple[str, str]:
+    branch = SOLEUR_HANDOFF_BRANCH
+    ref = f"refs/heads/{branch}"
+    head = git(repo, "rev-parse", "--verify", ref, check=False)
+    if not HEX40.fullmatch(head):
+        raise Blocked("Soleur durable handoff ref missing")
+    return branch, head
 
 
 def changed_paths(repo: Path, base: str, head: str) -> list[str]:
@@ -396,26 +401,17 @@ def cmd_export(a: argparse.Namespace) -> int:
     if git(repo, "cat-file", "-t", base) != "commit":
         raise Blocked("base commit unavailable")
     allowed = set(task["allowed_paths"])
-    candidates: list[tuple[int, int, str, str, list[str]]] = []
-    for branch, head in candidate_feature_refs(repo):
-        if head == base:
-            continue
-        mb = git(repo, "merge-base", base, head, check=False)
-        if mb != base:
-            continue
-        paths = changed_paths(repo, base, head)
-        n_allowed = sum(p in allowed for p in paths)
-        if not n_allowed:
-            continue
-        count_s = git(repo, "rev-list", "--count", f"{base}..{head}")
-        candidates.append((n_allowed, int(count_s), branch, head, paths))
-    if not candidates:
-        raise Blocked("no Soleur feature ref with allowed-path changes found")
-    candidates.sort(reverse=True)
-    best = candidates[0]
-    if len(candidates) > 1 and candidates[1][:2] == best[:2]:
-        raise Blocked("ambiguous Soleur candidate refs")
-    _, commit_count, branch, head, paths = best
+    branch, head = durable_handoff_ref(repo)
+    if head == base:
+        raise Blocked("Soleur durable handoff points at TASK base")
+    mb = git(repo, "merge-base", base, head, check=False)
+    if mb != base:
+        raise Blocked("Soleur durable handoff ancestry mismatch")
+    paths = changed_paths(repo, base, head)
+    if not any(p in allowed for p in paths):
+        raise Blocked("Soleur durable handoff contains no allowed change")
+    count_s = git(repo, "rev-list", "--count", f"{base}..{head}")
+    commit_count = int(count_s)
     allowed_changed = sorted(p for p in paths if p in allowed)
     extra = sorted(p for p in paths if p not in allowed)
     if not allowed_changed:
@@ -774,14 +770,32 @@ def cmd_self_test(_: argparse.Namespace) -> int:
         git(repo, "add", "allowed.txt")
         git(repo, "commit", "-m", "reviewed")
         reviewed_head = git(repo, "rev-parse", "HEAD")
+        git(repo, "branch", SOLEUR_HANDOFF_BRANCH, reviewed_head)
         git(repo, "checkout", "main")
-        if len(parse_worktrees(repo)) != 1:
-            raise Blocked("self-test expected feature worktree to be absent")
+        git(repo, "branch", "-D", "feat/reviewed")
+        if any(x["branch"] == "feat/reviewed" for x in parse_local_branches(repo)):
+            raise Blocked("self-test feature branch cleanup failed")
         meta = _selftest_export(repo, _selftest_task(base), root)
-        if meta.get("source_branch") != "feat/reviewed" or meta.get("source_head") != reviewed_head:
-            raise Blocked("self-test failed to recover reviewed local branch")
+        if meta.get("source_branch") != SOLEUR_HANDOFF_BRANCH or meta.get("source_head") != reviewed_head:
+            raise Blocked("self-test failed durable handoff recovery")
         if meta.get("allowed_changed_paths") != ["allowed.txt"]:
             raise Blocked("self-test exported unexpected path set")
+
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        repo, base = _selftest_repo(root)
+        git(repo, "checkout", "-b", "feat/no-handoff")
+        (repo / "allowed.txt").write_text("x\n", encoding="utf-8")
+        git(repo, "add", "allowed.txt")
+        git(repo, "commit", "-m", "x")
+        git(repo, "checkout", "main")
+        try:
+            _selftest_export(repo, _selftest_task(base), root)
+        except Blocked as exc:
+            if "durable handoff ref missing" not in str(exc):
+                raise
+        else:
+            raise Blocked("self-test accepted missing durable handoff")
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -790,13 +804,16 @@ def cmd_self_test(_: argparse.Namespace) -> int:
         (repo / "other.txt").write_text("x\n", encoding="utf-8")
         git(repo, "add", "other.txt")
         git(repo, "commit", "-m", "other")
+        head = git(repo, "rev-parse", "HEAD")
+        git(repo, "branch", SOLEUR_HANDOFF_BRANCH, head)
         git(repo, "checkout", "main")
         try:
             _selftest_export(repo, _selftest_task(base), root)
-        except Blocked:
-            pass
+        except Blocked as exc:
+            if "contains no allowed change" not in str(exc):
+                raise
         else:
-            raise Blocked("self-test accepted out-of-scope-only branch")
+            raise Blocked("self-test accepted out-of-scope durable handoff")
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -806,30 +823,28 @@ def cmd_self_test(_: argparse.Namespace) -> int:
         (repo / "allowed.txt").write_text("foreign\n", encoding="utf-8")
         git(repo, "add", "allowed.txt")
         git(repo, "commit", "-m", "foreign")
+        foreign = git(repo, "rev-parse", "HEAD")
+        git(repo, "branch", SOLEUR_HANDOFF_BRANCH, foreign)
         git(repo, "checkout", "main")
         try:
             _selftest_export(repo, _selftest_task(base), root)
-        except Blocked:
-            pass
+        except Blocked as exc:
+            if "ancestry mismatch" not in str(exc):
+                raise
         else:
-            raise Blocked("self-test accepted wrong-ancestry branch")
+            raise Blocked("self-test accepted wrong-ancestry durable handoff")
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         repo, base = _selftest_repo(root)
-        for branch, body in (("feat/a", "a\n"), ("feat/b", "b\n")):
-            git(repo, "checkout", "-b", branch, base)
-            (repo / "allowed.txt").write_text(body, encoding="utf-8")
-            git(repo, "add", "allowed.txt")
-            git(repo, "commit", "-m", branch)
-            git(repo, "checkout", "main")
+        git(repo, "branch", SOLEUR_HANDOFF_BRANCH, base)
         try:
             _selftest_export(repo, _selftest_task(base), root)
         except Blocked as exc:
-            if "ambiguous Soleur candidate refs" not in str(exc):
+            if "points at TASK base" not in str(exc):
                 raise
         else:
-            raise Blocked("self-test failed to block ambiguous candidate refs")
+            raise Blocked("self-test accepted TASK base as durable handoff")
 
     print("SELF_TEST=PASS")
     return 0
