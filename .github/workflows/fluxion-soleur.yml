@@ -194,8 +194,8 @@ jobs:
         run: |
           set -euo pipefail
           test -f "$EXECUTION_FILE"
-          grep -Fq 'READY_FOR_SOL_000020' "$EXECUTION_FILE"
-          grep -Fq 'FLUXION_SOLEUR_READY' "$EXECUTION_FILE"
+          python3 "$RUNNER_TEMP/fluxion-soleur-adapter.py" validate-execution \
+            --execution "$EXECUTION_FILE"
 
       - name: Export only reviewed TASK-allowed bytes
         id: export
