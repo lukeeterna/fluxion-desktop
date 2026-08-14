@@ -31,7 +31,7 @@ jobs:
           python3 .github/bootstrap/fluxion-soleur-adapter.py static-workflow --workflow .github/workflows/fluxion-soleur.yml
           git diff --check
 
-      - name: Commit only permanent adapter repair
+      - name: Commit permanent adapter repair and remove bootstrap
         run: |
           set -euo pipefail
           git config user.name 'FLUXION deterministic repair'
@@ -40,6 +40,10 @@ jobs:
           git add .github/bootstrap/fluxion-soleur-adapter.py
           git diff --cached --check
           CHANGED="$(git diff --cached --name-only | sort)"
-          test "$CHANGED" = '.github/bootstrap/fluxion-soleur-adapter.py'
+          EXPECTED="$(printf '%s\n' \
+            '.github/bootstrap/_tmp_fix50_apply.py' \
+            '.github/bootstrap/fluxion-soleur-adapter.py' \
+            '.github/workflows/_tmp_fix50_apply.yml' | sort)"
+          test "$CHANGED" = "$EXPECTED"
           git commit -m 'fix(ci): preserve reviewed Soleur result with durable local handoff'
           git push origin HEAD:fix/soleur-durable-handoff-20260814
