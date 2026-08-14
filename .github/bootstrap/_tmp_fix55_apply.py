@@ -44,7 +44,7 @@ new_write = '''    one.write_text(_replace_from(one_text, "7. Use the **Skill to
     rendered_one = one.read_text(encoding="utf-8")
     drain_required = (
         "FLUXION_SUBAGENT_DRAIN",
-        "Never return a final response",
+        "Never return a",
         "Monitor` / agent-status polling",
         "fail closed",
         "Never say \\\"pause here\\\"",
