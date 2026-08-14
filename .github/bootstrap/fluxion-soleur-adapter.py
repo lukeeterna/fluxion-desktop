@@ -115,6 +115,38 @@ def github_output(name: str, value: str, out: Path | None = None) -> None:
             fh.write(f"{name}={value}\n")
 
 
+def final_execution_result(path: Path) -> str:
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise Blocked(f"invalid Soleur execution json: {exc}") from exc
+    if not isinstance(raw, list):
+        raise Blocked("Soleur execution root must be a list")
+    results = [item for item in raw if isinstance(item, dict) and item.get("type") == "result"]
+    if not results:
+        raise Blocked("Soleur execution has no final result record")
+    final = results[-1]
+    if final.get("subtype") != "success":
+        raise Blocked(f"final Soleur result subtype is not success: {final.get('subtype')!r}")
+    text = final.get("result")
+    if not isinstance(text, str):
+        raise Blocked("final Soleur result text missing")
+    required = (
+        "FLUXION_SOLEUR_READY",
+        "<promise>READY_FOR_SOL_000020</promise>",
+    )
+    missing = [marker for marker in required if marker not in text]
+    if missing:
+        raise Blocked(f"final Soleur result missing completion markers: {missing}")
+    return text
+
+
+def cmd_validate_execution(a: argparse.Namespace) -> int:
+    final_execution_result(Path(a.execution))
+    print("SOLEUR_FINAL_RESULT=PASS")
+    return 0
+
+
 def _valid_relpath(value: str) -> bool:
     p = Path(value)
     return bool(value) and not p.is_absolute() and ".." not in p.parts and ".git" not in p.parts
@@ -696,6 +728,14 @@ def cmd_static_workflow(a: argparse.Namespace) -> int:
         raise Blocked("read-only engineering contents permission not found")
     if "FLUXION_EXTERNAL_PUBLISH" not in text:
         raise Blocked("external publisher postmerge marker absent")
+    legacy_marker_checks = (
+        "grep -Fq 'READY_FOR_SOL_000020' \"$EXECUTION_FILE\"",
+        "grep -Fq 'FLUXION_SOLEUR_READY' \"$EXECUTION_FILE\"",
+    )
+    if any(marker in text for marker in legacy_marker_checks):
+        raise Blocked("workflow still uses broad execution-file marker grep")
+    if 'validate-execution \\' not in text or '--execution \"$EXECUTION_FILE\"' not in text:
+        raise Blocked("workflow final-result execution validator wiring absent")
     print("WORKFLOW_STATIC=PASS")
     return 0
 
@@ -761,6 +801,45 @@ def cmd_self_test(_: argparse.Namespace) -> int:
         raise Blocked("self-test unsafe-path mutation survived")
     data = b"abc"
     assert git_blob_sha(data) == hashlib.sha1(b"blob 3\0abc").hexdigest()
+
+    with tempfile.TemporaryDirectory() as td:
+        execution = Path(td) / "execution.json"
+        early = "FLUXION_SOLEUR_READY <promise>READY_FOR_SOL_000020</promise>"
+        good = [
+            {"type": "assistant", "message": early},
+            {
+                "type": "result",
+                "subtype": "success",
+                "result": "## Ship Phase Complete — FLUXION external publisher boundary\nFLUXION_SOLEUR_READY\n<promise>READY_FOR_SOL_000020</promise>",
+            },
+        ]
+        execution.write_text(json.dumps(good), encoding="utf-8")
+        final_execution_result(execution)
+
+        false_green = [
+            {"type": "assistant", "message": early},
+            {"type": "result", "subtype": "success", "result": "Four review agents are still in progress."},
+        ]
+        execution.write_text(json.dumps(false_green), encoding="utf-8")
+        try:
+            final_execution_result(execution)
+        except Blocked as exc:
+            if "missing completion markers" not in str(exc):
+                raise
+        else:
+            raise Blocked("self-test accepted markers present only before final result")
+
+        failed = [
+            {"type": "result", "subtype": "error", "result": early},
+        ]
+        execution.write_text(json.dumps(failed), encoding="utf-8")
+        try:
+            final_execution_result(execution)
+        except Blocked as exc:
+            if "subtype is not success" not in str(exc):
+                raise
+        else:
+            raise Blocked("self-test accepted non-success final result")
 
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -898,6 +977,9 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("static-workflow")
     s.add_argument("--workflow", required=True)
     s.set_defaults(fn=cmd_static_workflow)
+    s = sub.add_parser("validate-execution")
+    s.add_argument("--execution", required=True)
+    s.set_defaults(fn=cmd_validate_execution)
     s = sub.add_parser("self-test")
     s.set_defaults(fn=cmd_self_test)
     return p
