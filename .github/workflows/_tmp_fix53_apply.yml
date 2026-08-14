@@ -16,7 +16,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/soleur-final-result-marker-20260814
-          fetch-depth: 0
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/bootstrap
+            .github/workflows
 
       - name: Apply exact repair
         run: |
