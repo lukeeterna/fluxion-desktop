@@ -39,8 +39,9 @@ jobs:
           git -C "$SOLEUR_ROOT" checkout --detach 154302d32114abba3165ce47daefe5bfe508d02f
           python3 .github/bootstrap/fluxion-soleur-adapter.py overlay --soleur-root "$SOLEUR_ROOT"
           grep -Fq 'FLUXION_SUBAGENT_DRAIN' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
-          grep -Fq 'Never return a final response' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
+          grep -Fq 'Never return a' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
           grep -Fq 'Monitor` / agent-status polling' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
+          grep -Fq 'fail closed' "$SOLEUR_ROOT/plugins/soleur/skills/one-shot/SKILL.md"
           git diff --check
 
       - name: Commit only permanent adapter repair
