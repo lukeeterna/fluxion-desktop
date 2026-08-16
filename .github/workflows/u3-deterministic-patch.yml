@@ -1,0 +1,89 @@
+name: U3 deterministic patch
+
+on:
+  push:
+    branches:
+      - agent/u3-nlu-fsm-bypass
+
+permissions:
+  contents: write
+
+concurrency:
+  group: u3-deterministic-patch
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/u3-nlu-fsm-bypass
+          fetch-depth: 0
+
+      - name: Apply exact U3 scheduling guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("voice-agent/src/orchestrator.py")
+          source = path.read_text(encoding="utf-8")
+
+          old = '''        _llm_nlu_task = None
+                  _llm_nlu_result = None  # populated when awaited at L1
+                  if self._llm_nlu:
+                      _llm_filled_slots = {}
+                      ctx = self.booking_sm.context
+          '''
+
+          new = '''        _llm_nlu_task = None
+                  _llm_nlu_result = None  # populated when awaited at L1
+                  ctx = self.booking_sm.context
+                  _fsm_owned_nlu_states = frozenset({
+                      BookingState.WAITING_NAME,
+                      BookingState.WAITING_SURNAME,
+                      BookingState.CONFIRMING_NAME,
+                      BookingState.CONFIRMING_PHONE,
+                      BookingState.PROPOSE_REGISTRATION,
+                      BookingState.REGISTERING_SURNAME,
+                      BookingState.REGISTERING_PHONE,
+                      BookingState.WAITING_DATE,
+                      BookingState.WAITING_TIME,
+                      BookingState.CONFIRMING,
+                      BookingState.DISAMBIGUATING_NAME,
+                  })
+                  if self._llm_nlu and ctx.state not in _fsm_owned_nlu_states:
+                      _llm_filled_slots = {}
+          '''
+
+          occurrences = source.count(old)
+          if occurrences != 1:
+              raise SystemExit(
+                  f"Refusing patch: expected exactly one scheduling block, found {occurrences}"
+              )
+
+          updated = source.replace(old, new, 1)
+          if updated.count("if self._llm_nlu and ctx.state not in _fsm_owned_nlu_states:") != 1:
+              raise SystemExit("Refusing patch: U3 guard postcondition failed")
+
+          path.write_text(updated, encoding="utf-8")
+          PY
+
+          git diff --check
+          git diff -- voice-agent/src/orchestrator.py
+
+      - name: Commit product patch and remove one-shot applier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add voice-agent/src/orchestrator.py
+          git rm .github/workflows/u3-deterministic-patch.yml
+          git diff --cached --check
+          git commit -m "fix(nlu): bypass primary LLM in deterministic FSM states"
+          git push origin HEAD:agent/u3-nlu-fsm-bypass
