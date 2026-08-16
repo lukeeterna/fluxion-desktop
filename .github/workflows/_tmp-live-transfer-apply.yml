@@ -1,22 +1,120 @@
-name: TMP Validate Sara Live Transfer Markers
+name: TMP Apply Sara Live Transfer P0
 on:
   push:
     branches: [agent/sara-live-transfer-p0]
     paths: ['.github/workflows/_tmp-live-transfer-apply.yml']
 permissions:
-  contents: read
+  contents: write
 jobs:
-  validate:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate corrected deterministic source markers
+        with:
+          fetch-depth: 0
+      - name: Apply validated product patch
         env:
-          VALIDATOR_Z64: eNqlV21v2zYQ/p5fcdGwSipkxemGYfCqAl7qdMbaJLDdLUASCLREK8RkUSCpNIaRH7bP+2O7I2XHdtI1yRwgknlvD587Hs8zJedQM3NdiimIeS2VgTP8useVkkonF1d7ssZH4N9IkfEOK3hlDnhViIofzJmo4kL6EfiXxpP6QIuiYqV3WeFXvagyzw8j+LbpTLE5739+PzwdnQPAdGE4JNC97f5Anqz0qP/x4+Dk/Zb0x7XU2k62bA+7a+lv/ZMPn89gS3r4FGRiBkgD9BK4ZlVe8iNWlkFmbiMQ1XvBSllEkOEaVxFMVfiL1d5PoBIlvHoF+47DeKgDfEMjGQ9Oj0NYPiX2rKmynbCQycrwWxMfuWcEObzOBStk7NCMubrhasy1FrJaQQNtlKgKQgivp0rkBQ/BInsakEtDfoiEqYqZMSy7doBYlfGSXsOnuZk34D5UGfGnBrdAKTK3vzYzWr64uriyCTo4gGkzmyH0yTntosb6lMDA3B6x+pgyqiGYMlXwjqhAZ0wZBgJq8c/fcMOz7FqE5NgBRMdr2uzCMRJLYozyoT8ZvBnBnCND2TV/clqC6T2TDxh5JFwIr1lmxI3NJCwtOCL01f3q0hn3wD3vnkYpbVJz2KjyHjmnP431EA+rmQy8tv5xj/ymQSZzBmcLcy0rL1xpT+N5E3+U2V/BeskinMaU/C2tz1W5pYeHJFsV/XK1iOZxVnKmJuf3mk43bml6aGKNrHDT5m712r7kfMaa0vRelC3Nq9xWUGAWtW0HEXa/RSlZDq76Hj2eWmUH+L1OC+mCxPWC/B+P+p8Gqe0+KbauVc9yy9SyUupZq2a1qT05X3cpt9wm6WvN6WsIYHWmeDmLU8WLVBtmGk2OLqttKaUydSWH4mNWav6YCp67BDzveRgYHWrA3FDPKpo6IH8hdN7BVMqytxuH8pDasg02t49NyqOiXCkrbhpVwUQ1iNQtU4iCm3abzyeKPp4ydUuE13tITnQPwGo7P6jpFdKLnh+Sl1j3VG8Jsr5VGr3tSA6JrBwYpCjY4IJjunrPC05crd0hYcrYtKxuhh5dDeEGBmwZBVexsF3DYhxP+qNJq558r72VafjfteUS9pXSci//YydEjC0vhP6yAqBPqq9lU+YpxwukZHYuUFxjZ4mxvAJvR4o7twcm3M6YdcRv61JkwmBEmU8X5Cl4HJdUeM0g6Xifqd0icYHw4k5rbM3Ul+iRatmojFyyL0yY9TnXsrzh6a7RZr1gzVXSPPDbezayDYdbBDVZhpOGF/YeUrJbTDPv4s9+ZzA+uoITibeAyCwiascG8EZabu71zgsf9/iFpdbA1dez9+HAbzNZK0mbCBrNVSqqujEJ2lY6U6I2dojSbppKRZ5kjVIYJ9UiD1ftaKNLLXfaBmtyISlVtaw0tY+WPbdOd42OXpQMj8aLe3+rCLtta1XBt2JDeWPxhcF3D8YD160gAvgOBj91jofnPcAjIjXPKdd/yOFZe0lA0TCV78De4h+9b+fDD6/2Zji60k+WSJY5TuKAP1B6e0CkJPTTJSBZiLSwPKXFgFeZzHEETvzGzDo/+zioZ4kd0TLZVCZAN7hU45Rsgpn/qT/6fTDCkkQvd2A1kmV2B6iVLPHfRe+w273aV3e+G/hpwscRlZqSjRxlkdN6070KQzo12X5yaNs3Fn/F9+6BfpP7b+xCC7eNmcDgO9ewbfdpW72B1a53tW1ztnpGzKnH0COmf9RI/EgLgq/Fu6Tr8HfXPPn2ZkjHg/F4eHqSDk/eD87JIGoFkyGNOseTwQhX64dM+Ztb7VgQnRasH3Uj33fUafG2C5huXb/tblDYYhiMRqejsR8539bAvTrVVovuMZfUcXLWH4/9cE8xgfLxQhs+H+BRCN7s2nbDvX8By67mhQ==
+          PATCH_Z64: |
+            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
+            dR0=
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import os,base64,zlib
-          open('/tmp/validate.py','wb').write(zlib.decompress(base64.b64decode(os.environ['VALIDATOR_Z64'])))
+          import os,base64,zlib,hashlib
+          raw=zlib.decompress(base64.b64decode(os.environ['PATCH_Z64']))
+          assert hashlib.sha256(raw).hexdigest() == '8d866b1fd53043ec00f492e299494d3fd06b0f3ac8afb357d69dcf294c7da6db'
+          open('/tmp/apply_live_transfer.py','wb').write(raw)
           PY
-          python3 /tmp/validate.py
+          python3 /tmp/apply_live_transfer.py
+          gofmt -w voice-agent/engine/main.go voice-agent/engine/main_test.go
+          rm -f .github/workflows/_tmp-live-transfer-inspect.yml .github/workflows/_tmp-live-transfer-apply.yml
+      - name: Validate Go engine
+        working-directory: voice-agent/engine
+        run: go test ./...
+      - name: Validate Python
+        run: |
+          set -euo pipefail
+          python3 -m py_compile voice-agent/src/voip_goengine.py voice-agent/src/orchestrator.py voice-agent/tests/test_live_transfer_goengine.py
+          cd voice-agent
+          python3 -m pip install -q pytest pytest-asyncio aiohttp
+          pytest tests/test_live_transfer_goengine.py tests/test_nlu_fsm_bypass.py -q
+      - name: Validate final diff
+        run: |
+          set -euo pipefail
+          git diff --check
+          test ! -e .github/workflows/_tmp-live-transfer-inspect.yml
+          test ! -e .github/workflows/_tmp-live-transfer-apply.yml
+          git status --short
+          git diff --stat HEAD
+      - name: Commit product patch
+        run: |
+          set -euo pipefail
+          git config user.name "FLUXION SOL"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(voice): add real SIP live transfer"
+          git push origin HEAD:agent/sara-live-transfer-p0
