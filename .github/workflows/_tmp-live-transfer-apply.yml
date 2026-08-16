@@ -1,0 +1,433 @@
+name: TMP Apply Sara Live Transfer P0
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0]
+    paths: ['.github/workflows/_tmp-live-transfer-apply.yml']
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply deterministic product patch
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              count=text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly 1 match, got {count}: {old[:100]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          go='voice-agent/engine/main.go'
+          replace_once(go,
+'''\t"os/signal"\n\t"sync"''',
+'''\t"os/signal"\n\t"strings"\n\t"sync"''')
+          replace_once(go,
+'''\tframeAUDIORX   byte = 0x03\n\tframeCALLEND   byte = 0x04\n\tframeAUDIOTX   byte = 0x10\n\tframeHANGUP    byte = 0x11''',
+'''\tframeAUDIORX        byte = 0x03\n\tframeCALLEND        byte = 0x04\n\tframeTRANSFERSTATUS byte = 0x05\n\tframeAUDIOTX        byte = 0x10\n\tframeHANGUP         byte = 0x11\n\tframeTRANSFER       byte = 0x12''')
+          replace_once(go,
+'''if err := handleCall(ctx, inDialog, caller, br); err != nil && !errors.Is(err, io.EOF) {''',
+'''if err := handleCall(ctx, inDialog, caller, br, server); err != nil && !errors.Is(err, io.EOF) {''')
+          replace_once(go,
+'''func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge) error {''',
+'''func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, sipServer string) error {''')
+          replace_once(go,
+'''\tcall := br.attachCall(cancelCall)''',
+'''\tcall := br.attachCall(cancelCall, d, sipServer)''')
+          replace_once(go,
+'''\tmu       sync.Mutex\n\ttxBuf    [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)\n\tcancel   context.CancelFunc\n\t// GATE2R metriche''',
+'''\tmu        sync.Mutex\n\ttxBuf     [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)\n\tcancel    context.CancelFunc\n\tdialog    *diago.DialogServerSession\n\tsipServer string\n\n\ttransferMu sync.Mutex\n\ttransferring bool\n\t// GATE2R metriche''')
+          replace_once(go,
+'''func (b *bridge) attachCall(cancel context.CancelFunc) *activeCall {\n\tc := &activeCall{cancel: cancel}''',
+'''func (b *bridge) attachCall(cancel context.CancelFunc, dialog *diago.DialogServerSession, sipServer string) *activeCall {\n\tc := &activeCall{cancel: cancel, dialog: dialog, sipServer: sipServer}''')
+          replace_once(go,
+'''\t\tcase frameHANGUP:\n\t\t\tslog.Info("HANGUP ricevuto da Python")\n\t\t\tb.mu.Lock()\n\t\t\tc := b.call\n\t\t\tb.mu.Unlock()\n\t\t\tif c != nil {\n\t\t\t\tc.clearTX()\n\t\t\t\tif c.cancel != nil {\n\t\t\t\t\tc.cancel()\n\t\t\t\t}\n\t\t\t}\n\t\tdefault:''',
+'''\t\tcase frameHANGUP:\n\t\t\tslog.Info("HANGUP ricevuto da Python")\n\t\t\tb.mu.Lock()\n\t\t\tc := b.call\n\t\t\tb.mu.Unlock()\n\t\t\tif c != nil {\n\t\t\t\tc.clearTX()\n\t\t\t\tif c.cancel != nil {\n\t\t\t\t\tc.cancel()\n\t\t\t\t}\n\t\t\t}\n\t\tcase frameTRANSFER:\n\t\t\tb.mu.Lock()\n\t\t\tc := b.call\n\t\t\tb.mu.Unlock()\n\t\t\tif c == nil {\n\t\t\t\tb.sendTransferStatus("no_route", 0, "no active call")\n\t\t\t\tcontinue\n\t\t\t}\n\t\t\t// REFER can wait for NOTIFY: never block the bridge reader.\n\t\t\tgo c.beginTransfer(string(payload), b)\n\t\tdefault:''')
+          marker='''func (b *bridge) sendFrame(typ byte, payload []byte) {'''
+          transfer_code=r'''type transferStatus struct {
+	Status string `json:"status"`
+	Code   int    `json:"code,omitempty"`
+	Detail string `json:"detail,omitempty"`
+}
+
+func (b *bridge) sendTransferStatus(status string, code int, detail string) {
+	payload, _ := json.Marshal(transferStatus{Status: status, Code: code, Detail: detail})
+	b.sendFrame(frameTRANSFERSTATUS, payload)
+}
+
+// normalizeTransferDestination accepts phone-like values loaded from trusted FLUXION
+// configuration only. SIP URIs, domains, headers and arbitrary caller-controlled text
+// are rejected. The SIP domain is always supplied separately by VOIP_SIP_SERVER.
+func normalizeTransferDestination(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("empty transfer destination")
+	}
+	var digits strings.Builder
+	for _, r := range raw {
+		switch {
+		case r >= '0' && r <= '9':
+			digits.WriteRune(r)
+		case r == '+' || r == ' ' || r == '-' || r == '(' || r == ')' || r == '.' || r == '/':
+			// Formatting characters only.
+		default:
+			return "", fmt.Errorf("invalid transfer destination character %q", r)
+		}
+	}
+	out := digits.String()
+	if len(out) < 6 || len(out) > 15 {
+		return "", fmt.Errorf("invalid transfer destination length: %d", len(out))
+	}
+	return out, nil
+}
+
+func mapTransferStatus(code int) string {
+	switch {
+	case code >= 100 && code < 200:
+		return "progress"
+	case code >= 200 && code < 300:
+		return "success"
+	case code == 486:
+		return "busy"
+	case code == 408 || code == 480:
+		return "no_answer"
+	case code == 404 || code == 484:
+		return "no_route"
+	default:
+		return "failed"
+	}
+}
+
+func (c *activeCall) beginTransfer(raw string, b *bridge) {
+	c.transferMu.Lock()
+	if c.transferring {
+		c.transferMu.Unlock()
+		b.sendTransferStatus("failed", 409, "transfer already in progress")
+		return
+	}
+	c.transferring = true
+	c.transferMu.Unlock()
+	defer func() {
+		c.transferMu.Lock()
+		c.transferring = false
+		c.transferMu.Unlock()
+	}()
+
+	destination, err := normalizeTransferDestination(raw)
+	if err != nil {
+		slog.Warn("TRANSFER destinazione rifiutata", "error", err)
+		b.sendTransferStatus("invalid", 0, "invalid trusted destination")
+		return
+	}
+	if c.dialog == nil || strings.TrimSpace(c.sipServer) == "" {
+		b.sendTransferStatus("no_route", 0, "missing active SIP dialog or server")
+		return
+	}
+
+	var referTo sip.Uri
+	if err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &referTo); err != nil {
+		b.sendTransferStatus("invalid", 0, "cannot build SIP Refer-To")
+		return
+	}
+
+	// diago v0.29 supports DialogServerSession.ReferOptions. A successful blind REFER
+	// is followed by BYE on Sara's leg, as required by the library contract.
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancel()
+	finalNotify := make(chan int, 1)
+	b.sendTransferStatus("trying", 0, "")
+	slog.Info("TRANSFER SIP REFER avvio", "destination_digits", len(destination))
+
+	err = c.dialog.ReferOptions(ctx, referTo, diago.ReferServerOptions{
+		OnNotify: func(code int) {
+			status := mapTransferStatus(code)
+			b.sendTransferStatus(status, code, "")
+			if code >= 200 {
+				select {
+				case finalNotify <- code:
+				default:
+				}
+			}
+		},
+	})
+	if err != nil {
+		if ctx.Err() != nil {
+			b.sendTransferStatus("no_answer", 408, "REFER/NOTIFY timeout")
+		} else {
+			b.sendTransferStatus("failed", 0, "REFER failed")
+		}
+		slog.Warn("TRANSFER SIP REFER fallito", "error", err)
+		return
+	}
+
+	select {
+	case code := <-finalNotify:
+		if code >= 200 && code < 300 {
+			slog.Info("TRANSFER completato", "sip_status", code)
+			c.clearTX()
+			if c.cancel != nil {
+				c.cancel()
+			}
+		}
+	case <-ctx.Done():
+		b.sendTransferStatus("no_answer", 408, "final NOTIFY timeout")
+		slog.Warn("TRANSFER timeout attesa NOTIFY finale")
+	}
+}
+
+'''
+          replace_once(go, marker, transfer_code+marker)
+
+          py='voice-agent/src/voip_goengine.py'
+          replace_once(py,
+'''FRAME_AUDIO_RX = 0x03\nFRAME_CALL_END = 0x04\nFRAME_AUDIO_TX = 0x10\nFRAME_HANGUP = 0x11''',
+'''FRAME_AUDIO_RX = 0x03\nFRAME_CALL_END = 0x04\nFRAME_TRANSFER_STATUS = 0x05\nFRAME_AUDIO_TX = 0x10\nFRAME_HANGUP = 0x11\nFRAME_TRANSFER = 0x12''')
+          replace_once(py,
+'''        self._call_active = False\n        self._caller = ""''',
+'''        self._call_active = False\n        self._caller = ""\n\n        # Live-transfer state. Terminal statuses wake the waiting transfer thread.\n        self._transfer_lock = threading.Lock()\n        self._transfer_event = threading.Event()\n        self._transfer_status = "idle"\n        self._transfer_code = 0''')
+          replace_once(py,
+'''    async def hangup(self) -> bool:\n        self._send_frame(FRAME_HANGUP, b"")\n        return True\n\n    def get_status''',
+'''    async def hangup(self) -> bool:\n        self._send_frame(FRAME_HANGUP, b"")\n        return True\n\n    async def transfer(self, destination: str, timeout_s: float = 27.0) -> str:\n        """Blind-transfer the active call to a trusted configured phone number."""\n        return await asyncio.to_thread(self._request_transfer, destination, timeout_s)\n\n    def get_status''')
+          replace_once(py,
+'''            "rtp_active": self._call_active,\n            "engine": "go",''',
+'''            "rtp_active": self._call_active,\n            "transfer_status": self._transfer_status,\n            "engine": "go",''')
+          replace_once(py,
+'''        elif typ == FRAME_CALL_END:\n            self._on_call_end()\n        else:''',
+'''        elif typ == FRAME_CALL_END:\n            self._on_call_end()\n        elif typ == FRAME_TRANSFER_STATUS:\n            self._on_transfer_status(payload)\n        else:''')
+          replace_once(py,
+'''    def _on_call_start(self, caller: str):\n        logger.info("CALL_START caller=%s", caller)\n        self._call_active = True\n        self._caller = caller''',
+'''    def _on_call_start(self, caller: str):\n        logger.info("CALL_START caller=%s", caller)\n        self._call_active = True\n        self._caller = caller\n        with self._transfer_lock:\n            self._transfer_status = "idle"\n            self._transfer_code = 0\n            self._transfer_event.clear()''')
+          marker_py='''    def _on_call_end(self):\n'''
+          transfer_py=r'''    def _on_transfer_status(self, payload: bytes):
+        try:
+            import json
+            data = json.loads(payload.decode("utf-8"))
+            status = str(data.get("status") or "failed")
+            code = int(data.get("code") or 0)
+        except Exception as exc:
+            logger.warning("TRANSFER_STATUS parse: %s", exc)
+            status, code = "failed", 0
+        terminal = {"success", "busy", "no_answer", "failed", "invalid", "no_route"}
+        with self._transfer_lock:
+            self._transfer_status = status
+            self._transfer_code = code
+            if status in terminal:
+                self._transfer_event.set()
+        logger.info("TRANSFER_STATUS status=%s code=%d", status, code)
+
+    @staticmethod
+    def _normalize_transfer_destination(raw: str) -> str:
+        """Accept phone-like trusted config only; reject SIP URI/domain/header injection."""
+        raw = (raw or "").strip()
+        if not raw:
+            return ""
+        allowed_formatting = set("+ -()./")
+        if any(not (ch.isdigit() or ch in allowed_formatting) for ch in raw):
+            return ""
+        digits = "".join(ch for ch in raw if ch.isdigit())
+        return digits if 6 <= len(digits) <= 15 else ""
+
+    def _request_transfer(self, destination: str, timeout_s: float = 27.0) -> str:
+        digits = self._normalize_transfer_destination(destination)
+        if not digits:
+            logger.warning("TRANSFER rifiutato: destinazione trusted non valida")
+            return "invalid"
+        if not self._call_active:
+            return "no_route"
+        with self._conn_lock:
+            if self._conn is None:
+                return "no_route"
+        with self._transfer_lock:
+            self._transfer_status = "trying"
+            self._transfer_code = 0
+            self._transfer_event.clear()
+        self._send_frame(FRAME_TRANSFER, digits.encode("ascii"))
+        if not self._transfer_event.wait(timeout_s):
+            with self._transfer_lock:
+                self._transfer_status = "no_answer"
+                self._transfer_code = 408
+            return "no_answer"
+        with self._transfer_lock:
+            return self._transfer_status
+
+    def _transfer_after_drain(self, destination: str):
+        # Do not cut Sara's transfer announcement: wait for Python TX + Go's ~200ms tail.
+        deadline = time.time() + 10
+        while time.time() < deadline and not self._tx_queue.empty():
+            time.sleep(0.1)
+        time.sleep(0.35)
+        status = self._request_transfer(destination)
+        if status == "success":
+            logger.info("LIVE TRANSFER completato")
+            return
+        logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)
+        self._speak_transfer_fallback(status)
+
+    def _speak_transfer_fallback(self, status: str):
+        if status == "busy":
+            text = "L'operatore è occupato in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        elif status == "no_answer":
+            text = "L'operatore non risponde in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        else:
+            text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        try:
+            if self.pipeline is not None and self._main_loop is not None:
+                fut = asyncio.run_coroutine_threadsafe(self.pipeline.tts.synthesize(text), self._main_loop)
+                audio = fut.result(timeout=10)
+                if audio:
+                    self.queue_tts_audio(audio)
+        except Exception as exc:
+            logger.warning("TTS fallback transfer fallito: %s", exc)
+        self._hangup_after_drain()
+
+'''
+          replace_once(py, marker_py, transfer_py+marker_py)
+          replace_once(py,
+'''                _should_escalate = result.get("should_escalate", False)\n                _explicit_goodbye = (''',
+'''                _should_escalate = result.get("should_escalate", False)\n                _transfer_phone = result.get("transfer_phone") or ""\n                if _should_escalate and _transfer_phone:\n                    threading.Thread(\n                        target=self._transfer_after_drain,\n                        args=(_transfer_phone,),\n                        daemon=True,\n                        name="goengine-live-transfer",\n                    ).start()\n                    return\n                _explicit_goodbye = (''')
+
+          orch='voice-agent/src/orchestrator.py'
+          replace_once(orch,
+'''        start_time = time.time()\n\n        # S201 fix:''',
+'''        start_time = time.time()\n        # Per-call escalation transport state. Prevent cross-call destination leakage.\n        self._last_escalation_phone = ""\n        self._last_escalation_phone_source = ""\n        self._last_escalation_wa_sent = False\n\n        # S201 fix:''')
+          replace_once(orch,
+'''        escalation_phone, phone_source = await self._resolve_escalation_phone()\n        if not escalation_phone:''',
+'''        escalation_phone, phone_source = await self._resolve_escalation_phone()\n        self._last_escalation_phone = escalation_phone or ""\n        self._last_escalation_phone_source = phone_source or ""\n        self._last_escalation_wa_sent = False\n        if not escalation_phone:''')
+          replace_once(orch,
+'''                if result.get("success"):\n                    logger.info(f"[WA-ESC] Notification sent to {phone_source}")\n                    wa_sent = True''',
+'''                if result.get("success"):\n                    logger.info(f"[WA-ESC] Notification sent to {phone_source}")\n                    wa_sent = True\n                    self._last_escalation_wa_sent = True''')
+          replace_once(orch,
+'''        result = await self.process(user_input=transcription, session_id=current_sid)\n\n        return {\n            "audio_response": result.audio_bytes,''',
+'''        result = await self.process(user_input=transcription, session_id=current_sid)\n\n        # P0 LIVE TRANSFER: only VoIP calls, only trusted DB/config destinations, only\n        # during business hours. The media adapter performs the actual SIP REFER.\n        transfer_phone = ""\n        response_text = result.response\n        response_audio = result.audio_bytes\n        if result.should_escalate and result.intent != "content_filter_severe":\n            esc_phone = getattr(self, "_last_escalation_phone", "") or ""\n            if not esc_phone:\n                esc_phone = await self._trigger_wa_escalation_call(result.intent or "voip_escalation")\n            if esc_phone and self._is_business_hours():\n                transfer_phone = esc_phone\n                if "frustration" in (result.intent or "") or result.intent == "escalation_e6":\n                    response_text = "Mi dispiace per la difficoltà. Un momento, provo a passarla subito a un operatore."\n                else:\n                    response_text = "Certo. Un momento, provo a passarla subito a un operatore."\n                response_audio = await self.tts.synthesize(response_text)\n            elif esc_phone:\n                if getattr(self, "_last_escalation_wa_sent", False):\n                    response_text = (\n                        "Al momento siamo fuori dall'orario di apertura. "\n                        "Ho inviato una notifica allo staff e la ricontatteranno appena possibile."\n                    )\n                else:\n                    response_text = (\n                        f"Al momento siamo fuori dall'orario di apertura. "\n                        f"Può chiamare direttamente il {esc_phone} in orario di apertura."\n                    )\n                response_audio = await self.tts.synthesize(response_text)\n\n        return {\n            "audio_response": response_audio,''')
+          replace_once(orch,
+'''            "text": result.response,\n            "should_exit": result.should_exit,''',
+'''            "text": response_text,\n            "should_exit": result.should_exit,''')
+          replace_once(orch,
+'''            "should_escalate": result.should_escalate,  # E6-FIX: exposed to VoIP hangup guard\n            "transcription": transcription,''',
+'''            "should_escalate": result.should_escalate,  # E6-FIX: exposed to VoIP hangup guard\n            "transfer_phone": transfer_phone,  # trusted destination; consumed only by Go media adapter\n            "transcription": transcription,''')
+
+          Path('voice-agent/engine/main_test.go').write_text(r'''package main
+
+import "testing"
+
+func TestNormalizeTransferDestination(t *testing.T) {
+	cases := []struct{ in, want string; ok bool }{
+		{"+39 333-123-4567", "393331234567", true},
+		{"06 1234 5678", "0612345678", true},
+		{"sip:3331234567@evil.example", "", false},
+		{"3331234567;transport=tcp", "", false},
+		{"123", "", false},
+	}
+	for _, tc := range cases {
+		got, err := normalizeTransferDestination(tc.in)
+		if tc.ok && (err != nil || got != tc.want) { t.Fatalf("%q => %q, %v", tc.in, got, err) }
+		if !tc.ok && err == nil { t.Fatalf("%q unexpectedly accepted as %q", tc.in, got) }
+	}
+}
+
+func TestMapTransferStatus(t *testing.T) {
+	cases := map[int]string{100:"progress", 180:"progress", 200:"success", 202:"success", 408:"no_answer", 480:"no_answer", 486:"busy", 404:"no_route", 484:"no_route", 500:"failed"}
+	for code, want := range cases { if got:=mapTransferStatus(code); got!=want { t.Fatalf("%d => %s, want %s", code, got, want) } }
+}
+''', encoding='utf-8')
+
+          Path('voice-agent/tests/test_live_transfer_goengine.py').write_text(r'''"""P0 regression tests for Sara live SIP transfer over the Go-engine bridge."""
+import json
+import threading
+import time
+from unittest.mock import MagicMock
+
+from src.voip_goengine import (
+    FRAME_TRANSFER,
+    GoEngineVoIPManager,
+    SIPConfig,
+)
+
+
+def _manager():
+    m = GoEngineVoIPManager(SIPConfig(username="u", password="p", server="sip.example"))
+    m._call_active = True
+    m._conn = object()
+    m._send_frame = MagicMock()
+    return m
+
+
+def test_transfer_destination_accepts_phone_formatting_only():
+    assert GoEngineVoIPManager._normalize_transfer_destination("+39 333-123-4567") == "393331234567"
+    assert GoEngineVoIPManager._normalize_transfer_destination("06 1234 5678") == "0612345678"
+
+
+def test_transfer_destination_rejects_uri_and_header_injection():
+    assert GoEngineVoIPManager._normalize_transfer_destination("sip:3331234567@evil.example") == ""
+    assert GoEngineVoIPManager._normalize_transfer_destination("3331234567;transport=tcp") == ""
+    assert GoEngineVoIPManager._normalize_transfer_destination("123") == ""
+
+
+def test_request_transfer_sends_only_normalized_digits_and_returns_success():
+    m = _manager()
+    def complete():
+        time.sleep(0.02)
+        m._on_transfer_status(json.dumps({"status":"success","code":200}).encode())
+    threading.Thread(target=complete, daemon=True).start()
+    assert m._request_transfer("+39 333 123 4567", timeout_s=1) == "success"
+    m._send_frame.assert_called_once_with(FRAME_TRANSFER, b"393331234567")
+
+
+def test_request_transfer_propagates_busy_without_hangup_side_effect():
+    m = _manager()
+    def complete():
+        time.sleep(0.02)
+        m._on_transfer_status(json.dumps({"status":"busy","code":486}).encode())
+    threading.Thread(target=complete, daemon=True).start()
+    assert m._request_transfer("3331234567", timeout_s=1) == "busy"
+    m._send_frame.assert_called_once_with(FRAME_TRANSFER, b"3331234567")
+
+
+def test_invalid_destination_never_reaches_engine():
+    m = _manager()
+    assert m._request_transfer("sip:123456@evil.example", timeout_s=0.1) == "invalid"
+    m._send_frame.assert_not_called()
+
+
+def test_no_active_call_returns_no_route_without_sending():
+    m = _manager()
+    m._call_active = False
+    assert m._request_transfer("3331234567", timeout_s=0.1) == "no_route"
+    m._send_frame.assert_not_called()
+''', encoding='utf-8')
+          PY
+          gofmt -w voice-agent/engine/main.go voice-agent/engine/main_test.go
+          rm -f .github/workflows/_tmp-live-transfer-inspect.yml .github/workflows/_tmp-live-transfer-apply.yml
+      - name: Validate Go engine
+        working-directory: voice-agent/engine
+        run: go test ./...
+      - name: Validate Python transfer adapter
+        run: |
+          set -euo pipefail
+          python3 -m py_compile voice-agent/src/voip_goengine.py voice-agent/src/orchestrator.py voice-agent/tests/test_live_transfer_goengine.py
+          cd voice-agent
+          python3 -m pip install -q pytest pytest-asyncio aiohttp
+          pytest tests/test_live_transfer_goengine.py tests/test_nlu_fsm_bypass.py -q
+      - name: Diff guard
+        run: |
+          set -euo pipefail
+          git diff --check
+          git status --short
+          git diff --stat HEAD
+          test ! -e .github/workflows/_tmp-live-transfer-inspect.yml
+          test ! -e .github/workflows/_tmp-live-transfer-apply.yml
+      - name: Commit product patch
+        run: |
+          set -euo pipefail
+          git config user.name "FLUXION SOL"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(voice): add real SIP live transfer"
+          git push origin HEAD:agent/sara-live-transfer-p0
