@@ -1,0 +1,83 @@
+name: TMP Finalize Sara Live Transfer P0
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0]
+    paths: ['.github/workflows/_tmp-live-transfer-finalize.yml']
+permissions:
+  contents: write
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reuse hash-pinned validated patch
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, zlib
+          p=Path('.github/workflows/_tmp-live-transfer-apply.yml')
+          lines=p.read_text(encoding='utf-8').splitlines()
+          start=next(i for i,l in enumerate(lines) if 'PATCH_Z64: |' in l)+1
+          payload=[]
+          for line in lines[start:]:
+              if line.startswith('        run: |'):
+                  break
+              if line.strip():
+                  payload.append(line.strip())
+          raw=zlib.decompress(base64.b64decode(''.join(payload)))
+          sha=hashlib.sha256(raw).hexdigest()
+          expected='8d866b1fd53043ec00f492e299494d3fd06b0f3ac8afb357d69dcf294c7da6db'
+          if sha != expected:
+              raise SystemExit(f'PATCH_SHA_MISMATCH expected={expected} actual={sha}')
+          Path('/tmp/apply_live_transfer.py').write_bytes(raw)
+          print(f'PATCH_SHA256={sha}')
+          PY
+          python3 /tmp/apply_live_transfer.py
+          gofmt -w voice-agent/engine/main.go voice-agent/engine/main_test.go
+      - name: Validate Go engine
+        working-directory: voice-agent/engine
+        run: go test ./...
+      - name: Install canonical Voice Agent dependencies
+        working-directory: voice-agent
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install pytest pytest-asyncio
+      - name: Validate Python targeted gates
+        run: |
+          set -euo pipefail
+          python3 -m py_compile voice-agent/src/voip_goengine.py voice-agent/src/orchestrator.py voice-agent/tests/test_live_transfer_goengine.py voice-agent/tests/test_nlu_fsm_bypass.py
+          cd voice-agent
+          pytest tests/test_live_transfer_goengine.py tests/test_nlu_fsm_bypass.py -q
+      - name: Final scope and diff gate
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/_tmp-live-transfer-inspect.yml \
+                .github/workflows/_tmp-live-transfer-apply.yml \
+                .github/workflows/_tmp-live-transfer-finalize.yml
+          git diff --check
+          changed="$(git status --short | awk '{print $2}' | sort)"
+          printf '%s\n' "$changed"
+          expected="$(printf '%s\n' \
+            .github/workflows/_tmp-live-transfer-apply.yml \
+            .github/workflows/_tmp-live-transfer-finalize.yml \
+            .github/workflows/_tmp-live-transfer-inspect.yml \
+            voice-agent/engine/main.go \
+            voice-agent/engine/main_test.go \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/tests/test_live_transfer_goengine.py | sort)"
+          test "$changed" = "$expected"
+          echo LIVE_TRANSFER_SCOPE_GATE=PASS
+      - name: Commit only product delta and remove temporary workflows
+        run: |
+          set -euo pipefail
+          git config user.name "FLUXION SOL"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(voice): add real SIP live transfer"
+          git push origin HEAD:agent/sara-live-transfer-p0
