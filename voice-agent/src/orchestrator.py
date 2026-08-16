@@ -999,9 +999,22 @@ class VoiceOrchestrator:
         # =====================================================================
         _llm_nlu_task = None
         _llm_nlu_result = None  # populated when awaited at L1
-        if self._llm_nlu:
+        ctx = self.booking_sm.context
+        _fsm_owned_nlu_states = frozenset({
+            BookingState.WAITING_NAME,
+            BookingState.WAITING_SURNAME,
+            BookingState.CONFIRMING_NAME,
+            BookingState.CONFIRMING_PHONE,
+            BookingState.PROPOSE_REGISTRATION,
+            BookingState.REGISTERING_SURNAME,
+            BookingState.REGISTERING_PHONE,
+            BookingState.WAITING_DATE,
+            BookingState.WAITING_TIME,
+            BookingState.CONFIRMING,
+            BookingState.DISAMBIGUATING_NAME,
+        })
+        if self._llm_nlu and ctx.state not in _fsm_owned_nlu_states:
             _llm_filled_slots = {}
-            ctx = self.booking_sm.context
             if ctx.client_name:
                 _llm_filled_slots["nome"] = ctx.client_name
             if hasattr(ctx, 'client_surname') and ctx.client_surname:
