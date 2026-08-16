@@ -1,7 +1,7 @@
 """Regression tests for FX-U3-NLU-FSM-BYPASS-002.
 
 The primary LLM NLU is useful while intent discovery is still required, but it is
-pure overhead once the booking FSM owns the next turn deterministically.  These
+pure overhead once the booking FSM owns the next turn deterministically. These
 tests exercise the real ``VoiceOrchestrator.process`` scheduling point with a
 minimal in-memory orchestrator so no Groq, HTTP bridge, SQLite, TTS engine, SIP,
 or WhatsApp service is contacted.
@@ -50,20 +50,29 @@ class _Context(SimpleNamespace):
 
 
 def _make_orchestrator(state: BookingState):
-    """Build only the attributes touched by process() on a fast local path."""
+    """Build only the attributes touched by process() on fast local paths."""
     orch = orchestrator_mod.VoiceOrchestrator.__new__(orchestrator_mod.VoiceOrchestrator)
 
     context = _Context(
         state=state,
         client_name=None,
         client_surname=None,
+        client_id=None,
+        client_phone=None,
         service=None,
+        service_display=None,
         date=None,
+        date_display=None,
         time=None,
+        time_display=None,
         operator_gender_preference="any",
         alternative_slots=[],
+        waiting_for_waitlist_confirm=False,
     )
-    orch.booking_sm = SimpleNamespace(context=context)
+    orch.booking_sm = SimpleNamespace(
+        context=context,
+        get_current_prompt=MagicMock(return_value=None),
+    )
 
     orch._llm_nlu = SimpleNamespace(extract=AsyncMock(return_value=None))
     orch._current_session = SimpleNamespace(session_id="u3-test-session", total_turns=1)
@@ -95,7 +104,7 @@ def _make_orchestrator(state: BookingState):
 
 @pytest.fixture(autouse=True)
 def _disable_optional_prefilters(monkeypatch):
-    """Keep the test on the NLU scheduling path only, without external setup."""
+    """Keep tests on the NLU scheduling path without optional external setup."""
     monkeypatch.setattr(orchestrator_mod, "HAS_ITALIAN_REGEX", False)
     monkeypatch.setattr(orchestrator_mod, "HAS_VERTICAL_ENTITIES", False)
 
