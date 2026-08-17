@@ -492,7 +492,21 @@ class GoEngineVoIPManager:
         logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)
         self._speak_transfer_fallback(status)
 
+    def _notify_transfer_failure(self, status: str):
+        """Best-effort operator notification after a live SIP transfer fails."""
+        callback = getattr(self.pipeline, "_trigger_wa_escalation_call", None) if self.pipeline else None
+        if callback is None or self._main_loop is None:
+            return
+        try:
+            fut = asyncio.run_coroutine_threadsafe(
+                callback(f"live_transfer_{status}", force_notify=True), self._main_loop
+            )
+            fut.result(timeout=6)
+        except Exception as exc:
+            logger.warning("WA fallback dopo transfer fallito non riuscito: %s", exc)
+
     def _speak_transfer_fallback(self, status: str):
+        self._notify_transfer_failure(status)
         if status == "busy":
             text = "L'operatore è occupato in questo momento. Mi dispiace, la prego di richiamare tra poco."
         elif status == "no_answer":
@@ -914,15 +928,9 @@ class GoEngineVoIPManager:
                     "fine-utterance→audio-out=%.0fms",
                     len(result["audio_response"]), (time.monotonic() - _t_endpoint) * 1000,
                 )
-            if result and result.get("should_exit"):
-                # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.
-                # should_exit ha molte origini nella FSM (booking done, confusione,
-                # garbage bare-name); riagganciamo SOLO su intento di congedo esplicito
-                # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →
-                # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.
-                _intent = (result.get("intent") or "").lower()
-                # E6-FIX: also authorize BYE on escalation exit (3-strike E6) via
-                # either "escalat" in intent or explicit should_escalate flag.
+            # P0 LIVE TRANSFER is independent from should_exit: an explicit
+            # human request may keep the FSM open while still requiring immediate handoff.
+            if result:
                 _should_escalate = result.get("should_escalate", False)
                 _transfer_phone = result.get("transfer_phone") or ""
                 if _should_escalate and _transfer_phone:
@@ -933,6 +941,15 @@ class GoEngineVoIPManager:
                         name="goengine-live-transfer",
                     ).start()
                     return
+
+            if result and result.get("should_exit"):
+                # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.
+                # should_exit ha molte origini nella FSM (booking done, confusione,
+                # garbage bare-name); riagganciamo SOLO su intento di congedo esplicito
+                # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →
+                # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.
+                _intent = (result.get("intent") or "").lower()
+                _should_escalate = result.get("should_escalate", False)
                 _explicit_goodbye = (
                     ("goodbye" in _intent)
                     or ("chiusura" in _intent)

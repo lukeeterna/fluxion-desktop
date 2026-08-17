@@ -4151,6 +4151,8 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         """Build escalation response based on business hours and phone availability."""
         if not esc_phone:
             return prefix + "Mi dispiace, al momento non riesco a metterla in contatto con un operatore. Può riprovare più tardi."
+        if is_bh and getattr(self, "_is_voip_call", False):
+            return prefix + "Capisco. Rimanga in linea, provo a passarla subito a un operatore."
         if is_bh:
             return (
                 f"{prefix}Capisco, la metto in contatto con un operatore. "
@@ -4177,7 +4179,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         except Exception:
             return True  # fail-open: assume business hours
 
-    async def _trigger_wa_escalation_call(self, escalation_type: str) -> str:
+    async def _trigger_wa_escalation_call(self, escalation_type: str, force_notify: bool = False) -> str:
         """
         Trigger WhatsApp notification to operator for escalation.
         Returns the escalation phone number (for Sara to read to client as fallback).
@@ -4207,6 +4209,13 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         context_str = " | ".join(context_parts) if context_parts else "nessuna prenotazione in corso"
 
         is_bh = self._is_business_hours()
+        # P0 LIVE TRANSFER: during an active in-hours VoIP call, the live SIP
+        # route is authoritative. Do not pre-notify WhatsApp before we know the
+        # transfer failed; WA remains the fallback path (force_notify=True).
+        if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:
+            logger.info("[ESC] Live transfer eligible; WhatsApp deferred until SIP transfer failure")
+            return escalation_phone
+
         urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"
 
         msg = (
