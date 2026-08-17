@@ -437,7 +437,7 @@ class GoEngineVoIPManager:
         except Exception as exc:
             logger.warning("TRANSFER_STATUS parse: %s", exc)
             status, code = "failed", 0
-        terminal = {"success", "busy", "no_answer", "failed", "invalid", "no_route"}
+        terminal = {"connected", "busy", "no_answer", "failed", "invalid", "no_route"}
         with self._transfer_lock:
             self._transfer_status = status
             self._transfer_code = code
@@ -486,8 +486,8 @@ class GoEngineVoIPManager:
             time.sleep(0.1)
         time.sleep(0.35)
         status = self._request_transfer(destination)
-        if status == "success":
-            logger.info("LIVE TRANSFER completato")
+        if status == "connected":
+            logger.info("LIVE TRANSFER connected: operatore ha risposto e bridge RTP attivo")
             return
         logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)
         self._speak_transfer_fallback(status)

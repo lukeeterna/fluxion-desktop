@@ -175,7 +175,7 @@ func run(ctx context.Context, user, pass, server string) error {
 		serveErr := tu.Serve(ctx, func(inDialog *diago.DialogServerSession) {
 			caller := inDialog.InviteRequest.Source()
 			slog.Info("INBOUND INVITE", "from", caller, "callid", inDialog.InviteRequest.CallID().Value())
-			if err := handleCall(ctx, inDialog, caller, br, server); err != nil && !errors.Is(err, io.EOF) {
+			if err := handleCall(ctx, inDialog, caller, br, tu, server, user, pass); err != nil && !errors.Is(err, io.EOF) {
 				slog.Error("errore handler chiamata", "error", err)
 			}
 		})
@@ -224,7 +224,7 @@ func statusJSON(reg bool, code int, user, server string) []byte {
 // handleCall gestisce una chiamata: answer, negozia media, poi FA IL PONTE audio
 // tra RTP (G.711) e il ponte TCP (PCM16/8k). fix #2: CALL_START verso Python SOLO
 // quando il media è ATTIVO (dopo che AudioReader/Writer sono pronti).
-func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, sipServer string) error {
+func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, dg *diago.Diago, sipServer, sipUser, sipPass string) error {
 	d.Trying()
 	d.Ringing()
 	if err := d.Answer(); err != nil {
@@ -260,17 +260,20 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 
 	callCtx, cancelCall := context.WithCancel(ctx)
 	defer cancelCall()
+	mediaCtx, cancelMedia := context.WithCancel(callCtx)
 
-	// Registra questa chiamata come attiva sul ponte (per HANGUP da Python + AUDIO_TX).
-	call := br.attachCall(cancelCall, d, sipServer)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Registra questa chiamata come attiva sul ponte. cancelMedia ferma soltanto Sara RTP;
+	// cancelCall termina l'intera chiamata. Il transfer B2BUA usa questa separazione per
+	// cedere il media all'operatore senza abbattere la gamba del chiamante.
+	call := br.attachCall(cancelCall, cancelMedia, wg.Wait, d, dg, sipServer, sipUser, sipPass)
 	defer br.detachCall()
 
 	// fix #2: media ATTIVO → emetti CALL_START.
 	br.sendFrame(frameCALLSTART, []byte(caller))
 	slog.Info("CALL_START emesso (media attivo)", "caller", caller)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
 
 	// RX: RTP(G.711)→PCM16 → ponte TCP AUDIO_RX (in frame da 320B).
 	go func() {
@@ -279,7 +282,7 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		var carry []byte
 		for {
 			select {
-			case <-callCtx.Done():
+			case <-mediaCtx.Done():
 				return
 			default:
 			}
@@ -311,7 +314,7 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		lastLog := time.Now()
 		for {
 			select {
-			case <-callCtx.Done():
+			case <-mediaCtx.Done():
 				return
 			case <-ticker.C:
 				frame := call.popTX()
@@ -340,8 +343,9 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 	}()
 
 	<-callCtx.Done()
-	_ = d.Hangup(context.Background())
+	cancelMedia()
 	wg.Wait()
+	_ = d.Hangup(context.Background())
 	br.sendFrame(frameCALLEND, nil)
 	slog.Info("CALL_END emesso")
 	return nil
@@ -352,11 +356,16 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 // ---------------------------------------------------------------------------
 
 type activeCall struct {
-	mu        sync.Mutex
-	txBuf     [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)
-	cancel    context.CancelFunc
-	dialog    *diago.DialogServerSession
-	sipServer string
+	mu          sync.Mutex
+	txBuf       [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)
+	cancel      context.CancelFunc
+	cancelMedia context.CancelFunc
+	waitMedia   func()
+	dialog      *diago.DialogServerSession
+	dg          *diago.Diago
+	sipServer   string
+	sipUser     string
+	sipPass     string
 
 	transferMu   sync.Mutex
 	transferring bool
@@ -410,8 +419,11 @@ type bridge struct {
 
 func newBridge(addr string) *bridge { return &bridge{addr: addr} }
 
-func (b *bridge) attachCall(cancel context.CancelFunc, dialog *diago.DialogServerSession, sipServer string) *activeCall {
-	c := &activeCall{cancel: cancel, dialog: dialog, sipServer: sipServer}
+func (b *bridge) attachCall(cancel context.CancelFunc, cancelMedia context.CancelFunc, waitMedia func(), dialog *diago.DialogServerSession, dg *diago.Diago, sipServer, sipUser, sipPass string) *activeCall {
+	c := &activeCall{
+		cancel: cancel, cancelMedia: cancelMedia, waitMedia: waitMedia, dialog: dialog, dg: dg,
+		sipServer: sipServer, sipUser: sipUser, sipPass: sipPass,
+	}
 	b.mu.Lock()
 	b.call = c
 	b.mu.Unlock()
@@ -559,7 +571,7 @@ func mapTransferStatus(code int) string {
 	case code >= 100 && code < 200:
 		return "progress"
 	case code >= 200 && code < 300:
-		return "success"
+		return "answered"
 	case code == 486:
 		return "busy"
 	case code == 408 || code == 480:
@@ -597,52 +609,83 @@ func (c *activeCall) beginTransfer(raw string, b *bridge) {
 		return
 	}
 
-	var referTo sip.Uri
-	if err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &referTo); err != nil {
-		b.sendTransferStatus("invalid", 0, "cannot build SIP Refer-To")
+	if c.dg == nil {
+		b.sendTransferStatus("no_route", 0, "missing SIP engine")
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-	defer cancel()
-	finalNotify := make(chan int, 1)
-	b.sendTransferStatus("trying", 0, "")
-	slog.Info("TRANSFER SIP REFER avvio", "destination_digits", len(destination))
+	var recipient sip.Uri
+	if err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &recipient); err != nil {
+		b.sendTransferStatus("invalid", 0, "cannot build trusted SIP destination")
+		return
+	}
 
-	err = c.dialog.ReferOptions(ctx, referTo, diago.ReferServerOptions{
-		OnNotify: func(code int) {
-			status := mapTransferStatus(code)
-			b.sendTransferStatus(status, code, "")
-			if code >= 200 {
-				select {
-				case finalNotify <- code:
-				default:
-				}
+	// A two-leg B2BUA bridge is authoritative for live transfer. Unlike REFER,
+	// InviteBridge returns only after the outbound operator leg has answered.
+	callBridge := diago.NewBridge()
+	callBridge.WaitDialogsNum = 3 // prevent automatic proxy until Sara has released RTP
+	if err := callBridge.AddDialogSession(c.dialog); err != nil {
+		b.sendTransferStatus("failed", 0, "cannot attach caller leg")
+		return
+	}
+
+	inviteCtx, cancelInvite := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancelInvite()
+	lastCode := 0
+	b.sendTransferStatus("trying", 0, "")
+	slog.Info("TRANSFER B2BUA outbound INVITE", "destination_digits", len(destination))
+
+	outDialog, err := c.dg.InviteBridge(inviteCtx, recipient, &callBridge, diago.InviteOptions{
+		Originator: c.dialog,
+		Username:   c.sipUser,
+		Password:   c.sipPass,
+		OnResponse: func(res *sip.Response) error {
+			if res == nil {
+				return nil
 			}
+			lastCode = res.StatusCode
+			status := mapTransferStatus(lastCode)
+			if status == "progress" || status == "answered" {
+				b.sendTransferStatus(status, lastCode, "")
+			}
+			return nil
 		},
 	})
 	if err != nil {
-		if ctx.Err() != nil {
-			b.sendTransferStatus("no_answer", 408, "REFER/NOTIFY timeout")
-		} else {
-			b.sendTransferStatus("failed", 0, "REFER failed")
+		status := mapTransferStatus(lastCode)
+		if inviteCtx.Err() != nil {
+			status, lastCode = "no_answer", 408
+		} else if status == "progress" || status == "answered" {
+			status = "failed"
 		}
-		slog.Warn("TRANSFER SIP REFER fallito", "error", err)
+		b.sendTransferStatus(status, lastCode, "outbound operator leg not connected")
+		slog.Warn("TRANSFER B2BUA INVITE fallito", "status", status, "sip_status", lastCode, "error", err)
 		return
 	}
+	defer func() {
+		_ = outDialog.Hangup(context.Background())
+		_ = outDialog.Close()
+	}()
 
-	select {
-	case code := <-finalNotify:
-		if code >= 200 && code < 300 {
-			slog.Info("TRANSFER completato", "sip_status", code)
-			c.clearTX()
-			if c.cancel != nil {
-				c.cancel()
-			}
-		}
-	case <-ctx.Done():
-		b.sendTransferStatus("no_answer", 408, "final NOTIFY timeout")
-		slog.Warn("TRANSFER timeout attesa NOTIFY finale")
+	// Operator answered. Stop Sara media before proxying the same inbound dialog.
+	// StopRTP unblocks any reader/writer currently owned by Sara; waitMedia closes
+	// the handoff race before Bridge.ProxyMedia takes ownership of both RTP streams.
+	c.clearTX()
+	if c.cancelMedia != nil {
+		c.cancelMedia()
+	}
+	_ = c.dialog.Media().StopRTP(2, 0)
+	if c.waitMedia != nil {
+		c.waitMedia()
+	}
+
+	b.sendTransferStatus("connected", 200, "operator leg answered; media bridge active")
+	slog.Info("TRANSFER CONNECTED — B2BUA media proxy")
+	if err := callBridge.ProxyMedia(); err != nil && !errors.Is(err, io.EOF) {
+		slog.Warn("TRANSFER media proxy terminato", "error", err)
+	}
+	if c.cancel != nil {
+		c.cancel()
 	}
 }
 

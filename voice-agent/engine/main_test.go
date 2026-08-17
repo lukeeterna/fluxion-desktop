@@ -26,7 +26,7 @@ func TestNormalizeTransferDestination(t *testing.T) {
 
 func TestMapTransferStatus(t *testing.T) {
 	cases := map[int]string{
-		100: "progress", 180: "progress", 200: "success", 202: "success",
+		100: "progress", 180: "progress", 200: "answered", 202: "answered",
 		408: "no_answer", 480: "no_answer", 486: "busy",
 		404: "no_route", 484: "no_route", 500: "failed",
 	}
