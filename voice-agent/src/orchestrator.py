@@ -797,6 +797,10 @@ class VoiceOrchestrator:
         Returns greeting with session ID.
         """
         start_time = time.time()
+        # Per-call escalation transport state. Prevent cross-call destination leakage.
+        self._last_escalation_phone = ""
+        self._last_escalation_phone_source = ""
+        self._last_escalation_wa_sent = False
 
         # S201 fix: do NOT reset _vertical_explicitly_set here — it would
         # cancel any preceding set_vertical() call (e.g. test harness or admin
@@ -4179,6 +4183,9 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         Returns the escalation phone number (for Sara to read to client as fallback).
         """
         escalation_phone, phone_source = await self._resolve_escalation_phone()
+        self._last_escalation_phone = escalation_phone or ""
+        self._last_escalation_phone_source = phone_source or ""
+        self._last_escalation_wa_sent = False
         if not escalation_phone:
             logger.warning("[WA-ESC] No escalation phone found in any source")
             return ""
@@ -4217,6 +4224,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
                 if result.get("success"):
                     logger.info(f"[WA-ESC] Notification sent to {phone_source}")
                     wa_sent = True
+                    self._last_escalation_wa_sent = True
                 else:
                     logger.warning(f"[WA-ESC] WA failed: {result.get('error')}")
             except Exception as e:
@@ -5660,16 +5668,46 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         current_sid = self._current_session.session_id if self._current_session else None
         result = await self.process(user_input=transcription, session_id=current_sid)
 
+        # P0 LIVE TRANSFER: only VoIP calls, only trusted DB/config destinations, only
+        # during business hours. The media adapter performs the actual SIP REFER.
+        transfer_phone = ""
+        response_text = result.response
+        response_audio = result.audio_bytes
+        if result.should_escalate and result.intent != "content_filter_severe":
+            esc_phone = getattr(self, "_last_escalation_phone", "") or ""
+            if not esc_phone:
+                esc_phone = await self._trigger_wa_escalation_call(result.intent or "voip_escalation")
+            if esc_phone and self._is_business_hours():
+                transfer_phone = esc_phone
+                if "frustration" in (result.intent or "") or result.intent == "escalation_e6":
+                    response_text = "Mi dispiace per la difficoltà. Un momento, provo a passarla subito a un operatore."
+                else:
+                    response_text = "Certo. Un momento, provo a passarla subito a un operatore."
+                response_audio = await self.tts.synthesize(response_text)
+            elif esc_phone:
+                if getattr(self, "_last_escalation_wa_sent", False):
+                    response_text = (
+                        "Al momento siamo fuori dall'orario di apertura. "
+                        "Ho inviato una notifica allo staff e la ricontatteranno appena possibile."
+                    )
+                else:
+                    response_text = (
+                        f"Al momento siamo fuori dall'orario di apertura. "
+                        f"Può chiamare direttamente il {esc_phone} in orario di apertura."
+                    )
+                response_audio = await self.tts.synthesize(response_text)
+
         return {
-            "audio_response": result.audio_bytes,
+            "audio_response": response_audio,
             "filler_audio": filler_audio,  # B1: VoIP plays this first
-            "text": result.response,
+            "text": response_text,
             "should_exit": result.should_exit,
             # B3-FIX1: propagate intent so the VoIP FSM-hangup guard can authorize the
             # BYE on explicit congedo (goodbye_standalone/*chiusura*). Was omitted →
             # guard always saw intent='' → HANGUP soppresso even on real S142 goodbye.
             "intent": result.intent,
             "should_escalate": result.should_escalate,  # E6-FIX: exposed to VoIP hangup guard
+            "transfer_phone": transfer_phone,  # trusted destination; consumed only by Go media adapter
             "transcription": transcription,
             "latency_ms": result.latency_ms,
         }

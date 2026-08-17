@@ -46,8 +46,10 @@ FRAME_STATUS = 0x01
 FRAME_CALL_START = 0x02
 FRAME_AUDIO_RX = 0x03
 FRAME_CALL_END = 0x04
+FRAME_TRANSFER_STATUS = 0x05
 FRAME_AUDIO_TX = 0x10
 FRAME_HANGUP = 0x11
+FRAME_TRANSFER = 0x12
 
 FRAME_BYTES = 320  # 20ms PCM16 @ 8kHz mono
 
@@ -133,6 +135,12 @@ class GoEngineVoIPManager:
         self._reg_status = 0
         self._call_active = False
         self._caller = ""
+
+        # Live-transfer state. Terminal statuses wake the waiting transfer thread.
+        self._transfer_lock = threading.Lock()
+        self._transfer_event = threading.Event()
+        self._transfer_status = "idle"
+        self._transfer_code = 0
 
         # Ponte TCP (Python = SERVER, engine = client).
         self._srv_sock: Optional[socket.socket] = None
@@ -285,6 +293,10 @@ class GoEngineVoIPManager:
         self._send_frame(FRAME_HANGUP, b"")
         return True
 
+    async def transfer(self, destination: str, timeout_s: float = 27.0) -> str:
+        # Blind-transfer the active call to a trusted configured phone number.
+        return await asyncio.to_thread(self._request_transfer, destination, timeout_s)
+
     def get_status(self) -> Dict[str, Any]:
         return {
             "running": self._running,
@@ -295,6 +307,7 @@ class GoEngineVoIPManager:
                 "server": self.config.server,
             },
             "rtp_active": self._call_active,
+            "transfer_status": self._transfer_status,
             "engine": "go",
         }
 
@@ -370,6 +383,8 @@ class GoEngineVoIPManager:
             self._on_call_start(payload.decode("utf-8", "replace"))
         elif typ == FRAME_CALL_END:
             self._on_call_end()
+        elif typ == FRAME_TRANSFER_STATUS:
+            self._on_transfer_status(payload)
         else:
             logger.warning("frame engine ignoto: type=0x%02x len=%d", typ, len(payload))
 
@@ -386,6 +401,10 @@ class GoEngineVoIPManager:
         logger.info("CALL_START caller=%s", caller)
         self._call_active = True
         self._caller = caller
+        with self._transfer_lock:
+            self._transfer_status = "idle"
+            self._transfer_code = 0
+            self._transfer_event.clear()
         # Idle-timeout (FASE 3.0): arma il timer dall'inizio chiamata, nessun reprompt pendente.
         self._last_caller_voice_ts = time.monotonic()
         self._idle_reprompted = False
@@ -408,6 +427,87 @@ class GoEngineVoIPManager:
                 self._analytics_sid = None
         # Greeting DAL CERVELLO (non nell'engine).
         threading.Thread(target=self._send_greeting, args=(caller,), daemon=True).start()
+
+    def _on_transfer_status(self, payload: bytes):
+        try:
+            import json
+            data = json.loads(payload.decode("utf-8"))
+            status = str(data.get("status") or "failed")
+            code = int(data.get("code") or 0)
+        except Exception as exc:
+            logger.warning("TRANSFER_STATUS parse: %s", exc)
+            status, code = "failed", 0
+        terminal = {"success", "busy", "no_answer", "failed", "invalid", "no_route"}
+        with self._transfer_lock:
+            self._transfer_status = status
+            self._transfer_code = code
+            if status in terminal:
+                self._transfer_event.set()
+        logger.info("TRANSFER_STATUS status=%s code=%d", status, code)
+
+    @staticmethod
+    def _normalize_transfer_destination(raw: str) -> str:
+        # Accept phone-like trusted config only; reject SIP URI/domain/header injection.
+        raw = (raw or "").strip()
+        if not raw:
+            return ""
+        allowed_formatting = set("+ -()./")
+        if any(not (ch.isdigit() or ch in allowed_formatting) for ch in raw):
+            return ""
+        digits = "".join(ch for ch in raw if ch.isdigit())
+        return digits if 6 <= len(digits) <= 15 else ""
+
+    def _request_transfer(self, destination: str, timeout_s: float = 27.0) -> str:
+        digits = self._normalize_transfer_destination(destination)
+        if not digits:
+            logger.warning("TRANSFER rifiutato: destinazione trusted non valida")
+            return "invalid"
+        if not self._call_active:
+            return "no_route"
+        with self._conn_lock:
+            if self._conn is None:
+                return "no_route"
+        with self._transfer_lock:
+            self._transfer_status = "trying"
+            self._transfer_code = 0
+            self._transfer_event.clear()
+        self._send_frame(FRAME_TRANSFER, digits.encode("ascii"))
+        if not self._transfer_event.wait(timeout_s):
+            with self._transfer_lock:
+                self._transfer_status = "no_answer"
+                self._transfer_code = 408
+            return "no_answer"
+        with self._transfer_lock:
+            return self._transfer_status
+
+    def _transfer_after_drain(self, destination: str):
+        deadline = time.time() + 10
+        while time.time() < deadline and not self._tx_queue.empty():
+            time.sleep(0.1)
+        time.sleep(0.35)
+        status = self._request_transfer(destination)
+        if status == "success":
+            logger.info("LIVE TRANSFER completato")
+            return
+        logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)
+        self._speak_transfer_fallback(status)
+
+    def _speak_transfer_fallback(self, status: str):
+        if status == "busy":
+            text = "L'operatore è occupato in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        elif status == "no_answer":
+            text = "L'operatore non risponde in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        else:
+            text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        try:
+            if self.pipeline is not None and self._main_loop is not None:
+                fut = asyncio.run_coroutine_threadsafe(self.pipeline.tts.synthesize(text), self._main_loop)
+                audio = fut.result(timeout=10)
+                if audio:
+                    self.queue_tts_audio(audio)
+        except Exception as exc:
+            logger.warning("TTS fallback transfer fallito: %s", exc)
+        self._hangup_after_drain()
 
     def _on_call_end(self):
         logger.info("CALL_END")
@@ -824,6 +924,15 @@ class GoEngineVoIPManager:
                 # E6-FIX: also authorize BYE on escalation exit (3-strike E6) via
                 # either "escalat" in intent or explicit should_escalate flag.
                 _should_escalate = result.get("should_escalate", False)
+                _transfer_phone = result.get("transfer_phone") or ""
+                if _should_escalate and _transfer_phone:
+                    threading.Thread(
+                        target=self._transfer_after_drain,
+                        args=(_transfer_phone,),
+                        daemon=True,
+                        name="goengine-live-transfer",
+                    ).start()
+                    return
                 _explicit_goodbye = (
                     ("goodbye" in _intent)
                     or ("chiusura" in _intent)
