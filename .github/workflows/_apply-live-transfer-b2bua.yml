@@ -1,0 +1,117 @@
+name: Apply live transfer B2BUA refinement
+
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0-v2]
+    paths:
+      - '.github/workflows/_apply-live-transfer-b2bua.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sara-live-transfer-p0-v2
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply exact source edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path('voice-agent/engine/main.go')
+          s = p.read_text()
+
+          replacements = []
+          replacements.append((
+          '''func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, sipServer string) error {''',
+          '''func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, dg *diago.Diago, sipServer, sipUser, sipPass string) error {'''))
+          replacements.append((
+          '''if err := handleCall(ctx, inDialog, caller, br, server); err != nil && !errors.Is(err, io.EOF) {''',
+          '''if err := handleCall(ctx, inDialog, caller, br, tu, server, user, pass); err != nil && !errors.Is(err, io.EOF) {'''))
+          replacements.append((
+          '''\tcallCtx, cancelCall := context.WithCancel(ctx)\n\tdefer cancelCall()\n\n\t// Registra questa chiamata come attiva sul ponte (per HANGUP da Python + AUDIO_TX).\n\tcall := br.attachCall(cancelCall, d, sipServer)\n\tdefer br.detachCall()''',
+          '''\tcallCtx, cancelCall := context.WithCancel(ctx)\n\tdefer cancelCall()\n\tmediaCtx, cancelMedia := context.WithCancel(callCtx)\n\n\tvar wg sync.WaitGroup\n\twg.Add(2)\n\n\t// Registra questa chiamata come attiva sul ponte. cancelMedia ferma soltanto Sara RTP;\n\t// cancelCall termina l'intera chiamata. Il transfer B2BUA usa questa separazione per\n\t// cedere il media all'operatore senza abbattere la gamba del chiamante.\n\tcall := br.attachCall(cancelCall, cancelMedia, wg.Wait, d, dg, sipServer, sipUser, sipPass)\n\tdefer br.detachCall()'''))
+          replacements.append((
+          '''\tvar wg sync.WaitGroup\n\twg.Add(2)\n\n\t// RX: RTP(G.711)→PCM16 → ponte TCP AUDIO_RX (in frame da 320B).''',
+          '''\t// RX: RTP(G.711)→PCM16 → ponte TCP AUDIO_RX (in frame da 320B).'''))
+          replacements.append((
+          '''\t\t\tcase <-callCtx.Done():''',
+          '''\t\t\tcase <-mediaCtx.Done():'''))
+          # There are two media goroutines; replace second occurrence too.
+          # replace() above changes all exact occurrences intentionally.
+          replacements.append((
+          '''\t<-callCtx.Done()\n\t_ = d.Hangup(context.Background())\n\twg.Wait()''',
+          '''\t<-callCtx.Done()\n\tcancelMedia()\n\twg.Wait()\n\t_ = d.Hangup(context.Background())'''))
+          replacements.append((
+          '''\tcancel    context.CancelFunc\n\tdialog    *diago.DialogServerSession\n\tsipServer string''',
+          '''\tcancel      context.CancelFunc\n\tcancelMedia context.CancelFunc\n\twaitMedia   func()\n\tdialog      *diago.DialogServerSession\n\tdg          *diago.Diago\n\tsipServer   string\n\tsipUser     string\n\tsipPass     string'''))
+          replacements.append((
+          '''func (b *bridge) attachCall(cancel context.CancelFunc, dialog *diago.DialogServerSession, sipServer string) *activeCall {\n\tc := &activeCall{cancel: cancel, dialog: dialog, sipServer: sipServer}''',
+          '''func (b *bridge) attachCall(cancel context.CancelFunc, cancelMedia context.CancelFunc, waitMedia func(), dialog *diago.DialogServerSession, dg *diago.Diago, sipServer, sipUser, sipPass string) *activeCall {\n\tc := &activeCall{\n\t\tcancel: cancel, cancelMedia: cancelMedia, waitMedia: waitMedia, dialog: dialog, dg: dg,\n\t\tsipServer: sipServer, sipUser: sipUser, sipPass: sipPass,\n\t}'''))
+          replacements.append((
+          '''\tcase code >= 200 && code < 300:\n\t\treturn "success"''',
+          '''\tcase code >= 200 && code < 300:\n\t\treturn "answered"'''))
+
+          old_transfer = '''\tvar referTo sip.Uri\n\tif err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &referTo); err != nil {\n\t\tb.sendTransferStatus("invalid", 0, "cannot build SIP Refer-To")\n\t\treturn\n\t}\n\n\tctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)\n\tdefer cancel()\n\tfinalNotify := make(chan int, 1)\n\tb.sendTransferStatus("trying", 0, "")\n\tslog.Info("TRANSFER SIP REFER avvio", "destination_digits", len(destination))\n\n\terr = c.dialog.ReferOptions(ctx, referTo, diago.ReferServerOptions{\n\t\tOnNotify: func(code int) {\n\t\t\tstatus := mapTransferStatus(code)\n\t\t\tb.sendTransferStatus(status, code, "")\n\t\t\tif code >= 200 {\n\t\t\t\tselect {\n\t\t\t\tcase finalNotify <- code:\n\t\t\t\tdefault:\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t})\n\tif err != nil {\n\t\tif ctx.Err() != nil {\n\t\t\tb.sendTransferStatus("no_answer", 408, "REFER/NOTIFY timeout")\n\t\t} else {\n\t\t\tb.sendTransferStatus("failed", 0, "REFER failed")\n\t\t}\n\t\tslog.Warn("TRANSFER SIP REFER fallito", "error", err)\n\t\treturn\n\t}\n\n\tselect {\n\tcase code := <-finalNotify:\n\t\tif code >= 200 && code < 300 {\n\t\t\tslog.Info("TRANSFER completato", "sip_status", code)\n\t\t\tc.clearTX()\n\t\t\tif c.cancel != nil {\n\t\t\t\tc.cancel()\n\t\t\t}\n\t\t}\n\tcase <-ctx.Done():\n\t\tb.sendTransferStatus("no_answer", 408, "final NOTIFY timeout")\n\t\tslog.Warn("TRANSFER timeout attesa NOTIFY finale")\n\t}\n'''
+          new_transfer = '''\tif c.dg == nil {\n\t\tb.sendTransferStatus("no_route", 0, "missing SIP engine")\n\t\treturn\n\t}\n\n\tvar recipient sip.Uri\n\tif err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &recipient); err != nil {\n\t\tb.sendTransferStatus("invalid", 0, "cannot build trusted SIP destination")\n\t\treturn\n\t}\n\n\t// A two-leg B2BUA bridge is authoritative for live transfer. Unlike REFER,\n\t// InviteBridge returns only after the outbound operator leg has answered.\n\tcallBridge := diago.NewBridge()\n\tcallBridge.WaitDialogsNum = 3 // prevent automatic proxy until Sara has released RTP\n\tif err := callBridge.AddDialogSession(c.dialog); err != nil {\n\t\tb.sendTransferStatus("failed", 0, "cannot attach caller leg")\n\t\treturn\n\t}\n\n\tinviteCtx, cancelInvite := context.WithTimeout(context.Background(), 25*time.Second)\n\tdefer cancelInvite()\n\tlastCode := 0\n\tb.sendTransferStatus("trying", 0, "")\n\tslog.Info("TRANSFER B2BUA outbound INVITE", "destination_digits", len(destination))\n\n\toutDialog, err := c.dg.InviteBridge(inviteCtx, recipient, &callBridge, diago.InviteOptions{\n\t\tOriginator: c.dialog,\n\t\tUsername: c.sipUser,\n\t\tPassword: c.sipPass,\n\t\tOnResponse: func(res *sip.Response) error {\n\t\t\tif res == nil {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t\tlastCode = res.StatusCode\n\t\t\tstatus := mapTransferStatus(lastCode)\n\t\t\tif status == "progress" || status == "answered" {\n\t\t\t\tb.sendTransferStatus(status, lastCode, "")\n\t\t\t}\n\t\t\treturn nil\n\t\t},\n\t})\n\tif err != nil {\n\t\tstatus := mapTransferStatus(lastCode)\n\t\tif inviteCtx.Err() != nil {\n\t\t\tstatus, lastCode = "no_answer", 408\n\t\t} else if status == "progress" || status == "answered" {\n\t\t\tstatus = "failed"\n\t\t}\n\t\tb.sendTransferStatus(status, lastCode, "outbound operator leg not connected")\n\t\tslog.Warn("TRANSFER B2BUA INVITE fallito", "status", status, "sip_status", lastCode, "error", err)\n\t\treturn\n\t}\n\tdefer func() {\n\t\t_ = outDialog.Hangup(context.Background())\n\t\t_ = outDialog.Close()\n\t}()\n\n\t// Operator answered. Stop Sara media before proxying the same inbound dialog.\n\t// StopRTP unblocks any reader/writer currently owned by Sara; waitMedia closes\n\t// the handoff race before Bridge.ProxyMedia takes ownership of both RTP streams.\n\tc.clearTX()\n\tif c.cancelMedia != nil {\n\t\tc.cancelMedia()\n\t}\n\t_ = c.dialog.Media().StopRTP(2, 0)\n\tif c.waitMedia != nil {\n\t\tc.waitMedia()\n\t}\n\n\tb.sendTransferStatus("connected", 200, "operator leg answered; media bridge active")\n\tslog.Info("TRANSFER CONNECTED — B2BUA media proxy")\n\tif err := callBridge.ProxyMedia(); err != nil && !errors.Is(err, io.EOF) {\n\t\tslog.Warn("TRANSFER media proxy terminato", "error", err)\n\t}\n\tif c.cancel != nil {\n\t\tc.cancel()\n\t}\n'''
+          replacements.append((old_transfer, new_transfer))
+
+          for old, new in replacements:
+              count = s.count(old)
+              if count == 0:
+                  raise SystemExit(f'expected source block absent: {old[:100]!r}')
+              if old.startswith('\t\t\tcase <-callCtx.Done():'):
+                  if count != 2:
+                      raise SystemExit(f'expected 2 media ctx occurrences, got {count}')
+              elif count != 1:
+                  raise SystemExit(f'expected single source block, got {count}: {old[:100]!r}')
+              s = s.replace(old, new)
+          p.write_text(s)
+
+          p = Path('voice-agent/engine/main_test.go')
+          s = p.read_text()
+          s = s.replace('200: "success", 202: "success",', '200: "answered", 202: "answered",')
+          if '200: "answered"' not in s:
+              raise SystemExit('main_test transfer expectation not updated')
+          p.write_text(s)
+
+          p = Path('voice-agent/src/voip_goengine.py')
+          s = p.read_text()
+          old = 'terminal = {"success", "busy", "no_answer", "failed", "invalid", "no_route"}'
+          new = 'terminal = {"connected", "busy", "no_answer", "failed", "invalid", "no_route"}'
+          if s.count(old) != 1:
+              raise SystemExit('python terminal status block mismatch')
+          s = s.replace(old, new)
+          old = 'if status == "success":\n            logger.info("LIVE TRANSFER completato")'
+          new = 'if status == "connected":\n            logger.info("LIVE TRANSFER connected: operatore ha risposto e bridge RTP attivo")'
+          if s.count(old) != 1:
+              raise SystemExit('python transfer success block mismatch')
+          s = s.replace(old, new)
+          p.write_text(s)
+          PY
+
+          gofmt -w voice-agent/engine/main.go voice-agent/engine/main_test.go
+          python3 -m py_compile voice-agent/src/voip_goengine.py
+          (cd voice-agent/engine && go test ./...)
+          git diff --check
+
+      - name: Commit product refinement and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/_apply-live-transfer-b2bua.yml
+          git add voice-agent/engine/main.go voice-agent/engine/main_test.go voice-agent/src/voip_goengine.py
+          git diff --cached --check
+          git commit -m "fix(voice): require answered B2BUA bridge for live transfer"
+          git push origin HEAD:agent/sara-live-transfer-p0-v2
