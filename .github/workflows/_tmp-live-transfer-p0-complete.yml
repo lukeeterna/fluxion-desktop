@@ -1,0 +1,323 @@
+name: TMP Complete Sara Live Transfer P0
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0-v2]
+    paths: ['.github/workflows/_tmp-live-transfer-p0-complete.yml']
+permissions:
+  contents: write
+jobs:
+  complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply deterministic P0 completion patch
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one match, got {count}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # ------------------------------------------------------------------
+          # Orchestrator: defer WhatsApp while an in-hours live VoIP transfer
+          # is possible; keep WA as an explicit fallback after live transfer.
+          # ------------------------------------------------------------------
+          orch = 'voice-agent/src/orchestrator.py'
+          replace_once(
+              orch,
+              '    async def _trigger_wa_escalation_call(self, escalation_type: str) -> str:\n',
+              '    async def _trigger_wa_escalation_call(self, escalation_type: str, force_notify: bool = False) -> str:\n',
+          )
+          replace_once(
+              orch,
+              '''        is_bh = self._is_business_hours()\n        urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"\n''',
+              '''        is_bh = self._is_business_hours()\n        # P0 LIVE TRANSFER: during an active in-hours VoIP call, the live SIP\n        # route is authoritative. Do not pre-notify WhatsApp before we know the\n        # transfer failed; WA remains the fallback path (force_notify=True).\n        if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:\n            logger.info("[ESC] Live transfer eligible; WhatsApp deferred until SIP transfer failure")\n            return escalation_phone\n\n        urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"\n''',
+          )
+          replace_once(
+              orch,
+              '''        if not esc_phone:\n            return prefix + "Mi dispiace, al momento non riesco a metterla in contatto con un operatore. Può riprovare più tardi."\n        if is_bh:\n            return (\n''',
+              '''        if not esc_phone:\n            return prefix + "Mi dispiace, al momento non riesco a metterla in contatto con un operatore. Può riprovare più tardi."\n        if is_bh and getattr(self, "_is_voip_call", False):\n            return prefix + "Capisco. Rimanga in linea, provo a passarla subito a un operatore."\n        if is_bh:\n            return (\n''',
+          )
+
+          # ------------------------------------------------------------------
+          # Go adapter: start transfer on should_escalate+trusted target even if
+          # should_exit=False; on failure, then and only then send WA fallback.
+          # ------------------------------------------------------------------
+          goa = 'voice-agent/src/voip_goengine.py'
+          replace_once(
+              goa,
+              '''    def _speak_transfer_fallback(self, status: str):\n        if status == "busy":\n''',
+              '''    def _notify_transfer_failure(self, status: str):\n        """Best-effort operator notification after a live SIP transfer fails."""\n        callback = getattr(self.pipeline, "_trigger_wa_escalation_call", None) if self.pipeline else None\n        if callback is None or self._main_loop is None:\n            return\n        try:\n            fut = asyncio.run_coroutine_threadsafe(\n                callback(f"live_transfer_{status}", force_notify=True), self._main_loop\n            )\n            fut.result(timeout=6)\n        except Exception as exc:\n            logger.warning("WA fallback dopo transfer fallito non riuscito: %s", exc)\n\n    def _speak_transfer_fallback(self, status: str):\n        self._notify_transfer_failure(status)\n        if status == "busy":\n''',
+          )
+          old = '''            if result and result.get("should_exit"):\n                # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.\n                # should_exit ha molte origini nella FSM (booking done, confusione,\n                # garbage bare-name); riagganciamo SOLO su intento di congedo esplicito\n                # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →\n                # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.\n                _intent = (result.get("intent") or "").lower()\n                # E6-FIX: also authorize BYE on escalation exit (3-strike E6) via\n                # either "escalat" in intent or explicit should_escalate flag.\n                _should_escalate = result.get("should_escalate", False)\n                _transfer_phone = result.get("transfer_phone") or ""\n                if _should_escalate and _transfer_phone:\n                    threading.Thread(\n                        target=self._transfer_after_drain,\n                        args=(_transfer_phone,),\n                        daemon=True,\n                        name="goengine-live-transfer",\n                    ).start()\n                    return\n                _explicit_goodbye = (\n'''
+          new = '''            # P0 LIVE TRANSFER is independent from should_exit: an explicit\n            # human request may keep the FSM open while still requiring immediate handoff.\n            if result:\n                _should_escalate = result.get("should_escalate", False)\n                _transfer_phone = result.get("transfer_phone") or ""\n                if _should_escalate and _transfer_phone:\n                    threading.Thread(\n                        target=self._transfer_after_drain,\n                        args=(_transfer_phone,),\n                        daemon=True,\n                        name="goengine-live-transfer",\n                    ).start()\n                    return\n\n            if result and result.get("should_exit"):\n                # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.\n                # should_exit ha molte origini nella FSM (booking done, confusione,\n                # garbage bare-name); riagganciamo SOLO su intento di congedo esplicito\n                # (mutuo "arrivederci"). Su ogni altro should_exit Sara resta in linea →\n                # è il chiamante a chiudere. Elimina l'auto-hangup su STT sporco del GATE B.\n                _intent = (result.get("intent") or "").lower()\n                _should_escalate = result.get("should_escalate", False)\n                _explicit_goodbye = (\n'''
+          replace_once(goa, old, new)
+
+          # ------------------------------------------------------------------
+          # pjsua2: thread-confined SIP REFER via Call.xfer() and final NOTIFY.
+          # ------------------------------------------------------------------
+          pjs = 'voice-agent/src/voip_pjsua2.py'
+          replace_once(
+              pjs,
+              '''        self.on_connected = None   # Callback: call connected\n        self.on_disconnected = None  # Callback: call ended\n''',
+              '''        self.on_connected = None   # Callback: call connected\n        self.on_disconnected = None  # Callback: call ended\n        self.on_transfer_status = None  # Callback: outgoing REFER progress/final status\n''',
+          )
+          marker = '''\n\n# =============================================================================\n# SIP Account\n# =============================================================================\n'''
+          transfer_cb = '''\n\n    def onCallTransferStatus(self, prm):\n        """pjsua2 callback for a REFER previously sent by Call.xfer()."""\n        code = int(getattr(prm, "statusCode", 0) or 0)\n        reason = str(getattr(prm, "reason", "") or "")\n        final = bool(getattr(prm, "finalNotify", False))\n        logger.info("TRANSFER PJSUA2 status=%s final=%s reason=%s", code, final, reason)\n        if self.on_transfer_status:\n            self.on_transfer_status(self, code, reason, final)\n        if final:\n            # No further NOTIFY callbacks are required after the terminal result.\n            try:\n                prm.cont = False\n            except Exception:\n                pass\n'''
+          replace_once(pjs, marker, transfer_cb + marker)
+          replace_once(
+              pjs,
+              '''        self._hangup_pending = False  # L5: Prevent multiple hangup threads\n        self._current_call: Optional[SaraCall] = None\n\n        # Simple energy-based VAD for caller speech detection\n''',
+              '''        self._hangup_pending = False  # L5: Prevent multiple hangup threads\n        self._current_call: Optional[SaraCall] = None\n\n        # P0 live-transfer state. The audio worker only enqueues commands; the\n        # actual pjsua2 Call.xfer()/hangup operations run on _pjsua2_thread.\n        self._pending_transfers: "queue.Queue[tuple]" = queue.Queue()\n        self._pending_transfer_hangups: "queue.Queue[SaraCall]" = queue.Queue()\n        self._transfer_lock = threading.Lock()\n        self._transfer_event = threading.Event()\n        self._transfer_status = "idle"\n        self._transfer_code = 0\n\n        # Simple energy-based VAD for caller speech detection\n''',
+          )
+          replace_once(
+              pjs,
+              '''    def get_status(self) -> Dict[str, Any]:\n        """Get VoIP status."""\n''',
+              '''    @staticmethod\n    def _normalize_transfer_destination(raw: str) -> str:\n        raw = (raw or "").strip()\n        if not raw:\n            return ""\n        allowed_formatting = set("+ -()./")\n        if any(not (ch.isdigit() or ch in allowed_formatting) for ch in raw):\n            return ""\n        digits = "".join(ch for ch in raw if ch.isdigit())\n        return digits if 6 <= len(digits) <= 15 else ""\n\n    @staticmethod\n    def _map_transfer_status(code: int) -> str:\n        if 200 <= code < 300:\n            return "success"\n        if code == 486:\n            return "busy"\n        if code in (408, 480):\n            return "no_answer"\n        if code in (404, 484):\n            return "no_route"\n        if 100 <= code < 200:\n            return "progress"\n        return "failed"\n\n    def _set_transfer_status(self, status: str, code: int = 0, terminal: bool = False) -> None:\n        with self._transfer_lock:\n            self._transfer_status = status\n            self._transfer_code = code\n            if terminal:\n                self._transfer_event.set()\n\n    async def transfer(self, destination: str, timeout_s: float = 27.0) -> str:\n        """Blind-transfer the active call to a trusted configured phone number."""\n        return await asyncio.to_thread(self._request_transfer, destination, timeout_s)\n\n    def _request_transfer(self, destination: str, timeout_s: float = 27.0) -> str:\n        digits = self._normalize_transfer_destination(destination)\n        if not digits:\n            return "invalid"\n        call = self._current_call\n        if call is None or not call.connected or self._account is None:\n            return "no_route"\n        with self._transfer_lock:\n            self._transfer_status = "trying"\n            self._transfer_code = 0\n            self._transfer_event.clear()\n        self._pending_transfers.put((call, digits))\n        if not self._transfer_event.wait(timeout_s):\n            self._set_transfer_status("no_answer", 408, terminal=True)\n            return "no_answer"\n        with self._transfer_lock:\n            return self._transfer_status\n\n    def _drain_pending_transfers(self) -> None:\n        """Run queued REFER/hangup commands only on the pjsua2 event thread."""\n        while True:\n            try:\n                call, digits = self._pending_transfers.get_nowait()\n            except queue.Empty:\n                break\n            if self._current_call is not call or not call.connected:\n                self._set_transfer_status("no_route", 0, terminal=True)\n                continue\n            try:\n                prm = pj.CallOpParam()\n                call.xfer(f"sip:{digits}@{self.config.server}", prm)\n                logger.info("TRANSFER PJSUA2 REFER inviato (destination_digits=%d)", len(digits))\n            except pj.Error as exc:\n                logger.warning("TRANSFER PJSUA2 REFER fallito: %s", _pj_error_info(exc))\n                self._set_transfer_status("failed", 0, terminal=True)\n            except Exception as exc:\n                logger.warning("TRANSFER PJSUA2 REFER fallito: %s", exc)\n                self._set_transfer_status("failed", 0, terminal=True)\n\n        while True:\n            try:\n                call = self._pending_transfer_hangups.get_nowait()\n            except queue.Empty:\n                break\n            if self._current_call is not call or not call.connected:\n                continue\n            try:\n                call.hangup(pj.CallOpParam())\n            except Exception as exc:\n                logger.warning("TRANSFER fallback hangup fallito: %s", exc)\n\n    def _on_call_transfer_status(self, call: SaraCall, code: int, reason: str, final: bool) -> None:\n        if not final:\n            self._set_transfer_status("progress", code, terminal=False)\n            return\n        status = self._map_transfer_status(code)\n        self._set_transfer_status(status, code, terminal=True)\n        if status == "success" and self._current_call is call and call.connected:\n            # PJSUA2 documents this callback as the point where the application\n            # can terminate the existing leg after successful transfer. We are\n            # already on _pjsua2_thread here, so no cross-thread SWIG call occurs.\n            try:\n                call.hangup(pj.CallOpParam())\n                logger.info("TRANSFER PJSUA2 completato; gamba Sara chiusa")\n            except Exception as exc:\n                logger.warning("TRANSFER PJSUA2 success ma hangup locale fallito: %s", exc)\n\n    def _notify_transfer_failure(self, status: str) -> None:\n        callback = getattr(self.pipeline, "_trigger_wa_escalation_call", None) if self.pipeline else None\n        if callback is None or self._main_loop is None:\n            return\n        try:\n            fut = asyncio.run_coroutine_threadsafe(\n                callback(f"live_transfer_{status}", force_notify=True), self._main_loop\n            )\n            fut.result(timeout=6)\n        except Exception as exc:\n            logger.warning("WA fallback dopo transfer PJSUA2 fallito non riuscito: %s", exc)\n\n    def _transfer_after_tts(self, call: SaraCall, destination: str) -> None:\n        while call.connected and not call.audio_port.tx_queue.empty():\n            time.sleep(0.1)\n        if not call.connected or self._current_call is not call:\n            self._hangup_pending = False\n            return\n        time.sleep(0.35)\n        status = self._request_transfer(destination)\n        if status == "success":\n            self._hangup_pending = False\n            return\n\n        logger.warning("LIVE TRANSFER PJSUA2 non completato: %s — fallback", status)\n        self._notify_transfer_failure(status)\n        if status == "busy":\n            text = "L'operatore è occupato in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        elif status == "no_answer":\n            text = "L'operatore non risponde in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        else:\n            text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        try:\n            fut = asyncio.run_coroutine_threadsafe(self.pipeline.tts.synthesize(text), self._main_loop)\n            audio = fut.result(timeout=10)\n            if audio:\n                call.audio_port.queue_tts_audio(audio)\n                while call.connected and not call.audio_port.tx_queue.empty():\n                    time.sleep(0.1)\n                time.sleep(0.35)\n        except Exception as exc:\n            logger.warning("TTS fallback transfer PJSUA2 fallito: %s", exc)\n        if call.connected and self._current_call is call:\n            self._pending_transfer_hangups.put(call)\n        self._hangup_pending = False\n\n    def get_status(self) -> Dict[str, Any]:\n        """Get VoIP status."""\n''',
+          )
+          replace_once(
+              pjs,
+              '''            "rtp_active": self._current_call is not None and self._current_call.connected,\n            "engine": "pjsua2",\n''',
+              '''            "rtp_active": self._current_call is not None and self._current_call.connected,\n            "transfer_status": self._transfer_status,\n            "engine": "pjsua2",\n''',
+          )
+          replace_once(
+              pjs,
+              '''                if self._account is not None:\n                    self._account.drain_pending_bridges()\n                    self._account.drain_call_releases()\n\n            # Cleanup\n''',
+              '''                if self._account is not None:\n                    self._account.drain_pending_bridges()\n                    self._account.drain_call_releases()\n                self._drain_pending_transfers()\n\n            # Cleanup\n''',
+          )
+          replace_once(
+              pjs,
+              '''        call.on_connected = self._on_call_connected\n        call.on_disconnected = self._on_call_disconnected\n\n        # S153: Answer directly with 200 OK — no 180 Ringing needed\n''',
+              '''        call.on_connected = self._on_call_connected\n        call.on_disconnected = self._on_call_disconnected\n        call.on_transfer_status = self._on_call_transfer_status\n\n        # S153: Answer directly with 200 OK — no 180 Ringing needed\n''',
+          )
+          replace_once(
+              pjs,
+              '''        self._vad_speech_frames = 0\n        self._vad_silence_frames = 0\n\n    @staticmethod\n    def _extract_phone_from_uri''',
+              '''        self._vad_speech_frames = 0\n        self._vad_silence_frames = 0\n        with self._transfer_lock:\n            self._transfer_status = "idle"\n            self._transfer_code = 0\n            self._transfer_event.set()\n\n    @staticmethod\n    def _extract_phone_from_uri''',
+          )
+          replace_once(
+              pjs,
+              '''                # S142: Hangup after goodbye TTS finishes\n                if result.get("should_exit") and not self._hangup_pending:\n''',
+              '''                # P0 live transfer: explicit escalation does not need to set\n                # should_exit. Defer REFER until Sara's transfer-intro TTS drains.\n                transfer_phone = result.get("transfer_phone") or ""\n                if result.get("should_escalate") and transfer_phone and not self._hangup_pending:\n                    self._hangup_pending = True\n                    threading.Thread(\n                        target=self._transfer_after_tts,\n                        args=(call, transfer_phone),\n                        daemon=True,\n                        name="pjsua2-live-transfer",\n                    ).start()\n                    return\n\n                # S142: Hangup after goodbye TTS finishes\n                if result.get("should_exit") and not self._hangup_pending:\n''',
+          )
+
+          # ------------------------------------------------------------------
+          # Behavioral tests: no native pjsua2 needed; inject a minimal stub.
+          # ------------------------------------------------------------------
+          Path('voice-agent/tests/test_live_transfer_pjsua2.py').write_text(r'''"""P0 tests for pjsua2 live transfer without native pjsua2 runtime."""
+import importlib
+import sys
+import threading
+import time
+import types
+from unittest.mock import MagicMock
+
+
+def _install_fake_pjsua2():
+    fake = types.ModuleType("pjsua2")
+    class Error(Exception):
+        def info(self, *_args):
+            return str(self)
+    class Endpoint:
+        @staticmethod
+        def instance():
+            return Endpoint()
+        def libIsThreadRegistered(self):
+            return True
+    class AudioMediaPort: pass
+    class Call:
+        def __init__(self, *_args, **_kwargs): pass
+    class Account:
+        def __init__(self, *_args, **_kwargs): pass
+    class CallOpParam:
+        def __init__(self): self.statusCode = 0
+    fake.Error = Error
+    fake.Endpoint = Endpoint
+    fake.AudioMediaPort = AudioMediaPort
+    fake.Call = Call
+    fake.Account = Account
+    fake.CallOpParam = CallOpParam
+    fake.PJSUA_INVALID_ID = -1
+    fake.PJMEDIA_FRAME_TYPE_AUDIO = 1
+    fake.PJSIP_INV_STATE_CONFIRMED = 5
+    fake.PJSIP_INV_STATE_DISCONNECTED = 6
+    fake.PJSUA_CALL_MEDIA_ACTIVE = 1
+    fake.PJMEDIA_TYPE_AUDIO = 1
+    fake.PJSIP_TRANSPORT_UDP = 1
+    fake.PJ_TURN_TP_UDP = 1
+    fake.PJSUA_SIP_TIMER_INACTIVE = 0
+    sys.modules["pjsua2"] = fake
+    sys.modules.pop("src.voip_pjsua2", None)
+    return importlib.import_module("src.voip_pjsua2")
+
+
+def _manager():
+    mod = _install_fake_pjsua2()
+    m = mod.VoIPManager(mod.SIPConfig(username="u", password="p", server="sip.example"))
+    call = types.SimpleNamespace(connected=True, xfer=MagicMock(), hangup=MagicMock())
+    m._current_call = call
+    m._account = object()
+    return mod, m, call
+
+
+def test_transfer_destination_is_phone_only():
+    mod, m, _ = _manager()
+    assert m._normalize_transfer_destination("+39 333-123-4567") == "393331234567"
+    assert m._normalize_transfer_destination("sip:333@evil.example") == ""
+    assert m._normalize_transfer_destination("333;transport=tcp") == ""
+    assert m._normalize_transfer_destination("123") == ""
+
+
+def test_refer_is_deferred_to_pjsua2_event_thread_drainer():
+    mod, m, call = _manager()
+    m._pending_transfers.put((call, "393331234567"))
+    m._drain_pending_transfers()
+    call.xfer.assert_called_once()
+    args = call.xfer.call_args.args
+    assert args[0] == "sip:393331234567@sip.example"
+    assert isinstance(args[1], mod.pj.CallOpParam)
+
+
+def test_request_transfer_waits_for_final_success_and_hangs_up_existing_leg():
+    _mod, m, call = _manager()
+    def complete():
+        time.sleep(0.02)
+        m._on_call_transfer_status(call, 200, "OK", True)
+    threading.Thread(target=complete, daemon=True).start()
+    assert m._request_transfer("+39 333 123 4567", timeout_s=1) == "success"
+    queued_call, queued_digits = m._pending_transfers.get_nowait()
+    assert queued_call is call
+    assert queued_digits == "393331234567"
+    call.hangup.assert_called_once()
+
+
+def test_busy_is_terminal_without_success_hangup():
+    _mod, m, call = _manager()
+    def complete():
+        time.sleep(0.02)
+        m._on_call_transfer_status(call, 486, "Busy Here", True)
+    threading.Thread(target=complete, daemon=True).start()
+    assert m._request_transfer("3331234567", timeout_s=1) == "busy"
+    call.hangup.assert_not_called()
+''', encoding='utf-8')
+
+          Path('voice-agent/tests/test_live_transfer_orchestrator.py').write_text(r'''"""P0 escalation contract: live SIP first, WhatsApp only as fallback."""
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from src.orchestrator import VoiceOrchestrator
+
+
+def _orchestrator():
+    o = VoiceOrchestrator.__new__(VoiceOrchestrator)
+    o._is_voip_call = True
+    o._resolve_escalation_phone = AsyncMock(return_value=("3331234567", "voice_agent_config"))
+    o._is_business_hours = MagicMock(return_value=True)
+    o._wa_client = MagicMock()
+    o._wa_client.normalize_phone = MagicMock(return_value="393331234567")
+    o._wa_client.send_message_async = AsyncMock(return_value={"success": True})
+    o.booking_sm = SimpleNamespace(context=SimpleNamespace(
+        client_name="Mario", service_display="Taglio", service="taglio",
+        date_display="domani", date="2026-08-18", time_display="10:00", time="10:00",
+        client_phone="+393331112222", state=SimpleNamespace(value="WAITING_DATE"),
+    ))
+    return o
+
+
+@pytest.mark.asyncio
+async def test_in_hours_voip_defers_whatsapp_until_live_transfer_fails():
+    o = _orchestrator()
+    phone = await o._trigger_wa_escalation_call("explicit_request")
+    assert phone == "3331234567"
+    o._wa_client.send_message_async.assert_not_called()
+    assert o._last_escalation_phone == "3331234567"
+    assert o._last_escalation_wa_sent is False
+
+
+@pytest.mark.asyncio
+async def test_force_notify_sends_whatsapp_after_live_transfer_failure():
+    o = _orchestrator()
+    phone = await o._trigger_wa_escalation_call("live_transfer_busy", force_notify=True)
+    assert phone == "3331234567"
+    o._wa_client.send_message_async.assert_awaited_once()
+    assert o._last_escalation_wa_sent is True
+
+
+def test_voip_business_hours_response_does_not_claim_wa_notification():
+    o = _orchestrator()
+    text = o._build_escalation_response("3331234567", True)
+    assert "passarla" in text.lower()
+    assert "notifica" not in text.lower()
+    assert "ricontatteranno" not in text.lower()
+''', encoding='utf-8')
+          PY
+
+      - name: Validate Go REFER engine
+        working-directory: voice-agent/engine
+        run: |
+          set -euo pipefail
+          gofmt -w main.go main_test.go
+          go test ./...
+
+      - name: Install Voice Agent test dependencies
+        working-directory: voice-agent
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements.txt
+          python3 -m pip install pytest pytest-asyncio
+
+      - name: Validate Python P0 gates
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py
+          cd voice-agent
+          pytest \
+            tests/test_live_transfer_goengine.py \
+            tests/test_live_transfer_pjsua2.py \
+            tests/test_live_transfer_orchestrator.py \
+            tests/test_nlu_fsm_bypass.py -q
+
+      - name: Final scope and diff gate
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/_tmp-live-transfer-p0-complete.yml
+          git diff --check
+          changed="$(git status --short | awk '{print $2}' | sort)"
+          printf '%s\n' "$changed"
+          expected="$(printf '%s\n' \
+            .github/workflows/_tmp-live-transfer-p0-complete.yml \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py | sort)"
+          test "$changed" = "$expected"
+          echo LIVE_TRANSFER_P0_COMPLETION_SCOPE=PASS
+
+      - name: Commit product delta and self-remove workflow
+        run: |
+          set -euo pipefail
+          git config user.name "FLUXION SOL"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(voice): complete live transfer for Go and pjsua2"
+          git push origin HEAD:agent/sara-live-transfer-p0-v2
