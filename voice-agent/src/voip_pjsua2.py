@@ -907,24 +907,37 @@ class VoIPManager:
         except Exception as exc:
             logger.warning("WA fallback dopo transfer PJSUA2 fallito non riuscito: %s", exc)
 
-    def _transfer_after_tts(self, call: SaraCall, destination: str) -> None:
+    def _transfer_after_tts(self, call: SaraCall, destinations) -> None:
+        routes = list(destinations) if isinstance(destinations, (list, tuple)) else [destinations]
+        routes = [route for route in routes if route]
         while call.connected and not call.audio_port.tx_queue.empty():
             time.sleep(0.1)
         if not call.connected or self._current_call is not call:
             self._hangup_pending = False
             return
         time.sleep(0.35)
-        status = self._request_transfer(destination)
-        if status == "success":
-            self._hangup_pending = False
-            return
 
-        logger.warning("LIVE TRANSFER PJSUA2 non completato: %s — fallback", status)
-        self._notify_transfer_failure(status)
-        if status == "busy":
-            text = "L'operatore è occupato in questo momento. Mi dispiace, la prego di richiamare tra poco."
-        elif status == "no_answer":
-            text = "L'operatore non risponde in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        last_status = "no_route"
+        for index, destination in enumerate(routes, start=1):
+            if not call.connected or self._current_call is not call:
+                self._hangup_pending = False
+                return
+            last_status = self._request_transfer(destination)
+            if last_status == "success":
+                logger.info("LIVE TRANSFER PJSUA2 completed on route %d/%d", index, len(routes))
+                self._hangup_pending = False
+                return
+            logger.info(
+                "LIVE TRANSFER PJSUA2 route %d/%d failed: %s; trying next",
+                index, len(routes), last_status,
+            )
+
+        logger.warning("LIVE TRANSFER PJSUA2 exhausted %d route(s): %s — fallback", len(routes), last_status)
+        self._notify_transfer_failure(last_status)
+        if last_status == "busy":
+            text = "Gli operatori sono occupati in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        elif last_status == "no_answer":
+            text = "Gli operatori non rispondono in questo momento. Mi dispiace, la prego di richiamare tra poco."
         else:
             text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."
         try:
@@ -1440,12 +1453,14 @@ class VoIPManager:
 
                 # P0 live transfer: explicit escalation does not need should_exit.
                 # Defer REFER until Sara's transfer-intro TTS has drained.
-                transfer_phone = result.get("transfer_phone") or ""
-                if result.get("should_escalate") and transfer_phone and not self._hangup_pending:
+                transfer_routes = list(result.get("transfer_routes") or [])
+                if not transfer_routes and result.get("transfer_phone"):
+                    transfer_routes = [result.get("transfer_phone")]
+                if result.get("should_escalate") and transfer_routes and not self._hangup_pending:
                     self._hangup_pending = True
                     threading.Thread(
                         target=self._transfer_after_tts,
-                        args=(call, transfer_phone),
+                        args=(call, transfer_routes),
                         daemon=True,
                         name="pjsua2-live-transfer",
                     ).start()

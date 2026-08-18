@@ -10,6 +10,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use chrono::Datelike;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::SqlitePool;
@@ -131,7 +132,11 @@ pub async fn start_http_bridge(
         .route("/api/faq/settings", get(handle_faq_settings))
         // Voice Agent API - Verticale Config (business settings)
         .route("/api/verticale/config", get(handle_verticale_config))
-        // Voice Agent API - Operatori
+        // Voice Agent API - Live transfer routing + Operatori
+        .route(
+            "/api/voice/escalation-routes",
+            get(handle_voice_escalation_routes),
+        )
         .route("/api/operatori/list", get(handle_operatori_list))
         .route(
             "/api/operatori/disponibilita",
@@ -1415,6 +1420,264 @@ async fn handle_verticale_config(State(state): State<BridgeState>) -> impl IntoR
             "servizi": servizi,
             "groq_api_key_configured": !groq_api_key.is_empty()
         })),
+    )
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Handler: Sara live-transfer escalation routes (P0)
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct TransferWorkHourRow {
+    ora_inizio: String,
+    ora_fine: String,
+    tipo: String,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct VoiceTransferOperatorRow {
+    id: String,
+    telefono: Option<String>,
+    ruolo: String,
+    voice_transfer_priority: i64,
+}
+
+fn normalize_transfer_phone(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    if raw
+        .chars()
+        .any(|c| !(c.is_ascii_digit() || matches!(c, '+' | ' ' | '-' | '(' | ')' | '.' | '/')))
+    {
+        return None;
+    }
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    if (6..=15).contains(&digits.len()) {
+        Some(digits)
+    } else {
+        None
+    }
+}
+
+fn transfer_schedule_open(rows: &[TransferWorkHourRow], hhmm: &str) -> bool {
+    let working = rows
+        .iter()
+        .any(|r| r.tipo == "lavoro" && hhmm >= r.ora_inizio.as_str() && hhmm < r.ora_fine.as_str());
+    let paused = rows
+        .iter()
+        .any(|r| r.tipo == "pausa" && hhmm >= r.ora_inizio.as_str() && hhmm < r.ora_fine.as_str());
+    working && !paused
+}
+
+async fn operator_transfer_available_now(
+    pool: &SqlitePool,
+    operator_id: &str,
+    date: &str,
+    weekday: i64,
+    hhmm: &str,
+    global_hours: &[TransferWorkHourRow],
+) -> bool {
+    let absent = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM operatori_assenze
+        WHERE operatore_id = ? AND approvata = 1
+AND date(?) BETWEEN date(data_inizio) AND date(data_fine)
+        "#,
+    )
+    .bind(operator_id)
+    .bind(date)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(1)
+        > 0;
+    if absent {
+        return false;
+    }
+
+    let specific: Vec<TransferWorkHourRow> = sqlx::query_as(
+        r#"
+        SELECT ora_inizio, ora_fine, tipo
+        FROM orari_lavoro
+        WHERE giorno_settimana = ? AND operatore_id = ?
+        "#,
+    )
+    .bind(weekday)
+    .bind(operator_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    if specific.is_empty() {
+        transfer_schedule_open(global_hours, hhmm)
+    } else {
+        transfer_schedule_open(&specific, hhmm)
+    }
+}
+
+async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(
+                    json!({"routes": [], "fallback_phone": null, "error": "Database not available"}),
+                ),
+            );
+        }
+    };
+
+    let now = chrono::Local::now();
+    let date = now.format("%Y-%m-%d").to_string();
+    let hhmm = now.format("%H:%M").to_string();
+    let weekday = now.weekday().num_days_from_sunday() as i64;
+
+    let holiday = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM giorni_festivi WHERE date(data) = date(?)",
+    )
+    .bind(&date)
+    .fetch_one(pool.inner())
+    .await
+    .unwrap_or(1)
+        > 0;
+
+    let global_hours: Vec<TransferWorkHourRow> = sqlx::query_as(
+        r#"
+        SELECT ora_inizio, ora_fine, tipo
+        FROM orari_lavoro
+        WHERE giorno_settimana = ? AND operatore_id IS NULL
+        "#,
+    )
+    .bind(weekday)
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+    let business_open = !holiday && transfer_schedule_open(&global_hours, &hhmm);
+
+    let owner_phone = get_setting(pool.inner(), "telefono_titolare")
+        .await
+        .unwrap_or_default();
+    let general_transfer_phone = sqlx::query_scalar::<_, String>(
+        "SELECT COALESCE(numero_trasferimento, '') FROM voice_agent_config LIMIT 1",
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or_default();
+
+    let owner_fallback = normalize_transfer_phone(&owner_phone);
+    let general_fallback = normalize_transfer_phone(&general_transfer_phone);
+    let (fallback_phone, fallback_source) = if let Some(phone) = owner_fallback.clone() {
+        (
+            Some(phone),
+            Some("impostazioni.telefono_titolare".to_string()),
+        )
+    } else if let Some(phone) = general_fallback.clone() {
+        (
+            Some(phone),
+            Some("voice_agent_config.numero_trasferimento".to_string()),
+        )
+    } else {
+        (None, None)
+    };
+
+    let mut routes: Vec<Value> = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+
+    if business_open {
+        // Personal operator phones are PII. Only the Rust layer may decrypt them,
+        // and only explicit transfer opt-in + reachability + schedule/absence filters
+        // can make them leave this local bridge as a trusted routing destination.
+        let encryption_ready = crate::encryption::ensure_encryption_ready_pool(pool.inner())
+            .await
+            .is_ok();
+        if encryption_ready {
+            let operators: Vec<VoiceTransferOperatorRow> = sqlx::query_as(
+                r#"
+      SELECT id, telefono, ruolo, voice_transfer_priority
+      FROM operatori
+      WHERE attivo = 1
+        AND voice_transfer_enabled = 1
+        AND voice_transfer_reachable = 1
+        AND telefono IS NOT NULL AND telefono != ''
+      ORDER BY CASE WHEN ruolo = 'admin' THEN 1 ELSE 0 END,
+               voice_transfer_priority ASC, created_at ASC
+      "#,
+            )
+            .fetch_all(pool.inner())
+            .await
+            .unwrap_or_default();
+
+            for op in operators {
+                if !operator_transfer_available_now(
+                    pool.inner(),
+                    &op.id,
+                    &date,
+                    weekday,
+                    &hhmm,
+                    &global_hours,
+                )
+                .await
+                {
+                    continue;
+                }
+                let encrypted = op.telefono.unwrap_or_default();
+                let plaintext = match crate::encryption::decrypt_field(&encrypted) {
+                    Ok(v) => v,
+                    Err(_) => continue,
+                };
+                let Some(phone) = normalize_transfer_phone(&plaintext) else {
+                    continue;
+                };
+                if seen.contains(&phone) {
+                    continue;
+                }
+                seen.push(phone.clone());
+                routes.push(json!({
+                    "phone": phone,
+                    "source": format!("operator:{}", op.id),
+                    "role": op.ruolo,
+                    "priority": op.voice_transfer_priority,
+                }));
+            }
+        }
+
+        // Owner fallback precedes the general transfer number. Both are explicit
+        // business settings, never caller-supplied destinations.
+        if let Some(phone) = owner_fallback {
+            if !seen.contains(&phone) {
+                seen.push(phone.clone());
+                routes.push(json!({
+                    "phone": phone,
+                    "source": "impostazioni.telefono_titolare",
+                    "role": "owner",
+                    "priority": 10000,
+                }));
+            }
+        }
+        if let Some(phone) = general_fallback {
+            if !seen.contains(&phone) {
+                routes.push(json!({
+                    "phone": phone,
+                    "source": "voice_agent_config.numero_trasferimento",
+                    "role": "general",
+                    "priority": 20000,
+                }));
+            }
+        }
+    }
+
+    (
+        StatusCode::OK,
+        Json(json!({
+        "business_open": business_open,
+        "routes": routes,
+        "fallback_phone": fallback_phone,
+        "fallback_source": fallback_source,
+              })),
     )
 }
 

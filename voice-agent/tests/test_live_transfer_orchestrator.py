@@ -11,6 +11,8 @@ def _orchestrator():
     o = VoiceOrchestrator.__new__(VoiceOrchestrator)
     o._is_voip_call = True
     o._resolve_escalation_phone = AsyncMock(return_value=("3331234567", "voice_agent_config"))
+    o._resolve_live_transfer_routes = AsyncMock(return_value=[("3331234567", "operator:op-1")])
+    o._last_live_transfer_routes = []
     o._is_business_hours = MagicMock(return_value=True)
     o._wa_client = MagicMock()
     o._wa_client.normalize_phone = MagicMock(return_value="393331234567")
@@ -48,3 +50,13 @@ def test_voip_business_hours_response_does_not_claim_wa_notification():
     assert "passarla" in text.lower()
     assert "notifica" not in text.lower()
     assert "ricontatteranno" not in text.lower()
+
+
+@pytest.mark.asyncio
+async def test_in_hours_voip_without_live_routes_notifies_whatsapp_immediately():
+    o = _orchestrator()
+    o._resolve_live_transfer_routes = AsyncMock(return_value=[])
+    phone = await o._trigger_wa_escalation_call("explicit_request")
+    assert phone == "3331234567"
+    o._wa_client.send_message_async.assert_awaited_once()
+    assert o._last_escalation_wa_sent is True

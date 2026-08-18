@@ -493,6 +493,14 @@ async fn init_database(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error:
     )
     .await?;
 
+    // ─── Migration 043 — Sara live-transfer routing policy ───────────────
+    run_migration(
+        &pool,
+        "043",
+        include_str!("../migrations/043_voice_transfer_routing.sql"),
+    )
+    .await?;
+
     println!("✅ Migrations completed");
 
     // ─── S250 Cat 3 P0 #2 Step C — GDPR Encryption auto-init ────────────

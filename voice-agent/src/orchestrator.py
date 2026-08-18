@@ -801,6 +801,7 @@ class VoiceOrchestrator:
         self._last_escalation_phone = ""
         self._last_escalation_phone_source = ""
         self._last_escalation_wa_sent = False
+        self._last_live_transfer_routes = []
 
         # S201 fix: do NOT reset _vertical_explicitly_set here — it would
         # cancel any preceding set_vertical() call (e.g. test harness or admin
@@ -4101,20 +4102,70 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         except Exception as e:
             logger.error("[WA] Unexpected confirmation send error: %s", e, exc_info=True)
 
+    async def _fetch_escalation_route_payload(self) -> dict:
+        """Fetch trusted live-transfer routing data from the local Rust bridge."""
+        try:
+            timeout = aiohttp.ClientTimeout(total=1.5)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{HTTP_BRIDGE_URL}/api/voice/escalation-routes") as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return data if isinstance(data, dict) else {}
+                    logger.warning("[ESC] routing bridge HTTP %s", resp.status)
+        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:
+            logger.warning("[ESC] routing bridge unavailable: %s", exc)
+        except Exception as exc:
+            logger.warning("[ESC] routing bridge unexpected error: %s", exc)
+        return {}
+
+    async def _resolve_live_transfer_routes(self) -> list:
+        """Return ordered (phone, source) routes already trusted/filtered by Rust."""
+        payload = await self._fetch_escalation_route_payload()
+        if not payload.get("business_open", False):
+            return []
+        routes = []
+        seen = set()
+        for item in payload.get("routes") or []:
+            if not isinstance(item, dict):
+                continue
+            phone = str(item.get("phone") or "").strip()
+            source = str(item.get("source") or "bridge").strip()
+            if phone and phone not in seen:
+                seen.add(phone)
+                routes.append((phone, source))
+        return routes
+
     async def _resolve_escalation_phone(self) -> tuple:
-        """
-        Resolve escalation phone number with fallback chain.
-        Returns (phone, source) or (None, None).
-        Chain: voice_agent_config.numero_trasferimento → impostazioni.telefono_titolare
-               → impostazioni.telefono_attivita → first active operator with phone.
-        """
+        """Resolve a safe notification/fallback phone without reading encrypted operator PII."""
+        payload = await self._fetch_escalation_route_payload()
+        phone = str(payload.get("fallback_phone") or "").strip()
+        source = str(payload.get("fallback_source") or "").strip()
+        if phone:
+            return phone, source or "bridge.fallback"
+        routes = payload.get("routes") or []
+        if routes and isinstance(routes[0], dict):
+            phone = str(routes[0].get("phone") or "").strip()
+            if phone:
+                return phone, str(routes[0].get("source") or "bridge.route")
+
+        # Bridge may be unavailable while the sidecar is starting. Fallback only
+        # to non-encrypted business settings; never query operatori.telefono here.
         db_path = self._find_db_path()
         if not db_path:
             return None, None
         try:
             import sqlite3 as _sq
             with _sq.connect(db_path, timeout=3) as conn:
-                # 1. voice_agent_config.numero_trasferimento
+                try:
+                    rows = conn.execute(
+                        "SELECT chiave, valore FROM impostazioni WHERE chiave = ?",
+                        ("telefono_titolare",),
+                    ).fetchall()
+                    for row in rows:
+                        if row[1] and row[1].strip():
+                            return row[1].strip(), "impostazioni.telefono_titolare"
+                except Exception:
+                    pass
                 try:
                     row = conn.execute(
                         "SELECT numero_trasferimento FROM voice_agent_config LIMIT 1"
@@ -4123,28 +4174,8 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
                         return row[0].strip(), "voice_agent_config"
                 except Exception:
                     pass
-                # 2. impostazioni: telefono_titolare or telefono_attivita
-                try:
-                    rows = conn.execute(
-                        "SELECT chiave, valore FROM impostazioni WHERE chiave IN (?,?)",
-                        ("telefono_titolare", "telefono_attivita")
-                    ).fetchall()
-                    for r in rows:
-                        if r[1] and r[1].strip():
-                            return r[1].strip(), f"impostazioni.{r[0]}"
-                except Exception:
-                    pass
-                # 3. First active operator with phone
-                try:
-                    row = conn.execute(
-                        "SELECT telefono, nome FROM operatori WHERE attivo=1 AND telefono IS NOT NULL AND telefono != '' LIMIT 1"
-                    ).fetchone()
-                    if row and row[0]:
-                        return row[0].strip(), f"operatore:{row[1]}"
-                except Exception:
-                    pass
-        except Exception as e:
-            logger.warning("[ESC] DB error resolving phone: %s", e)
+        except Exception as exc:
+            logger.warning("[ESC] DB error resolving fallback phone: %s", exc)
         return None, None
 
     def _build_escalation_response(self, esc_phone: str, is_bh: bool, prefix: str = "") -> str:
@@ -4209,12 +4240,15 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         context_str = " | ".join(context_parts) if context_parts else "nessuna prenotazione in corso"
 
         is_bh = self._is_business_hours()
-        # P0 LIVE TRANSFER: during an active in-hours VoIP call, the live SIP
-        # route is authoritative. Do not pre-notify WhatsApp before we know the
-        # transfer failed; WA remains the fallback path (force_notify=True).
+        # P0 LIVE TRANSFER: defer WhatsApp only when at least one trusted,
+        # currently reachable live route actually exists. If routing is empty
+        # (holiday, absence, opt-out, closed schedule), notify immediately.
         if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:
-            logger.info("[ESC] Live transfer eligible; WhatsApp deferred until SIP transfer failure")
-            return escalation_phone
+            live_routes = await self._resolve_live_transfer_routes()
+            self._last_live_transfer_routes = live_routes
+            if live_routes:
+                logger.info("[ESC] %d live transfer route(s); WhatsApp deferred", len(live_routes))
+                return escalation_phone
 
         urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"
 
@@ -5677,33 +5711,64 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         current_sid = self._current_session.session_id if self._current_session else None
         result = await self.process(user_input=transcription, session_id=current_sid)
 
-        # P0 LIVE TRANSFER: only VoIP calls, only trusted DB/config destinations, only
-        # during business hours. The media adapter performs the actual SIP REFER.
+        # P0 LIVE TRANSFER: use the ordered route chain produced by the Rust bridge.
+        # Personal operator numbers never originate from caller text or direct SQLite reads.
         transfer_phone = ""
+        transfer_routes = []
         response_text = result.response
         response_audio = result.audio_bytes
         if result.should_escalate and result.intent != "content_filter_severe":
+            is_bh = self._is_business_hours()
+            live_routes = list(getattr(self, "_last_live_transfer_routes", []) or [])
+            if is_bh and not live_routes:
+                live_routes = await self._resolve_live_transfer_routes()
+                self._last_live_transfer_routes = live_routes
+            transfer_routes = [phone for phone, _source in live_routes if phone]
             esc_phone = getattr(self, "_last_escalation_phone", "") or ""
-            if not esc_phone:
-                esc_phone = await self._trigger_wa_escalation_call(result.intent or "voip_escalation")
-            if esc_phone and self._is_business_hours():
-                transfer_phone = esc_phone
+
+            if transfer_routes:
+                transfer_phone = transfer_routes[0]
                 if "frustration" in (result.intent or "") or result.intent == "escalation_e6":
                     response_text = "Mi dispiace per la difficoltà. Un momento, provo a passarla subito a un operatore."
                 else:
                     response_text = "Certo. Un momento, provo a passarla subito a un operatore."
                 response_audio = await self.tts.synthesize(response_text)
-            elif esc_phone:
-                if getattr(self, "_last_escalation_wa_sent", False):
-                    response_text = (
-                        "Al momento siamo fuori dall'orario di apertura. "
-                        "Ho inviato una notifica allo staff e la ricontatteranno appena possibile."
+            else:
+                if not esc_phone:
+                    esc_phone = await self._trigger_wa_escalation_call(
+                        result.intent or "voip_escalation", force_notify=True
                     )
-                else:
-                    response_text = (
-                        f"Al momento siamo fuori dall'orario di apertura. "
-                        f"Può chiamare direttamente il {esc_phone} in orario di apertura."
+                elif not getattr(self, "_last_escalation_wa_sent", False):
+                    await self._trigger_wa_escalation_call(
+                        result.intent or "voip_escalation", force_notify=True
                     )
+                if is_bh:
+                    if getattr(self, "_last_escalation_wa_sent", False):
+                        response_text = (
+                            "Non riesco a completare il passaggio in linea in questo momento. "
+                            "Ho avvisato lo staff e la ricontatteranno appena possibile."
+                        )
+                    elif esc_phone:
+                        response_text = (
+                            "Non riesco a completare il passaggio in linea in questo momento. "
+                            f"Può chiamare direttamente il {esc_phone}."
+                        )
+                    else:
+                        response_text = (
+                            "Non riesco a metterla in contatto con un operatore in questo momento. "
+                            "La prego di riprovare più tardi."
+                        )
+                elif esc_phone:
+                    if getattr(self, "_last_escalation_wa_sent", False):
+                        response_text = (
+                            "Al momento siamo fuori dall'orario di apertura. "
+                            "Ho inviato una notifica allo staff e la ricontatteranno appena possibile."
+                        )
+                    else:
+                        response_text = (
+                            "Al momento siamo fuori dall'orario di apertura. "
+                            f"Può chiamare direttamente il {esc_phone} in orario di apertura."
+                        )
                 response_audio = await self.tts.synthesize(response_text)
 
         return {
@@ -5716,7 +5781,8 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
             # guard always saw intent='' → HANGUP soppresso even on real S142 goodbye.
             "intent": result.intent,
             "should_escalate": result.should_escalate,  # E6-FIX: exposed to VoIP hangup guard
-            "transfer_phone": transfer_phone,  # trusted destination; consumed only by Go media adapter
+            "transfer_phone": transfer_phone,  # backward-compatible first route
+            "transfer_routes": transfer_routes,  # ordered trusted destinations for sequential retry
             "transcription": transcription,
             "latency_ms": result.latency_ms,
         }

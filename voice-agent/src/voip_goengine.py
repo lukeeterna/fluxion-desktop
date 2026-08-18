@@ -480,17 +480,24 @@ class GoEngineVoIPManager:
         with self._transfer_lock:
             return self._transfer_status
 
-    def _transfer_after_drain(self, destination: str):
+    def _transfer_after_drain(self, destinations):
+        routes = list(destinations) if isinstance(destinations, (list, tuple)) else [destinations]
+        routes = [route for route in routes if route]
         deadline = time.time() + 10
         while time.time() < deadline and not self._tx_queue.empty():
             time.sleep(0.1)
         time.sleep(0.35)
-        status = self._request_transfer(destination)
-        if status == "connected":
-            logger.info("LIVE TRANSFER connected: operatore ha risposto e bridge RTP attivo")
-            return
-        logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)
-        self._speak_transfer_fallback(status)
+        last_status = "no_route"
+        for index, destination in enumerate(routes, start=1):
+            if not self._call_active:
+                return
+            last_status = self._request_transfer(destination)
+            if last_status == "connected":
+                logger.info("LIVE TRANSFER connected on route %d/%d", index, len(routes))
+                return
+            logger.info("LIVE TRANSFER route %d/%d failed: %s; trying next", index, len(routes), last_status)
+        logger.warning("LIVE TRANSFER exhausted %d route(s): %s — fallback vocale", len(routes), last_status)
+        self._speak_transfer_fallback(last_status)
 
     def _notify_transfer_failure(self, status: str):
         """Best-effort operator notification after a live SIP transfer fails."""
@@ -932,11 +939,13 @@ class GoEngineVoIPManager:
             # human request may keep the FSM open while still requiring immediate handoff.
             if result:
                 _should_escalate = result.get("should_escalate", False)
-                _transfer_phone = result.get("transfer_phone") or ""
-                if _should_escalate and _transfer_phone:
+                _transfer_routes = list(result.get("transfer_routes") or [])
+                if not _transfer_routes and result.get("transfer_phone"):
+                    _transfer_routes = [result.get("transfer_phone")]
+                if _should_escalate and _transfer_routes:
                     threading.Thread(
                         target=self._transfer_after_drain,
-                        args=(_transfer_phone,),
+                        args=(_transfer_routes,),
                         daemon=True,
                         name="goengine-live-transfer",
                     ).start()

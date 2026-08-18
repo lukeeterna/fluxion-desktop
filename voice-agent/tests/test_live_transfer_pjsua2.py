@@ -1,10 +1,11 @@
 """P0 tests for pjsua2 live transfer without native pjsua2 runtime."""
 import importlib
+import queue
 import sys
 import threading
 import time
 import types
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def _install_fake_pjsua2():
@@ -93,3 +94,14 @@ def test_busy_is_terminal_without_success_hangup():
     threading.Thread(target=complete, daemon=True).start()
     assert m._request_transfer("3331234567", timeout_s=1) == "busy"
     call.hangup.assert_not_called()
+
+
+def test_transfer_after_tts_retries_next_route_after_busy():
+    _mod, m, call = _manager()
+    call.audio_port = types.SimpleNamespace(tx_queue=queue.Queue(), queue_tts_audio=MagicMock())
+    m._request_transfer = MagicMock(side_effect=["busy", "success"])
+    m._notify_transfer_failure = MagicMock()
+    with patch("src.voip_pjsua2.time.sleep", return_value=None):
+        m._transfer_after_tts(call, ["3331234567", "3341234567"])
+    assert [c.args[0] for c in m._request_transfer.call_args_list] == ["3331234567", "3341234567"]
+    m._notify_transfer_failure.assert_not_called()
