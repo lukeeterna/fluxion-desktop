@@ -1,0 +1,559 @@
+name: Apply P0 live-transfer routing refinement
+
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0-v2]
+    paths: [.github/workflows/_apply-live-transfer-routing-p0.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sara-live-transfer-p0-v2
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Apply exact routing edits
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 occurrence, got {count}")
+              return text.replace(old, new, 1)
+
+          # ------------------------------------------------------------------
+          # Migration 043 — explicit operator opt-in for Sara live transfer.
+          # ------------------------------------------------------------------
+          Path('src-tauri/migrations/043_voice_transfer_routing.sql').write_text('''-- Migration 043: Sara live-transfer routing policy\n-- Personal operator phones remain encrypted in operatori.telefono.\n-- These non-PII flags are explicit opt-in/reachability/routing metadata.\n\nALTER TABLE operatori ADD COLUMN voice_transfer_enabled INTEGER NOT NULL DEFAULT 0 CHECK(voice_transfer_enabled IN (0, 1));\nALTER TABLE operatori ADD COLUMN voice_transfer_reachable INTEGER NOT NULL DEFAULT 1 CHECK(voice_transfer_reachable IN (0, 1));\nALTER TABLE operatori ADD COLUMN voice_transfer_priority INTEGER NOT NULL DEFAULT 100 CHECK(voice_transfer_priority BETWEEN 0 AND 9999);\n\nCREATE INDEX IF NOT EXISTS idx_operatori_voice_transfer\nON operatori(attivo, voice_transfer_enabled, voice_transfer_reachable, voice_transfer_priority);\n''')
+
+          # ------------------------------------------------------------------
+          # Register migration 043.
+          # ------------------------------------------------------------------
+          p = Path('src-tauri/src/lib.rs')
+          s = p.read_text()
+          old = '''    run_migration(\n        &pool,\n        "042",\n        include_str!("../migrations/042_magazzino.sql"),\n    )\n    .await?;\n\n    println!("✅ Migrations completed");'''
+          new = '''    run_migration(\n        &pool,\n        "042",\n        include_str!("../migrations/042_magazzino.sql"),\n    )\n    .await?;\n\n    // ─── Migration 043 — Sara live-transfer routing policy ───────────────\n    run_migration(\n        &pool,\n        "043",\n        include_str!("../migrations/043_voice_transfer_routing.sql"),\n    )\n    .await?;\n\n    println!("✅ Migrations completed");'''
+          s = replace_once(s, old, new, 'lib migration 043')
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Operator CRUD: expose and persist transfer flags (no new PII).
+          # ------------------------------------------------------------------
+          p = Path('src-tauri/src/commands/operatori.rs')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''    pub genere: Option<String>,\n    pub created_at: String,''',
+              '''    pub genere: Option<String>,\n    pub voice_transfer_enabled: i64,\n    pub voice_transfer_reachable: i64,\n    pub voice_transfer_priority: i64,\n    pub created_at: String,''',
+              'Operatore fields',
+          )
+          old = '''    pub genere: Option<String>,\n}\n'''
+          count = s.count(old)
+          if count != 2:
+              raise SystemExit(f'operator input fields: expected 2 occurrences, got {count}')
+          s = s.replace(
+              old,
+              '''    pub genere: Option<String>,\n    pub voice_transfer_enabled: Option<i64>,\n    pub voice_transfer_reachable: Option<i64>,\n    pub voice_transfer_priority: Option<i64>,\n}\n''',
+              2,
+          )
+          s = replace_once(
+              s,
+              '''            id, nome, cognome, email, telefono, ruolo, colore, avatar_url, attivo, genere,\n            created_at, updated_at\n        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+              '''            id, nome, cognome, email, telefono, ruolo, colore, avatar_url, attivo, genere,\n            voice_transfer_enabled, voice_transfer_reachable, voice_transfer_priority,\n            created_at, updated_at\n        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+              'operator create SQL',
+          )
+          s = replace_once(
+              s,
+              '''    .bind(&input.genere)\n    .bind(&now)''',
+              '''    .bind(&input.genere)\n    .bind(input.voice_transfer_enabled.unwrap_or(0))\n    .bind(input.voice_transfer_reachable.unwrap_or(1))\n    .bind(input.voice_transfer_priority.unwrap_or(100))\n    .bind(&now)''',
+              'operator create binds',
+          )
+          s = replace_once(
+              s,
+              '''            nome = ?, cognome = ?, email = ?, telefono = ?, ruolo = ?,\n            colore = ?, avatar_url = ?, attivo = ?, genere = ?, updated_at = ?''',
+              '''            nome = ?, cognome = ?, email = ?, telefono = ?, ruolo = ?,\n            colore = ?, avatar_url = ?, attivo = ?, genere = ?,\n            voice_transfer_enabled = ?, voice_transfer_reachable = ?, voice_transfer_priority = ?,\n            updated_at = ?''',
+              'operator update SQL',
+          )
+          s = replace_once(
+              s,
+              '''    .bind(input.genere.or(current.genere))\n    .bind(&now)''',
+              '''    .bind(input.genere.or(current.genere))\n    .bind(input.voice_transfer_enabled.unwrap_or(current.voice_transfer_enabled))\n    .bind(input.voice_transfer_reachable.unwrap_or(current.voice_transfer_reachable))\n    .bind(input.voice_transfer_priority.unwrap_or(current.voice_transfer_priority))\n    .bind(&now)''',
+              'operator update binds',
+          )
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # TypeScript types + validation.
+          # ------------------------------------------------------------------
+          p = Path('src/types/operatore.ts')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''  genere: string | null;\n  created_at: string;''',
+              '''  genere: string | null;\n  voice_transfer_enabled: number;\n  voice_transfer_reachable: number;\n  voice_transfer_priority: number;\n  created_at: string;''',
+              'TS Operatore fields',
+          )
+          old = '''  genere: z.enum(['M', 'F']).nullable().optional(),\n});'''
+          count = s.count(old)
+          if count != 2:
+              raise SystemExit(f'TS schemas: expected 2 occurrences, got {count}')
+          s = s.replace(
+              old,
+              '''  genere: z.enum(['M', 'F']).nullable().optional(),\n  voice_transfer_enabled: z.number().int().min(0).max(1).optional(),\n  voice_transfer_reachable: z.number().int().min(0).max(1).optional(),\n  voice_transfer_priority: z.number().int().min(0).max(9999).optional(),\n});''',
+              2,
+          )
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Operator UI: explicit opt-in, reachability and priority.
+          # ------------------------------------------------------------------
+          p = Path('src/components/operatori/OperatoreDialog.tsx')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              "defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null },",
+              "defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null, voice_transfer_enabled: 0, voice_transfer_reachable: 1, voice_transfer_priority: 100 },",
+              'dialog defaults',
+          )
+          s = replace_once(
+              s,
+              "form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo, genere: (operatore.genere as 'M' | 'F' | null) ?? null });",
+              "form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo, genere: (operatore.genere as 'M' | 'F' | null) ?? null, voice_transfer_enabled: operatore.voice_transfer_enabled ?? 0, voice_transfer_reachable: operatore.voice_transfer_reachable ?? 1, voice_transfer_priority: operatore.voice_transfer_priority ?? 100 });",
+              'dialog edit reset',
+          )
+          s = replace_once(
+              s,
+              "form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null });",
+              "form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null, voice_transfer_enabled: 0, voice_transfer_reachable: 1, voice_transfer_priority: 100 });",
+              'dialog create reset',
+          )
+          footer = '''            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">'''
+          section = '''            <div className="space-y-4">\n              <h3 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">TRASFERIMENTO SARA</h3>\n              <p className="text-sm text-slate-400">Il numero dell'operatore resta privato e cifrato. Sara può usarlo per il trasferimento in linea solo con abilitazione esplicita.</p>\n              <div className="grid grid-cols-3 gap-4">\n                <FormField control={form.control} name="voice_transfer_enabled" render={({ field }) => (\n                  <FormItem><FormLabel className="text-slate-300">Ricevi trasferimenti</FormLabel><Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value ?? 0)}>\n                    <FormControl><SelectTrigger className="bg-slate-900 border-slate-700 text-white"><SelectValue /></SelectTrigger></FormControl>\n                    <SelectContent className="bg-slate-900 border-slate-700"><SelectItem value="1">Sì</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>\n                  </Select><FormMessage className="text-red-400" /></FormItem>\n                )} />\n                <FormField control={form.control} name="voice_transfer_reachable" render={({ field }) => (\n                  <FormItem><FormLabel className="text-slate-300">Reperibile ora</FormLabel><Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value ?? 1)}>\n                    <FormControl><SelectTrigger className="bg-slate-900 border-slate-700 text-white"><SelectValue /></SelectTrigger></FormControl>\n                    <SelectContent className="bg-slate-900 border-slate-700"><SelectItem value="1">Sì</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>\n                  </Select><FormMessage className="text-red-400" /></FormItem>\n                )} />\n                <FormField control={form.control} name="voice_transfer_priority" render={({ field }) => (\n                  <FormItem><FormLabel className="text-slate-300">Priorità</FormLabel><FormControl><Input type="number" min={0} max={9999} {...field} onChange={(e) => field.onChange(Number(e.target.value))} className="bg-slate-900 border-slate-700 text-white" /></FormControl><FormMessage className="text-red-400" /></FormItem>\n                )} />\n              </div>\n              <p className="text-xs text-slate-500">Numero più basso = tentativo precedente. Orari, pause e assenze continuano ad avere precedenza sulla reperibilità manuale.</p>\n            </div>\n\n'''
+          s = replace_once(s, footer, section + footer, 'dialog transfer section')
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Rust HTTP bridge: decrypt operator phone inside trusted Rust layer,
+          # filter business hours/holidays/absence/operator hours, emit ordered routes.
+          # ------------------------------------------------------------------
+          p = Path('src-tauri/src/http_bridge.rs')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''use serde::{Deserialize, Serialize};\nuse serde_json::{json, Value};''',
+              '''use chrono::Datelike;\nuse serde::{Deserialize, Serialize};\nuse serde_json::{json, Value};''',
+              'http bridge chrono import',
+          )
+          s = replace_once(
+              s,
+              '''        // Voice Agent API - Operatori\n        .route("/api/operatori/list", get(handle_operatori_list))''',
+              '''        // Voice Agent API - Live transfer routing + Operatori\n        .route(\n            "/api/voice/escalation-routes",\n            get(handle_voice_escalation_routes),\n        )\n        .route("/api/operatori/list", get(handle_operatori_list))''',
+              'http bridge route',
+          )
+          marker = '''// ────────────────────────────────────────────────────────────────────\n// Handler: Operatori List\n// ────────────────────────────────────────────────────────────────────\n'''
+          if s.count(marker) != 1:
+              raise SystemExit('operator list marker missing')
+          handler = r'''// ────────────────────────────────────────────────────────────────────
+// Handler: Sara live-transfer escalation routes (P0)
+// ────────────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, sqlx::FromRow)]
+struct TransferWorkHourRow {
+    ora_inizio: String,
+    ora_fine: String,
+    tipo: String,
+}
+
+#[derive(Debug, sqlx::FromRow)]
+struct VoiceTransferOperatorRow {
+    id: String,
+    telefono: Option<String>,
+    ruolo: String,
+    voice_transfer_priority: i64,
+}
+
+fn normalize_transfer_phone(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    if raw.chars().any(|c| {
+        !(c.is_ascii_digit() || matches!(c, '+' | ' ' | '-' | '(' | ')' | '.' | '/'))
+    }) {
+        return None;
+    }
+    let digits: String = raw.chars().filter(|c| c.is_ascii_digit()).collect();
+    if (6..=15).contains(&digits.len()) {
+        Some(digits)
+    } else {
+        None
+    }
+}
+
+fn transfer_schedule_open(rows: &[TransferWorkHourRow], hhmm: &str) -> bool {
+    let working = rows
+        .iter()
+        .any(|r| r.tipo == "lavoro" && hhmm >= r.ora_inizio.as_str() && hhmm < r.ora_fine.as_str());
+    let paused = rows
+        .iter()
+        .any(|r| r.tipo == "pausa" && hhmm >= r.ora_inizio.as_str() && hhmm < r.ora_fine.as_str());
+    working && !paused
+}
+
+async fn operator_transfer_available_now(
+    pool: &SqlitePool,
+    operator_id: &str,
+    date: &str,
+    weekday: i64,
+    hhmm: &str,
+    global_hours: &[TransferWorkHourRow],
+) -> bool {
+    let absent = sqlx::query_scalar::<_, i64>(
+        r#"
+        SELECT COUNT(*) FROM operatori_assenze
+        WHERE operatore_id = ? AND approvata = 1
+          AND date(?) BETWEEN date(data_inizio) AND date(data_fine)
+        "#,
+    )
+    .bind(operator_id)
+    .bind(date)
+    .fetch_one(pool)
+    .await
+    .unwrap_or(1)
+        > 0;
+    if absent {
+        return false;
+    }
+
+    let specific: Vec<TransferWorkHourRow> = sqlx::query_as(
+        r#"
+        SELECT ora_inizio, ora_fine, tipo
+        FROM orari_lavoro
+        WHERE giorno_settimana = ? AND operatore_id = ?
+        "#,
+    )
+    .bind(weekday)
+    .bind(operator_id)
+    .fetch_all(pool)
+    .await
+    .unwrap_or_default();
+
+    if specific.is_empty() {
+        transfer_schedule_open(global_hours, hhmm)
+    } else {
+        transfer_schedule_open(&specific, hhmm)
+    }
+}
+
+async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> impl IntoResponse {
+    let pool = match state.app.try_state::<SqlitePool>() {
+        Some(p) => p,
+        None => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({"routes": [], "fallback_phone": null, "error": "Database not available"})),
+            );
+        }
+    };
+
+    let now = chrono::Local::now();
+    let date = now.format("%Y-%m-%d").to_string();
+    let hhmm = now.format("%H:%M").to_string();
+    let weekday = now.weekday().num_days_from_sunday() as i64;
+
+    let holiday = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM giorni_festivi WHERE date(data) = date(?)",
+    )
+    .bind(&date)
+    .fetch_one(pool.inner())
+    .await
+    .unwrap_or(1)
+        > 0;
+
+    let global_hours: Vec<TransferWorkHourRow> = sqlx::query_as(
+        r#"
+        SELECT ora_inizio, ora_fine, tipo
+        FROM orari_lavoro
+        WHERE giorno_settimana = ? AND operatore_id IS NULL
+        "#,
+    )
+    .bind(weekday)
+    .fetch_all(pool.inner())
+    .await
+    .unwrap_or_default();
+    let business_open = !holiday && transfer_schedule_open(&global_hours, &hhmm);
+
+    let owner_phone = get_setting(pool.inner(), "telefono_titolare")
+        .await
+        .unwrap_or_default();
+    let general_transfer_phone = sqlx::query_scalar::<_, String>(
+        "SELECT COALESCE(numero_trasferimento, '') FROM voice_agent_config LIMIT 1",
+    )
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or_default();
+
+    let owner_fallback = normalize_transfer_phone(&owner_phone);
+    let general_fallback = normalize_transfer_phone(&general_transfer_phone);
+    let (fallback_phone, fallback_source) = if let Some(phone) = owner_fallback.clone() {
+        (Some(phone), Some("impostazioni.telefono_titolare".to_string()))
+    } else if let Some(phone) = general_fallback.clone() {
+        (Some(phone), Some("voice_agent_config.numero_trasferimento".to_string()))
+    } else {
+        (None, None)
+    };
+
+    let mut routes: Vec<Value> = Vec::new();
+    let mut seen: Vec<String> = Vec::new();
+
+    if business_open {
+        // Personal operator phones are PII. Only the Rust layer may decrypt them,
+        // and only explicit transfer opt-in + reachability + schedule/absence filters
+        // can make them leave this local bridge as a trusted routing destination.
+        let encryption_ready = crate::encryption::ensure_encryption_ready_pool(pool.inner())
+            .await
+            .is_ok();
+        if encryption_ready {
+            let operators: Vec<VoiceTransferOperatorRow> = sqlx::query_as(
+                r#"
+                SELECT id, telefono, ruolo, voice_transfer_priority
+                FROM operatori
+                WHERE attivo = 1
+                  AND voice_transfer_enabled = 1
+                  AND voice_transfer_reachable = 1
+                  AND telefono IS NOT NULL AND telefono != ''
+                ORDER BY CASE WHEN ruolo = 'admin' THEN 1 ELSE 0 END,
+                         voice_transfer_priority ASC, created_at ASC
+                "#,
+            )
+            .fetch_all(pool.inner())
+            .await
+            .unwrap_or_default();
+
+            for op in operators {
+                if !operator_transfer_available_now(
+                    pool.inner(),
+                    &op.id,
+                    &date,
+                    weekday,
+                    &hhmm,
+                    &global_hours,
+                )
+                .await
+                {
+                    continue;
+                }
+                let encrypted = op.telefono.unwrap_or_default();
+                let plaintext = match crate::encryption::decrypt_field(&encrypted) {
+                    Ok(v) => v,
+                    Err(_) => continue,
+                };
+                let Some(phone) = normalize_transfer_phone(&plaintext) else {
+                    continue;
+                };
+                if seen.contains(&phone) {
+                    continue;
+                }
+                seen.push(phone.clone());
+                routes.push(json!({
+                    "phone": phone,
+                    "source": format!("operator:{}", op.id),
+                    "role": op.ruolo,
+                    "priority": op.voice_transfer_priority,
+                }));
+            }
+        }
+
+        // Owner fallback precedes the general transfer number. Both are explicit
+        // business settings, never caller-supplied destinations.
+        if let Some(phone) = owner_fallback {
+            if !seen.contains(&phone) {
+                seen.push(phone.clone());
+                routes.push(json!({
+                    "phone": phone,
+                    "source": "impostazioni.telefono_titolare",
+                    "role": "owner",
+                    "priority": 10000,
+                }));
+            }
+        }
+        if let Some(phone) = general_fallback {
+            if !seen.contains(&phone) {
+                routes.push(json!({
+                    "phone": phone,
+                    "source": "voice_agent_config.numero_trasferimento",
+                    "role": "general",
+                    "priority": 20000,
+                }));
+            }
+        }
+    }
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "business_open": business_open,
+            "routes": routes,
+            "fallback_phone": fallback_phone,
+            "fallback_source": fallback_source,
+        })),
+    )
+}
+
+'''
+          s = s.replace(marker, handler + marker, 1)
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Orchestrator: consume trusted bridge routes. Never read encrypted
+          # operator phone directly from SQLite.
+          # ------------------------------------------------------------------
+          p = Path('voice-agent/src/orchestrator.py')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''        self._last_escalation_phone_source = ""\n        self._last_escalation_wa_sent = False''',
+              '''        self._last_escalation_phone_source = ""\n        self._last_escalation_wa_sent = False\n        self._last_live_transfer_routes = []''',
+              'orchestrator session route reset',
+          )
+          start = s.index('    async def _resolve_escalation_phone(self) -> tuple:')
+          end = s.index('    def _build_escalation_response', start)
+          resolver = '''    async def _fetch_escalation_route_payload(self) -> dict:\n        """Fetch trusted live-transfer routing data from the local Rust bridge."""\n        try:\n            timeout = aiohttp.ClientTimeout(total=1.5)\n            async with aiohttp.ClientSession(timeout=timeout) as session:\n                async with session.get(f"{HTTP_BRIDGE_URL}/api/voice/escalation-routes") as resp:\n                    if resp.status == 200:\n                        data = await resp.json()\n                        return data if isinstance(data, dict) else {}\n                    logger.warning("[ESC] routing bridge HTTP %s", resp.status)\n        except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as exc:\n            logger.warning("[ESC] routing bridge unavailable: %s", exc)\n        except Exception as exc:\n            logger.warning("[ESC] routing bridge unexpected error: %s", exc)\n        return {}\n\n    async def _resolve_live_transfer_routes(self) -> list:\n        """Return ordered (phone, source) routes already trusted/filtered by Rust."""\n        payload = await self._fetch_escalation_route_payload()\n        if not payload.get("business_open", False):\n            return []\n        routes = []\n        seen = set()\n        for item in payload.get("routes") or []:\n            if not isinstance(item, dict):\n                continue\n            phone = str(item.get("phone") or "").strip()\n            source = str(item.get("source") or "bridge").strip()\n            if phone and phone not in seen:\n                seen.add(phone)\n                routes.append((phone, source))\n        return routes\n\n    async def _resolve_escalation_phone(self) -> tuple:\n        """Resolve a safe notification/fallback phone without reading encrypted operator PII."""\n        payload = await self._fetch_escalation_route_payload()\n        phone = str(payload.get("fallback_phone") or "").strip()\n        source = str(payload.get("fallback_source") or "").strip()\n        if phone:\n            return phone, source or "bridge.fallback"\n        routes = payload.get("routes") or []\n        if routes and isinstance(routes[0], dict):\n            phone = str(routes[0].get("phone") or "").strip()\n            if phone:\n                return phone, str(routes[0].get("source") or "bridge.route")\n\n        # Bridge may be unavailable while the sidecar is starting. Fallback only\n        # to non-encrypted business settings; never query operatori.telefono here.\n        db_path = self._find_db_path()\n        if not db_path:\n            return None, None\n        try:\n            import sqlite3 as _sq\n            with _sq.connect(db_path, timeout=3) as conn:\n                try:\n                    rows = conn.execute(\n                        "SELECT chiave, valore FROM impostazioni WHERE chiave = ?",\n                        ("telefono_titolare",),\n                    ).fetchall()\n                    for row in rows:\n                        if row[1] and row[1].strip():\n                            return row[1].strip(), "impostazioni.telefono_titolare"\n                except Exception:\n                    pass\n                try:\n                    row = conn.execute(\n                        "SELECT numero_trasferimento FROM voice_agent_config LIMIT 1"\n                    ).fetchone()\n                    if row and row[0] and row[0].strip():\n                        return row[0].strip(), "voice_agent_config"\n                except Exception:\n                    pass\n        except Exception as exc:\n            logger.warning("[ESC] DB error resolving fallback phone: %s", exc)\n        return None, None\n\n'''
+          s = s[:start] + resolver + s[end:]
+          old_defer = '''        # P0 LIVE TRANSFER: during an active in-hours VoIP call, the live SIP\n        # route is authoritative. Do not pre-notify WhatsApp before we know the\n        # transfer failed; WA remains the fallback path (force_notify=True).\n        if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:\n            logger.info("[ESC] Live transfer eligible; WhatsApp deferred until SIP transfer failure")\n            return escalation_phone\n'''
+          new_defer = '''        # P0 LIVE TRANSFER: defer WhatsApp only when at least one trusted,\n        # currently reachable live route actually exists. If routing is empty\n        # (holiday, absence, opt-out, closed schedule), notify immediately.\n        if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:\n            live_routes = await self._resolve_live_transfer_routes()\n            self._last_live_transfer_routes = live_routes\n            if live_routes:\n                logger.info("[ESC] %d live transfer route(s); WhatsApp deferred", len(live_routes))\n                return escalation_phone\n'''
+          s = replace_once(s, old_defer, new_defer, 'orchestrator WA defer policy')
+
+          start = s.index('        # P0 LIVE TRANSFER: only VoIP calls, only trusted DB/config destinations, only')
+          end = s.index('        return {', start)
+          process_block = '''        # P0 LIVE TRANSFER: use the ordered route chain produced by the Rust bridge.\n        # Personal operator numbers never originate from caller text or direct SQLite reads.\n        transfer_phone = ""\n        transfer_routes = []\n        response_text = result.response\n        response_audio = result.audio_bytes\n        if result.should_escalate and result.intent != "content_filter_severe":\n            is_bh = self._is_business_hours()\n            live_routes = list(getattr(self, "_last_live_transfer_routes", []) or [])\n            if is_bh and not live_routes:\n                live_routes = await self._resolve_live_transfer_routes()\n                self._last_live_transfer_routes = live_routes\n            transfer_routes = [phone for phone, _source in live_routes if phone]\n            esc_phone = getattr(self, "_last_escalation_phone", "") or ""\n\n            if transfer_routes:\n                transfer_phone = transfer_routes[0]\n                if "frustration" in (result.intent or "") or result.intent == "escalation_e6":\n                    response_text = "Mi dispiace per la difficoltà. Un momento, provo a passarla subito a un operatore."\n                else:\n                    response_text = "Certo. Un momento, provo a passarla subito a un operatore."\n                response_audio = await self.tts.synthesize(response_text)\n            else:\n                if not esc_phone:\n                    esc_phone = await self._trigger_wa_escalation_call(\n                        result.intent or "voip_escalation", force_notify=True\n                    )\n                elif not getattr(self, "_last_escalation_wa_sent", False):\n                    await self._trigger_wa_escalation_call(\n                        result.intent or "voip_escalation", force_notify=True\n                    )\n                if is_bh:\n                    if getattr(self, "_last_escalation_wa_sent", False):\n                        response_text = (\n                            "Non riesco a completare il passaggio in linea in questo momento. "\n                            "Ho avvisato lo staff e la ricontatteranno appena possibile."\n                        )\n                    elif esc_phone:\n                        response_text = (\n                            "Non riesco a completare il passaggio in linea in questo momento. "\n                            f"Può chiamare direttamente il {esc_phone}."\n                        )\n                    else:\n                        response_text = (\n                            "Non riesco a metterla in contatto con un operatore in questo momento. "\n                            "La prego di riprovare più tardi."\n                        )\n                elif esc_phone:\n                    if getattr(self, "_last_escalation_wa_sent", False):\n                        response_text = (\n                            "Al momento siamo fuori dall'orario di apertura. "\n                            "Ho inviato una notifica allo staff e la ricontatteranno appena possibile."\n                        )\n                    else:\n                        response_text = (\n                            "Al momento siamo fuori dall'orario di apertura. "\n                            f"Può chiamare direttamente il {esc_phone} in orario di apertura."\n                        )\n                response_audio = await self.tts.synthesize(response_text)\n\n'''
+          s = s[:start] + process_block + s[end:]
+          s = replace_once(
+              s,
+              '''            "transfer_phone": transfer_phone,  # trusted destination; consumed only by Go media adapter\n            "transcription": transcription,''',
+              '''            "transfer_phone": transfer_phone,  # backward-compatible first route\n            "transfer_routes": transfer_routes,  # ordered trusted destinations for sequential retry\n            "transcription": transcription,''',
+              'orchestrator transfer_routes output',
+          )
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Go adapter: sequentially retry routes until actual B2BUA CONNECTED.
+          # ------------------------------------------------------------------
+          p = Path('voice-agent/src/voip_goengine.py')
+          s = p.read_text()
+          old = '''    def _transfer_after_drain(self, destination: str):\n        deadline = time.time() + 10\n        while time.time() < deadline and not self._tx_queue.empty():\n            time.sleep(0.1)\n        time.sleep(0.35)\n        status = self._request_transfer(destination)\n        if status == "connected":\n            logger.info("LIVE TRANSFER connected: operatore ha risposto e bridge RTP attivo")\n            return\n        logger.warning("LIVE TRANSFER non completato: %s — fallback vocale", status)\n        self._speak_transfer_fallback(status)\n'''
+          new = '''    def _transfer_after_drain(self, destinations):\n        routes = list(destinations) if isinstance(destinations, (list, tuple)) else [destinations]\n        routes = [route for route in routes if route]\n        deadline = time.time() + 10\n        while time.time() < deadline and not self._tx_queue.empty():\n            time.sleep(0.1)\n        time.sleep(0.35)\n        last_status = "no_route"\n        for index, destination in enumerate(routes, start=1):\n            if not self._call_active:\n                return\n            last_status = self._request_transfer(destination)\n            if last_status == "connected":\n                logger.info("LIVE TRANSFER connected on route %d/%d", index, len(routes))\n                return\n            logger.info("LIVE TRANSFER route %d/%d failed: %s; trying next", index, len(routes), last_status)\n        logger.warning("LIVE TRANSFER exhausted %d route(s): %s — fallback vocale", len(routes), last_status)\n        self._speak_transfer_fallback(last_status)\n'''
+          s = replace_once(s, old, new, 'goengine sequential routes')
+          old = '''                _should_escalate = result.get("should_escalate", False)\n                _transfer_phone = result.get("transfer_phone") or ""\n                if _should_escalate and _transfer_phone:\n                    threading.Thread(\n                        target=self._transfer_after_drain,\n                        args=(_transfer_phone,),'''
+          new = '''                _should_escalate = result.get("should_escalate", False)\n                _transfer_routes = list(result.get("transfer_routes") or [])\n                if not _transfer_routes and result.get("transfer_phone"):\n                    _transfer_routes = [result.get("transfer_phone")]\n                if _should_escalate and _transfer_routes:\n                    threading.Thread(\n                        target=self._transfer_after_drain,\n                        args=(_transfer_routes,),'''
+          s = replace_once(s, old, new, 'goengine route callsite')
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # pjsua2 adapter: sequential REFER retries on failure.
+          # ------------------------------------------------------------------
+          p = Path('voice-agent/src/voip_pjsua2.py')
+          s = p.read_text()
+          start = s.index('    def _transfer_after_tts(self, call: SaraCall, destination: str) -> None:')
+          end = s.index('    def get_status(self) -> Dict[str, Any]:', start)
+          replacement = '''    def _transfer_after_tts(self, call: SaraCall, destinations) -> None:\n        routes = list(destinations) if isinstance(destinations, (list, tuple)) else [destinations]\n        routes = [route for route in routes if route]\n        while call.connected and not call.audio_port.tx_queue.empty():\n            time.sleep(0.1)\n        if not call.connected or self._current_call is not call:\n            self._hangup_pending = False\n            return\n        time.sleep(0.35)\n\n        last_status = "no_route"\n        for index, destination in enumerate(routes, start=1):\n            if not call.connected or self._current_call is not call:\n                self._hangup_pending = False\n                return\n            last_status = self._request_transfer(destination)\n            if last_status == "success":\n                logger.info("LIVE TRANSFER PJSUA2 completed on route %d/%d", index, len(routes))\n                self._hangup_pending = False\n                return\n            logger.info(\n                "LIVE TRANSFER PJSUA2 route %d/%d failed: %s; trying next",\n                index, len(routes), last_status,\n            )\n\n        logger.warning("LIVE TRANSFER PJSUA2 exhausted %d route(s): %s — fallback", len(routes), last_status)\n        self._notify_transfer_failure(last_status)\n        if last_status == "busy":\n            text = "Gli operatori sono occupati in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        elif last_status == "no_answer":\n            text = "Gli operatori non rispondono in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        else:\n            text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."\n        try:\n            fut = asyncio.run_coroutine_threadsafe(self.pipeline.tts.synthesize(text), self._main_loop)\n            audio = fut.result(timeout=10)\n            if audio:\n                call.audio_port.queue_tts_audio(audio)\n                while call.connected and not call.audio_port.tx_queue.empty():\n                    time.sleep(0.1)\n                time.sleep(0.35)\n        except Exception as exc:\n            logger.warning("TTS fallback transfer PJSUA2 fallito: %s", exc)\n        if call.connected and self._current_call is call:\n            self._pending_transfer_hangups.put(call)\n        self._hangup_pending = False\n\n'''
+          s = s[:start] + replacement + s[end:]
+          old = '''                transfer_phone = result.get("transfer_phone") or ""\n                if result.get("should_escalate") and transfer_phone and not self._hangup_pending:\n                    self._hangup_pending = True\n                    threading.Thread(\n                        target=self._transfer_after_tts,\n                        args=(call, transfer_phone),'''
+          new = '''                transfer_routes = list(result.get("transfer_routes") or [])\n                if not transfer_routes and result.get("transfer_phone"):\n                    transfer_routes = [result.get("transfer_phone")]\n                if result.get("should_escalate") and transfer_routes and not self._hangup_pending:\n                    self._hangup_pending = True\n                    threading.Thread(\n                        target=self._transfer_after_tts,\n                        args=(call, transfer_routes),'''
+          s = replace_once(s, old, new, 'pjsua2 route callsite')
+          p.write_text(s)
+
+          # ------------------------------------------------------------------
+          # Tests: B2BUA terminal state + routing retry policy.
+          # ------------------------------------------------------------------
+          p = Path('voice-agent/tests/test_live_transfer_goengine.py')
+          s = p.read_text()
+          s = replace_once(s, 'from unittest.mock import MagicMock', 'from unittest.mock import MagicMock, patch', 'go test mock import')
+          s = s.replace('def test_request_transfer_sends_only_normalized_digits_and_returns_success():', 'def test_request_transfer_sends_only_normalized_digits_and_returns_connected():')
+          s = s.replace('{"status":"success","code":200}', '{"status":"connected","code":200}')
+          s = s.replace('== "success"', '== "connected"')
+          s += '''\n\ndef test_transfer_after_drain_retries_next_route_after_busy():\n    m = _manager()\n    m._request_transfer = MagicMock(side_effect=["busy", "connected"])\n    m._speak_transfer_fallback = MagicMock()\n    with patch("src.voip_goengine.time.sleep", return_value=None):\n        m._transfer_after_drain(["3331234567", "3341234567"])\n    assert [c.args[0] for c in m._request_transfer.call_args_list] == ["3331234567", "3341234567"]\n    m._speak_transfer_fallback.assert_not_called()\n\n\ndef test_transfer_after_drain_falls_back_once_after_all_routes_fail():\n    m = _manager()\n    m._request_transfer = MagicMock(side_effect=["busy", "no_answer"])\n    m._speak_transfer_fallback = MagicMock()\n    with patch("src.voip_goengine.time.sleep", return_value=None):\n        m._transfer_after_drain(["3331234567", "3341234567"])\n    m._speak_transfer_fallback.assert_called_once_with("no_answer")\n'''
+          p.write_text(s)
+
+          p = Path('voice-agent/tests/test_live_transfer_pjsua2.py')
+          s = p.read_text()
+          s = s.replace('import importlib\n', 'import importlib\nimport queue\n')
+          s = s.replace('from unittest.mock import MagicMock', 'from unittest.mock import MagicMock, patch')
+          s += '''\n\ndef test_transfer_after_tts_retries_next_route_after_busy():\n    _mod, m, call = _manager()\n    call.audio_port = types.SimpleNamespace(tx_queue=queue.Queue(), queue_tts_audio=MagicMock())\n    m._request_transfer = MagicMock(side_effect=["busy", "success"])\n    m._notify_transfer_failure = MagicMock()\n    with patch("src.voip_pjsua2.time.sleep", return_value=None):\n        m._transfer_after_tts(call, ["3331234567", "3341234567"])\n    assert [c.args[0] for c in m._request_transfer.call_args_list] == ["3331234567", "3341234567"]\n    m._notify_transfer_failure.assert_not_called()\n'''
+          p.write_text(s)
+
+          p = Path('voice-agent/tests/test_live_transfer_orchestrator.py')
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''    o._resolve_escalation_phone = AsyncMock(return_value=("3331234567", "voice_agent_config"))\n    o._is_business_hours = MagicMock(return_value=True)''',
+              '''    o._resolve_escalation_phone = AsyncMock(return_value=("3331234567", "voice_agent_config"))\n    o._resolve_live_transfer_routes = AsyncMock(return_value=[("3331234567", "operator:op-1")])\n    o._last_live_transfer_routes = []\n    o._is_business_hours = MagicMock(return_value=True)''',
+              'orchestrator test route mock',
+          )
+          s += '''\n\n@pytest.mark.asyncio\nasync def test_in_hours_voip_without_live_routes_notifies_whatsapp_immediately():\n    o = _orchestrator()\n    o._resolve_live_transfer_routes = AsyncMock(return_value=[])\n    phone = await o._trigger_wa_escalation_call("explicit_request")\n    assert phone == "3331234567"\n    o._wa_client.send_message_async.assert_awaited_once()\n    assert o._last_escalation_wa_sent is True\n'''
+          p.write_text(s)
+          PY
+
+          cargo fmt --manifest-path src-tauri/Cargo.toml
+          python3 -m py_compile \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py
+          git diff --check
+
+      - name: Validate Rust + targeted voice tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml --quiet
+          python3 -m pip install -q pytest pytest-asyncio aiohttp
+          PYTHONPATH=voice-agent python3 -m pytest \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py -q
+          git diff --check
+
+      - name: Validate TypeScript
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
+
+      - name: Commit product refinement and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/_apply-live-transfer-routing-p0.yml
+          git add \
+            src-tauri/migrations/043_voice_transfer_routing.sql \
+            src-tauri/src/lib.rs \
+            src-tauri/src/commands/operatori.rs \
+            src-tauri/src/http_bridge.rs \
+            src/types/operatore.ts \
+            src/components/operatori/OperatoreDialog.tsx \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py
+          git diff --cached --check
+          git commit -m "feat(voice): add production live-transfer routing chain"
+          git push origin HEAD:agent/sara-live-transfer-p0-v2
