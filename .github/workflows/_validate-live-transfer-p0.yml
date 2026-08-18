@@ -1,0 +1,178 @@
+name: Validate live-transfer P0 source
+
+on:
+  push:
+    branches: [agent/sara-live-transfer-p0-v2]
+    paths: [.github/workflows/_validate-live-transfer-p0.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sara-live-transfer-p0-v2
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Patch Rust integration fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src-tauri/tests/integration_operatori.rs')
+          s = p.read_text()
+          needle = '''        genere: None,\n    };'''
+          count = s.count(needle)
+          if count != 3:
+              raise SystemExit(f'expected 3 operator input literals, got {count}')
+          s = s.replace(
+              needle,
+              '''        genere: None,\n        voice_transfer_enabled: None,\n        voice_transfer_reachable: None,\n        voice_transfer_priority: None,\n    };''',
+          )
+          marker = '''// ═══════════════════════════════════════════════════════════════════\n// PII encryption at-rest — verify ciphertext per i 4 campi PII'''
+          test = r'''// ═══════════════════════════════════════════════════════════════════
+// P0 Sara live-transfer policy — dedicated fields roundtrip through encrypted
+// operator CRUD without changing the encrypted personal phone semantics.
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn test_voice_transfer_policy_roundtrip() {
+    setup_test_encryption();
+    let (pool, db_file) = create_test_database().await;
+
+    let mut input = make_input("Luca", "Transfer", Some("luca@example.com"), Some("3332221111"));
+    input.voice_transfer_enabled = Some(1);
+    input.voice_transfer_reachable = Some(1);
+    input.voice_transfer_priority = Some(7);
+
+    let created = internal_create_operatore(&pool, input)
+        .await
+        .expect("create operator with transfer policy");
+    assert_eq!(created.voice_transfer_enabled, 1);
+    assert_eq!(created.voice_transfer_reachable, 1);
+    assert_eq!(created.voice_transfer_priority, 7);
+
+    let updated = internal_update_operatore(
+        &pool,
+        &created.id,
+        UpdateOperatoreInput {
+            nome: None,
+            cognome: None,
+            email: None,
+            telefono: None,
+            ruolo: None,
+            colore: None,
+            avatar_url: None,
+            attivo: None,
+            genere: None,
+            voice_transfer_enabled: Some(1),
+            voice_transfer_reachable: Some(0),
+            voice_transfer_priority: Some(22),
+        },
+    )
+    .await
+    .expect("update transfer policy");
+
+    assert_eq!(updated.voice_transfer_enabled, 1);
+    assert_eq!(updated.voice_transfer_reachable, 0);
+    assert_eq!(updated.voice_transfer_priority, 22);
+
+    cleanup_test_database(pool, db_file).await;
+}
+
+'''
+          if s.count(marker) != 1:
+              raise SystemExit('integration test insertion marker missing')
+          s = s.replace(marker, test + marker, 1)
+          p.write_text(s)
+          PY
+          cargo fmt --manifest-path src-tauri/Cargo.toml
+          git diff --check
+
+      - name: Rust compile and operator integration
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          {
+            cargo check --manifest-path src-tauri/Cargo.toml
+            cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
+          } > >(tee /tmp/rust.log) 2>&1
+          rc=$?
+          set -e
+          exit "$rc"
+
+      - name: Python live-transfer and U3 regression suite
+        shell: bash
+        run: |
+          set -uo pipefail
+          python3 -m pip install -q pytest pytest-asyncio aiohttp
+          set +e
+          PYTHONPATH=voice-agent python3 -m pytest \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py -q > >(tee /tmp/python.log) 2>&1
+          rc=$?
+          set -e
+          exit "$rc"
+
+      - name: TypeScript compile
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
+          {
+            npm ci --ignore-scripts --no-audit --no-fund
+            npx tsc --noEmit
+          } > >(tee /tmp/typescript.log) 2>&1
+          rc=$?
+          set -e
+          exit "$rc"
+
+      - name: Commit validated test fix
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/_validate-live-transfer-p0.yml
+          git add src-tauri/tests/integration_operatori.rs
+          git diff --cached --check
+          git commit -m "test(voice): cover live-transfer operator policy"
+          git push origin HEAD:agent/sara-live-transfer-p0-v2
+
+      - name: Publish validation diagnostic
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --hard "$GITHUB_SHA"
+          mkdir -p vos-out
+          {
+            echo "LIVE_TRANSFER_P0_VALIDATION=FAILED"
+            echo "SOURCE_SHA=$GITHUB_SHA"
+            echo
+            echo "=== RUST ==="
+            cat /tmp/rust.log 2>/dev/null || true
+            echo
+            echo "=== PYTHON ==="
+            cat /tmp/python.log 2>/dev/null || true
+            echo
+            echo "=== TYPESCRIPT ==="
+            cat /tmp/typescript.log 2>/dev/null || true
+          } > vos-out/live-transfer-p0-validation-failure.txt
+          git rm .github/workflows/_validate-live-transfer-p0.yml
+          git add vos-out/live-transfer-p0-validation-failure.txt
+          git commit -m "chore: record live-transfer P0 validation failure"
+          git push origin HEAD:agent/sara-live-transfer-p0-v2
