@@ -1,0 +1,139 @@
+name: Finalize live-transfer P0 on Mac
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/_fast-finalize-live-transfer-mac.yml'
+      - '.github/tmp/finalize_live_transfer_mac.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: live-transfer-finalizer-mac-pr59
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 9177ab1048ef1dd2f8ab69b12b7465d8e1519be3
+      TARGET_BRANCH: agent/sara-live-transfer-p0-v2
+    steps:
+      - name: Checkout exact PR head
+        uses: actions/checkout@v4
+        with:
+          ref: agent/sara-live-transfer-p0-v2
+          fetch-depth: 40
+          clean: true
+
+      - name: Freeze source head and toolchain
+        id: source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_HEAD="$(git rev-parse HEAD)"
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$SOURCE_HEAD" = "$REMOTE_HEAD"
+          git cat-file -e "$BASE_SHA^{commit}"
+          echo "source_head=$SOURCE_HEAD" >> "$GITHUB_OUTPUT"
+          python3 --version
+          go version
+          cargo --version
+          node --version
+          npm --version
+
+      - name: Apply deterministic production patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/tmp/finalize_live_transfer_mac.py
+          python3 -m py_compile \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py
+          cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+          git diff --check
+          grep -Fq 'audioop-lts>=0.2.2; python_version >= "3.13"' voice-agent/requirements.txt
+          grep -Fq 'audioop-lts>=0.2.2; python_version >= "3.13"' voice-agent/requirements-ci.txt
+          grep -Fq 'audioop-lts>=0.2.2; python_version >= "3.13"' voice-agent/requirements-windows.txt
+          ! grep -Fq 'Owner fallback precedes the general transfer number' src-tauri/src/http_bridge.rs
+          grep -Fq 'notification_phone' src-tauri/src/http_bridge.rs
+          grep -Fq 'Return only the public caller-safe fallback' voice-agent/src/orchestrator.py
+
+      - name: Python targeted gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .venv-live-transfer
+          python3 -m venv .venv-live-transfer
+          . .venv-live-transfer/bin/activate
+          python -m pip install -q --upgrade pip
+          python -m pip install -q -r voice-agent/requirements-ci.txt
+          PYTHONPATH=voice-agent python -m pytest \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py -q
+
+      - name: Go gate
+        working-directory: voice-agent/engine
+        shell: bash
+        run: go test ./...
+
+      - name: Rust gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml
+          cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori test_voice_transfer_policy_roundtrip -- --nocapture
+
+      - name: TypeScript gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
+
+      - name: Publish clean exact-parent commit
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ steps.source.outputs.source_head }}
+        run: |
+          set -euo pipefail
+          REMOTE_HEAD="$(git ls-remote origin "refs/heads/$TARGET_BRANCH" | awk '{print $1}')"
+          test "$REMOTE_HEAD" = "$SOURCE_HEAD"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --mixed "$BASE_SHA"
+          rm -rf .venv-live-transfer node_modules
+          rm -f \
+            .github/workflows/_validate-live-transfer-p0.yml \
+            .github/workflows/_fast-finalize-live-transfer-p0.yml \
+            .github/workflows/_fast-finalize-live-transfer-mac.yml \
+            .github/tmp/finalize_live_transfer.py \
+            .github/tmp/finalize_live_transfer_mac.py
+
+          git add \
+            voice-agent/requirements.txt \
+            voice-agent/requirements-ci.txt \
+            voice-agent/requirements-windows.txt \
+            voice-agent/src/orchestrator.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            src-tauri/src/http_bridge.rs \
+            src-tauri/tests/integration_operatori.rs
+
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "7"
+          test -z "$(git diff --cached --name-only | grep '^\.github/' || true)"
+
+          git commit -m "fix(voice): close live-transfer production gates"
+          CLEAN_HEAD="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "$BASE_SHA"
+          echo "CLEAN_HEAD=$CLEAN_HEAD"
+          git push \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$SOURCE_HEAD" \
+            origin "HEAD:refs/heads/$TARGET_BRANCH"
