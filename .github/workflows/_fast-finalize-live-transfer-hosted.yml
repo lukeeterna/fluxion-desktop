@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/_fast-finalize-live-transfer-hosted.yml'
       - '.github/tmp/finalize_live_transfer_mac.py'
+      - '.github/tmp/repair_live_transfer_patcher.py'
 
 permissions:
   contents: write
@@ -65,6 +66,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 .github/tmp/repair_live_transfer_patcher.py
           python3 .github/tmp/finalize_live_transfer_mac.py
           python3 -m py_compile \
             voice-agent/src/orchestrator.py \
@@ -128,7 +130,8 @@ jobs:
             .github/workflows/_fast-finalize-live-transfer-mac.yml \
             .github/workflows/_fast-finalize-live-transfer-hosted.yml \
             .github/tmp/finalize_live_transfer.py \
-            .github/tmp/finalize_live_transfer_mac.py
+            .github/tmp/finalize_live_transfer_mac.py \
+            .github/tmp/repair_live_transfer_patcher.py
 
           git add \
             voice-agent/requirements.txt \
