@@ -30,6 +30,19 @@ jobs:
         with:
           go-version-file: voice-agent/engine/go.mod
 
+      - name: Install FLUXION Linux build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config libssl-dev \
+            libgtk-3-dev libwebkit2gtk-4.1-dev \
+            libappindicator3-dev librsvg2-dev \
+            libglib2.0-dev libcairo2-dev libpango1.0-dev \
+            libgdk-pixbuf-2.0-dev libatk1.0-dev \
+            libasound2-dev libsqlite3-dev
+
       - name: Apply and validate complete P0 patch
         shell: bash
         run: |
