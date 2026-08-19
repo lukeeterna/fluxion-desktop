@@ -1,0 +1,103 @@
+name: Isolated live-transfer finalization
+
+on:
+  push:
+    branches: [tmp/live-transfer-finalize-20260819]
+    paths: [.github/workflows/_tmp-live-transfer-finalize.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: isolated-live-transfer-finalizer
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/live-transfer-finalize-20260819
+          fetch-depth: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: voice-agent/engine/go.mod
+
+      - name: Apply product patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/tmp/finalize_live_transfer.py
+          cargo fmt --manifest-path src-tauri/Cargo.toml
+          python3 -m py_compile \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py
+          git diff --check
+
+      - name: Python 3.13 targeted gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q -r voice-agent/requirements-ci.txt
+          PYTHONPATH=voice-agent python -m pytest \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py -q
+
+      - name: Go gate
+        working-directory: voice-agent/engine
+        shell: bash
+        run: go test ./...
+
+      - name: Rust operator policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml
+          cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
+
+      - name: TypeScript gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
+
+      - name: Publish clean exact-parent commit to PR 59 branch
+        shell: bash
+        env:
+          BASE_SHA: 9177ab1048ef1dd2f8ab69b12b7465d8e1519be3
+          TARGET_BRANCH: agent/sara-live-transfer-p0-v2
+          EXPECTED_TARGET_HEAD: 7a9301329792b5bacecfb48e5dffab39e8f97faa
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git reset --mixed "$BASE_SHA"
+          rm -f \
+            .github/workflows/_validate-live-transfer-p0.yml \
+            .github/workflows/_fast-finalize-live-transfer-p0.yml \
+            .github/workflows/_tmp-live-transfer-finalize.yml \
+            .github/tmp/finalize_live_transfer.py
+          git add \
+            voice-agent/requirements.txt \
+            voice-agent/requirements-ci.txt \
+            voice-agent/requirements-windows.txt \
+            voice-agent/src/orchestrator.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            src-tauri/tests/integration_operatori.rs
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          git commit -m "fix(voice): close live-transfer P0 validation gaps"
+          git push \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" \
+            origin "HEAD:refs/heads/$TARGET_BRANCH"
