@@ -30,13 +30,13 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import textwrap
 
           src = Path('.github/workflows/_validate-live-transfer-p0.yml').read_text()
           marker = "          python3 - <<'PY'\n"
           start = src.index(marker) + len(marker)
           end = src.index("\n          PY\n", start)
-          body = textwrap.dedent(src[start:end]) + "\n"
+          lines = src[start:end].splitlines()
+          body = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
           Path('/tmp/apply-live-transfer-final.py').write_text(body)
           PY
           python3 /tmp/apply-live-transfer-final.py
