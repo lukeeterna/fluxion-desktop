@@ -1,7 +1,7 @@
 from pathlib import Path
 
 p = Path('.github/tmp/finalize_live_transfer_mac.py')
-src = p.read_text()
+src = p.read_text(encoding='utf-8')
 start_marker = "old_trigger = '''"
 end_marker = "old_audio = '''"
 start = src.find(start_marker)
@@ -9,10 +9,10 @@ end = src.find(end_marker, start + 1)
 if start < 0 or end < 0:
     raise SystemExit(f'patcher trigger block markers missing: start={start} end={end}')
 
-replacement = r'''trigger_start = s.index("    async def _trigger_wa_escalation_call")
+replacement = r"""trigger_start = s.index("    async def _trigger_wa_escalation_call")
 trigger_end = s.index("\n    async def _create_client", trigger_start)
 new_trigger = r'''    async def _trigger_wa_escalation_call(self, escalation_type: str, force_notify: bool = False) -> str:
-        """Notify privately and return only a caller-safe public fallback number."""
+        # Notify privately and return only a caller-safe public fallback number.
         notify_phone, notify_source, escalation_phone, phone_source = await self._resolve_escalation_contacts()
         self._last_escalation_phone = escalation_phone or ""
         self._last_escalation_phone_source = phone_source or ""
@@ -79,8 +79,9 @@ new_trigger = r'''    async def _trigger_wa_escalation_call(self, escalation_typ
 
 '''
 s = s[:trigger_start] + new_trigger + s[trigger_end:]
-'''
+"""
 
 src = src[:start] + replacement + src[end:]
-p.write_text(src)
+p.write_text(src, encoding='utf-8')
+compile(src, str(p), 'exec')
 print('FINALIZER_PATCHER_REPAIRED=1')
