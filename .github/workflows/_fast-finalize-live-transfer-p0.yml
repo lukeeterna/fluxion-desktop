@@ -24,27 +24,15 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Reuse canonical patch embedded in validation workflow
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: voice-agent/engine/go.mod
+
+      - name: Apply isolated product patch
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-
-          src = Path('.github/workflows/_validate-live-transfer-p0.yml').read_text()
-          marker = "          python3 - <<'PY'\n"
-          start = src.index(marker) + len(marker)
-          end = src.index("\n          PY\n", start)
-          lines = src[start:end].splitlines()
-          body = "\n".join(line[10:] if line.startswith("          ") else line for line in lines) + "\n"
-          body = body.replace(
-              'if count != 3:\n    raise SystemExit(f"integration_operatori fixtures: expected 3 literals, got {count}")',
-              'if count != 2:\n    raise SystemExit(f"integration_operatori fixtures: expected 2 literals, got {count}")',
-              1,
-          )
-          Path('/tmp/apply-live-transfer-final.py').write_text(body)
-          PY
-          python3 /tmp/apply-live-transfer-final.py
+          python3 .github/tmp/finalize_live_transfer.py
           cargo fmt --manifest-path src-tauri/Cargo.toml
           python3 -m py_compile \
             voice-agent/src/orchestrator.py \
@@ -63,10 +51,24 @@ jobs:
             voice-agent/tests/test_live_transfer_orchestrator.py \
             voice-agent/tests/test_nlu_fsm_bypass.py -q
 
-      - name: Go targeted gate
+      - name: Go live-transfer gate
         working-directory: voice-agent/engine
         shell: bash
         run: go test ./...
+
+      - name: Rust operator policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml
+          cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
+
+      - name: TypeScript gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
 
       - name: Publish clean product commit
         shell: bash
@@ -82,7 +84,8 @@ jobs:
           git reset --mixed "$BASE_SHA"
           rm -f \
             .github/workflows/_validate-live-transfer-p0.yml \
-            .github/workflows/_fast-finalize-live-transfer-p0.yml
+            .github/workflows/_fast-finalize-live-transfer-p0.yml \
+            .github/tmp/finalize_live_transfer.py
 
           git add \
             voice-agent/requirements.txt \
