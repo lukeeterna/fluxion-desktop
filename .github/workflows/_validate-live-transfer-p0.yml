@@ -1,4 +1,4 @@
-name: Validate live-transfer P0 source
+name: Finalize live-transfer P0 cleanly
 
 on:
   push:
@@ -9,37 +9,87 @@ permissions:
   contents: write
 
 jobs:
-  validate:
+  finalize:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: agent/sara-live-transfer-p0-v2
           fetch-depth: 0
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
-      - name: Patch Rust integration fixtures
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: voice-agent/engine/go.mod
+
+      - name: Apply production fixes and regression coverage
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('src-tauri/tests/integration_operatori.rs')
+
+          BASE = "9177ab1048ef1dd2f8ab69b12b7465d8e1519be3"
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected 1 occurrence, got {count}")
+              return text.replace(old, new, 1)
+
+          def add_dependency(path: str, anchor: str, dep: str) -> None:
+              p = Path(path)
+              s = p.read_text()
+              if dep in s:
+                  return
+              if s.count(anchor) != 1:
+                  raise SystemExit(f"{path}: dependency anchor mismatch")
+              p.write_text(s.replace(anchor, anchor + dep + "\n", 1))
+
+          # Python 3.13+: audioop left the stdlib. Keep older interpreters untouched.
+          dep = 'audioop-lts>=0.2.2; python_version >= "3.13"'
+          add_dependency(
+              "voice-agent/requirements.txt",
+              "# ── Audio ────────────────────────────────────────────────────────────\n",
+              dep,
+          )
+          add_dependency(
+              "voice-agent/requirements-ci.txt",
+              "# Core\n",
+              dep,
+          )
+          add_dependency(
+              "voice-agent/requirements-windows.txt",
+              "# Audio processing\n",
+              dep,
+          )
+
+          # Rust operator integration fixtures: include the dedicated transfer policy
+          # fields and verify CRUD round-trip without weakening PII encryption.
+          p = Path("src-tauri/tests/integration_operatori.rs")
           s = p.read_text()
-          needle = '''        genere: None,\n    };'''
+          needle = "        genere: None,\n    };"
           count = s.count(needle)
           if count != 3:
-              raise SystemExit(f'expected 3 operator input literals, got {count}')
+              raise SystemExit(f"integration_operatori fixtures: expected 3 literals, got {count}")
           s = s.replace(
               needle,
-              '''        genere: None,\n        voice_transfer_enabled: None,\n        voice_transfer_reachable: None,\n        voice_transfer_priority: None,\n    };''',
+              "        genere: None,\n"
+              "        voice_transfer_enabled: None,\n"
+              "        voice_transfer_reachable: None,\n"
+              "        voice_transfer_priority: None,\n"
+              "    };",
           )
-          marker = '''// ═══════════════════════════════════════════════════════════════════\n// PII encryption at-rest — verify ciphertext per i 4 campi PII'''
+          marker = (
+              "// ═══════════════════════════════════════════════════════════════════\n"
+              "// PII encryption at-rest — verify ciphertext per i 4 campi PII"
+          )
           test = r'''// ═══════════════════════════════════════════════════════════════════
 // P0 Sara live-transfer policy — dedicated fields roundtrip through encrypted
-// operator CRUD without changing the encrypted personal phone semantics.
+// operator CRUD without changing encrypted personal-phone semantics.
 // ═══════════════════════════════════════════════════════════════════
 
 #[tokio::test]
@@ -89,90 +139,293 @@ async fn test_voice_transfer_policy_roundtrip() {
 
 '''
           if s.count(marker) != 1:
-              raise SystemExit('integration test insertion marker missing')
+              raise SystemExit("integration_operatori insertion marker missing")
           s = s.replace(marker, test + marker, 1)
           p.write_text(s)
+
+          # Orchestrator: the Rust resolver owns business-open truth for VoIP live
+          # transfer. Python's simple clock window is fallback only when the local
+          # bridge is unavailable or returns no authoritative boolean.
+          p = Path("voice-agent/src/orchestrator.py")
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''        self._last_escalation_wa_sent = False
+        self._last_live_transfer_routes = []
+''',
+              '''        self._last_escalation_wa_sent = False
+        self._last_live_transfer_routes = []
+        self._last_bridge_business_open = None
+''',
+              "session escalation state",
+          )
+
+          old_resolver = '''    async def _resolve_live_transfer_routes(self) -> list:
+        """Return ordered (phone, source) routes already trusted/filtered by Rust."""
+        payload = await self._fetch_escalation_route_payload()
+        if not payload.get("business_open", False):
+            return []
+        routes = []
+        seen = set()
+        for item in payload.get("routes") or []:
+            if not isinstance(item, dict):
+                continue
+            phone = str(item.get("phone") or "").strip()
+            source = str(item.get("source") or "bridge").strip()
+            if phone and phone not in seen:
+                seen.add(phone)
+                routes.append((phone, source))
+        return routes
+
+'''
+          new_resolver = '''    async def _resolve_live_transfer_routes(self) -> list:
+        """Return ordered trusted routes; Rust owns current business-open truth."""
+        payload = await self._fetch_escalation_route_payload()
+        bridge_open = payload.get("business_open")
+        self._last_bridge_business_open = bridge_open if isinstance(bridge_open, bool) else None
+        if self._last_bridge_business_open is not True:
+            return []
+        routes = []
+        seen = set()
+        for item in payload.get("routes") or []:
+            if not isinstance(item, dict):
+                continue
+            phone = str(item.get("phone") or "").strip()
+            source = str(item.get("source") or "bridge").strip()
+            if phone and phone not in seen:
+                seen.add(phone)
+                routes.append((phone, source))
+        return routes
+
+    def _live_transfer_business_open(self) -> bool:
+        """Use Rust schedule truth for VoIP; local clock is availability fallback only."""
+        if getattr(self, "_is_voip_call", False):
+            bridge_open = getattr(self, "_last_bridge_business_open", None)
+            if isinstance(bridge_open, bool):
+                return bridge_open
+        return self._is_business_hours()
+
+'''
+          s = replace_once(s, old_resolver, new_resolver, "live route resolver authority")
+
+          old_trigger = '''        is_bh = self._is_business_hours()
+        # P0 LIVE TRANSFER: defer WhatsApp only when at least one trusted,
+        # currently reachable live route actually exists. If routing is empty
+        # (holiday, absence, opt-out, closed schedule), notify immediately.
+        if getattr(self, "_is_voip_call", False) and is_bh and not force_notify:
+            live_routes = await self._resolve_live_transfer_routes()
+            self._last_live_transfer_routes = live_routes
+            if live_routes:
+                logger.info("[ESC] %d live transfer route(s); WhatsApp deferred", len(live_routes))
+                return escalation_phone
+
+        urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"
+'''
+          new_trigger = '''        is_voip = getattr(self, "_is_voip_call", False)
+        live_routes = []
+        # P0 LIVE TRANSFER: always ask the Rust bridge before deciding whether a
+        # VoIP call is in-hours. It knows weekday, holidays, pauses, operator hours
+        # and absences; the Python clock window is only a bridge-unavailable fallback.
+        if is_voip and not force_notify:
+            live_routes = await self._resolve_live_transfer_routes()
+            self._last_live_transfer_routes = live_routes
+        is_bh = self._live_transfer_business_open() if is_voip else self._is_business_hours()
+        if is_voip and is_bh and not force_notify and live_routes:
+            logger.info("[ESC] %d live transfer route(s); WhatsApp deferred", len(live_routes))
+            return escalation_phone
+
+        urgency = "URGENTE" if is_bh else "NON URGENTE (fuori orario)"
+'''
+          s = replace_once(s, old_trigger, new_trigger, "WA escalation schedule authority")
+
+          old_audio = '''        if result.should_escalate and result.intent != "content_filter_severe":
+            is_bh = self._is_business_hours()
+            live_routes = list(getattr(self, "_last_live_transfer_routes", []) or [])
+            if is_bh and not live_routes:
+                live_routes = await self._resolve_live_transfer_routes()
+                self._last_live_transfer_routes = live_routes
+            transfer_routes = [phone for phone, _source in live_routes if phone]
+'''
+          new_audio = '''        if result.should_escalate and result.intent != "content_filter_severe":
+            is_voip = getattr(self, "_is_voip_call", False)
+            live_routes = list(getattr(self, "_last_live_transfer_routes", []) or [])
+            if is_voip:
+                # Re-resolve at transfer time so stale per-turn state cannot override
+                # holidays, pauses, reachability or a just-started operator absence.
+                live_routes = await self._resolve_live_transfer_routes()
+                self._last_live_transfer_routes = live_routes
+                is_bh = self._live_transfer_business_open()
+            else:
+                is_bh = self._is_business_hours()
+            transfer_routes = [phone for phone, _source in live_routes if phone]
+'''
+          s = replace_once(s, old_audio, new_audio, "process_audio schedule authority")
+
+          # All escalation speech paths run after _trigger_wa_escalation_call(), so
+          # they can use the bridge decision captured there.
+          one_line = "response = self._build_escalation_response(esc_phone, self._is_business_hours())"
+          if s.count(one_line) != 2:
+              raise SystemExit(f"escalation response one-line callsites: expected 2, got {s.count(one_line)}")
+          s = s.replace(
+              one_line,
+              "response = self._build_escalation_response(esc_phone, self._live_transfer_business_open())",
+          )
+          s = replace_once(
+              s,
+              '''                response = self._build_escalation_response(
+                    esc_phone, self._is_business_hours(), prefix="Mi scusi per il disagio. "
+                )
+''',
+              '''                response = self._build_escalation_response(
+                    esc_phone, self._live_transfer_business_open(), prefix="Mi scusi per il disagio. "
+                )
+''',
+              "frustration escalation response callsite",
+          )
+          p.write_text(s)
+
+          # Regression tests: bridge business-open beats contradictory Python clock.
+          p = Path("voice-agent/tests/test_live_transfer_orchestrator.py")
+          s = p.read_text()
+          s = replace_once(
+              s,
+              '''    o._last_live_transfer_routes = []
+    o._is_business_hours = MagicMock(return_value=True)
+''',
+              '''    o._last_live_transfer_routes = []
+    o._last_bridge_business_open = None
+    o._is_business_hours = MagicMock(return_value=True)
+''',
+              "orchestrator test state",
+          )
+          insertion = '''
+
+@pytest.mark.asyncio
+async def test_bridge_closed_overrides_python_open_for_voip_escalation():
+    o = _orchestrator()
+
+    async def closed_routes():
+        o._last_bridge_business_open = False
+        return []
+
+    o._resolve_live_transfer_routes = AsyncMock(side_effect=closed_routes)
+    o._is_business_hours = MagicMock(return_value=True)
+    phone = await o._trigger_wa_escalation_call("explicit_request")
+
+    assert phone == "3331234567"
+    o._wa_client.send_message_async.assert_awaited_once()
+    sent_message = o._wa_client.send_message_async.await_args.args[1]
+    assert "NON URGENTE (fuori orario)" in sent_message
+
+
+@pytest.mark.asyncio
+async def test_bridge_open_overrides_python_closed_and_keeps_live_transfer_first():
+    o = _orchestrator()
+
+    async def open_routes():
+        o._last_bridge_business_open = True
+        return [("3331234567", "operator:op-1")]
+
+    o._resolve_live_transfer_routes = AsyncMock(side_effect=open_routes)
+    o._is_business_hours = MagicMock(return_value=False)
+    phone = await o._trigger_wa_escalation_call("explicit_request")
+
+    assert phone == "3331234567"
+    o._wa_client.send_message_async.assert_not_called()
+    assert o._live_transfer_business_open() is True
+
+
+@pytest.mark.asyncio
+async def test_resolver_records_bridge_closed_and_rejects_routes_when_closed():
+    o = _orchestrator()
+    o._fetch_escalation_route_payload = AsyncMock(return_value={
+        "business_open": False,
+        "routes": [{"phone": "3331234567", "source": "operator:op-1"}],
+    })
+
+    routes = await VoiceOrchestrator._resolve_live_transfer_routes(o)
+
+    assert routes == []
+    assert o._last_bridge_business_open is False
+'''
+          marker = '''
+
+@pytest.mark.asyncio
+async def test_force_notify_sends_whatsapp_after_live_transfer_failure():
+'''
+          if s.count(marker) != 1:
+              raise SystemExit("orchestrator regression insertion marker missing")
+          s = s.replace(marker, insertion + marker, 1)
+          p.write_text(s)
+
+          print(f"prepared clean product patch from {BASE}")
           PY
+
           cargo fmt --manifest-path src-tauri/Cargo.toml
+          python3 -m py_compile \
+            voice-agent/src/orchestrator.py \
+            voice-agent/src/voip_goengine.py \
+            voice-agent/src/voip_pjsua2.py
           git diff --check
 
-      - name: Rust compile and operator integration
+      - name: Python 3.13 dependency and regression gate
         shell: bash
         run: |
-          set -uo pipefail
-          set +e
-          {
-            cargo check --manifest-path src-tauri/Cargo.toml
-            cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
-          } > >(tee /tmp/rust.log) 2>&1
-          rc=$?
-          set -e
-          exit "$rc"
-
-      - name: Python live-transfer and U3 regression suite
-        shell: bash
-        run: |
-          set -uo pipefail
-          python3 -m pip install -q pytest pytest-asyncio aiohttp
-          set +e
-          PYTHONPATH=voice-agent python3 -m pytest \
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r voice-agent/requirements-ci.txt
+          PYTHONPATH=voice-agent python -m pytest \
             voice-agent/tests/test_live_transfer_goengine.py \
             voice-agent/tests/test_live_transfer_pjsua2.py \
             voice-agent/tests/test_live_transfer_orchestrator.py \
-            voice-agent/tests/test_nlu_fsm_bypass.py -q > >(tee /tmp/python.log) 2>&1
-          rc=$?
-          set -e
-          exit "$rc"
+            voice-agent/tests/test_nlu_fsm_bypass.py -q
 
-      - name: TypeScript compile
+      - name: Go live-transfer gate
+        working-directory: voice-agent/engine
+        shell: bash
+        run: go test ./...
+
+      - name: Rust operator policy gate
         shell: bash
         run: |
-          set -uo pipefail
-          set +e
-          {
-            npm ci --ignore-scripts --no-audit --no-fund
-            npx tsc --noEmit
-          } > >(tee /tmp/typescript.log) 2>&1
-          rc=$?
-          set -e
-          exit "$rc"
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml
+          cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
 
-      - name: Commit validated test fix
-        if: success()
+      - name: TypeScript gate
         shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
+
+      - name: Publish clean single commit directly on canonical routing base
+        shell: bash
+        env:
+          BASE_SHA: 9177ab1048ef1dd2f8ab69b12b7465d8e1519be3
+          BRANCH: agent/sara-live-transfer-p0-v2
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/_validate-live-transfer-p0.yml
-          git add src-tauri/tests/integration_operatori.rs
+
+          # Remove both temporary CI transport files from the product tree/history.
+          git reset --mixed "$BASE_SHA"
+          rm -f .github/workflows/_validate-live-transfer-p0.yml
+
+          git add \
+            voice-agent/requirements.txt \
+            voice-agent/requirements-ci.txt \
+            voice-agent/requirements-windows.txt \
+            voice-agent/src/orchestrator.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            src-tauri/tests/integration_operatori.rs
+
           git diff --cached --check
-          git commit -m "test(voice): cover live-transfer operator policy"
-          git push origin HEAD:agent/sara-live-transfer-p0-v2
+          test -n "$(git diff --cached --name-only)"
+          git commit -m "fix(voice): close live-transfer P0 validation gaps"
 
-      - name: Publish validation diagnostic
-        if: failure()
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git reset --hard "$GITHUB_SHA"
-          mkdir -p vos-out
-          {
-            echo "LIVE_TRANSFER_P0_VALIDATION=FAILED"
-            echo "SOURCE_SHA=$GITHUB_SHA"
-            echo
-            echo "=== RUST ==="
-            cat /tmp/rust.log 2>/dev/null || true
-            echo
-            echo "=== PYTHON ==="
-            cat /tmp/python.log 2>/dev/null || true
-            echo
-            echo "=== TYPESCRIPT ==="
-            cat /tmp/typescript.log 2>/dev/null || true
-          } > vos-out/live-transfer-p0-validation-failure.txt
-          git rm .github/workflows/_validate-live-transfer-p0.yml
-          git add vos-out/live-transfer-p0-validation-failure.txt
-          git commit -m "chore: record live-transfer P0 validation failure"
-          git push origin HEAD:agent/sara-live-transfer-p0-v2
+          # Safe history rewrite: replace only the temporary validation commits.
+          git push \
+            --force-with-lease="refs/heads/$BRANCH:$GITHUB_SHA" \
+            origin "HEAD:refs/heads/$BRANCH"
