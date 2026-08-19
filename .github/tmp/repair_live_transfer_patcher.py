@@ -6,7 +6,14 @@ start_marker = "old_trigger = '''"
 end_marker = "old_audio = '''"
 start = src.find(start_marker)
 end = src.find(end_marker, start + 1)
+
+# The current branch may use a tiny wrapper that restores the original body and
+# invokes this repair itself. The workflow also invokes us once before the wrapper;
+# that first call must therefore be a harmless no-op.
 if start < 0 or end < 0:
+    if 'finalize_live_transfer_mac_body.py' in src and 'runpy.run_path' in src:
+        print('FINALIZER_REPAIR_DEFERRED_TO_WRAPPER=1')
+        raise SystemExit(0)
     raise SystemExit(f'patcher trigger block markers missing: start={start} end={end}')
 
 replacement = r"""trigger_start = s.index("    async def _trigger_wa_escalation_call")
