@@ -30,11 +30,15 @@ jobs:
         with:
           go-version-file: voice-agent/engine/go.mod
 
-      - name: Apply product patch
+      - name: Apply and validate complete P0 patch
         shell: bash
         run: |
           set -euo pipefail
+          exec > >(tee /tmp/live-transfer-finalize.log) 2>&1
+
+          echo "=== APPLY PRODUCT PATCH ==="
           python3 .github/tmp/finalize_live_transfer.py
+          python3 .github/tmp/privacy_hardening.py
           cargo fmt --manifest-path src-tauri/Cargo.toml
           python3 -m py_compile \
             voice-agent/src/orchestrator.py \
@@ -42,10 +46,7 @@ jobs:
             voice-agent/src/voip_pjsua2.py
           git diff --check
 
-      - name: Python 3.13 targeted gate
-        shell: bash
-        run: |
-          set -euo pipefail
+          echo "=== PYTHON 3.13 ==="
           python -m pip install -q -r voice-agent/requirements-ci.txt
           PYTHONPATH=voice-agent python -m pytest \
             voice-agent/tests/test_live_transfer_goengine.py \
@@ -53,26 +54,42 @@ jobs:
             voice-agent/tests/test_live_transfer_orchestrator.py \
             voice-agent/tests/test_nlu_fsm_bypass.py -q
 
-      - name: Go gate
-        working-directory: voice-agent/engine
-        shell: bash
-        run: go test ./...
+          echo "=== GO ==="
+          (cd voice-agent/engine && go test ./...)
 
-      - name: Rust operator policy gate
-        shell: bash
-        run: |
-          set -euo pipefail
+          echo "=== RUST ==="
           cargo check --manifest-path src-tauri/Cargo.toml
           cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
 
-      - name: TypeScript gate
-        shell: bash
-        run: |
-          set -euo pipefail
+          echo "=== TYPESCRIPT ==="
           npm ci --ignore-scripts --no-audit --no-fund
           npx tsc --noEmit
+          echo "ALL_TARGETED_GATES=PASS"
+
+      - name: Persist failure diagnostic on temp branch
+        if: failure()
+        shell: bash
+        run: |
+          set -u
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          {
+            echo "RUN_ID=$GITHUB_RUN_ID"
+            echo "SHA=$GITHUB_SHA"
+            echo "DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            if [ -f /tmp/live-transfer-finalize.log ]; then
+              tail -n 400 /tmp/live-transfer-finalize.log
+            else
+              echo "NO_GATE_LOG_CAPTURED"
+            fi
+          } > .github/tmp/LAST_FAILURE.txt
+          git add .github/tmp/LAST_FAILURE.txt
+          git commit -m "ci: persist live-transfer finalizer failure" || true
+          git push origin HEAD:refs/heads/tmp/live-transfer-finalize-20260819 || true
 
       - name: Publish clean exact-parent commit to PR 59 branch
+        if: success()
         shell: bash
         env:
           BASE_SHA: 9177ab1048ef1dd2f8ab69b12b7465d8e1519be3
@@ -87,16 +104,20 @@ jobs:
             .github/workflows/_validate-live-transfer-p0.yml \
             .github/workflows/_fast-finalize-live-transfer-p0.yml \
             .github/workflows/_tmp-live-transfer-finalize.yml \
-            .github/tmp/finalize_live_transfer.py
+            .github/tmp/finalize_live_transfer.py \
+            .github/tmp/privacy_hardening.py \
+            .github/tmp/LAST_FAILURE.txt
           git add \
             voice-agent/requirements.txt \
             voice-agent/requirements-ci.txt \
             voice-agent/requirements-windows.txt \
             voice-agent/src/orchestrator.py \
             voice-agent/tests/test_live_transfer_orchestrator.py \
+            src-tauri/src/http_bridge.rs \
             src-tauri/tests/integration_operatori.rs
           git diff --cached --check
           test -n "$(git diff --cached --name-only)"
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "7"
           git commit -m "fix(voice): close live-transfer P0 validation gaps"
           git push \
             --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" \
