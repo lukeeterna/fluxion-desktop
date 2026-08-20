@@ -1,0 +1,83 @@
+name: SOL-000021 Evidence Bridge
+
+on:
+  push:
+    branches:
+      - evidence/sol-000021-bridge
+    paths:
+      - '.github/workflows/sol-000021-evidence-bridge.yml'
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/sol-000021-evidence-bridge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  export-evidence:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: 'true'
+    steps:
+      - name: Locate exact SOL-000021 packet by digest
+        id: locate
+        shell: bash
+        env:
+          PACKET_NAME: result-WORKFLOW.WRITE-LANE.GENERIC-INSTALL.STALL-DIAG.20260810.zip
+          EXPECTED_SHA256: 989da331dc67138c66377371aa15c1ddc956c677732b52cf9d868b0a9b7d6ea1
+        run: |
+          set -euo pipefail
+          ROOT="$HOME/.local/share/fluxion-draft-bus"
+          OUT="$RUNNER_TEMP/sol000021-evidence"
+          MATCHES="$RUNNER_TEMP/sol000021-matches.txt"
+          mkdir -p "$OUT"
+          : > "$MATCHES"
+
+          find "$ROOT" -type f -name "$PACKET_NAME" -print 2>/dev/null | while IFS= read -r p; do
+            actual="$(shasum -a 256 "$p" | awk '{print $1}')"
+            if [ "$actual" = "$EXPECTED_SHA256" ]; then
+              printf '%s\n' "$p" >> "$MATCHES"
+            fi
+          done
+
+          count="$(wc -l < "$MATCHES" | tr -d ' ')"
+          [ "$count" = "1" ] || { echo "BLOCKED: expected exactly one digest-matching packet; found=$count" >&2; exit 2; }
+          source_path="$(sed -n '1p' "$MATCHES")"
+          cp -p "$source_path" "$OUT/$PACKET_NAME"
+          copied_sha="$(shasum -a 256 "$OUT/$PACKET_NAME" | awk '{print $1}')"
+          [ "$copied_sha" = "$EXPECTED_SHA256" ] || { echo "BLOCKED: copied packet SHA mismatch" >&2; exit 2; }
+
+          {
+            printf 'task_id=WORKFLOW.WRITE-LANE.GENERIC-INSTALL.STALL-DIAG.20260810\n'
+            printf 'packet_name=%s\n' "$PACKET_NAME"
+            printf 'packet_sha256=%s\n' "$copied_sha"
+            printf 'source_match_count=%s\n' "$count"
+            printf 'transport=github-actions-artifact\n'
+            printf 'mutation_scope=runner_temp_only\n'
+          } > "$OUT/MANIFEST.txt"
+
+          printf 'packet_path=%s\n' "$OUT/$PACKET_NAME" >> "$GITHUB_OUTPUT"
+          printf 'manifest_path=%s\n' "$OUT/MANIFEST.txt" >> "$GITHUB_OUTPUT"
+
+      - name: Upload exact packet as GitHub artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: sol-000021-evidence-989da331dc67
+          path: |
+            ${{ steps.locate.outputs.packet_path }}
+            ${{ steps.locate.outputs.manifest_path }}
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Report artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'ARTIFACT_ID=%s\n' '${{ steps.upload.outputs.artifact-id }}'
+          printf 'ARTIFACT_DIGEST=%s\n' '${{ steps.upload.outputs.artifact-digest }}'
+          printf 'PACKET_SHA256=%s\n' '989da331dc67138c66377371aa15c1ddc956c677732b52cf9d868b0a9b7d6ea1'
