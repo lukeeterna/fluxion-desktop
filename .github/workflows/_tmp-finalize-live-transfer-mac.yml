@@ -1,0 +1,111 @@
+name: Finalize live-transfer P0 clean candidate
+
+on:
+  push:
+    branches: [tmp/live-transfer-finalize-mac-20260819]
+    paths: [.github/workflows/_tmp-finalize-live-transfer-mac.yml]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-live-transfer-p0-clean
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/live-transfer-finalize-mac-20260819
+          fetch-depth: 50
+
+      - name: Freeze patcher and restore exact product parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .github/tmp/finalize_live_transfer_mac.py /tmp/finalize_live_transfer_mac.py
+          git reset --hard 9177ab1048ef1dd2f8ab69b12b7465d8e1519be3
+          test "$(git rev-parse HEAD)" = "9177ab1048ef1dd2f8ab69b12b7465d8e1519be3"
+          python3 /tmp/finalize_live_transfer_mac.py
+          rustfmt --edition 2021 src-tauri/src/http_bridge.rs src-tauri/tests/integration_operatori.rs
+          python3 -m py_compile voice-agent/src/orchestrator.py voice-agent/src/voip_goengine.py voice-agent/src/voip_pjsua2.py
+          git diff --check
+
+      - name: Install official Tauri Linux prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev \
+            libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Python 3.13 targeted regression gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -q -r voice-agent/requirements-ci.txt
+          PYTHONPATH=voice-agent python -m pytest \
+            voice-agent/tests/test_live_transfer_goengine.py \
+            voice-agent/tests/test_live_transfer_pjsua2.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            voice-agent/tests/test_nlu_fsm_bypass.py -q
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: voice-agent/engine/go.mod
+          cache-dependency-path: voice-agent/engine/go.sum
+
+      - name: Go B2BUA gate
+        working-directory: voice-agent/engine
+        shell: bash
+        run: go test ./...
+
+      - name: Rust routing and encrypted operator policy gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo check --manifest-path src-tauri/Cargo.toml
+          cargo test --manifest-path src-tauri/Cargo.toml --test integration_operatori -- --nocapture
+
+      - name: TypeScript gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx tsc --noEmit
+
+      - name: Build exact-parent clean candidate and publish PR head
+        shell: bash
+        env:
+          TARGET_BRANCH: agent/sara-live-transfer-p0-v2
+          EXPECTED_TARGET_HEAD: 7a9301329792b5bacecfb48e5dffab39e8f97faa
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            voice-agent/requirements.txt \
+            voice-agent/requirements-ci.txt \
+            voice-agent/requirements-windows.txt \
+            voice-agent/src/orchestrator.py \
+            voice-agent/tests/test_live_transfer_orchestrator.py \
+            src-tauri/src/http_bridge.rs \
+            src-tauri/tests/integration_operatori.rs
+          git diff --cached --check
+          test -n "$(git diff --cached --name-only)"
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = "7"
+          git commit -m "fix(voice): close live-transfer P0 production gaps"
+          CANDIDATE_SHA="$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD^)" = "9177ab1048ef1dd2f8ab69b12b7465d8e1519be3"
+          git push \
+            --force-with-lease="refs/heads/$TARGET_BRANCH:$EXPECTED_TARGET_HEAD" \
+            origin "HEAD:refs/heads/$TARGET_BRANCH"
+          echo "LIVE_TRANSFER_CANDIDATE_SHA=$CANDIDATE_SHA"
