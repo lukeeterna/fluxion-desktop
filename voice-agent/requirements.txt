@@ -26,6 +26,7 @@ onnxruntime>=1.16.0         # Silero VAD ONNX runtime
 numpy>=1.24.0               # Audio buffer manipulation
 
 # ── Audio ────────────────────────────────────────────────────────────
+audioop-lts>=0.2.2; python_version >= "3.13"
 sounddevice>=0.4.6          # Microphone input
 soundfile>=0.12.1           # WAV file I/O
 

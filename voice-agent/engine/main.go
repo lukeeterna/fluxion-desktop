@@ -8,15 +8,16 @@
 // Credenziali SOLO da env VOIP_SIP_USER / VOIP_SIP_PASS / VOIP_SIP_SERVER (mai in argv).
 //
 // PROTOCOLLO PONTE TCP (framed): frame = tipo(1B) + len(2B big-endian) + payload(len B).
-//   L'engine è CLIENT, si connette a -bridge (default 127.0.0.1:8300).
-//   Engine → Python:
-//     0x01 STATUS     payload = JSON stato SIP (registered, reg_status, ...)
-//     0x02 CALL_START payload = caller id (stringa UTF-8); emesso SOLO a media ATTIVO
-//     0x03 AUDIO_RX   payload = 320 byte = 20ms PCM16/8000Hz/mono (little-endian)
-//     0x04 CALL_END   payload = vuoto
-//   Python → Engine:
-//     0x10 AUDIO_TX   payload = 320 byte PCM16/8000Hz/mono (little-endian)
-//     0x11 HANGUP     payload = vuoto
+//
+//	L'engine è CLIENT, si connette a -bridge (default 127.0.0.1:8300).
+//	Engine → Python:
+//	  0x01 STATUS     payload = JSON stato SIP (registered, reg_status, ...)
+//	  0x02 CALL_START payload = caller id (stringa UTF-8); emesso SOLO a media ATTIVO
+//	  0x03 AUDIO_RX   payload = 320 byte = 20ms PCM16/8000Hz/mono (little-endian)
+//	  0x04 CALL_END   payload = vuoto
+//	Python → Engine:
+//	  0x10 AUDIO_TX   payload = 320 byte PCM16/8000Hz/mono (little-endian)
+//	  0x11 HANGUP     payload = vuoto
 //
 // PACING & BARGE-IN: la riproduzione RTP verso il chiamante è cadenzata dall'engine
 // (clock RTP proprio, 20ms). Python invia AUDIO_TX appena ha audio, senza pacing.
@@ -38,6 +39,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -50,12 +52,14 @@ import (
 
 // Tipi di frame del ponte TCP.
 const (
-	frameSTATUS    byte = 0x01
-	frameCALLSTART byte = 0x02
-	frameAUDIORX   byte = 0x03
-	frameCALLEND   byte = 0x04
-	frameAUDIOTX   byte = 0x10
-	frameHANGUP    byte = 0x11
+	frameSTATUS         byte = 0x01
+	frameCALLSTART      byte = 0x02
+	frameAUDIORX        byte = 0x03
+	frameCALLEND        byte = 0x04
+	frameTRANSFERSTATUS byte = 0x05
+	frameAUDIOTX        byte = 0x10
+	frameHANGUP         byte = 0x11
+	frameTRANSFER       byte = 0x12
 )
 
 const (
@@ -171,7 +175,7 @@ func run(ctx context.Context, user, pass, server string) error {
 		serveErr := tu.Serve(ctx, func(inDialog *diago.DialogServerSession) {
 			caller := inDialog.InviteRequest.Source()
 			slog.Info("INBOUND INVITE", "from", caller, "callid", inDialog.InviteRequest.CallID().Value())
-			if err := handleCall(ctx, inDialog, caller, br); err != nil && !errors.Is(err, io.EOF) {
+			if err := handleCall(ctx, inDialog, caller, br, tu, server, user, pass); err != nil && !errors.Is(err, io.EOF) {
 				slog.Error("errore handler chiamata", "error", err)
 			}
 		})
@@ -220,7 +224,7 @@ func statusJSON(reg bool, code int, user, server string) []byte {
 // handleCall gestisce una chiamata: answer, negozia media, poi FA IL PONTE audio
 // tra RTP (G.711) e il ponte TCP (PCM16/8k). fix #2: CALL_START verso Python SOLO
 // quando il media è ATTIVO (dopo che AudioReader/Writer sono pronti).
-func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge) error {
+func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string, br *bridge, dg *diago.Diago, sipServer, sipUser, sipPass string) error {
 	d.Trying()
 	d.Ringing()
 	if err := d.Answer(); err != nil {
@@ -256,17 +260,20 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 
 	callCtx, cancelCall := context.WithCancel(ctx)
 	defer cancelCall()
+	mediaCtx, cancelMedia := context.WithCancel(callCtx)
 
-	// Registra questa chiamata come attiva sul ponte (per HANGUP da Python + AUDIO_TX).
-	call := br.attachCall(cancelCall)
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	// Registra questa chiamata come attiva sul ponte. cancelMedia ferma soltanto Sara RTP;
+	// cancelCall termina l'intera chiamata. Il transfer B2BUA usa questa separazione per
+	// cedere il media all'operatore senza abbattere la gamba del chiamante.
+	call := br.attachCall(cancelCall, cancelMedia, wg.Wait, d, dg, sipServer, sipUser, sipPass)
 	defer br.detachCall()
 
 	// fix #2: media ATTIVO → emetti CALL_START.
 	br.sendFrame(frameCALLSTART, []byte(caller))
 	slog.Info("CALL_START emesso (media attivo)", "caller", caller)
-
-	var wg sync.WaitGroup
-	wg.Add(2)
 
 	// RX: RTP(G.711)→PCM16 → ponte TCP AUDIO_RX (in frame da 320B).
 	go func() {
@@ -275,7 +282,7 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		var carry []byte
 		for {
 			select {
-			case <-callCtx.Done():
+			case <-mediaCtx.Done():
 				return
 			default:
 			}
@@ -307,7 +314,7 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 		lastLog := time.Now()
 		for {
 			select {
-			case <-callCtx.Done():
+			case <-mediaCtx.Done():
 				return
 			case <-ticker.C:
 				frame := call.popTX()
@@ -336,8 +343,9 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 	}()
 
 	<-callCtx.Done()
-	_ = d.Hangup(context.Background())
+	cancelMedia()
 	wg.Wait()
+	_ = d.Hangup(context.Background())
 	br.sendFrame(frameCALLEND, nil)
 	slog.Info("CALL_END emesso")
 	return nil
@@ -348,15 +356,25 @@ func handleCall(ctx context.Context, d *diago.DialogServerSession, caller string
 // ---------------------------------------------------------------------------
 
 type activeCall struct {
-	mu       sync.Mutex
-	txBuf    [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)
-	cancel   context.CancelFunc
+	mu          sync.Mutex
+	txBuf       [][]byte // buffer TX, cappato a txCapFrames (barge-in scarta i più vecchi)
+	cancel      context.CancelFunc
+	cancelMedia context.CancelFunc
+	waitMedia   func()
+	dialog      *diago.DialogServerSession
+	dg          *diago.Diago
+	sipServer   string
+	sipUser     string
+	sipPass     string
+
+	transferMu   sync.Mutex
+	transferring bool
 	// GATE2R metriche (atomiche): AUDIO_TX ricevuti da socket, pushTX accettati/scartati.
-	mRxTx      int64 // AUDIO_TX ricevuti dal ponte
-	mPushAcc   int64 // pushTX accettati (entrati nel buffer)
-	mPushDrop  int64 // pushTX scartati dal cap txCapFrames
-	mRtpVoice  int64 // frame RTP scritti NON-silenzio
-	mRtpSil    int64 // frame RTP scritti silenzio
+	mRxTx     int64 // AUDIO_TX ricevuti dal ponte
+	mPushAcc  int64 // pushTX accettati (entrati nel buffer)
+	mPushDrop int64 // pushTX scartati dal cap txCapFrames
+	mRtpVoice int64 // frame RTP scritti NON-silenzio
+	mRtpSil   int64 // frame RTP scritti silenzio
 }
 
 func (c *activeCall) pushTX(frame []byte) {
@@ -401,8 +419,11 @@ type bridge struct {
 
 func newBridge(addr string) *bridge { return &bridge{addr: addr} }
 
-func (b *bridge) attachCall(cancel context.CancelFunc) *activeCall {
-	c := &activeCall{cancel: cancel}
+func (b *bridge) attachCall(cancel context.CancelFunc, cancelMedia context.CancelFunc, waitMedia func(), dialog *diago.DialogServerSession, dg *diago.Diago, sipServer, sipUser, sipPass string) *activeCall {
+	c := &activeCall{
+		cancel: cancel, cancelMedia: cancelMedia, waitMedia: waitMedia, dialog: dialog, dg: dg,
+		sipServer: sipServer, sipUser: sipUser, sipPass: sipPass,
+	}
 	b.mu.Lock()
 	b.call = c
 	b.mu.Unlock()
@@ -492,9 +513,179 @@ func (b *bridge) readFrames(ctx context.Context, conn net.Conn) {
 					c.cancel()
 				}
 			}
+		case frameTRANSFER:
+			b.mu.Lock()
+			c := b.call
+			b.mu.Unlock()
+			if c == nil {
+				b.sendTransferStatus("no_route", 0, "no active call")
+				continue
+			}
+			// REFER can wait for NOTIFY: never block the bridge reader.
+			go c.beginTransfer(string(payload), b)
 		default:
 			slog.Warn("frame Python ignoto", "type", typ, "len", n)
 		}
+	}
+}
+
+type transferStatus struct {
+	Status string `json:"status"`
+	Code   int    `json:"code,omitempty"`
+	Detail string `json:"detail,omitempty"`
+}
+
+func (b *bridge) sendTransferStatus(status string, code int, detail string) {
+	payload, _ := json.Marshal(transferStatus{Status: status, Code: code, Detail: detail})
+	b.sendFrame(frameTRANSFERSTATUS, payload)
+}
+
+// normalizeTransferDestination accepts phone-like values loaded from trusted FLUXION
+// configuration only. SIP URIs, domains, headers and arbitrary caller-controlled text
+// are rejected. The SIP domain is always supplied separately by VOIP_SIP_SERVER.
+func normalizeTransferDestination(raw string) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", errors.New("empty transfer destination")
+	}
+	var digits strings.Builder
+	for _, r := range raw {
+		switch {
+		case r >= '0' && r <= '9':
+			digits.WriteRune(r)
+		case r == '+' || r == ' ' || r == '-' || r == '(' || r == ')' || r == '.' || r == '/':
+			// Formatting characters only.
+		default:
+			return "", fmt.Errorf("invalid transfer destination character %q", r)
+		}
+	}
+	out := digits.String()
+	if len(out) < 6 || len(out) > 15 {
+		return "", fmt.Errorf("invalid transfer destination length: %d", len(out))
+	}
+	return out, nil
+}
+
+func mapTransferStatus(code int) string {
+	switch {
+	case code >= 100 && code < 200:
+		return "progress"
+	case code >= 200 && code < 300:
+		return "answered"
+	case code == 486:
+		return "busy"
+	case code == 408 || code == 480:
+		return "no_answer"
+	case code == 404 || code == 484:
+		return "no_route"
+	default:
+		return "failed"
+	}
+}
+
+func (c *activeCall) beginTransfer(raw string, b *bridge) {
+	c.transferMu.Lock()
+	if c.transferring {
+		c.transferMu.Unlock()
+		b.sendTransferStatus("failed", 409, "transfer already in progress")
+		return
+	}
+	c.transferring = true
+	c.transferMu.Unlock()
+	defer func() {
+		c.transferMu.Lock()
+		c.transferring = false
+		c.transferMu.Unlock()
+	}()
+
+	destination, err := normalizeTransferDestination(raw)
+	if err != nil {
+		slog.Warn("TRANSFER destinazione rifiutata", "error", err)
+		b.sendTransferStatus("invalid", 0, "invalid trusted destination")
+		return
+	}
+	if c.dialog == nil || strings.TrimSpace(c.sipServer) == "" {
+		b.sendTransferStatus("no_route", 0, "missing active SIP dialog or server")
+		return
+	}
+
+	if c.dg == nil {
+		b.sendTransferStatus("no_route", 0, "missing SIP engine")
+		return
+	}
+
+	var recipient sip.Uri
+	if err := sip.ParseUri("sip:"+destination+"@"+c.sipServer, &recipient); err != nil {
+		b.sendTransferStatus("invalid", 0, "cannot build trusted SIP destination")
+		return
+	}
+
+	// A two-leg B2BUA bridge is authoritative for live transfer. Unlike REFER,
+	// InviteBridge returns only after the outbound operator leg has answered.
+	callBridge := diago.NewBridge()
+	callBridge.WaitDialogsNum = 3 // prevent automatic proxy until Sara has released RTP
+	if err := callBridge.AddDialogSession(c.dialog); err != nil {
+		b.sendTransferStatus("failed", 0, "cannot attach caller leg")
+		return
+	}
+
+	inviteCtx, cancelInvite := context.WithTimeout(context.Background(), 25*time.Second)
+	defer cancelInvite()
+	lastCode := 0
+	b.sendTransferStatus("trying", 0, "")
+	slog.Info("TRANSFER B2BUA outbound INVITE", "destination_digits", len(destination))
+
+	outDialog, err := c.dg.InviteBridge(inviteCtx, recipient, &callBridge, diago.InviteOptions{
+		Originator: c.dialog,
+		Username:   c.sipUser,
+		Password:   c.sipPass,
+		OnResponse: func(res *sip.Response) error {
+			if res == nil {
+				return nil
+			}
+			lastCode = res.StatusCode
+			status := mapTransferStatus(lastCode)
+			if status == "progress" || status == "answered" {
+				b.sendTransferStatus(status, lastCode, "")
+			}
+			return nil
+		},
+	})
+	if err != nil {
+		status := mapTransferStatus(lastCode)
+		if inviteCtx.Err() != nil {
+			status, lastCode = "no_answer", 408
+		} else if status == "progress" || status == "answered" {
+			status = "failed"
+		}
+		b.sendTransferStatus(status, lastCode, "outbound operator leg not connected")
+		slog.Warn("TRANSFER B2BUA INVITE fallito", "status", status, "sip_status", lastCode, "error", err)
+		return
+	}
+	defer func() {
+		_ = outDialog.Hangup(context.Background())
+		_ = outDialog.Close()
+	}()
+
+	// Operator answered. Stop Sara media before proxying the same inbound dialog.
+	// StopRTP unblocks any reader/writer currently owned by Sara; waitMedia closes
+	// the handoff race before Bridge.ProxyMedia takes ownership of both RTP streams.
+	c.clearTX()
+	if c.cancelMedia != nil {
+		c.cancelMedia()
+	}
+	_ = c.dialog.Media().StopRTP(2, 0)
+	if c.waitMedia != nil {
+		c.waitMedia()
+	}
+
+	b.sendTransferStatus("connected", 200, "operator leg answered; media bridge active")
+	slog.Info("TRANSFER CONNECTED — B2BUA media proxy")
+	if err := callBridge.ProxyMedia(); err != nil && !errors.Is(err, io.EOF) {
+		slog.Warn("TRANSFER media proxy terminato", "error", err)
+	}
+	if c.cancel != nil {
+		c.cancel()
 	}
 }
 
