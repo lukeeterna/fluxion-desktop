@@ -1556,9 +1556,15 @@ async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> imp
     .unwrap_or_default();
     let business_open = !holiday && transfer_schedule_open(&global_hours, &hhmm);
 
-    let owner_phone = get_setting(pool.inner(), "telefono_titolare")
-        .await
-        .unwrap_or_default();
+    let owner_phone = sqlx::query_scalar::<_, String>(
+        "SELECT COALESCE(valore, '') FROM impostazioni WHERE chiave = ? LIMIT 1",
+    )
+    .bind("telefono_titolare")
+    .fetch_optional(pool.inner())
+    .await
+    .ok()
+    .flatten()
+    .unwrap_or_default();
     let general_transfer_phone = sqlx::query_scalar::<_, String>(
         "SELECT COALESCE(numero_trasferimento, '') FROM voice_agent_config LIMIT 1",
     )
@@ -1568,20 +1574,24 @@ async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> imp
     .flatten()
     .unwrap_or_default();
 
-    let owner_fallback = normalize_transfer_phone(&owner_phone);
+    // `telefono_titolare` is a private notification contact, never a caller-facing
+    // transfer destination. A live owner leg must come from an explicit `operatori`
+    // admin record with voice_transfer_enabled + voice_transfer_reachable.
+    let owner_notification = normalize_transfer_phone(&owner_phone);
     let general_fallback = normalize_transfer_phone(&general_transfer_phone);
-    let (fallback_phone, fallback_source) = if let Some(phone) = owner_fallback.clone() {
-        (
-            Some(phone),
-            Some("impostazioni.telefono_titolare".to_string()),
-        )
-    } else if let Some(phone) = general_fallback.clone() {
-        (
-            Some(phone),
-            Some("voice_agent_config.numero_trasferimento".to_string()),
-        )
+    let fallback_phone = general_fallback.clone();
+    let fallback_source = fallback_phone
+        .as_ref()
+        .map(|_| "voice_agent_config.numero_trasferimento".to_string());
+    let notification_phone = owner_notification
+        .clone()
+        .or_else(|| general_fallback.clone());
+    let notification_source = if owner_notification.is_some() {
+        Some("impostazioni.telefono_titolare".to_string())
+    } else if general_fallback.is_some() {
+        Some("voice_agent_config.numero_trasferimento".to_string())
     } else {
-        (None, None)
+        None
     };
 
     let mut routes: Vec<Value> = Vec::new();
@@ -1645,19 +1655,9 @@ async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> imp
             }
         }
 
-        // Owner fallback precedes the general transfer number. Both are explicit
-        // business settings, never caller-supplied destinations.
-        if let Some(phone) = owner_fallback {
-            if !seen.contains(&phone) {
-                seen.push(phone.clone());
-                routes.push(json!({
-                    "phone": phone,
-                    "source": "impostazioni.telefono_titolare",
-                    "role": "owner",
-                    "priority": 10000,
-                }));
-            }
-        }
+        // The general transfer number is an explicit public business route.
+        // `telefono_titolare` is intentionally excluded here: owner live transfer
+        // is allowed only through an opted-in/reachable admin operator row above.
         if let Some(phone) = general_fallback {
             if !seen.contains(&phone) {
                 routes.push(json!({
@@ -1677,6 +1677,8 @@ async fn handle_voice_escalation_routes(State(state): State<BridgeState>) -> imp
         "routes": routes,
         "fallback_phone": fallback_phone,
         "fallback_source": fallback_source,
+        "notification_phone": notification_phone,
+        "notification_source": notification_source,
               })),
     )
 }
