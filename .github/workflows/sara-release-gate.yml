@@ -1,17 +1,11 @@
 name: Sara Release Gate (Full)
 
-# S207 — Release gate REALE completo (Opzione B).
-# Esegue test_sara_stress_per_verticale.py su tutti i verticali + DB integrity
-# usando self-hosted GitHub Actions runner su MacBook (zero-cost, outbound only).
-# Il runner chiama orchestrator VOS che a sua volta SSH-a iMac e gira la pipeline live 3002.
-#
-# IMPORTANT: this runner is intentionally shell-only. Its legacy macOS/libc++ cannot
-# execute the Node 24 runtime now used by JavaScript-based GitHub Actions such as
-# actions/checkout and actions/upload-artifact. The canonical T7 checkout already
-# exists locally, so the gate fetches and checks out the exact candidate SHA with
-# system git and emits evidence directly into the immutable Actions job log.
-#
-# Setup runner una tantum (founder): vedi venture-os/docs/SETUP-SELFHOSTED-RUNNER.md
+# Exact-SHA behavioral/latency certification on the legacy shell-only MacBook
+# runner and the iMac runtime host. No JavaScript Actions are used on this job.
+# The canonical MacBook and iMac worktrees are never checked out/reset/cleaned.
+# Each run gets detached temporary worktrees and the iMac candidate runs on a
+# separate localhost port with SIP/WhatsApp side effects disabled. Live EHIWEB
+# SIP certification remains a separate production gate.
 
 on:
   pull_request:
@@ -36,113 +30,110 @@ on:
         default: false
         type: boolean
 
+# The iMac is a shared physical certification resource. Serialize globally so
+# two PRs can never race on the candidate port or shared DB.
 concurrency:
-  group: sara-release-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: sara-release-gate-imac
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   sara-gate:
-    name: Sara Gate (self-hosted MacBook → iMac pipeline)
+    name: Sara exact-SHA HTTP gate (MacBook → iMac)
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     env:
       FLUXION_CANONICAL_ROOT: /Volumes/MontereyT7/FLUXION
       TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       TARGET_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      P95_SLO_MS: '2000'
 
     steps:
-      - name: Pre-flight — canonical repo + exact clean candidate
+      - name: Pre-flight immutable local candidate worktree
         run: |
           set -euo pipefail
-
           ROOT="$FLUXION_CANONICAL_ROOT"
-          if [ ! -d "$ROOT/.git" ]; then
-            echo "::error::Repo canonico mancante — $ROOT"
-            exit 2
-          fi
-          if [ ! -x "$ROOT/scripts/sara-release-gate.sh" ]; then
-            echo "::error::scripts/sara-release-gate.sh non eseguibile"
-            exit 2
-          fi
-          if [ ! -f "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py" ]; then
-            echo "::error::VOS orchestrator mancante — installa venture-os/components/sara-gate-orchestrator/"
-            exit 2
-          fi
+          [ -d "$ROOT/.git" ] || { echo "::error::Repo canonico mancante: $ROOT"; exit 2; }
 
-          cd "$ROOT"
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::Repo canonico dirty: il gate rifiuta checkout distruttivi"
-            git status --short
+          # Fetch refs only; never mutate the canonical worktree, even if it is dirty.
+          git -C "$ROOT" fetch origin --quiet "$TARGET_REF" || git -C "$ROOT" fetch origin --quiet
+          git -C "$ROOT" cat-file -e "$TARGET_SHA^{commit}" 2>/dev/null || {
+            echo "::error::TARGET_SHA non disponibile: $TARGET_SHA"
             exit 2
-          fi
+          }
 
-          # Pull-request github.sha is a synthetic merge commit. The release gate
-          # must certify the immutable PR HEAD itself, so TARGET_SHA is explicitly
-          # github.event.pull_request.head.sha on PR events.
-          git fetch origin --quiet "$TARGET_REF" || git fetch origin --quiet
-          if ! git cat-file -e "$TARGET_SHA^{commit}" 2>/dev/null; then
-            echo "::error::TARGET_SHA non disponibile dopo fetch: $TARGET_SHA"
-            exit 2
-          fi
-          git checkout --detach --quiet "$TARGET_SHA"
+          BASE_TMP="${RUNNER_TEMP:-/tmp}"
+          CANDIDATE_ROOT="$BASE_TMP/fluxion-sara-gate-${GITHUB_RUN_ID}"
+          REPORT_DIR="$BASE_TMP/fluxion-sara-gate-reports-${GITHUB_RUN_ID}"
+          [ ! -e "$CANDIDATE_ROOT" ] || { echo "::error::candidate path già esistente"; exit 2; }
+          mkdir -p "$REPORT_DIR"
 
-          ACTUAL_SHA="$(git rev-parse HEAD)"
-          if [ "$ACTUAL_SHA" != "$TARGET_SHA" ]; then
+          git -C "$ROOT" worktree add --detach --quiet "$CANDIDATE_ROOT" "$TARGET_SHA"
+          ACTUAL_SHA="$(git -C "$CANDIDATE_ROOT" rev-parse HEAD)"
+          [ "$ACTUAL_SHA" = "$TARGET_SHA" ] || {
             echo "::error::Exact-SHA mismatch expected=$TARGET_SHA actual=$ACTUAL_SHA"
             exit 2
-          fi
+          }
+          [ -z "$(git -C "$CANDIDATE_ROOT" status --porcelain)" ] || {
+            echo "::error::Temporary candidate worktree dirty before execution"
+            git -C "$CANDIDATE_ROOT" status --short
+            exit 2
+          }
+          [ -x "$CANDIDATE_ROOT/scripts/sara-release-gate.sh" ] || {
+            echo "::error::candidate scripts/sara-release-gate.sh non eseguibile"
+            exit 2
+          }
+          python3 -m py_compile "$CANDIDATE_ROOT/voice-agent/tests/e2e/cert_server.py"
 
+          echo "CANDIDATE_ROOT=$CANDIDATE_ROOT" >> "$GITHUB_ENV"
+          echo "REPORT_DIR=$REPORT_DIR" >> "$GITHUB_ENV"
           echo "SARA_GATE_EXACT_SHA=$ACTUAL_SHA"
-          echo "SARA_GATE_TARGET_REF=$TARGET_REF"
+          echo "CANONICAL_HEAD=$(git -C "$ROOT" rev-parse HEAD)"
+          echo "CANONICAL_DIRTY_COUNT=$(git -C "$ROOT" status --porcelain | wc -l | tr -d ' ')"
           echo "SARA_GATE_PREFLIGHT=PASS"
 
-      - name: Build orchestrator args
-        id: args
+      - name: Run exact-SHA iMac certification
         env:
           TIER: ${{ inputs.tier || '3' }}
           SKIP_EXTENDED: ${{ inputs.skip_extended || 'false' }}
         run: |
           set -euo pipefail
-          ARGS=""
+          [ "$(git -C "$CANDIDATE_ROOT" rev-parse HEAD)" = "$TARGET_SHA" ]
+          [ -z "$(git -C "$CANDIDATE_ROOT" status --porcelain)" ]
+
+          ARGS=()
           if [ "$TIER" = "1" ]; then
-            ARGS="$ARGS --tier=1"
+            ARGS+=("--tier=1")
           elif [ "$TIER" = "2" ]; then
-            ARGS="$ARGS --tier=2"
+            ARGS+=("--tier=2")
           fi
           if [ "$SKIP_EXTENDED" = "true" ]; then
-            ARGS="$ARGS --skip-extended"
+            ARGS+=("--skip-extended")
           fi
-          echo "args=$ARGS" >> "$GITHUB_OUTPUT"
-          echo "Args calcolati: '$ARGS'"
 
-      - name: Run Sara Gate via VOS orchestrator
-        env:
-          SARA_GATE_ARGS: ${{ steps.args.outputs.args }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_SHA: ${{ env.TARGET_SHA }}
-          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          set -euo pipefail
-          cd "$FLUXION_CANONICAL_ROOT"
-          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
-          python3 "$HOME/venture-os/components/sara-gate-orchestrator/orchestrator.py"
+          FLUXION_TARGET_SHA="$TARGET_SHA" \
+          FLUXION_CERT_RUN_ID="$GITHUB_RUN_ID" \
+          FLUXION_REPORT_DIR="$REPORT_DIR" \
+          FLUXION_P95_SLO_MS="$P95_SLO_MS" \
+            "$CANDIDATE_ROOT/scripts/sara-release-gate.sh" "${ARGS[@]}"
 
-      - name: Emit release-gate evidence to Actions log
+      - name: Emit immutable release-gate evidence
         if: always()
         run: |
           set +e
-          ROOT="$FLUXION_CANONICAL_ROOT"
-          echo "=== SARA GATE EVIDENCE ==="
+          echo "=== SARA EXACT-SHA GATE EVIDENCE ==="
           echo "expected_sha=$TARGET_SHA"
-          if [ -d "$ROOT/.git" ]; then
-            echo "actual_sha=$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unavailable)"
+          if [ -n "${CANDIDATE_ROOT:-}" ] && [ -d "$CANDIDATE_ROOT" ]; then
+            echo "candidate_sha=$(git -C "$CANDIDATE_ROOT" rev-parse HEAD 2>/dev/null || echo unavailable)"
+            echo "candidate_dirty_count=$(git -C "$CANDIDATE_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
           fi
+          echo "canonical_sha=$(git -C "$FLUXION_CANONICAL_ROOT" rev-parse HEAD 2>/dev/null || echo unavailable)"
+          echo "canonical_dirty_count=$(git -C "$FLUXION_CANONICAL_ROOT" status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
 
-          REPORT="$(ls -1t "$ROOT"/docs/launch/sara-release-gate-reports/release-gate-*.json 2>/dev/null | head -1)"
+          REPORT="$(ls -1t "${REPORT_DIR:-/nonexistent}"/release-gate-*.json 2>/dev/null | head -1)"
           if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
             echo "report=$REPORT"
             shasum -a 256 "$REPORT" || true
@@ -150,7 +141,17 @@ jobs:
           else
             echo "report=NONE"
           fi
-
-          echo "=== VOS LAST RUN ==="
-          tail -1 "$HOME/venture-os/state/sara-gate-runs.jsonl" 2>/dev/null || echo '{}'
           echo "=== END EVIDENCE ==="
+
+      - name: Cleanup temporary MacBook worktree
+        if: always()
+        run: |
+          set +e
+          if [ -n "${CANDIDATE_ROOT:-}" ] && [ -d "$CANDIDATE_ROOT" ]; then
+            git -C "$FLUXION_CANONICAL_ROOT" worktree remove --force "$CANDIDATE_ROOT"
+          fi
+          git -C "$FLUXION_CANONICAL_ROOT" worktree prune
+          if [ -n "${REPORT_DIR:-}" ] && [ -d "$REPORT_DIR" ]; then
+            rm -rf "$REPORT_DIR"
+          fi
+          echo "SARA_GATE_CLEANUP=DONE"
