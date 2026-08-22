@@ -66,6 +66,24 @@ def _drive_to_confirming(reference: datetime):
     return sm, accepted_date
 
 
+def _distinct_valid_date_phrase(reference: datetime, accepted_date: str):
+    """Pick an in-horizon relative date that cannot alias the accepted date.
+
+    Calendar-relative phrases can collide (for example, on a Saturday both
+    ``lunedi prossimo`` and ``dopodomani`` resolve to Monday).  The invariant
+    under test is stale-date replacement, not the wording of the second date,
+    so choose the first canonical relative phrase that resolves differently.
+    """
+    for phrase in ("domani", "dopodomani", "tra 3 giorni", "tra 4 giorni"):
+        parsed = extract_date(phrase, reference)
+        if parsed is None:
+            continue
+        iso_date = parsed.to_string("%Y-%m-%d")
+        if iso_date != accepted_date:
+            return phrase, iso_date
+    raise AssertionError("could not derive a distinct in-horizon date phrase")
+
+
 class _StubGroqNLU:
     """Minimal groq_nlu stand-in exposing only extract_confirming()."""
 
@@ -137,8 +155,8 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
         assert sm.context.date is None, "stale date must be cleared on rejected correction"
         assert sm.context.date_display is None
 
-        expected_new_iso = extract_date("dopodomani", reference).to_string("%Y-%m-%d")
-        result = sm.process_message("dopodomani")
+        phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)
+        result = sm.process_message(phrase)
 
         assert sm.context.date == expected_new_iso
         assert sm.context.date != accepted_date
@@ -154,8 +172,8 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
         assert sm.context.date is None, "stale date must be cleared on rejected correction"
         assert sm.context.date_display is None
 
-        expected_new_iso = extract_date("dopodomani", reference).to_string("%Y-%m-%d")
-        result = sm.process_message("dopodomani")
+        phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)
+        result = sm.process_message(phrase)
 
         assert sm.context.date == expected_new_iso
         assert sm.context.date != accepted_date
@@ -172,8 +190,8 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
         assert sm.context.date is None, "stale date must be cleared on rejected correction"
         assert sm.context.date_display is None
 
-        expected_new_iso = extract_date("dopodomani", reference).to_string("%Y-%m-%d")
-        result = sm.process_message("dopodomani")
+        phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)
+        result = sm.process_message(phrase)
 
         assert sm.context.date == expected_new_iso
         assert sm.context.date != accepted_date
