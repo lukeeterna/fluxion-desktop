@@ -55,7 +55,7 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
@@ -176,7 +176,7 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
@@ -222,7 +222,7 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
