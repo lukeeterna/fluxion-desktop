@@ -62,7 +62,7 @@ jobs:
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Smoke Tests
@@ -183,7 +183,7 @@ jobs:
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Visual Tests
@@ -229,7 +229,7 @@ jobs:
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Accessibility Tests

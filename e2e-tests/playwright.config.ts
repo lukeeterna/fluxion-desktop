@@ -147,7 +147,7 @@ export default defineConfig({
     command: 'npm run dev',
     cwd: path.join(__dirname, '..'), // Run from project root
     url: baseURL,
-    reuseExistingServer: !isCI,
+    reuseExistingServer: true,
     timeout: 30_000, // 30s for Vite startup
     stdout: 'pipe',
     stderr: 'pipe',
