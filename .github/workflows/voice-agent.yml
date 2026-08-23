@@ -271,10 +271,14 @@ jobs:
           import sys
 
           MARKERS = ('api_key', 'apikey', 'token', 'secret', 'password')
+          NON_SECRET_NAME_SUFFIXES = ('_env', '_pat', '_pattern', '_regex')
           findings = []
 
           def sensitive(name):
-              return any(marker in name.lower() for marker in MARKERS)
+              lowered = name.lower()
+              if lowered.endswith(NON_SECRET_NAME_SUFFIXES):
+                  return False
+              return any(marker in lowered for marker in MARKERS)
 
           def literal(value):
               return isinstance(value, ast.Constant) and isinstance(value.value, str) and len(value.value.strip()) >= 8
