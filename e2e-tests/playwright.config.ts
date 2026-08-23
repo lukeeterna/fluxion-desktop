@@ -14,6 +14,7 @@ import path from 'path';
 // Environment detection
 const isCI = !!process.env.CI;
 const baseURL = process.env.TAURI_DEV_URL || 'http://localhost:1420';
+const storageState = path.join(__dirname, '.auth/user.json');
 
 export default defineConfig({
   // =============================================================================
@@ -133,6 +134,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
+        storageState,
       },
       dependencies: ['setup'],
     },
