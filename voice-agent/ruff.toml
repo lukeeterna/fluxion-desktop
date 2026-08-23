@@ -1,0 +1,12 @@
+# Keep CI lint focused on FLUXION first-party Python.
+# The repository contains vendored environments, AppleDouble resource forks and
+# third-party snapshots under voice-agent that must not be linted as product code.
+extend-exclude = [
+  "._*",
+  "**/._*",
+  ".venv",
+  "venv",
+  "_venv",
+  "**/site-packages/**",
+  "TEN-Agent",
+]
