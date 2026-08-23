@@ -1,6 +1,11 @@
 # Keep CI lint focused on FLUXION first-party Python.
 # The repository contains vendored environments, AppleDouble resource forks and
 # third-party snapshots under voice-agent that must not be linted as product code.
+#
+# Ruff 0.16.0 expanded its implicit default rule set from 59 to 413 rules.  CI
+# installs the current Ruff release, so relying on implicit defaults made this
+# gate change semantics without a FLUXION code change.  Keep the established
+# pre-0.16 E/F policy explicit; rule-set upgrades must be deliberate migrations.
 extend-exclude = [
   "._*",
   "**/._*",
@@ -10,3 +15,6 @@ extend-exclude = [
   "**/site-packages/**",
   "TEN-Agent",
 ]
+
+[lint]
+select = ["E4", "E7", "E9", "F"]
