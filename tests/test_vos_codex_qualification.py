@@ -76,6 +76,8 @@ if args[:2] == ["login", "status"]:
     print("Logged in using ChatGPT")
     raise SystemExit(0)
 if args and args[0] == "exec" and len(args) > 1 and args[1] == "resume":
+    if "--skip-git-repo-check" not in args:
+        raise SystemExit(17)
     marker = state.read_text(encoding="utf-8").strip()
     print(json.dumps({"type":"thread.started","thread_id":sid}))
     print(json.dumps({"type":"turn.started"}))
