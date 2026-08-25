@@ -168,7 +168,7 @@ def run_capture(command: list[str], *, cwd: Path, stdout_path: Path, stderr_path
     return rc, time.monotonic() - started
 
 
-def login_status(codex: str, *, cwd: Path, timeout: int = 30) -> tuple[int, str]:
+def login_status(codex: str, *, cwd: Path, timeout: int = 90) -> tuple[int, str]:
     try:
         completed = subprocess.run(
             [codex, "login", "status"],
@@ -181,7 +181,6 @@ def login_status(codex: str, *, cwd: Path, timeout: int = 30) -> tuple[int, str]
         )
     except subprocess.TimeoutExpired as exc:
         raise QualificationError("codex login status timed out") from exc
-    # Status output is deliberately reduced to a boolean classification by caller.
     return completed.returncode, completed.stdout or ""
 
 
@@ -234,9 +233,6 @@ def qualify(*, codex: str, codex_home: Path, evidence: Path, model: str,
     )
     resume_jsonl = evidence / "exec-resume.jsonl"
     resume_stderr = evidence / "exec-resume.stderr"
-    # Resume runs in the same intentionally non-Git qualification workspace as
-    # the first turn. Codex requires the repo check to be skipped again here;
-    # otherwise a valid persisted thread can fail before the resume turn starts.
     resume_cmd = [
         codex, "exec", "resume", session_before, "--json",
         "--skip-git-repo-check", resume_prompt,
