@@ -21,6 +21,8 @@ jobs:
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 3
     env:
+      LC_ALL: C
+      LANG: C
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
       SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
       U1_SOURCE_SHA: 518e2a9dce0a95767fe787f312f3316733304e15
@@ -36,7 +38,7 @@ jobs:
           u1="$U1_SOURCE_SHA"
           kernel="$KERNEL_SHA"
 
-          echo '===== VOS MACBOOK READ-ONLY RECONCILIATION V2 ====='
+          echo '===== VOS MACBOOK READ-ONLY RECONCILIATION V3 ====='
           echo "RUNNER_OS=${RUNNER_OS:-unknown}"
           echo "FLUXION_ROOT=$root"
           echo "SPIKE_ROOT=$spike"
@@ -55,19 +57,30 @@ jobs:
           echo "LOCAL_HEAD=$head"
           echo "LOCAL_BRANCH=${branch:-DETACHED}"
 
-          tracked_clean=YES
-          git -C "$root" diff --quiet -- 2>/dev/null || tracked_clean=NO
-          git -C "$root" diff --cached --quiet -- 2>/dev/null || tracked_clean=NO
-          untracked_present=NO
-          if [ -n "$(git -C "$root" ls-files --others --exclude-standard 2>/dev/null | sed -n '1p')" ]; then
-            untracked_present=YES
-          fi
-          if [ "$tracked_clean" = YES ] && [ "$untracked_present" = NO ]; then
+          tracked_paths="$( { git -C "$root" diff --name-only -- 2>/dev/null; git -C "$root" diff --cached --name-only -- 2>/dev/null; } | sed '/^$/d' | sort -u )"
+          tracked_count="$(printf '%s\n' "$tracked_paths" | sed '/^$/d' | wc -l | tr -d ' ')"
+          untracked_count="$(git -C "$root" ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')"
+          echo "LOCAL_TRACKED_DIRTY_COUNT=$tracked_count"
+          echo "LOCAL_UNTRACKED_COUNT=$untracked_count"
+          if [ "$tracked_count" = 0 ] && [ "$untracked_count" = 0 ]; then
             echo 'LOCAL_WORKTREE_CLEAN=YES'
           else
             echo 'LOCAL_WORKTREE_CLEAN=NO'
           fi
-          echo "LOCAL_UNTRACKED_PRESENT=$untracked_present"
+
+          if [ "$tracked_count" -gt 0 ]; then
+            while IFS= read -r p; do
+              [ -n "$p" ] || continue
+              echo "TRACKED_DIRTY_PATH=$p"
+            done <<EOF
+          $tracked_paths
+          EOF
+          fi
+          if [ "$untracked_count" -gt 0 ]; then
+            echo 'UNTRACKED_PATH_NAMES_REDACTED=YES'
+          else
+            echo 'UNTRACKED_PATH_NAMES_REDACTED=NO'
+          fi
 
           origin_master="$(git -C "$root" rev-parse refs/remotes/origin/master 2>/dev/null || true)"
           echo "LOCAL_ORIGIN_MASTER=${origin_master:-MISSING}"
@@ -108,6 +121,40 @@ jobs:
           fi
           echo "MERGE_BASE=$merge_base"
           echo "BASELINE_RELATION=$relation"
+
+          if [ "$u1_present" = YES ]; then
+            echo "U1_SUBJECT=$(git -C "$root" show -s --format=%s "$u1" 2>/dev/null || true)"
+            echo "U1_PARENT_COUNT=$(git -C "$root" show -s --format=%P "$u1" 2>/dev/null | awk '{print NF}')"
+          fi
+          if [ "$kernel_present" = YES ]; then
+            echo "KERNEL_SUBJECT=$(git -C "$root" show -s --format=%s "$kernel" 2>/dev/null || true)"
+            echo "KERNEL_PARENT_COUNT=$(git -C "$root" show -s --format=%P "$kernel" 2>/dev/null | awk '{print NF}')"
+          fi
+          if [ -n "$merge_base" ] && [ "$merge_base" != NONE ]; then
+            echo "U1_COMMITS_AFTER_MERGE_BASE=$(git -C "$root" rev-list --count "$merge_base..$u1" 2>/dev/null || true)"
+            echo "KERNEL_COMMITS_AFTER_MERGE_BASE=$(git -C "$root" rev-list --count "$merge_base..$kernel" 2>/dev/null || true)"
+          fi
+
+          vos_paths='bin/vos_apply.py bin/vos_common.py bin/vos_machine.py bin/vos_plan.sh bin/vos_check.sh tests/test_vos_apply.py tests/test_vos_machine.py .github/workflows/fluxion-headless-executor.yml'
+          vos_equal=YES
+          if [ "$u1_present" = YES ] && [ "$kernel_present" = YES ]; then
+            for p in $vos_paths; do
+              u1_blob="$(git -C "$root" rev-parse "$u1:$p" 2>/dev/null || true)"
+              kernel_blob="$(git -C "$root" rev-parse "$kernel:$p" 2>/dev/null || true)"
+              if [ -z "$u1_blob" ] || [ -z "$kernel_blob" ]; then
+                echo "VOS_BLOB_COMPARE=$p:MISSING"
+                vos_equal=NO
+              elif [ "$u1_blob" = "$kernel_blob" ]; then
+                echo "VOS_BLOB_COMPARE=$p:EQUAL:$u1_blob"
+              else
+                echo "VOS_BLOB_COMPARE=$p:DIFF:U1=$u1_blob:KERNEL=$kernel_blob"
+                vos_equal=NO
+              fi
+            done
+          else
+            vos_equal=UNRESOLVED
+          fi
+          echo "KNOWN_VOS_BLOBS_IDENTICAL=$vos_equal"
 
           internal_kib="$(df -Pk / 2>/dev/null | awk 'NR==2 {print $4}')"
           if [ -n "$internal_kib" ]; then
@@ -150,4 +197,4 @@ jobs:
           echo 'CLEANUP_PERFORMED=NO'
           echo 'AUTH_ATTEMPTED=NO'
           echo 'RECONCILIATION_COMMANDS_BOUNDED=YES'
-          echo '===== END VOS MACBOOK READ-ONLY RECONCILIATION V2 ====='
+          echo '===== END VOS MACBOOK READ-ONLY RECONCILIATION V3 ====='
