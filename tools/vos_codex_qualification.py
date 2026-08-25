@@ -234,8 +234,12 @@ def qualify(*, codex: str, codex_home: Path, evidence: Path, model: str,
     )
     resume_jsonl = evidence / "exec-resume.jsonl"
     resume_stderr = evidence / "exec-resume.stderr"
+    # Resume runs in the same intentionally non-Git qualification workspace as
+    # the first turn. Codex requires the repo check to be skipped again here;
+    # otherwise a valid persisted thread can fail before the resume turn starts.
     resume_cmd = [
-        codex, "exec", "resume", session_before, "--json", resume_prompt,
+        codex, "exec", "resume", session_before, "--json",
+        "--skip-git-repo-check", resume_prompt,
     ]
     resume_rc, resume_elapsed = run_capture(
         resume_cmd, cwd=workspace, stdout_path=resume_jsonl, stderr_path=resume_stderr, timeout=timeout
