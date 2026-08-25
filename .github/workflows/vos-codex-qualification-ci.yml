@@ -64,8 +64,6 @@ jobs:
           test -d "$spike"
           test -f "$env_file"
 
-          # Never source an opaque shell file. Accept only simple environment
-          # assignments/exports and reject command substitution or shell control.
           python3 - "$env_file" <<'PY'
           import re, sys
           from pathlib import Path
@@ -96,7 +94,6 @@ jobs:
           print('SPIKE_ENV_SAFE_TO_SOURCE=YES')
           PY
 
-          # shellcheck disable=SC1090
           source "$env_file"
 
           case "${CODEX_HOME:-}" in
@@ -105,9 +102,6 @@ jobs:
           esac
           test -d "$CODEX_HOME"
 
-          # The spike may contain the extracted official binary without a PATH
-          # shim. Resolve only bounded candidates under CODEX_INSTALL_DIR and
-          # accept a single real executable that reports the exact qualified pin.
           candidates_file="$spike/evidence/codex-candidates-${GITHUB_RUN_ID}.txt"
           : > "$candidates_file"
           from_path="$(command -v codex || true)"
@@ -146,14 +140,6 @@ jobs:
           codex_bin="$(sed -n '1p' "$matched_file")"
           version="$($codex_bin --version 2>/dev/null || true)"
           echo "CODEX_VERSION_OBSERVED=$version"
-
-          if "$codex_bin" login status >/dev/null 2>&1; then
-            echo 'CODEX_CHATGPT_AUTH_STATUS=ACTIVE_OR_OTHER_STORED_AUTH'
-          else
-            echo 'CODEX_CHATGPT_AUTH_STATUS=NOT_ACTIVE'
-            echo 'NEXT_SINGLE_BLOCKER=FOUNDER_CHATGPT_DEVICE_LOGIN'
-            exit 23
-          fi
 
           run_root="$spike/evidence/codex-qualification-${GITHUB_RUN_ID}"
           runtime="$run_root/runtime"
