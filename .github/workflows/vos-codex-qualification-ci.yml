@@ -1,0 +1,142 @@
+name: VOS Codex Qualification
+
+on:
+  push:
+    branches:
+      - sol/vos-macbook-qualification-20260825
+    paths:
+      - 'tools/vos_codex_qualification.py'
+      - 'tests/test_vos_codex_qualification.py'
+      - '.github/workflows/vos-codex-qualification-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-codex-qualification
+  cancel-in-progress: false
+
+jobs:
+  unit:
+    name: Qualification harness unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run fail-closed qualification tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest -v tests.test_vos_codex_qualification
+          python3 -m py_compile tools/vos_codex_qualification.py tests/test_vos_codex_qualification.py
+          git diff --check
+
+  macbook:
+    name: Real MacBook Codex auth + Sol + exec/resume
+    needs: unit
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    env:
+      SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
+      EXPECTED_CODEX_VERSION: 0.149.0
+      EXPECTED_MODEL: gpt-5.6-sol
+    steps:
+      - name: Qualify exact installed Codex without touching source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          set +x
+
+          spike="$SPIKE_ROOT"
+          env_file="$spike/env.sh"
+          test -d "$spike"
+          test -f "$env_file"
+
+          # Never source an opaque shell file. Accept only simple environment
+          # assignments/exports and reject command substitution or shell control.
+          python3 - "$env_file" <<'PY'
+          import re, sys
+          from pathlib import Path
+
+          path = Path(sys.argv[1])
+          bad = []
+          keys = []
+          assignment = re.compile(r'^(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$')
+          forbidden = ('$(', '`', ';', '&&', '||', '>', '<')
+          for lineno, raw in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+              line = raw.strip()
+              if not line or line.startswith('#'):
+                  continue
+              match = assignment.fullmatch(line)
+              if not match:
+                  bad.append((lineno, 'non-assignment'))
+                  continue
+              key, value = match.groups()
+              keys.append(key)
+              if any(token in value for token in forbidden):
+                  bad.append((lineno, 'shell-control'))
+          print('SPIKE_ENV_KEYS=' + ','.join(sorted(set(keys))))
+          if bad:
+              print('SPIKE_ENV_SAFE_TO_SOURCE=NO')
+              for lineno, kind in bad:
+                  print(f'SPIKE_ENV_REJECT_LINE={lineno}:{kind}')
+              raise SystemExit(2)
+          print('SPIKE_ENV_SAFE_TO_SOURCE=YES')
+          PY
+
+          # shellcheck disable=SC1090
+          source "$env_file"
+
+          case "${CODEX_HOME:-}" in
+            /Volumes/MontereyT7/*) ;;
+            *) echo 'BLOCKED: CODEX_HOME is not on MontereyT7' >&2; exit 20 ;;
+          esac
+          test -d "$CODEX_HOME"
+
+          codex_bin="$(command -v codex || true)"
+          if [ -z "$codex_bin" ]; then
+            echo 'BLOCKED: codex not found after approved spike env' >&2
+            exit 21
+          fi
+          version="$($codex_bin --version 2>/dev/null || true)"
+          echo "CODEX_VERSION_OBSERVED=$version"
+          case "$version" in
+            *"$EXPECTED_CODEX_VERSION"*) ;;
+            *) echo 'BLOCKED: installed Codex version differs from qualified pin' >&2; exit 22 ;;
+          esac
+
+          if "$codex_bin" login status >/dev/null 2>&1; then
+            echo 'CODEX_CHATGPT_AUTH_STATUS=ACTIVE_OR_OTHER_STORED_AUTH'
+          else
+            echo 'CODEX_CHATGPT_AUTH_STATUS=NOT_ACTIVE'
+            echo 'NEXT_SINGLE_BLOCKER=FOUNDER_CHATGPT_DEVICE_LOGIN'
+            exit 23
+          fi
+
+          run_root="$spike/evidence/codex-qualification-${GITHUB_RUN_ID}"
+          runtime="$run_root/runtime"
+          evidence="$run_root/evidence"
+          workspace="$run_root/workspace"
+          mkdir -p "$runtime" "$evidence" "$workspace"
+
+          harness="$runtime/vos_codex_qualification.py"
+          raw_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}/tools/vos_codex_qualification.py"
+          curl --fail --silent --show-error --location "$raw_url" --output "$harness"
+          chmod 700 "$harness"
+
+          python3 "$harness" \
+            --codex "$codex_bin" \
+            --codex-home "$CODEX_HOME" \
+            --evidence "$evidence" \
+            --workspace "$workspace" \
+            --model "$EXPECTED_MODEL" \
+            --timeout 300
+
+          echo "EVIDENCE_ROOT=$evidence"
+          echo 'SOURCE_REPOS_MUTATED=NO'
+          echo 'PAID_API_FALLBACK=NO'
+          echo 'VOS_CODEX_QUALIFICATION=GREEN'
