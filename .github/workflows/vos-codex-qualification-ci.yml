@@ -105,17 +105,47 @@ jobs:
           esac
           test -d "$CODEX_HOME"
 
-          codex_bin="$(command -v codex || true)"
-          if [ -z "$codex_bin" ]; then
-            echo 'BLOCKED: codex not found after approved spike env' >&2
+          # The spike may contain the extracted official binary without a PATH
+          # shim. Resolve only bounded candidates under CODEX_INSTALL_DIR and
+          # accept a single real executable that reports the exact qualified pin.
+          candidates_file="$spike/evidence/codex-candidates-${GITHUB_RUN_ID}.txt"
+          : > "$candidates_file"
+          from_path="$(command -v codex || true)"
+          [ -z "$from_path" ] || printf '%s\n' "$from_path" >> "$candidates_file"
+          if [ -n "${CODEX_INSTALL_DIR:-}" ] && [ -d "$CODEX_INSTALL_DIR" ]; then
+            for candidate in "$CODEX_INSTALL_DIR/codex" "$CODEX_INSTALL_DIR/bin/codex"; do
+              [ -x "$candidate" ] && printf '%s\n' "$candidate" >> "$candidates_file"
+            done
+            find "$CODEX_INSTALL_DIR" -maxdepth 2 -type f -perm -111 -name 'codex*' -print 2>/dev/null >> "$candidates_file" || true
+          fi
+
+          matched_file="$spike/evidence/codex-matched-${GITHUB_RUN_ID}.txt"
+          : > "$matched_file"
+          while IFS= read -r candidate; do
+            [ -n "$candidate" ] || continue
+            [ -x "$candidate" ] || continue
+            version="$($candidate --version 2>/dev/null || true)"
+            case "$version" in
+              *"$EXPECTED_CODEX_VERSION"*)
+                canonical="$(python3 - "$candidate" <<'PY'
+          import os, sys
+          print(os.path.realpath(sys.argv[1]))
+          PY
+          )"
+                printf '%s\n' "$canonical" >> "$matched_file"
+                ;;
+            esac
+          done < "$candidates_file"
+          sort -u "$matched_file" -o "$matched_file"
+          matched_count="$(sed '/^$/d' "$matched_file" | wc -l | tr -d ' ')"
+          echo "CODEX_PINNED_CANDIDATE_COUNT=$matched_count"
+          if [ "$matched_count" != 1 ]; then
+            echo 'BLOCKED: expected exactly one executable Codex 0.149.0 candidate' >&2
             exit 21
           fi
+          codex_bin="$(sed -n '1p' "$matched_file")"
           version="$($codex_bin --version 2>/dev/null || true)"
           echo "CODEX_VERSION_OBSERVED=$version"
-          case "$version" in
-            *"$EXPECTED_CODEX_VERSION"*) ;;
-            *) echo 'BLOCKED: installed Codex version differs from qualified pin' >&2; exit 22 ;;
-          esac
 
           if "$codex_bin" login status >/dev/null 2>&1; then
             echo 'CODEX_CHATGPT_AUTH_STATUS=ACTIVE_OR_OTHER_STORED_AUTH'
