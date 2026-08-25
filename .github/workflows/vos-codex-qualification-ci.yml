@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: vos-codex-qualification
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   unit:
@@ -23,16 +23,24 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+      - name: Fetch exact-SHA qualification sources without checkout action
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/vos-codex-qualification"
+          mkdir -p "$work/tools" "$work/tests"
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
+          curl --fail --silent --show-error --location "$base/tools/vos_codex_qualification.py" -o "$work/tools/vos_codex_qualification.py"
+          curl --fail --silent --show-error --location "$base/tests/test_vos_codex_qualification.py" -o "$work/tests/test_vos_codex_qualification.py"
+          touch "$work/tests/__init__.py"
+          echo "QUALIFICATION_TEST_ROOT=$work" >> "$GITHUB_ENV"
       - name: Run fail-closed qualification tests
         shell: bash
         run: |
           set -euo pipefail
+          cd "$QUALIFICATION_TEST_ROOT"
           python3 -m unittest -v tests.test_vos_codex_qualification
           python3 -m py_compile tools/vos_codex_qualification.py tests/test_vos_codex_qualification.py
-          git diff --check
 
   macbook:
     name: Real MacBook Codex auth + Sol + exec/resume
