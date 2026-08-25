@@ -1,0 +1,151 @@
+name: VOS MacBook Qualification — Read Only
+
+on:
+  push:
+    branches:
+      - sol/vos-macbook-qualification-20260825
+    paths:
+      - '.github/workflows/vos-macbook-qualification-readonly.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-macbook-qualification-readonly
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile local VOS baseline without mutation
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    env:
+      FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
+      SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
+      U1_SOURCE_SHA: 518e2a9dce0a95767fe787f312f3316733304e15
+      KERNEL_SHA: 2ce9ed07bb2de6cc60533bcb9cf503d8edaa4d15
+    steps:
+      - name: Read-only machine and Git reconciliation
+        shell: bash
+        run: |
+          set -u
+
+          root="$FLUXION_ROOT"
+          spike="$SPIKE_ROOT"
+          u1="$U1_SOURCE_SHA"
+          kernel="$KERNEL_SHA"
+
+          echo '===== VOS MACBOOK READ-ONLY RECONCILIATION ====='
+          echo "RUNNER_OS=${RUNNER_OS:-unknown}"
+          echo "FLUXION_ROOT=$root"
+          echo "SPIKE_ROOT=$spike"
+          echo "U1_SOURCE_SHA=$u1"
+          echo "KERNEL_SHA=$kernel"
+
+          if [ ! -d "$root/.git" ]; then
+            echo 'REPO_PRESENT=NO'
+            echo 'RECONCILIATION=BLOCKED'
+            exit 2
+          fi
+          echo 'REPO_PRESENT=YES'
+
+          head="$(git -C "$root" rev-parse HEAD 2>/dev/null || true)"
+          branch="$(git -C "$root" branch --show-current 2>/dev/null || true)"
+          dirty_count="$(git -C "$root" status --porcelain=v1 2>/dev/null | wc -l | tr -d ' ')"
+          echo "LOCAL_HEAD=$head"
+          echo "LOCAL_BRANCH=${branch:-DETACHED}"
+          echo "LOCAL_DIRTY_COUNT=$dirty_count"
+
+          origin_master="$(git -C "$root" rev-parse refs/remotes/origin/master 2>/dev/null || true)"
+          echo "LOCAL_ORIGIN_MASTER=${origin_master:-MISSING}"
+
+          if git -C "$root" cat-file -e "${u1}^{commit}" 2>/dev/null; then
+            u1_present=YES
+            echo 'U1_SHA_OBJECT_PRESENT=YES'
+          else
+            u1_present=NO
+            echo 'U1_SHA_OBJECT_PRESENT=NO'
+          fi
+
+          if git -C "$root" cat-file -e "${kernel}^{commit}" 2>/dev/null; then
+            kernel_present=YES
+            echo 'KERNEL_SHA_OBJECT_PRESENT=YES'
+          else
+            kernel_present=NO
+            echo 'KERNEL_SHA_OBJECT_PRESENT=NO'
+          fi
+
+          relation=UNRESOLVED
+          merge_base=NONE
+          if [ "$u1_present" = YES ] && [ "$kernel_present" = YES ]; then
+            merge_base="$(git -C "$root" merge-base "$u1" "$kernel" 2>/dev/null || true)"
+            if git -C "$root" merge-base --is-ancestor "$kernel" "$u1" 2>/dev/null; then
+              relation='U1_DESCENDS_FROM_KERNEL'
+            elif git -C "$root" merge-base --is-ancestor "$u1" "$kernel" 2>/dev/null; then
+              relation='KERNEL_DESCENDS_FROM_U1'
+            elif [ -n "$merge_base" ]; then
+              relation='DIVERGED_WITH_COMMON_ANCESTOR'
+            else
+              relation='NO_COMMON_ANCESTOR'
+            fi
+          elif [ "$u1_present" = NO ] && [ "$kernel_present" = YES ]; then
+            relation='U1_OBJECT_MISSING_LOCALLY'
+          elif [ "$u1_present" = YES ] && [ "$kernel_present" = NO ]; then
+            relation='KERNEL_OBJECT_MISSING_LOCALLY'
+          else
+            relation='BOTH_OBJECTS_MISSING_LOCALLY'
+          fi
+          echo "MERGE_BASE=$merge_base"
+          echo "BASELINE_RELATION=$relation"
+
+          internal_kib="$(df -Pk / 2>/dev/null | awk 'NR==2 {print $4}')"
+          if [ -n "$internal_kib" ]; then
+            internal_gib="$(awk -v k="$internal_kib" 'BEGIN {printf "%.2f", k/1024/1024}')"
+          else
+            internal_gib=UNKNOWN
+          fi
+          echo "INTERNAL_FREE_GIB=$internal_gib"
+
+          if [ -d /Volumes/MontereyT7 ]; then
+            t7_kib="$(df -Pk /Volumes/MontereyT7 2>/dev/null | awk 'NR==2 {print $4}')"
+            t7_gib="$(awk -v k="$t7_kib" 'BEGIN {printf "%.2f", k/1024/1024}')"
+            echo 'T7_PRESENT=YES'
+            echo "T7_FREE_GIB=$t7_gib"
+          else
+            echo 'T7_PRESENT=NO'
+            echo 'T7_FREE_GIB=UNKNOWN'
+          fi
+
+          if [ -d "$spike" ]; then
+            spike_kib="$(du -sk "$spike" 2>/dev/null | awk '{print $1}')"
+            spike_mib="$(awk -v k="$spike_kib" 'BEGIN {printf "%.0f", k/1024}')"
+            echo 'SPIKE_PRESENT=YES'
+            echo "SPIKE_SIZE_MIB=$spike_mib"
+            if [ -f "$spike/env.sh" ]; then
+              echo 'SPIKE_ENV_PRESENT=YES'
+            else
+              echo 'SPIKE_ENV_PRESENT=NO'
+            fi
+          else
+            echo 'SPIKE_PRESENT=NO'
+            echo 'SPIKE_SIZE_MIB=UNKNOWN'
+            echo 'SPIKE_ENV_PRESENT=NO'
+          fi
+
+          codex_candidate="$(find "$spike" -maxdepth 4 -type f -name codex -perm -111 -print -quit 2>/dev/null || true)"
+          if [ -n "$codex_candidate" ]; then
+            echo 'CODEX_BINARY_PRESENT=YES'
+            version="$($codex_candidate --version 2>/dev/null || true)"
+            echo "CODEX_VERSION_OBSERVED=${version:-UNKNOWN}"
+          else
+            echo 'CODEX_BINARY_PRESENT=NO'
+            echo 'CODEX_VERSION_OBSERVED=UNKNOWN'
+          fi
+
+          echo 'SOURCE_REPOS_MUTATED=NO'
+          echo 'FETCH_PERFORMED=NO'
+          echo 'CHECKOUT_PERFORMED=NO'
+          echo 'CLEANUP_PERFORMED=NO'
+          echo 'AUTH_ATTEMPTED=NO'
+          echo '===== END VOS MACBOOK READ-ONLY RECONCILIATION ====='
