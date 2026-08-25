@@ -13,13 +13,13 @@ permissions:
 
 concurrency:
   group: vos-macbook-qualification-readonly
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   reconcile:
     name: Reconcile local VOS baseline without mutation
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 10
+    timeout-minutes: 3
     env:
       FLUXION_ROOT: /Volumes/MontereyT7/FLUXION
       SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
@@ -36,7 +36,7 @@ jobs:
           u1="$U1_SOURCE_SHA"
           kernel="$KERNEL_SHA"
 
-          echo '===== VOS MACBOOK READ-ONLY RECONCILIATION ====='
+          echo '===== VOS MACBOOK READ-ONLY RECONCILIATION V2 ====='
           echo "RUNNER_OS=${RUNNER_OS:-unknown}"
           echo "FLUXION_ROOT=$root"
           echo "SPIKE_ROOT=$spike"
@@ -52,29 +52,39 @@ jobs:
 
           head="$(git -C "$root" rev-parse HEAD 2>/dev/null || true)"
           branch="$(git -C "$root" branch --show-current 2>/dev/null || true)"
-          dirty_count="$(git -C "$root" status --porcelain=v1 2>/dev/null | wc -l | tr -d ' ')"
           echo "LOCAL_HEAD=$head"
           echo "LOCAL_BRANCH=${branch:-DETACHED}"
-          echo "LOCAL_DIRTY_COUNT=$dirty_count"
+
+          tracked_clean=YES
+          git -C "$root" diff --quiet -- 2>/dev/null || tracked_clean=NO
+          git -C "$root" diff --cached --quiet -- 2>/dev/null || tracked_clean=NO
+          untracked_present=NO
+          if [ -n "$(git -C "$root" ls-files --others --exclude-standard 2>/dev/null | sed -n '1p')" ]; then
+            untracked_present=YES
+          fi
+          if [ "$tracked_clean" = YES ] && [ "$untracked_present" = NO ]; then
+            echo 'LOCAL_WORKTREE_CLEAN=YES'
+          else
+            echo 'LOCAL_WORKTREE_CLEAN=NO'
+          fi
+          echo "LOCAL_UNTRACKED_PRESENT=$untracked_present"
 
           origin_master="$(git -C "$root" rev-parse refs/remotes/origin/master 2>/dev/null || true)"
           echo "LOCAL_ORIGIN_MASTER=${origin_master:-MISSING}"
 
           if git -C "$root" cat-file -e "${u1}^{commit}" 2>/dev/null; then
             u1_present=YES
-            echo 'U1_SHA_OBJECT_PRESENT=YES'
           else
             u1_present=NO
-            echo 'U1_SHA_OBJECT_PRESENT=NO'
           fi
+          echo "U1_SHA_OBJECT_PRESENT=$u1_present"
 
           if git -C "$root" cat-file -e "${kernel}^{commit}" 2>/dev/null; then
             kernel_present=YES
-            echo 'KERNEL_SHA_OBJECT_PRESENT=YES'
           else
             kernel_present=NO
-            echo 'KERNEL_SHA_OBJECT_PRESENT=NO'
           fi
+          echo "KERNEL_SHA_OBJECT_PRESENT=$kernel_present"
 
           relation=UNRESOLVED
           merge_base=NONE
@@ -107,6 +117,12 @@ jobs:
           fi
           echo "INTERNAL_FREE_GIB=$internal_gib"
 
+          if [ "$internal_gib" != UNKNOWN ] && awk -v v="$internal_gib" 'BEGIN {exit !(v >= 7.0)}'; then
+            echo 'AUTH_DISK_TARGET_MET=YES'
+          else
+            echo 'AUTH_DISK_TARGET_MET=NO'
+          fi
+
           if [ -d /Volumes/MontereyT7 ]; then
             t7_kib="$(df -Pk /Volumes/MontereyT7 2>/dev/null | awk 'NR==2 {print $4}')"
             t7_gib="$(awk -v k="$t7_kib" 'BEGIN {printf "%.2f", k/1024/1024}')"
@@ -118,29 +134,14 @@ jobs:
           fi
 
           if [ -d "$spike" ]; then
-            spike_kib="$(du -sk "$spike" 2>/dev/null | awk '{print $1}')"
-            spike_mib="$(awk -v k="$spike_kib" 'BEGIN {printf "%.0f", k/1024}')"
             echo 'SPIKE_PRESENT=YES'
-            echo "SPIKE_SIZE_MIB=$spike_mib"
-            if [ -f "$spike/env.sh" ]; then
-              echo 'SPIKE_ENV_PRESENT=YES'
-            else
-              echo 'SPIKE_ENV_PRESENT=NO'
-            fi
           else
             echo 'SPIKE_PRESENT=NO'
-            echo 'SPIKE_SIZE_MIB=UNKNOWN'
-            echo 'SPIKE_ENV_PRESENT=NO'
           fi
-
-          codex_candidate="$(find "$spike" -maxdepth 4 -type f -name codex -perm -111 -print -quit 2>/dev/null || true)"
-          if [ -n "$codex_candidate" ]; then
-            echo 'CODEX_BINARY_PRESENT=YES'
-            version="$($codex_candidate --version 2>/dev/null || true)"
-            echo "CODEX_VERSION_OBSERVED=${version:-UNKNOWN}"
+          if [ -f "$spike/env.sh" ]; then
+            echo 'SPIKE_ENV_PRESENT=YES'
           else
-            echo 'CODEX_BINARY_PRESENT=NO'
-            echo 'CODEX_VERSION_OBSERVED=UNKNOWN'
+            echo 'SPIKE_ENV_PRESENT=NO'
           fi
 
           echo 'SOURCE_REPOS_MUTATED=NO'
@@ -148,4 +149,5 @@ jobs:
           echo 'CHECKOUT_PERFORMED=NO'
           echo 'CLEANUP_PERFORMED=NO'
           echo 'AUTH_ATTEMPTED=NO'
-          echo '===== END VOS MACBOOK READ-ONLY RECONCILIATION ====='
+          echo 'RECONCILIATION_COMMANDS_BOUNDED=YES'
+          echo '===== END VOS MACBOOK READ-ONLY RECONCILIATION V2 ====='
