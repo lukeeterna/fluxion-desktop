@@ -91,14 +91,8 @@ class TestNormalBookingFlow:
     def test_flow_with_all_info_in_one_message(self):
         """Test when user provides all info in one message."""
         sm = create_state_machine()
-
-        # Start flow
         sm.start_booking_flow()
-
-        # Provide everything at once
         result = sm.process_message("vorrei un taglio domani alle 15")
-
-        # Should go directly to confirmation
         assert result.next_state == BookingState.CONFIRMING
         assert sm.context.service == "taglio"
         assert sm.context.time == "15:00"
@@ -107,11 +101,7 @@ class TestNormalBookingFlow:
     def test_flow_with_service_and_date_in_one_message(self):
         """Test when user provides service and date together."""
         sm = create_state_machine()
-
-        # Start flow
         sm.start_booking_flow()
-
-        # Provide service and date
         result = sm.process_message("taglio per domani")
         assert result.next_state == BookingState.WAITING_TIME
         assert sm.context.service == "taglio"
@@ -129,7 +119,6 @@ class TestStateTransitions:
         """Test transition from IDLE to WAITING_SERVICE."""
         sm = create_state_machine()
         result = sm.start_booking_flow()
-
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert result.next_state == BookingState.WAITING_SERVICE
 
@@ -137,9 +126,7 @@ class TestStateTransitions:
         """Test transition after providing service."""
         sm = create_state_machine()
         sm.start_booking_flow()
-
         result = sm.process_message("voglio fare il colore")
-
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.service == "colore"
 
@@ -148,9 +135,7 @@ class TestStateTransitions:
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("piega")
-
         result = sm.process_message("lunedì prossimo")
-
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.date is not None
 
@@ -160,9 +145,7 @@ class TestStateTransitions:
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
-
         result = sm.process_message("alle 10 e mezza")
-
         assert sm.context.state == BookingState.CONFIRMING
         assert sm.context.time == "10:30"
 
@@ -173,7 +156,6 @@ class TestStateTransitions:
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
-
         result = sm.process_message("sì va bene")
         assert result.next_state == BookingState.COMPLETED
         assert result.booking is not None
@@ -186,9 +168,7 @@ class TestStateTransitions:
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
-
         result = sm.process_message("no annulla")
-
         assert sm.context.state == BookingState.CANCELLED
         assert result.booking is None
 
@@ -206,23 +186,18 @@ class TestInterruptionHandling:
         sm.start_booking_flow()
         sm.process_message("colore")
         sm.process_message("domani")
-
-        # User wants to restart
         result = sm.process_message("no aspetta, ricominciamo")
-
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert sm.context.service is None
         assert sm.context.date is None
-        assert sm.context.was_interrupted is False  # Reset clears the flag
+        assert sm.context.was_interrupted is False
 
     def test_annulla_tutto_interruption(self):
         """Test 'annulla tutto' resets the flow."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio domani alle 15")
-
         result = sm.process_message("annulla tutto")
-
         assert sm.context.state == BookingState.WAITING_SERVICE
 
     def test_change_acknowledgement(self):
@@ -230,10 +205,7 @@ class TestInterruptionHandling:
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
-
         result = sm.process_message("aspetta un attimo")
-
-        # Should acknowledge but stay in same state
         assert result.next_state == BookingState.WAITING_DATE
         acknowledgement = result.response.lower()
         assert any(marker in acknowledgement for marker in ("cambiare", "dica", "dimmi"))
@@ -242,9 +214,7 @@ class TestInterruptionHandling:
         """Test 'operatore' triggers escalation."""
         sm = create_state_machine()
         sm.start_booking_flow()
-
         result = sm.process_message("voglio parlare con un operatore")
-
         assert result.should_exit is True
         assert result.lookup_type == "operator_escalation"
 
@@ -252,9 +222,7 @@ class TestInterruptionHandling:
         """Test 'basta' triggers escalation."""
         sm = create_state_machine()
         sm.start_booking_flow()
-
         result = sm.process_message("basta non capisco")
-
         assert result.should_exit is True
 
 
@@ -266,42 +234,32 @@ class TestConfirmationChanges:
     """Test changing info during confirmation."""
 
     def test_change_service_during_confirmation(self):
-        """Test changing service when in CONFIRMING state."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
-
-        # Now in CONFIRMING, want to change service
         result = sm.process_message("cambio servizio")
-
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert sm.context.service is None
 
     def test_change_date_during_confirmation(self):
-        """Test changing date when in CONFIRMING state."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
-
         result = sm.process_message("cambio giorno")
-
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.date is None
 
     def test_change_time_during_confirmation(self):
-        """Test changing time when in CONFIRMING state."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
-
         result = sm.process_message("cambio orario")
-
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.time is None
 
@@ -314,17 +272,14 @@ class TestEntityExtractionIntegration:
     """Test integration with entity extractor."""
 
     def test_service_synonyms(self):
-        """Test service synonym recognition."""
         sm = create_state_machine()
         sm.start_booking_flow()
-
         test_cases = [
             ("vorrei una sforbiciata", "taglio"),
             ("devo fare la tinta", "colore"),
             ("messa in piega", "piega"),
             ("rasatura", "barba"),
         ]
-
         for text, expected_service in test_cases:
             sm.reset()
             sm.start_booking_flow()
@@ -332,44 +287,35 @@ class TestEntityExtractionIntegration:
             assert sm.context.service == expected_service, f"Failed for '{text}'"
 
     def test_date_extraction_in_flow(self):
-        """Test date extraction during booking flow."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
-
-        # Test various date formats
-        result = sm.process_message("dopodomani")
+        sm.process_message("dopodomani")
         assert sm.context.date is not None
         expected_date = (REFERENCE_DATE + timedelta(days=2)).strftime("%Y-%m-%d")
         assert sm.context.date == expected_date
 
     def test_time_extraction_in_flow(self):
-        """Test time extraction during booking flow."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
-
-        result = sm.process_message("alle 9 e mezza")
+        sm.process_message("alle 9 e mezza")
         assert sm.context.time == "09:30"
 
     def test_approximate_time_handling(self):
-        """Test approximate time (pomeriggio, mattina)."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
-
-        result = sm.process_message("di pomeriggio")
+        sm.process_message("di pomeriggio")
         assert sm.context.time == "15:00"
         assert sm.context.time_is_approximate is True
 
     def test_name_extraction(self):
-        """Test client name extraction (B7: auto-split name/surname)."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_NAME
-
-        result = sm.process_message("mi chiamo Laura Bianchi")
+        sm.process_message("mi chiamo Laura Bianchi")
         assert sm.context.client_name == "Laura"
         assert sm.context.client_surname == "Bianchi"
 
@@ -379,54 +325,17 @@ class TestEntityExtractionIntegration:
 # =============================================================================
 
 class TestContextPersistence:
-    """Test context serialization and deserialization."""
-
     def test_context_to_json(self):
-        """Test context serialization to JSON."""
-        ctx = BookingContext(
-            state=BookingState.WAITING_DATE,
-            service="taglio",
-            service_display="Taglio",
-            client_name="Mario",
-            turns_count=3
-        )
-
-        json_str = ctx.to_json()
-        data = json.loads(json_str)
-
+        ctx = BookingContext(state=BookingState.WAITING_DATE, service="taglio", service_display="Taglio", client_name="Mario", turns_count=3)
+        data = json.loads(ctx.to_json())
         assert data["state"] == "waiting_date"
         assert data["service"] == "taglio"
         assert data["client_name"] == "Mario"
         assert data["turns_count"] == 3
 
     def test_context_from_json(self):
-        """Test context deserialization from JSON."""
-        json_str = json.dumps({
-            "state": "confirming",
-            "service": "colore",
-            "service_display": "Colore",
-            "date": "2026-01-15",
-            "date_display": "mercoledì 15 gennaio",
-            "time": "10:00",
-            "time_display": "alle 10:00",
-            "client_name": "Anna",
-            "client_id": None,
-            "client_phone": None,
-            "client_email": None,
-            "operator_id": None,
-            "operator_name": None,
-            "operator_requested": False,
-            "notes": None,
-            "created_at": None,
-            "updated_at": None,
-            "turns_count": 5,
-            "time_is_approximate": False,
-            "was_interrupted": False,
-            "previous_state": None
-        })
-
+        json_str = json.dumps({"state": "confirming", "service": "colore", "service_display": "Colore", "date": "2026-01-15", "date_display": "mercoledì 15 gennaio", "time": "10:00", "time_display": "alle 10:00", "client_name": "Anna", "client_id": None, "client_phone": None, "client_email": None, "operator_id": None, "operator_name": None, "operator_requested": False, "notes": None, "created_at": None, "updated_at": None, "turns_count": 5, "time_is_approximate": False, "was_interrupted": False, "previous_state": None})
         ctx = BookingContext.from_json(json_str)
-
         assert ctx.state == BookingState.CONFIRMING
         assert ctx.service == "colore"
         assert ctx.date == "2026-01-15"
@@ -434,41 +343,18 @@ class TestContextPersistence:
         assert ctx.client_name == "Anna"
 
     def test_context_roundtrip(self):
-        """Test context serialization roundtrip."""
-        original = BookingContext(
-            state=BookingState.WAITING_TIME,
-            service="piega",
-            date="2026-01-20",
-            client_name="Giuseppe",
-            turns_count=4
-        )
-
-        json_str = original.to_json()
-        restored = BookingContext.from_json(json_str)
-
+        original = BookingContext(state=BookingState.WAITING_TIME, service="piega", date="2026-01-20", client_name="Giuseppe", turns_count=4)
+        restored = BookingContext.from_json(original.to_json())
         assert restored.state == original.state
         assert restored.service == original.service
         assert restored.date == original.date
         assert restored.client_name == original.client_name
 
     def test_resume_from_context(self):
-        """Test resuming state machine from saved context."""
-        # Create and save context
-        ctx = BookingContext(
-            state=BookingState.WAITING_TIME,
-            service="taglio",
-            service_display="Taglio",
-            date="2026-01-15",
-            date_display="mercoledì 15 gennaio"
-        )
-
-        # Create new state machine and restore context
+        ctx = BookingContext(state=BookingState.WAITING_TIME, service="taglio", service_display="Taglio", date="2026-01-15", date_display="mercoledì 15 gennaio")
         sm = create_state_machine()
         sm.set_context(ctx)
-
-        # Process should continue from WAITING_TIME
-        result = sm.process_message("alle 16")
-
+        sm.process_message("alle 16")
         assert sm.context.state == BookingState.CONFIRMING
         assert sm.context.time == "16:00"
 
@@ -478,73 +364,40 @@ class TestContextPersistence:
 # =============================================================================
 
 class TestContextMethods:
-    """Test BookingContext utility methods."""
-
     def test_get_summary(self):
-        """Test summary generation."""
-        ctx = BookingContext(
-            service="taglio",
-            service_display="Taglio",
-            date="2026-01-15",
-            date_display="mercoledì 15 gennaio",
-            time="10:00",
-            time_display="alle 10:00"
-        )
-
+        ctx = BookingContext(service="taglio", service_display="Taglio", date="2026-01-15", date_display="mercoledì 15 gennaio", time="10:00", time_display="alle 10:00")
         summary = ctx.get_summary()
         assert "Taglio" in summary
         assert "15 gennaio" in summary
         assert "10:00" in summary
 
     def test_get_summary_with_operator(self):
-        """Test summary with operator."""
-        ctx = BookingContext(
-            service_display="Colore",
-            date_display="domani",
-            time_display="alle 15:00",
-            operator_name="Maria"
-        )
-
-        summary = ctx.get_summary()
-        assert "Maria" in summary
+        ctx = BookingContext(service_display="Colore", date_display="domani", time_display="alle 15:00", operator_name="Maria")
+        assert "Maria" in ctx.get_summary()
 
     def test_is_complete(self):
-        """Test completeness check."""
         ctx = BookingContext()
         assert ctx.is_complete() is False
-
         ctx.service = "taglio"
         assert ctx.is_complete() is False
-
         ctx.date = "2026-01-15"
         assert ctx.is_complete() is False
-
         ctx.time = "10:00"
         assert ctx.is_complete() is True
 
     def test_get_missing_fields(self):
-        """Test missing fields detection."""
         ctx = BookingContext()
         missing = ctx.get_missing_fields()
         assert "servizio" in missing
         assert "data" in missing
         assert "ora" in missing
-
         ctx.service = "taglio"
         missing = ctx.get_missing_fields()
         assert "servizio" not in missing
         assert "data" in missing
 
     def test_to_dict(self):
-        """Test dictionary conversion."""
-        ctx = BookingContext(
-            state=BookingState.CONFIRMING,
-            service="taglio",
-            client_name="Mario",
-            client_id="123",
-            turns_count=5
-        )
-
+        ctx = BookingContext(state=BookingState.CONFIRMING, service="taglio", client_name="Mario", client_id="123", turns_count=5)
         d = ctx.to_dict()
         assert d["state"] == "confirming"
         assert d["client"]["name"] == "Mario"
@@ -553,239 +406,151 @@ class TestContextMethods:
         assert d["turns"] == 5
 
 
-# =============================================================================
-# TEST: INITIAL CONTEXT
-# =============================================================================
-
 class TestInitialContext:
-    """Test starting flow with pre-populated context."""
-
     def test_start_with_client_name(self):
-        """Test starting flow with known client."""
         sm = create_state_machine()
         result = sm.start_booking_flow({"client_name": "Mario Rossi"})
-
         assert sm.context.client_name == "Mario Rossi"
-        # Should still ask for service
         assert result.next_state == BookingState.WAITING_SERVICE
 
     def test_start_with_service(self):
-        """Test starting flow with known service."""
         sm = create_state_machine()
         result = sm.start_booking_flow({"service": "taglio"})
-
         assert sm.context.service == "taglio"
-        # Should skip to asking for date
         assert result.next_state == BookingState.WAITING_DATE
 
-
-# =============================================================================
-# TEST: ERROR HANDLING
-# =============================================================================
 
 class TestErrorHandling:
     """Test error cases and recovery."""
 
     def test_unknown_service(self):
-        """Test handling of unknown service."""
         sm = create_state_machine()
         sm.start_booking_flow()
-
-        result = sm.process_message("vorrei un massaggio")  # Not in default services
-
+        result = sm.process_message("vorrei un massaggio")
         assert sm.context.state == BookingState.WAITING_SERVICE
-        assert "capire" in result.response.lower() or "trattamento" in result.response.lower()
+        response_text = result.response.lower()
+        assert any(marker in response_text for marker in ("capire", "capito"))
+        assert any(marker in response_text for marker in ("trattamento", "servizio"))
 
     def test_invalid_date(self):
-        """Test handling of unrecognized date."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
-
-        result = sm.process_message("il giorno blu")
-
+        sm.process_message("il giorno blu")
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.date is None
 
     def test_invalid_time(self):
-        """Test handling of unrecognized time."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
         sm.process_message("domani")
-
-        result = sm.process_message("quando capita")
-
+        sm.process_message("quando capita")
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.time is None
 
     def test_recovery_after_error(self):
-        """Test recovery after providing invalid then valid input."""
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.process_message("taglio")
-
-        # Invalid date
-        result = sm.process_message("xyz")
+        sm.process_message("xyz")
         assert sm.context.state == BookingState.WAITING_DATE
-
-        # Valid date
-        result = sm.process_message("domani")
+        sm.process_message("domani")
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.date is not None
 
 
-# =============================================================================
-# TEST: CONFIRMATION VARIATIONS
-# =============================================================================
-
 class TestConfirmationVariations:
-    """Test various confirmation phrases."""
-
     def test_affirmative_responses(self):
-        """Test various 'yes' responses."""
-        affirmatives = [
-            "sì",
-            "si",
-            "ok",
-            "va bene",
-            "d'accordo",
-            "confermo",
-            "perfetto",
-            "certo",
-        ]
-
+        affirmatives = ["sì", "si", "ok", "va bene", "d'accordo", "confermo", "perfetto", "certo"]
         for response in affirmatives:
             sm = create_state_machine()
             sm.start_booking_flow()
             sm.process_message("taglio domani alle 15")
-
             result = sm.process_message(response)
-            # E4: CONFIRMING → COMPLETED directly
             assert result.next_state == BookingState.COMPLETED, f"Failed CONFIRMING→COMPLETED for '{response}'"
             assert result.should_exit is True
 
     def test_negative_responses(self):
-        """Test various 'no' responses."""
-        negatives = [
-            "no",
-            "no grazie",
-            "annulla",
-            "non voglio",
-        ]
-
+        negatives = ["no", "no grazie", "annulla", "non voglio"]
         for response in negatives:
             sm = create_state_machine()
             sm.start_booking_flow()
             sm.process_message("taglio domani alle 15")
-
             result = sm.process_message(response)
             assert result.next_state == BookingState.CANCELLED, f"Failed for '{response}'"
 
 
-# =============================================================================
-# BUG REGRESSION TESTS (Gino conversation)
-# =============================================================================
-
 class TestBugRegression:
-    """Regression tests for bugs found during Gino live conversation."""
-
-    # --- BUG 1: Registration summary loses first name ---
-
     def test_bug1_surname_does_not_overwrite_name(self):
-        """BUG 1: 'Di Nanni' in REGISTERING_SURNAME must NOT overwrite client_name 'Gino'."""
         sm = create_state_machine()
         sm.context.client_name = "Gino"
         sm.context.is_new_client = True
         sm.context.state = BookingState.REGISTERING_SURNAME
-
-        result = sm.process_message("Di Nanni")
-
-        assert sm.context.client_name == "Gino", f"client_name was overwritten to '{sm.context.client_name}'"
-        assert sm.context.client_surname is not None, "client_surname not set"
-        assert "nanni" in sm.context.client_surname.lower(), f"client_surname wrong: '{sm.context.client_surname}'"
+        sm.process_message("Di Nanni")
+        assert sm.context.client_name == "Gino"
+        assert sm.context.client_surname is not None
+        assert "nanni" in sm.context.client_surname.lower()
 
     def test_bug1_surname_single_word_preserved(self):
-        """Single-word surname preserves existing client_name."""
         sm = create_state_machine()
         sm.context.client_name = "Marco"
         sm.context.state = BookingState.REGISTERING_SURNAME
-
         sm.process_message("Rossi")
         assert sm.context.client_name == "Marco"
         assert sm.context.client_surname == "Rossi"
 
     def test_bug1_full_name_repeat_works(self):
-        """If user repeats full name 'Gino Di Nanni', both are set correctly."""
         sm = create_state_machine()
         sm.context.client_name = "Gino"
         sm.context.state = BookingState.REGISTERING_SURNAME
-
         sm.process_message("Gino Di Nanni")
         assert sm.context.client_name == "Gino"
         assert "nanni" in sm.context.client_surname.lower()
 
     def test_bug1_registration_confirm_shows_full_name(self):
-        """Registration flow: surname → phone → phone confirmation."""
         sm = create_state_machine()
         sm.context.client_name = "Gino"
         sm.context.is_new_client = True
         sm.context.state = BookingState.REGISTERING_SURNAME
-
-        # Provide surname
         result = sm.process_message("Di Nanni")
         assert sm.context.state == BookingState.REGISTERING_PHONE
-
-        # Provide phone → goes to CONFIRMING_PHONE (phone confirmation step)
         result = sm.process_message("333 1234567")
         assert sm.context.state == BookingState.CONFIRMING_PHONE
         assert "3331234567" in result.response or "333" in result.response
 
-    # --- BUG 2: Multi-service ignored ---
-
     def test_bug2_multi_service_extraction(self):
-        """'taglio e barba' must extract both services."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_SERVICE
-
-        result = sm.process_message("taglio e barba")
+        sm.process_message("taglio e barba")
         assert sm.context.services is not None
-        assert len(sm.context.services) >= 2, f"Expected >=2 services, got {sm.context.services}"
+        assert len(sm.context.services) >= 2
         assert "taglio" in sm.context.services
         assert "barba" in sm.context.services
 
     def test_bug2_service_display_shows_both(self):
-        """service_display must show 'Taglio e Barba', not just 'Taglio'."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_SERVICE
-
         sm.process_message("taglio e barba")
         assert sm.context.service_display is not None
         assert "Taglio" in sm.context.service_display
         assert "Barba" in sm.context.service_display
 
     def test_bug2_booking_includes_services(self):
-        """Booking dict must include services (plural) and service_display."""
         sm = create_state_machine()
         sm.context.client_name = "Test"
         sm.context.client_id = "1"
-
-        # Build a complete booking with multi-service
         sm.context.state = BookingState.WAITING_SERVICE
         sm.process_message("taglio e barba")
         sm.process_message("domani")
         sm.process_message("alle 15")
         result = sm.process_message("confermo")
-
-        assert result.booking is not None, "No booking object created"
-        assert result.booking.get("services") is not None, "services not in booking"
+        assert result.booking is not None
+        assert result.booking.get("services") is not None
         assert len(result.booking["services"]) >= 2
         assert result.booking.get("service_display") is not None
 
-    # --- BUG 4: Session resets after booking ---
-
     def test_bug4_reset_for_new_booking_preserves_client(self):
-        """reset_for_new_booking preserves client info but clears booking info."""
         sm = create_state_machine()
         sm.context.client_id = "123"
         sm.context.client_name = "Gino"
@@ -794,136 +559,81 @@ class TestBugRegression:
         sm.context.service = "taglio"
         sm.context.date = "2026-01-15"
         sm.context.time = "15:00"
-
         sm.reset_for_new_booking()
-
-        # Client info preserved
         assert sm.context.client_id == "123"
         assert sm.context.client_name == "Gino"
         assert sm.context.client_surname == "Di Nanni"
         assert sm.context.client_phone == "333123456"
-        # Booking info cleared
         assert sm.context.service is None
         assert sm.context.date is None
         assert sm.context.time is None
         assert sm.context.state == BookingState.IDLE
 
     def test_bug4_completed_state_closes_call(self):
-        """After COMPLETED, call should end (VoIP simulation)."""
         sm = create_state_machine()
         sm.context.client_id = "456"
         sm.context.client_name = "Gino"
         sm.context.client_surname = "Di Nanni"
         sm.context.state = BookingState.COMPLETED
-
         result = sm.process_message("vorrei un altro appuntamento")
-
-        # COMPLETED now ends the call (should_exit=True)
         assert result.should_exit is True
         assert "arrivederci" in result.response.lower() or "confermato" in result.response.lower()
 
     def test_bug4_cancelled_state_closes_call(self):
-        """After CANCELLED, call should end (VoIP simulation)."""
         sm = create_state_machine()
         sm.context.client_id = "789"
         sm.context.client_name = "Marco"
         sm.context.state = BookingState.CANCELLED
-
         result = sm.process_message("ho cambiato idea")
-
-        # CANCELLED now ends the call (should_exit=True)
         assert result.should_exit is True
         assert "arrivederci" in result.response.lower()
 
-    # --- BUG 5: Just-registered client not found ---
-
     def test_bug5_client_id_survives_full_booking_cycle(self):
-        """client_id set during registration survives through booking completion."""
         sm = create_state_machine()
         sm.context.client_id = "new-123"
         sm.context.client_name = "Gino"
         sm.context.state = BookingState.WAITING_SERVICE
-
         sm.process_message("taglio")
         sm.process_message("domani")
         sm.process_message("alle 15")
         result = sm.process_message("confermo")
-
-        # E4: Booking set at COMPLETED step directly
         assert result.booking is not None
         assert result.booking.get("client_id") == "new-123"
         assert sm.context.state == BookingState.COMPLETED
         assert result.should_exit is True
-
-        # After COMPLETED, call ends (VoIP simulation)
         result2 = sm.process_message("vorrei anche una barba")
         assert result2.should_exit is True
 
     def test_bug5_known_client_skips_lookup(self):
-        """When client_id is already set, _handle_idle skips DB lookup."""
         sm = create_state_machine()
         sm.context.client_id = "existing-456"
         sm.context.client_name = "Gino"
         sm.context.state = BookingState.IDLE
-
         result = sm.process_message("vorrei prenotare")
-
-        # Should go to WAITING_SERVICE without DB lookup
         assert sm.context.state == BookingState.WAITING_SERVICE
-        assert not result.needs_db_lookup, "Should not need DB lookup when client_id is set"
+        assert not result.needs_db_lookup
         assert "Gino" in result.response
 
 
-# =============================================================================
-# WHATSAPP FAQ PATTERN TESTS
-# =============================================================================
-
 class TestWhatsAppFAQ:
-    """Test WhatsApp FAQ pattern detection (L0a handler)."""
-
     def setup_method(self):
         import re
-        # Mirror the patterns from orchestrator._WA_FAQ_PATTERNS
-        self.patterns = [
-            re.compile(r"\bwhatsapp\b", re.IGNORECASE),
-            re.compile(r"\bconferma\s+(?:via|su|per|tramite)\b", re.IGNORECASE),
-            re.compile(r"\b(?:mandate|inviate|spedite)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE),
-        ]
+        self.patterns = [re.compile(r"\bwhatsapp\b", re.IGNORECASE), re.compile(r"\bconferma\s+(?:via|su|per|tramite)\b", re.IGNORECASE), re.compile(r"\b(?:mandate|inviate|spedite)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE)]
 
     def _matches(self, text: str) -> bool:
         return any(p.search(text) for p in self.patterns)
 
-    def test_whatsapp_mention(self):
-        assert self._matches("avete whatsapp?")
+    def test_whatsapp_mention(self): assert self._matches("avete whatsapp?")
+    def test_conferma_via_whatsapp(self): assert self._matches("fanno conferma via whatsapp?")
+    def test_conferma_su_whatsapp(self): assert self._matches("la conferma su whatsapp arriva?")
+    def test_mandate_conferma(self): assert self._matches("mandate conferma dopo la prenotazione?")
+    def test_inviate_notifica(self): assert self._matches("inviate notifica al cliente?")
+    def test_no_false_positive_on_normal(self): assert not self._matches("vorrei prenotare un taglio")
+    def test_no_false_positive_on_greeting(self): assert not self._matches("buongiorno, sono Gino")
 
-    def test_conferma_via_whatsapp(self):
-        assert self._matches("fanno conferma via whatsapp?")
-
-    def test_conferma_su_whatsapp(self):
-        assert self._matches("la conferma su whatsapp arriva?")
-
-    def test_mandate_conferma(self):
-        assert self._matches("mandate conferma dopo la prenotazione?")
-
-    def test_inviate_notifica(self):
-        assert self._matches("inviate notifica al cliente?")
-
-    def test_no_false_positive_on_normal(self):
-        assert not self._matches("vorrei prenotare un taglio")
-
-    def test_no_false_positive_on_greeting(self):
-        assert not self._matches("buongiorno, sono Gino")
-
-
-# =============================================================================
-# BUG 4: Back-navigation from WAITING_TIME to WAITING_DATE
-# =============================================================================
 
 class TestBug4BackNavigationFromWaitingTime:
-    """BUG 4: User can change date while in WAITING_TIME state."""
-
     def _setup_at_waiting_time(self):
-        """Helper: create SM at WAITING_TIME with date set."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_TIME
         sm.context.service = "taglio"
@@ -933,328 +643,126 @@ class TestBug4BackNavigationFromWaitingTime:
         return sm
 
     def test_date_change_with_marker_and_weekday(self):
-        """'non posso lunedì, facciamo mercoledì' → back to WAITING_DATE."""
         sm = self._setup_at_waiting_time()
         result = sm.process_message("non posso lunedì, facciamo mercoledì")
-        assert result.next_state == BookingState.WAITING_DATE, \
-            f"Expected WAITING_DATE, got {result.next_state}"
-        assert sm.context.date is None, "Date should be cleared"
-
-    def test_weekday_without_time(self):
-        """'mercoledì' (just a weekday, no time) → back to WAITING_DATE."""
-        sm = self._setup_at_waiting_time()
-        result = sm.process_message("meglio mercoledì")
-        assert result.next_state == BookingState.WAITING_DATE
-
-    def test_time_still_works(self):
-        """'dopo le 17' (time input) → proceed to CONFIRMING normally."""
-        sm = self._setup_at_waiting_time()
-        result = sm.process_message("dopo le 17")
-        assert result.next_state == BookingState.CONFIRMING
-        assert sm.context.time is not None
-
-    def test_weekday_with_time_does_not_back_navigate(self):
-        """'mercoledì alle 15' (weekday + time) → time extraction wins."""
-        sm = self._setup_at_waiting_time()
-        result = sm.process_message("mercoledì alle 15")
-        # has_time=True → no back-navigation, but also no change marker
-        # So this should extract the time and proceed
-        assert result.next_state == BookingState.CONFIRMING
-
-    def test_conversation_replay(self):
-        """Replay: 'per forza lunedì non possiamo fare tra mercoledì e giovedì?'"""
-        sm = self._setup_at_waiting_time()
-        result = sm.process_message("Senti, per forza lunedì non possiamo fare tra mercoledì e giovedì?")
         assert result.next_state == BookingState.WAITING_DATE
         assert sm.context.date is None
-        assert sm.context.time is None
+
+    def test_weekday_without_time(self):
+        assert self._setup_at_waiting_time().process_message("meglio mercoledì").next_state == BookingState.WAITING_DATE
+
+    def test_time_still_works(self):
+        sm = self._setup_at_waiting_time(); result = sm.process_message("dopo le 17")
+        assert result.next_state == BookingState.CONFIRMING and sm.context.time is not None
+
+    def test_weekday_with_time_does_not_back_navigate(self):
+        assert self._setup_at_waiting_time().process_message("mercoledì alle 15").next_state == BookingState.CONFIRMING
+
+    def test_conversation_replay(self):
+        sm = self._setup_at_waiting_time(); result = sm.process_message("Senti, per forza lunedì non possiamo fare tra mercoledì e giovedì?")
+        assert result.next_state == BookingState.WAITING_DATE
+        assert sm.context.date is None and sm.context.time is None
 
     def test_cambio_giorno(self):
-        """'cambio giorno, voglio giovedì' → back to WAITING_DATE."""
-        sm = self._setup_at_waiting_time()
-        result = sm.process_message("cambio giorno, voglio giovedì")
-        assert result.next_state == BookingState.WAITING_DATE
+        assert self._setup_at_waiting_time().process_message("cambio giorno, voglio giovedì").next_state == BookingState.WAITING_DATE
 
-
-# =============================================================================
-# BUG 2: Service correction in WAITING_DATE
-# =============================================================================
 
 class TestBug2ServiceCorrectionInWaitingDate:
-    """BUG 2: User can add/change services while in WAITING_DATE state."""
-
     def _setup_at_waiting_date(self, services=None, service=None):
-        """Helper: create SM at WAITING_DATE with service(s) already set."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_DATE
-        sm.context.client_name = "Gino"
-        sm.context.client_id = "123"
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_DATE; sm.context.client_name = "Gino"; sm.context.client_id = "123"
+        from booking_state_machine import SERVICE_DISPLAY
         if services:
-            sm.context.services = services
-            sm.context.service = services[0]
-            from booking_state_machine import SERVICE_DISPLAY
-            display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
-            sm.context.service_display = " e ".join(display_names)
+            sm.context.services = services; sm.context.service = services[0]; sm.context.service_display = " e ".join(SERVICE_DISPLAY.get(s, s.capitalize()) for s in services)
         elif service:
-            sm.context.service = service
-            sm.context.services = [service]
-            from booking_state_machine import SERVICE_DISPLAY
-            sm.context.service_display = SERVICE_DISPLAY.get(service, service.capitalize())
+            sm.context.service = service; sm.context.services = [service]; sm.context.service_display = SERVICE_DISPLAY.get(service, service.capitalize())
         return sm
 
     def test_add_service_no_date(self):
-        """'anche i capelli' → merges service, stays WAITING_DATE, acknowledges."""
-        sm = self._setup_at_waiting_date(service="colore")
-        result = sm.process_message("aggiungi anche i capelli")
-        assert result.next_state == BookingState.WAITING_DATE
-        assert "taglio" in sm.context.services
-        assert "colore" in sm.context.services
-        assert "aggiunto" in result.response.lower()
+        sm = self._setup_at_waiting_date(service="colore"); result = sm.process_message("aggiungi anche i capelli")
+        assert result.next_state == BookingState.WAITING_DATE and "taglio" in sm.context.services and "colore" in sm.context.services and "aggiunto" in result.response.lower()
 
     def test_add_service_with_date(self):
-        """'anche barba, venerdì' → merges service AND extracts date."""
-        sm = self._setup_at_waiting_date(service="taglio")
-        result = sm.process_message("anche barba, venerdì")
-        assert "barba" in sm.context.services
-        assert "taglio" in sm.context.services
-        assert sm.context.date is not None
-        assert result.next_state == BookingState.WAITING_TIME
+        sm = self._setup_at_waiting_date(service="taglio"); result = sm.process_message("anche barba, venerdì")
+        assert "barba" in sm.context.services and "taglio" in sm.context.services and sm.context.date is not None and result.next_state == BookingState.WAITING_TIME
 
     def test_add_multiple_services(self):
-        """'voglio anche barba e colore' → merges both services."""
-        sm = self._setup_at_waiting_date(service="taglio")
-        result = sm.process_message("voglio anche barba e colore")
-        assert "taglio" in sm.context.services
-        assert "barba" in sm.context.services
-        assert "colore" in sm.context.services
+        sm = self._setup_at_waiting_date(service="taglio"); sm.process_message("voglio anche barba e colore")
+        assert all(s in sm.context.services for s in ("taglio", "barba", "colore"))
 
     def test_no_duplicate_services(self):
-        """Already-existing service is NOT added again."""
-        sm = self._setup_at_waiting_date(services=["taglio", "barba"])
-        result = sm.process_message("voglio anche taglio e colore")
-        assert sm.context.services.count("taglio") == 1
-        assert "colore" in sm.context.services
+        sm = self._setup_at_waiting_date(services=["taglio", "barba"]); sm.process_message("voglio anche taglio e colore")
+        assert sm.context.services.count("taglio") == 1 and "colore" in sm.context.services
 
     def test_service_display_updated(self):
-        """service_display reflects merged services."""
-        sm = self._setup_at_waiting_date(service="taglio")
-        sm.process_message("aggiungi barba")
-        assert "Taglio" in sm.context.service_display
-        assert "Barba" in sm.context.service_display
+        sm = self._setup_at_waiting_date(service="taglio"); sm.process_message("aggiungi barba")
+        assert "Taglio" in sm.context.service_display and "Barba" in sm.context.service_display
 
     def test_no_false_positive_date_only(self):
-        """'venerdì' with no service mention → normal date extraction, no service merge."""
-        sm = self._setup_at_waiting_date(service="taglio")
-        original_services = list(sm.context.services)
-        result = sm.process_message("venerdì")
-        assert sm.context.services == original_services
-        assert sm.context.date is not None
+        sm = self._setup_at_waiting_date(service="taglio"); original_services = list(sm.context.services); sm.process_message("venerdì")
+        assert sm.context.services == original_services and sm.context.date is not None
 
-
-# =============================================================================
-# F02.1-03: BUG 1 — NEGATED CANCEL GUARD
-# =============================================================================
 
 class TestNegatedCancelGuard:
-    """Bug 1 F02.1: 'non voglio cancellare' must keep the booking, not cancel it."""
-
     def test_negated_cancel_regex_matches(self):
-        """The _NEGATED_CANCEL pattern must match expected phrases."""
         import re
-        _NEGATED_CANCEL = re.compile(
-            r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
-            re.IGNORECASE
-        )
-        assert _NEGATED_CANCEL.search("non voglio cancellare")
-        assert _NEGATED_CANCEL.search("non intendo annullare")
-        assert _NEGATED_CANCEL.search("non desidero disdire l'appuntamento")
-        assert not _NEGATED_CANCEL.search("voglio cancellare")
-        assert not _NEGATED_CANCEL.search("cancellare appuntamento")
-        assert not _NEGATED_CANCEL.search("non mi piace questa cosa")
+        p = re.compile(r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b", re.IGNORECASE)
+        assert p.search("non voglio cancellare") and p.search("non intendo annullare") and p.search("non desidero disdire l'appuntamento")
+        assert not p.search("voglio cancellare") and not p.search("cancellare appuntamento") and not p.search("non mi piace questa cosa")
 
     def test_negated_cancel_regex_case_insensitive(self):
         import re
-        _NEGATED_CANCEL = re.compile(
-            r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
-            re.IGNORECASE
-        )
-        assert _NEGATED_CANCEL.search("NON VOGLIO CANCELLARE")
-        assert _NEGATED_CANCEL.search("Non Intendo Annullare")
+        p = re.compile(r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b", re.IGNORECASE)
+        assert p.search("NON VOGLIO CANCELLARE") and p.search("Non Intendo Annullare")
 
-
-# =============================================================================
-# F02.1-03: BUG 5 — EXTRA ENTITIES IN CONFIRMING STATE
-# =============================================================================
 
 class TestExtraEntitiesInConfirming:
-    """Bug 5 F02.1: extra_entities must appear in CONFIRMING state response."""
+    def _sm(self, extra, name, service):
+        sm = create_state_machine(); sm.start_booking_flow(); sm.context.extra_entities = extra; sm.context.client_name = name; sm.context.service = service; sm.context.state = BookingState.CONFIRMING; return sm
 
     def test_specialty_in_confirmation(self):
-        """Medical specialty appears in confirmation message."""
-        sm = create_state_machine()
-        sm.start_booking_flow()
-        sm.context.extra_entities = {'specialty': 'Cardiologia'}
-        sm.context.client_name = 'Mario Rossi'
-        sm.context.service = 'visita'
-        sm.context.state = BookingState.CONFIRMING
-
-        result = sm.process_message("si confermo")
-        if result.response:
-            assert 'Cardiologia' in result.response, (
-                f"Expected 'Cardiologia' in response, got: {result.response}"
-            )
+        result = self._sm({'specialty': 'Cardiologia'}, 'Mario Rossi', 'visita').process_message("si confermo")
+        if result.response: assert 'Cardiologia' in result.response
 
     def test_vehicle_plate_in_confirmation(self):
-        """Vehicle plate appears in confirmation message."""
-        sm = create_state_machine()
-        sm.start_booking_flow()
-        sm.context.extra_entities = {'vehicle_plate': 'AB123CD'}
-        sm.context.client_name = 'Gino Bianchi'
-        sm.context.service = 'tagliando'
-        sm.context.state = BookingState.CONFIRMING
-
-        result = sm.process_message("si confermo")
-        if result.response:
-            assert 'AB123CD' in result.response, (
-                f"Expected 'AB123CD' in response, got: {result.response}"
-            )
+        result = self._sm({'vehicle_plate': 'AB123CD'}, 'Gino Bianchi', 'tagliando').process_message("si confermo")
+        if result.response: assert 'AB123CD' in result.response
 
     def test_empty_extra_entities_no_crash(self):
-        """Empty extra_entities must not crash the FSM."""
-        sm = create_state_machine()
-        sm.start_booking_flow()
-        sm.context.extra_entities = {}
-        sm.context.client_name = 'Luca Verdi'
-        sm.context.service = 'taglio'
-        sm.context.state = BookingState.CONFIRMING
-
-        result = sm.process_message("si confermo")
-        assert result is not None
+        assert self._sm({}, 'Luca Verdi', 'taglio').process_message("si confermo") is not None
 
     def test_no_extra_entities_attr_no_crash(self):
-        """If context has no extra_entities attr at all, must not crash."""
-        sm = create_state_machine()
-        sm.start_booking_flow()
-        if hasattr(sm.context, 'extra_entities'):
-            delattr(sm.context, 'extra_entities')
-        sm.context.client_name = 'Luca Verdi'
-        sm.context.service = 'taglio'
-        sm.context.state = BookingState.CONFIRMING
+        sm = self._sm({}, 'Luca Verdi', 'taglio')
+        if hasattr(sm.context, 'extra_entities'): delattr(sm.context, 'extra_entities')
+        assert sm.process_message("si confermo") is not None
 
-        result = sm.process_message("si confermo")
-        assert result is not None
-
-
-# =============================================================================
-# TESTS: GAP-A5 — Cancel in WAITING_NAME / WAITING_SURNAME → IDLE
-# =============================================================================
 
 import pytest as _pytest
 
-
 class TestCancelPreIdentification:
-    """GAP-A5: cancel/rejection before name → IDLE (not WAITING_SERVICE)."""
-
     def test_annulla_tutto_in_waiting_name_goes_to_idle(self):
-        """'annulla tutto' in WAITING_NAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("annulla tutto")
-        assert result.next_state == BookingState.IDLE, (
-            f"Expected IDLE, got {result.next_state}"
-        )
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("annulla tutto").next_state == BookingState.IDLE
     def test_cancella_in_waiting_name_goes_to_idle(self):
-        """'cancella' in WAITING_NAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("cancella")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("cancella").next_state == BookingState.IDLE
     def test_ricominciamo_in_waiting_name_goes_to_idle(self):
-        """'ricominciamo' in WAITING_NAME → IDLE (utente non ha ancora dato nome)."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("ricominciamo")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("ricominciamo").next_state == BookingState.IDLE
     def test_no_grazie_in_waiting_name_goes_to_idle(self):
-        """'no grazie' in WAITING_NAME → IDLE (rifiuto esplicito)."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("no grazie")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("no grazie").next_state == BookingState.IDLE
     def test_lascia_perdere_in_waiting_name_goes_to_idle(self):
-        """'lascia perdere' in WAITING_NAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("lascia perdere")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("lascia perdere").next_state == BookingState.IDLE
     def test_non_voglio_in_waiting_name_goes_to_idle(self):
-        """'non voglio' in WAITING_NAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("non voglio")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message("non voglio").next_state == BookingState.IDLE
     def test_annulla_tutto_in_waiting_surname_goes_to_idle(self):
-        """'annulla tutto' in WAITING_SURNAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_SURNAME
-        sm.context.client_name = "Marco"
-        result = sm.process_message("annulla tutto")
-        assert result.next_state == BookingState.IDLE
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_SURNAME; sm.context.client_name = "Marco"; assert sm.process_message("annulla tutto").next_state == BookingState.IDLE
     def test_no_grazie_in_waiting_surname_goes_to_idle(self):
-        """'no grazie' in WAITING_SURNAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_SURNAME
-        sm.context.client_name = "Marco"
-        result = sm.process_message("no grazie")
-        assert result.next_state == BookingState.IDLE
-
-    @_pytest.mark.parametrize("phrase", [
-        "no grazie",
-        "lascia perdere",
-        "non voglio",
-        "ho cambiato idea",
-        "annulla tutto",
-    ])
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_SURNAME; sm.context.client_name = "Marco"; assert sm.process_message("no grazie").next_state == BookingState.IDLE
+    @_pytest.mark.parametrize("phrase", ["no grazie", "lascia perdere", "non voglio", "ho cambiato idea", "annulla tutto"])
     def test_rejection_phrases_waiting_name_parametric(self, phrase):
-        """Parametric: frasi di rifiuto in WAITING_NAME → IDLE."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message(phrase)
-        assert result.next_state == BookingState.IDLE, (
-            f"'{phrase}' in WAITING_NAME should go to IDLE, got {result.next_state}"
-        )
-
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; assert sm.process_message(phrase).next_state == BookingState.IDLE
     def test_annulla_tutto_mid_booking_still_goes_to_waiting_service(self):
-        """Regression: 'annulla tutto' in WAITING_DATE → WAITING_SERVICE (non IDLE)."""
-        sm = create_state_machine()
-        sm.start_booking_flow()
-        sm.process_message("taglio")   # → WAITING_DATE
-        result = sm.process_message("annulla tutto")
-        assert result.next_state == BookingState.WAITING_SERVICE, (
-            f"Mid-booking reset should go to WAITING_SERVICE, got {result.next_state}"
-        )
-
+        sm = create_state_machine(); sm.start_booking_flow(); sm.process_message("taglio"); assert sm.process_message("annulla tutto").next_state == BookingState.WAITING_SERVICE
     def test_response_contains_graceful_exit_phrase(self):
-        """Il messaggio di uscita deve essere cortese."""
-        sm = create_state_machine()
-        sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("annulla tutto")
-        response_lower = result.response.lower()
-        assert any(kw in response_lower for kw in ["problema", "aspettiamo", "idea", "vuole"]), (
-            f"Response should be graceful, got: {result.response!r}"
-        )
+        sm = create_state_machine(); sm.context.state = BookingState.WAITING_NAME; response = sm.process_message("annulla tutto").response.lower(); assert any(kw in response for kw in ["problema", "aspettiamo", "idea", "vuole"])
 
-
-# =============================================================================
-# MAIN
-# =============================================================================
 
 if __name__ == "__main__":
     import pytest
