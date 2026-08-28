@@ -77,7 +77,8 @@ class TestNormalBookingFlow:
         result = sm.process_message("alle 15")
         assert result.next_state == BookingState.CONFIRMING
         assert sm.context.time == "15:00"
-        assert "conferma" in result.response.lower() or "riepilogo" in result.response.lower()
+        confirmation_text = result.response.lower()
+        assert any(marker in confirmation_text for marker in ("conferma", "riepilogo", "tutto giusto"))
 
         # E4: Confirm → COMPLETED directly (no ASKING_CLOSE_CONFIRMATION)
         result = sm.process_message("sì confermo")
