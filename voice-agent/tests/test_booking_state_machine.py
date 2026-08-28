@@ -400,7 +400,7 @@ class TestContextPersistence:
         assert data["turns_count"] == 3
 
     def test_context_from_json(self):
-        """Test context deserialization from JSON."""
+        """Test context deserialization to JSON."""
         json_str = json.dumps({
             "state": "confirming",
             "service": "colore",
@@ -594,7 +594,9 @@ class TestErrorHandling:
         result = sm.process_message("vorrei un massaggio")  # Not in default services
 
         assert sm.context.state == BookingState.WAITING_SERVICE
-        assert "capire" in result.response.lower() or "trattamento" in result.response.lower()
+        response_text = result.response.lower()
+        assert any(marker in response_text for marker in ("capire", "capito"))
+        assert any(marker in response_text for marker in ("trattamento", "servizio"))
 
     def test_invalid_date(self):
         """Test handling of unrecognized date."""
