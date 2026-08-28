@@ -19,7 +19,6 @@ import platform
 import re
 import subprocess
 import sys
-import time
 from pathlib import Path
 from typing import Any
 
@@ -222,10 +221,11 @@ def rollover(*, codex: str, codex_home: Path, model: str, repo: Path,
             raise RolloverError("cache rollover collision")
         return cached
 
+    command = "git rev-parse HEAD && git status --porcelain && uname -s"
     prompt = (
         "You are continuing a VOS control-plane task from a durable checkpoint; the prior conversation is not canonical. "
-        "You MUST independently verify live state before continuing. Run exactly this read-only shell command once: "
-        "git rev-parse HEAD && git status --porcelain && uname -s . "
+        "You MUST independently verify live state before continuing. "
+        f"Run exactly this read-only shell command once: `{command}`. "
         "Do not run any other shell command and do not modify files. "
         f"Checkpoint SHA256: {checkpoint_sha}. Checkpoint JSON: {json.dumps(checkpoint, sort_keys=True)}. "
         "After the command, return ONLY JSON with exactly these keys: "
