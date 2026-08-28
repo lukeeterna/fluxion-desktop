@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -29,6 +28,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        timeout-minutes: 5
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -88,31 +88,6 @@ jobs:
         working-directory: ./src-tauri
         shell: bash
         run: cargo test --lib --verbose domain
-      - name: Publish Domain Rust diagnostic
-        if: failure() && github.event_name == 'pull_request'
-        working-directory: ./src-tauri
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set +e
-          log_file="../domain-rust-${{ runner.os }}.log"
-          body_file="../domain-rust-${{ runner.os }}.md"
-          cargo test --lib --verbose domain > "$log_file" 2>&1
-          rc=$?
-          {
-            echo '<!-- fluxion-domain-rust-diagnostic -->'
-            echo "### Domain Rust diagnostic — ${{ runner.os }}"
-            echo
-            printf 'SHA: `%s`\n' '${{ github.sha }}'
-            echo "exit_code=$rc"
-            echo
-            echo '```text'
-            tail -n 180 "$log_file"
-            echo '```'
-          } > "$body_file"
-          gh pr comment "${{ github.event.pull_request.number }}" --body-file "$body_file"
-          exit 0
       - name: Run Service Layer Tests
         working-directory: ./src-tauri
         shell: bash
