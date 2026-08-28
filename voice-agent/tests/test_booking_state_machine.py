@@ -234,7 +234,9 @@ class TestInterruptionHandling:
         result = sm.process_message("aspetta un attimo")
 
         # Should acknowledge but stay in same state
-        assert "cambiare" in result.response.lower() or "dica" in result.response.lower()
+        assert result.next_state == BookingState.WAITING_DATE
+        acknowledgement = result.response.lower()
+        assert any(marker in acknowledgement for marker in ("cambiare", "dica", "dimmi"))
 
     def test_operator_escalation(self):
         """Test 'operatore' triggers escalation."""
