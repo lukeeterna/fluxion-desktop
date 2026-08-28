@@ -1,0 +1,86 @@
+name: VOS Context Rollover Capability
+
+on:
+  push:
+    branches:
+      - sol/vos-zero-shuttle-20260828
+    paths:
+      - '.github/workflows/vos-context-rollover-capability.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macbook:
+    name: Probe pinned Codex rollover surface
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    env:
+      SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
+      EXPECTED_CODEX_VERSION: 0.149.0
+    steps:
+      - name: Read-only capability probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          spike="$SPIKE_ROOT"
+          env_file="$spike/env.sh"
+          test -f "$env_file"
+          # shellcheck disable=SC1090
+          source "$env_file"
+          case "${CODEX_HOME:-}" in
+            /Volumes/MontereyT7/*) ;;
+            *) echo 'BLOCKED: CODEX_HOME off T7' >&2; exit 20 ;;
+          esac
+          candidates="$spike/evidence/context-capability-candidates-${GITHUB_RUN_ID}.txt"
+          : > "$candidates"
+          from_path="$(command -v codex || true)"
+          [ -z "$from_path" ] || printf '%s\n' "$from_path" >> "$candidates"
+          if [ -n "${CODEX_INSTALL_DIR:-}" ] && [ -d "$CODEX_INSTALL_DIR" ]; then
+            for candidate in "$CODEX_INSTALL_DIR/codex" "$CODEX_INSTALL_DIR/bin/codex"; do
+              [ -x "$candidate" ] && printf '%s\n' "$candidate" >> "$candidates"
+            done
+            find "$CODEX_INSTALL_DIR" -maxdepth 2 -type f -perm -111 -name 'codex*' -print 2>/dev/null >> "$candidates" || true
+          fi
+          matched="$spike/evidence/context-capability-matched-${GITHUB_RUN_ID}.txt"
+          : > "$matched"
+          while IFS= read -r candidate; do
+            [ -x "$candidate" ] || continue
+            case "$($candidate --version 2>/dev/null || true)" in
+              *"$EXPECTED_CODEX_VERSION"*) python3 - "$candidate" <<'PY' >> "$matched"
+          import os, sys
+          print(os.path.realpath(sys.argv[1]))
+          PY
+              ;;
+            esac
+          done < "$candidates"
+          sort -u "$matched" -o "$matched"
+          [ "$(sed '/^$/d' "$matched" | wc -l | tr -d ' ')" = 1 ]
+          codex_bin="$(sed -n '1p' "$matched")"
+          echo "CODEX_VERSION=$($codex_bin --version)"
+
+          probe() {
+            label="$1"; shift
+            out="$spike/evidence/context-capability-${label}-${GITHUB_RUN_ID}.txt"
+            set +e
+            "$codex_bin" "$@" --help >"$out" 2>&1
+            rc=$?
+            set -e
+            echo "${label}_HELP_RC=$rc"
+            if [ "$rc" -eq 0 ]; then
+              echo "${label}_SUPPORTED=YES"
+            else
+              echo "${label}_SUPPORTED=NO"
+            fi
+          }
+          probe FORK fork
+          probe RESUME resume
+          probe EXEC_RESUME exec resume
+
+          main_help="$spike/evidence/context-capability-main-${GITHUB_RUN_ID}.txt"
+          "$codex_bin" --help >"$main_help" 2>&1
+          if grep -Eq '(^|[[:space:]])fork([[:space:]]|$)' "$main_help"; then echo 'TOPLEVEL_FORK_LISTED=YES'; else echo 'TOPLEVEL_FORK_LISTED=NO'; fi
+          if grep -Eq '(^|[[:space:]])resume([[:space:]]|$)' "$main_help"; then echo 'TOPLEVEL_RESUME_LISTED=YES'; else echo 'TOPLEVEL_RESUME_LISTED=NO'; fi
+          echo "SOURCE_REPOS_MUTATED=NO"
