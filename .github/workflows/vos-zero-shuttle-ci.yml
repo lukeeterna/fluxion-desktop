@@ -1,4 +1,4 @@
-name: VOS Zero Prompt Shuttle
+name: VOS Zero Shuttle + Context Rollover
 
 on:
   push:
@@ -7,7 +7,9 @@ on:
     paths:
       - 'bin/vos_worker_adapter.py'
       - 'bin/vos_sol_bridge.py'
+      - 'bin/vos_context_rollover.py'
       - 'tests/test_vos_zero_shuttle.py'
+      - 'tests/test_vos_context_rollover.py'
       - '.github/workflows/vos-zero-shuttle-ci.yml'
   workflow_dispatch:
 
@@ -15,12 +17,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: vos-zero-prompt-shuttle
+  group: vos-zero-prompt-shuttle-rollover
   cancel-in-progress: true
 
 jobs:
   unit:
-    name: VOS zero-shuttle regression + negative gates
+    name: VOS kernel + zero-shuttle + rollover gates
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
@@ -36,17 +38,19 @@ jobs:
             bin/vos_apply.py \
             bin/vos_worker_adapter.py \
             bin/vos_sol_bridge.py \
+            bin/vos_context_rollover.py \
             tools/vos_codex_qualification.py \
             tests/test_vos_apply.py \
             tests/test_vos_codex_qualification.py \
-            tests/test_vos_zero_shuttle.py; do
+            tests/test_vos_zero_shuttle.py \
+            tests/test_vos_context_rollover.py; do
             mkdir -p "$root/$(dirname "$path")"
             curl --fail --silent --show-error --location "$base/$path" -o "$root/$path"
           done
           touch "$root/tests/__init__.py"
           echo "VOS_TEST_ROOT=$root" >> "$GITHUB_ENV"
 
-      - name: Run kernel regression and zero-shuttle gates
+      - name: Run fail-closed regression and negative gates
         shell: bash
         run: |
           set -euo pipefail
@@ -55,26 +59,29 @@ jobs:
           python3 -m unittest -v \
             tests.test_vos_apply \
             tests.test_vos_codex_qualification \
-            tests.test_vos_zero_shuttle
+            tests.test_vos_zero_shuttle \
+            tests.test_vos_context_rollover
           python3 -m py_compile \
             bin/vos_common.py \
             bin/vos_apply.py \
             bin/vos_worker_adapter.py \
             bin/vos_sol_bridge.py \
+            bin/vos_context_rollover.py \
             tools/vos_codex_qualification.py \
-            tests/test_vos_zero_shuttle.py
+            tests/test_vos_zero_shuttle.py \
+            tests/test_vos_context_rollover.py
 
   macbook:
-    name: Real MacBook Sol → VOS → exact Sol resume
+    name: Real MacBook Sol → VOS → resume → durable rollover
     needs: unit
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 20
+    timeout-minutes: 25
     env:
       SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
       EXPECTED_CODEX_VERSION: 0.149.0
       EXPECTED_MODEL: gpt-5.6-sol
     steps:
-      - name: Execute zero-shuttle fixture on exact SHA
+      - name: Execute exact-SHA zero-shuttle and context rollover fixture
         shell: bash
         run: |
           set -euo pipefail
@@ -139,14 +146,19 @@ jobs:
           codex_bin="$(sed -n '1p' "$matched")"
           echo "CODEX_VERSION_OBSERVED=$($codex_bin --version)"
 
-          run_root="$spike/evidence/zero-shuttle-${GITHUB_RUN_ID}"
+          run_root="$spike/evidence/zero-shuttle-rollover-${GITHUB_RUN_ID}"
           runtime="$run_root/runtime"
           workspace="$run_root/workspace"
           evidence="$run_root/evidence"
           fixture="$run_root/fixture-repo"
           mkdir -p "$runtime/bin" "$workspace" "$evidence" "$fixture"
           base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
-          for path in bin/vos_common.py bin/vos_apply.py bin/vos_worker_adapter.py bin/vos_sol_bridge.py; do
+          for path in \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_worker_adapter.py \
+            bin/vos_sol_bridge.py \
+            bin/vos_context_rollover.py; do
             curl --fail --silent --show-error --location "$base/$path" -o "$runtime/bin/$(basename "$path")"
           done
 
@@ -201,6 +213,8 @@ jobs:
           task="$run_root/task.json"
           worker_result="$run_root/worker-result.json"
           bridge_result="$run_root/bridge-result.json"
+          checkpoint="$run_root/context-checkpoint.json"
+          rollover_result="$run_root/context-rollover-result.json"
           objective='Create the harmless real zero-shuttle fixture result using the only sealed SAFE_AUTO unit.'
 
           python3 "$runtime/bin/vos_sol_bridge.py" start \
@@ -229,35 +243,72 @@ jobs:
 
           first_worker_sha="$(shasum -a 256 "$worker_result" | awk '{print $1}')"
           first_bridge_sha="$(shasum -a 256 "$bridge_result" | awk '{print $1}')"
-
-          # Duplicate delivery must not repeat worker effects or Sol resume.
           python3 "$runtime/bin/vos_worker_adapter.py" "$task" --repo "$fixture" --output "$worker_result" >/dev/null
           python3 "$runtime/bin/vos_sol_bridge.py" resume \
             --codex "$codex_bin" --task "$task" --worker-result "$worker_result" \
             --workspace "$workspace" --evidence "$evidence" --bridge-result "$bridge_result" --timeout 300 >/dev/null
+          [ "$first_worker_sha" = "$(shasum -a 256 "$worker_result" | awk '{print $1}')" ]
+          [ "$first_bridge_sha" = "$(shasum -a 256 "$bridge_result" | awk '{print $1}')" ]
 
-          second_worker_sha="$(shasum -a 256 "$worker_result" | awk '{print $1}')"
-          second_bridge_sha="$(shasum -a 256 "$bridge_result" | awk '{print $1}')"
-          [ "$first_worker_sha" = "$second_worker_sha" ]
-          [ "$first_bridge_sha" = "$second_bridge_sha" ]
+          python3 "$runtime/bin/vos_context_rollover.py" seal \
+            --repo "$fixture" \
+            --task "$task" \
+            --worker-result "$worker_result" \
+            --bridge-result "$bridge_result" \
+            --checkpoint "$checkpoint"
 
-          python3 - "$task" "$worker_result" "$bridge_result" <<'PY'
+          python3 "$runtime/bin/vos_context_rollover.py" run \
+            --codex "$codex_bin" \
+            --codex-home "$CODEX_HOME" \
+            --model "$EXPECTED_MODEL" \
+            --repo "$fixture" \
+            --checkpoint "$checkpoint" \
+            --evidence "$evidence" \
+            --result "$rollover_result" \
+            --timeout 300
+
+          first_rollover_sha="$(shasum -a 256 "$rollover_result" | awk '{print $1}')"
+          first_rollover_jsonl_sha="$(shasum -a 256 "$evidence/context-rollover.jsonl" | awk '{print $1}')"
+          python3 "$runtime/bin/vos_context_rollover.py" run \
+            --codex "$codex_bin" --codex-home "$CODEX_HOME" --model "$EXPECTED_MODEL" \
+            --repo "$fixture" --checkpoint "$checkpoint" --evidence "$evidence" \
+            --result "$rollover_result" --timeout 300 >/dev/null
+          [ "$first_rollover_sha" = "$(shasum -a 256 "$rollover_result" | awk '{print $1}')" ]
+          [ "$first_rollover_jsonl_sha" = "$(shasum -a 256 "$evidence/context-rollover.jsonl" | awk '{print $1}')" ]
+
+          python3 - "$task" "$worker_result" "$bridge_result" "$checkpoint" "$rollover_result" <<'PY'
           import json, sys
           from pathlib import Path
           task=json.loads(Path(sys.argv[1]).read_text())
           worker=json.loads(Path(sys.argv[2]).read_text())
           bridge=json.loads(Path(sys.argv[3]).read_text())
+          checkpoint=json.loads(Path(sys.argv[4]).read_text())
+          roll=json.loads(Path(sys.argv[5]).read_text())
           assert worker['status']=='PASS'
-          assert bridge['status']=='PASS'
-          assert bridge['decision']=='ACCEPT'
+          assert bridge['status']=='PASS' and bridge['decision']=='ACCEPT'
           assert bridge['thread_id_match']=='PASS'
           assert task['thread_id']==worker['thread_id']==bridge['thread_id']
           assert worker['published'] is False
+          assert roll['status']=='PASS'
+          assert roll['checkpoint_hash_match']=='PASS'
+          assert roll['new_thread_distinct']=='PASS'
+          assert roll['live_state_match']=='PASS'
+          assert roll['continuation']=='CONTINUE'
+          assert roll['source_thread_id']==task['thread_id']
+          assert roll['new_thread_id'] != task['thread_id']
+          assert roll['prior_result_commit']==worker['result_commit']
+          assert roll['checkpoint_sha256']==checkpoint['checkpoint_sha256']
           print('ZERO_PROMPT_SHUTTLING=GREEN')
           print('FOUNDER_PROMPT_SHUTTLING=0')
           print('THREAD_ID_MATCH=PASS')
           print('SOL_DECISION=ACCEPT')
           print('WORKER_RESULT_COMMIT='+worker['result_commit'])
+          print('CONTEXT_ROLLOVER=GREEN')
+          print('CHECKPOINT_HASH_MATCH=PASS')
+          print('NEW_THREAD_DISTINCT=PASS')
+          print('LIVE_STATE_MATCH=PASS')
+          print('SOURCE_THREAD_ID='+roll['source_thread_id'])
+          print('NEW_THREAD_ID='+roll['new_thread_id'])
           PY
 
           echo "EXACT_SHA=$GITHUB_SHA"
