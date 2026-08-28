@@ -1,0 +1,265 @@
+name: VOS Zero Prompt Shuttle
+
+on:
+  push:
+    branches:
+      - sol/vos-zero-shuttle-20260828
+    paths:
+      - 'bin/vos_worker_adapter.py'
+      - 'bin/vos_sol_bridge.py'
+      - 'tests/test_vos_zero_shuttle.py'
+      - '.github/workflows/vos-zero-shuttle-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-zero-prompt-shuttle
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: VOS zero-shuttle regression + negative gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Fetch exact-SHA VOS sources only
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/vos-zero-shuttle"
+          mkdir -p "$root/bin" "$root/tools" "$root/tests"
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
+          for path in \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_worker_adapter.py \
+            bin/vos_sol_bridge.py \
+            tools/vos_codex_qualification.py \
+            tests/test_vos_apply.py \
+            tests/test_vos_codex_qualification.py \
+            tests/test_vos_zero_shuttle.py; do
+            mkdir -p "$root/$(dirname "$path")"
+            curl --fail --silent --show-error --location "$base/$path" -o "$root/$path"
+          done
+          touch "$root/tests/__init__.py"
+          echo "VOS_TEST_ROOT=$root" >> "$GITHUB_ENV"
+
+      - name: Run kernel regression and zero-shuttle gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$VOS_TEST_ROOT"
+          export PYTHONPATH="$VOS_TEST_ROOT/bin"
+          python3 -m unittest -v \
+            tests.test_vos_apply \
+            tests.test_vos_codex_qualification \
+            tests.test_vos_zero_shuttle
+          python3 -m py_compile \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_worker_adapter.py \
+            bin/vos_sol_bridge.py \
+            tools/vos_codex_qualification.py \
+            tests/test_vos_zero_shuttle.py
+
+  macbook:
+    name: Real MacBook Sol → VOS → exact Sol resume
+    needs: unit
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 20
+    env:
+      SPIKE_ROOT: /Volumes/MontereyT7/VOS_FABRIC_SPIKE/20260823T170806
+      EXPECTED_CODEX_VERSION: 0.149.0
+      EXPECTED_MODEL: gpt-5.6-sol
+    steps:
+      - name: Execute zero-shuttle fixture on exact SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          set +x
+
+          spike="$SPIKE_ROOT"
+          env_file="$spike/env.sh"
+          test -d "$spike" && test -f "$env_file"
+
+          python3 - "$env_file" <<'PY'
+          import re, sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          assignment = re.compile(r'^(?:export[ \t]+)?([A-Za-z_][A-Za-z0-9_]*)=(.*)$')
+          forbidden = ('$(', '`', ';', '&&', '||', '>', '<')
+          bad = []
+          for lineno, raw in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+              line = raw.strip()
+              if not line or line.startswith('#'):
+                  continue
+              match = assignment.fullmatch(line)
+              if not match or any(token in match.group(2) for token in forbidden):
+                  bad.append(lineno)
+          if bad:
+              raise SystemExit('unsafe spike env lines: ' + ','.join(map(str, bad)))
+          print('SPIKE_ENV_SAFE_TO_SOURCE=YES')
+          PY
+          # shellcheck disable=SC1090
+          source "$env_file"
+          case "${CODEX_HOME:-}" in
+            /Volumes/MontereyT7/*) ;;
+            *) echo 'BLOCKED: CODEX_HOME is not on MontereyT7' >&2; exit 20 ;;
+          esac
+
+          candidates="$spike/evidence/zero-shuttle-codex-candidates-${GITHUB_RUN_ID}.txt"
+          : > "$candidates"
+          from_path="$(command -v codex || true)"
+          [ -z "$from_path" ] || printf '%s\n' "$from_path" >> "$candidates"
+          if [ -n "${CODEX_INSTALL_DIR:-}" ] && [ -d "$CODEX_INSTALL_DIR" ]; then
+            for candidate in "$CODEX_INSTALL_DIR/codex" "$CODEX_INSTALL_DIR/bin/codex"; do
+              [ -x "$candidate" ] && printf '%s\n' "$candidate" >> "$candidates"
+            done
+            find "$CODEX_INSTALL_DIR" -maxdepth 2 -type f -perm -111 -name 'codex*' -print 2>/dev/null >> "$candidates" || true
+          fi
+          matched="$spike/evidence/zero-shuttle-codex-matched-${GITHUB_RUN_ID}.txt"
+          : > "$matched"
+          while IFS= read -r candidate; do
+            [ -x "$candidate" ] || continue
+            version="$($candidate --version 2>/dev/null || true)"
+            case "$version" in
+              *"$EXPECTED_CODEX_VERSION"*) python3 - "$candidate" <<'PY' >> "$matched"
+          import os, sys
+          print(os.path.realpath(sys.argv[1]))
+          PY
+              ;;
+            esac
+          done < "$candidates"
+          sort -u "$matched" -o "$matched"
+          count="$(sed '/^$/d' "$matched" | wc -l | tr -d ' ')"
+          [ "$count" = 1 ] || { echo "BLOCKED: Codex candidate count=$count" >&2; exit 21; }
+          codex_bin="$(sed -n '1p' "$matched")"
+          echo "CODEX_VERSION_OBSERVED=$($codex_bin --version)"
+
+          run_root="$spike/evidence/zero-shuttle-${GITHUB_RUN_ID}"
+          runtime="$run_root/runtime"
+          workspace="$run_root/workspace"
+          evidence="$run_root/evidence"
+          fixture="$run_root/fixture-repo"
+          mkdir -p "$runtime/bin" "$workspace" "$evidence" "$fixture"
+          base="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_SHA}"
+          for path in bin/vos_common.py bin/vos_apply.py bin/vos_worker_adapter.py bin/vos_sol_bridge.py; do
+            curl --fail --silent --show-error --location "$base/$path" -o "$runtime/bin/$(basename "$path")"
+          done
+
+          python3 - "$fixture" "$run_root/catalog.json" <<'PY'
+          import hashlib, json, subprocess, sys
+          from pathlib import Path
+          root = Path(sys.argv[1])
+          catalog_path = Path(sys.argv[2])
+          subprocess.run(['git','init','-q','-b','master',str(root)], check=True)
+          def git(*args):
+              return subprocess.check_output(['git',*args], cwd=root, text=True).strip()
+          git('config','user.email','vos-zero-shuttle@example.invalid')
+          git('config','user.name','VOS Zero Shuttle')
+          (root/'bin').mkdir(parents=True, exist_ok=True)
+          (root/'docs/judge/mandati').mkdir(parents=True, exist_ok=True)
+          (root/'vos/control/plans').mkdir(parents=True, exist_ok=True)
+          (root/'.gitignore').write_text('vos/control/plans/\n', encoding='utf-8')
+          (root/'bin/task.py').write_text(
+              "from pathlib import Path\np=Path('out/result.txt'); p.parent.mkdir(parents=True,exist_ok=True); p.write_text('real-zero-shuttle-ok\\n')\n",
+              encoding='utf-8')
+          mandate = root/'docs/judge/mandati/T-ZERO.md'
+          mandate.write_text('ETICHETTA: SAFE_AUTO\nReal MacBook zero-shuttle fixture.\n', encoding='utf-8')
+          mandate_sha = hashlib.sha256(mandate.read_bytes()).hexdigest()
+          manifest = {
+              'schema_version':1,'unit_id':'T-ZERO','label':'SAFE_AUTO','lane':'REPO','risk':'A',
+              'base_commit':'*','mandate_md':'docs/judge/mandati/T-ZERO.md','mandate_sha256':mandate_sha,
+              'key':'T-ZERO@real-fixture','allowed_paths':['out'],
+              'steps':[{'id':'F1','argv':['python3','bin/task.py'],'cwd':'.','timeout_seconds':20}],
+          }
+          (root/'docs/judge/mandati/T-ZERO.json').write_text(json.dumps(manifest,sort_keys=True), encoding='utf-8')
+          git('add','.')
+          git('commit','-qm','zero shuttle fixture base')
+          head = git('rev-parse','HEAD')
+          stamp='20260828T000000Z'
+          body=f'PIANO_{stamp}_UNITS_1_HEAD_{head}'
+          digest=hashlib.sha256(body.encode()).hexdigest()
+          plan_rel='vos/control/plans/zero.md'
+          plan=root/plan_rel
+          plan.write_text(
+              f'# Piano VOS — {stamp}\nHEAD al momento della pianificazione: {head}\nUnità selezionate: 1\nsha256: {digest}\n\n### 1. T-ZERO\n',
+              encoding='utf-8')
+          if git('status','--porcelain'):
+              raise SystemExit('fixture worktree dirty before worker')
+          catalog=[{
+              'unit_id':'T-ZERO','plan_path':plan_rel,'plan_sha256':hashlib.sha256(plan.read_bytes()).hexdigest(),
+              'mandate_sha256':mandate_sha,'base_commit':head,
+          }]
+          catalog_path.write_text(json.dumps(catalog,sort_keys=True), encoding='utf-8')
+          print('FIXTURE_BASE_COMMIT='+head)
+          PY
+
+          task="$run_root/task.json"
+          worker_result="$run_root/worker-result.json"
+          bridge_result="$run_root/bridge-result.json"
+          objective='Create the harmless real zero-shuttle fixture result using the only sealed SAFE_AUTO unit.'
+
+          python3 "$runtime/bin/vos_sol_bridge.py" start \
+            --codex "$codex_bin" \
+            --codex-home "$CODEX_HOME" \
+            --model "$EXPECTED_MODEL" \
+            --objective "$objective" \
+            --catalog "$run_root/catalog.json" \
+            --workspace "$workspace" \
+            --evidence "$evidence" \
+            --task "$task" \
+            --timeout 300
+
+          python3 "$runtime/bin/vos_worker_adapter.py" "$task" \
+            --repo "$fixture" \
+            --output "$worker_result"
+
+          python3 "$runtime/bin/vos_sol_bridge.py" resume \
+            --codex "$codex_bin" \
+            --task "$task" \
+            --worker-result "$worker_result" \
+            --workspace "$workspace" \
+            --evidence "$evidence" \
+            --bridge-result "$bridge_result" \
+            --timeout 300
+
+          first_worker_sha="$(shasum -a 256 "$worker_result" | awk '{print $1}')"
+          first_bridge_sha="$(shasum -a 256 "$bridge_result" | awk '{print $1}')"
+
+          # Duplicate delivery must not repeat worker effects or Sol resume.
+          python3 "$runtime/bin/vos_worker_adapter.py" "$task" --repo "$fixture" --output "$worker_result" >/dev/null
+          python3 "$runtime/bin/vos_sol_bridge.py" resume \
+            --codex "$codex_bin" --task "$task" --worker-result "$worker_result" \
+            --workspace "$workspace" --evidence "$evidence" --bridge-result "$bridge_result" --timeout 300 >/dev/null
+
+          second_worker_sha="$(shasum -a 256 "$worker_result" | awk '{print $1}')"
+          second_bridge_sha="$(shasum -a 256 "$bridge_result" | awk '{print $1}')"
+          [ "$first_worker_sha" = "$second_worker_sha" ]
+          [ "$first_bridge_sha" = "$second_bridge_sha" ]
+
+          python3 - "$task" "$worker_result" "$bridge_result" <<'PY'
+          import json, sys
+          from pathlib import Path
+          task=json.loads(Path(sys.argv[1]).read_text())
+          worker=json.loads(Path(sys.argv[2]).read_text())
+          bridge=json.loads(Path(sys.argv[3]).read_text())
+          assert worker['status']=='PASS'
+          assert bridge['status']=='PASS'
+          assert bridge['decision']=='ACCEPT'
+          assert bridge['thread_id_match']=='PASS'
+          assert task['thread_id']==worker['thread_id']==bridge['thread_id']
+          assert worker['published'] is False
+          print('ZERO_PROMPT_SHUTTLING=GREEN')
+          print('FOUNDER_PROMPT_SHUTTLING=0')
+          print('THREAD_ID_MATCH=PASS')
+          print('SOL_DECISION=ACCEPT')
+          print('WORKER_RESULT_COMMIT='+worker['result_commit'])
+          PY
+
+          echo "EXACT_SHA=$GITHUB_SHA"
+          echo "SOURCE_REPOS_MUTATED=NO"
+          echo "PAID_API_FALLBACK=NO"
