@@ -69,6 +69,21 @@ jobs:
         run: npm ci
       - name: Build frontend
         run: npm run build
+      - name: Prepare Tauri sidecar compile fixture
+        working-directory: ./src-tauri
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="$(rustc -vV | sed -n 's/^host: //p')"
+          test -n "$target"
+          mkdir -p binaries
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            fixture="binaries/voice-agent-${target}.exe"
+          else
+            fixture="binaries/voice-agent-${target}"
+          fi
+          : > "$fixture"
+          echo "TAURI_TEST_SIDECAR_FIXTURE=$fixture"
       - name: Run Domain Layer Tests
         working-directory: ./src-tauri
         shell: bash
@@ -89,7 +104,7 @@ jobs:
             echo '<!-- fluxion-domain-rust-diagnostic -->'
             echo "### Domain Rust diagnostic — ${{ runner.os }}"
             echo
-            echo "SHA: `${{ github.sha }}`"
+            printf 'SHA: `%s`\n' '${{ github.sha }}'
             echo "exit_code=$rc"
             echo
             echo '```text'
