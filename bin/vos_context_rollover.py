@@ -175,6 +175,12 @@ def validate_checkpoint(envelope: Any) -> tuple[dict[str, Any], str]:
 
 
 def command_probe_evidence(events: list[dict[str, Any]], expected_head: str, expected_platform: str) -> bool:
+    labelled = [
+        f"VOS_HEAD={expected_head}",
+        "VOS_STATUS=",
+        f"VOS_PLATFORM={expected_platform}",
+    ]
+    legacy = [expected_head, expected_platform]
     for event in events:
         if event.get("type") != "item.completed":
             continue
@@ -187,7 +193,7 @@ def command_probe_evidence(events: list[dict[str, Any]], expected_head: str, exp
         if item.get("status") != "completed" or item.get("exit_code") != 0:
             continue
         lines = [line.strip() for line in str(item.get("aggregated_output", "")).splitlines() if line.strip()]
-        if lines == [expected_head, expected_platform]:
+        if lines == labelled or lines == legacy:
             return True
     return False
 
@@ -221,7 +227,10 @@ def rollover(*, codex: str, codex_home: Path, model: str, repo: Path,
             raise RolloverError("cache rollover collision")
         return cached
 
-    command = "git rev-parse HEAD && git status --porcelain && uname -s"
+    command = (
+        "head=$(git rev-parse HEAD) && status=$(git status --porcelain) && platform=$(uname -s) && "
+        "printf 'VOS_HEAD=%s\\nVOS_STATUS=%s\\nVOS_PLATFORM=%s\\n' \"$head\" \"$status\" \"$platform\""
+    )
     prompt = (
         "You are continuing a VOS control-plane task from a durable checkpoint; the prior conversation is not canonical. "
         "You MUST independently verify live state before continuing. "
