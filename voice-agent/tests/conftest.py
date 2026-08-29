@@ -22,6 +22,7 @@ _LEGACY_IDENTIFIED_FLOW_CLASSES = {
     "TestInterruptionHandling",
     "TestConfirmationChanges",
     "TestEntityExtractionIntegration",
+    "TestErrorHandling",
 }
 
 
