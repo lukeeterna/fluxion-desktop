@@ -1,13 +1,15 @@
 """Shared pytest fixtures for deterministic voice-agent unit tests.
 
-The production booking FSM now requires caller identity before moving from a
-selected service to date collection. Older booking-flow tests in
-``test_booking_state_machine.py`` intentionally exercise service/date/time
-transitions in isolation, so those scenarios need an already identified
-client. Those legacy tests also use a fixed January 2026 reference date; the
-production date-integrity guard uses ``date.today()``, therefore the test clock
-must be frozen to the same reference date to keep relative dates deterministic.
-Identity-specific tests remain untouched and still start anonymous.
+``test_booking_state_machine.py`` defines a fixed January 2026
+``REFERENCE_DATE``.  The production FSM also has a date-integrity chokepoint
+that consults module-level ``date.today()``.  Freeze that clock for the whole
+legacy test module so relative phrases such as ``domani`` and ``venerdì`` are
+validated against the same reference date used by the extractor.
+
+The production booking FSM also requires caller identity before moving from a
+selected service to date collection.  Older booking-flow classes intentionally
+exercise service/date/time transitions in isolation, so only those classes get
+an already identified client.  Identity-specific scenarios remain anonymous.
 """
 
 import sys
@@ -28,25 +30,16 @@ _LEGACY_IDENTIFIED_FLOW_CLASSES = {
 
 
 @pytest.fixture(autouse=True)
-def identified_client_for_legacy_booking_flow(request, monkeypatch):
-    """Provide the explicit preconditions assumed by legacy booking tests.
+def deterministic_booking_state_machine_tests(request, monkeypatch):
+    """Supply only the preconditions explicitly assumed by the legacy tests.
 
-    This does not skip or relax assertions and does not alter production code.
-    It supplies an already identified client for booking-only scenarios and
-    freezes the FSM's notion of today to the file's fixed ``REFERENCE_DATE`` so
-    that inputs such as ``domani`` remain inside the production booking horizon.
+    No assertion is skipped or relaxed and production code is not changed.
+    Every test in the fixed-date module gets the same deterministic clock; only
+    booking-only classes get a synthetic already-identified caller.
     """
     module = getattr(request, "module", None)
     cls = getattr(request, "cls", None)
     if module is None or module.__name__.split(".")[-1] != "test_booking_state_machine":
-        return
-
-    class_name = cls.__name__ if cls is not None else ""
-    if class_name not in _LEGACY_IDENTIFIED_FLOW_CLASSES:
-        return
-
-    # This scenario validates name extraction itself and must remain anonymous.
-    if request.node.name == "test_name_extraction":
         return
 
     original_factory = getattr(module, "create_state_machine", None)
@@ -63,9 +56,18 @@ def identified_client_for_legacy_booking_flow(request, monkeypatch):
         def today(cls):
             return cls(reference_day.year, reference_day.month, reference_day.day)
 
-    # _set_context_date() uses the module-level ``date.today()``. Patch only for
-    # this legacy test invocation; monkeypatch restores the real clock afterward.
+    # Keep the production horizon guard active; only make its clock agree with
+    # the test module's explicit REFERENCE_DATE. monkeypatch restores it after
+    # each test invocation.
     monkeypatch.setattr(fsm_module, "date", FixedDate)
+
+    class_name = cls.__name__ if cls is not None else ""
+    if class_name not in _LEGACY_IDENTIFIED_FLOW_CLASSES:
+        return
+
+    # This scenario validates name extraction itself and must remain anonymous.
+    if request.node.name == "test_name_extraction":
+        return
 
     def create_identified_state_machine():
         sm = original_factory()
