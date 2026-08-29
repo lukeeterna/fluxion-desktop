@@ -8,7 +8,6 @@ import unittest
 from pathlib import Path
 
 import vos_context_rollover as rollover
-import vos_sol_bridge as bridge
 
 SOURCE_THREAD = "019d1c0a-0137-73f3-bf4a-88c90739150c"
 NEW_THREAD = "019d1c0a-0137-73f3-bf4a-88c90739150d"
@@ -82,7 +81,7 @@ class ContextRolloverTests(unittest.TestCase):
         fake = root / "codex"
         fake.write_text(
             r'''#!/usr/bin/env python3
-import json, os, re, subprocess, sys
+import json, os, re, sys
 from pathlib import Path
 SOURCE="019d1c0a-0137-73f3-bf4a-88c90739150c"
 NEW="019d1c0a-0137-73f3-bf4a-88c90739150d"
@@ -96,26 +95,25 @@ def grab(key):
     m=re.search(r'"'+re.escape(key)+r'":\s*(?:"([^"]*)"|(true|false))', prompt)
     if not m: raise SystemExit(8)
     return m.group(1) if m.group(1) is not None else (m.group(2)=="true")
-m=re.search(r'Checkpoint SHA256: ([0-9a-f]{64})', prompt)
-if not m: raise SystemExit(7)
-checkpoint_sha=m.group(1)
+checkpoint_match=re.search(r'Checkpoint SHA256: ([0-9a-f]{64})', prompt)
+probe_match=re.search(r'Live probe SHA256: ([0-9a-f]{64})', prompt)
+if not checkpoint_match or not probe_match: raise SystemExit(7)
+checkpoint_sha=checkpoint_match.group(1)
+probe_sha=probe_match.group(1)
+if os.environ.get("FAKE_BAD_PROBE") == "1": probe_sha="f"*64
 source=grab("source_thread_id")
-expected_head=grab("expected_repo_head")
+head=grab("repo_head")
+platform=grab("platform")
 result_commit=grab("result_commit")
-expected_platform=grab("expected_platform")
-head=subprocess.check_output(["git","rev-parse","HEAD"], text=True).strip()
-platform=subprocess.check_output(["uname","-s"], text=True).strip()
 tid=SOURCE if os.environ.get("FAKE_SAME_THREAD")=="1" else NEW
-session=home/"sessions"/"2026"/"08"/"28"
+session=home/"sessions"/"2026"/"08"/"29"
 session.mkdir(parents=True, exist_ok=True)
 (session/f"rollout-{tid}.jsonl").write_text(json.dumps({"type":"turn_context","payload":{"model":"gpt-5.6-sol"}})+"\n",encoding="utf-8")
 print(json.dumps({"type":"thread.started","thread_id":tid}))
 print(json.dumps({"type":"turn.started"}))
-if os.environ.get("FAKE_NO_COMMAND") != "1":
-    print(json.dumps({"type":"item.completed","item":{"id":"c1","type":"command_execution","command":"git rev-parse HEAD && git status --porcelain && uname -s","aggregated_output":head+"\n"+platform+"\n","exit_code":0,"status":"completed"}}))
 if os.environ.get("FAKE_FILE_CHANGE") == "1":
     print(json.dumps({"type":"item.completed","item":{"id":"f1","type":"file_change","changes":[{"path":"x","kind":"add"}],"status":"completed"}}))
-response={"checkpoint_sha256":checkpoint_sha,"source_thread_id":source,"observed_head":head,"platform":platform,"worktree_clean":True,"prior_result_commit":result_commit,"continuation":"CONTINUE"}
+response={"checkpoint_sha256":checkpoint_sha,"live_probe_sha256":probe_sha,"source_thread_id":source,"observed_head":head,"platform":platform,"worktree_clean":True,"prior_result_commit":result_commit,"continuation":"CONTINUE"}
 print(json.dumps({"type":"item.completed","item":{"id":"a1","type":"agent_message","text":json.dumps(response,sort_keys=True)}}))
 print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_tokens":1}}))
 ''',
@@ -142,8 +140,10 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
                 inner.old = os.environ.get("CODEX_HOME")
                 os.environ["CODEX_HOME"] = str(home)
             def __exit__(inner, *_):
-                if inner.old is None: os.environ.pop("CODEX_HOME", None)
-                else: os.environ["CODEX_HOME"] = inner.old
+                if inner.old is None:
+                    os.environ.pop("CODEX_HOME", None)
+                else:
+                    os.environ["CODEX_HOME"] = inner.old
         return Env()
 
     def seal(self, repo: Path, paths):
@@ -161,7 +161,7 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
                 checkpoint_path=checkpoint, evidence=evidence, result_path=result, timeout=10,
             )
 
-    def test_rollover_creates_distinct_thread_verifies_live_state_and_is_idempotent(self):
+    def test_rollover_uses_controller_probe_new_thread_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as td:
             repo, head, fake, home, evidence, paths = self.setup_flow(td)
             checkpoint = self.seal(repo, paths)
@@ -171,8 +171,17 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
             self.assertEqual(first["new_thread_id"], NEW_THREAD)
             self.assertEqual(first["new_thread_distinct"], "PASS")
             self.assertEqual(first["live_state_match"], "PASS")
+            self.assertEqual(first["live_probe_hash_match"], "PASS")
             self.assertEqual(first["checkpoint_sha256"], checkpoint["checkpoint_sha256"])
             self.assertEqual(first["live_repo_head"], head)
+            probe=json.loads((evidence/"context-live-probe.json").read_text())
+            self.assertEqual(probe["live_probe_sha256"], first["live_probe_sha256"])
+            self.assertEqual(
+                probe["live_probe_sha256"],
+                rollover.sha256_bytes(rollover.canonical_json(probe["probe"])),
+            )
+            events=[json.loads(line) for line in (evidence/"context-rollover.jsonl").read_text().splitlines() if line.strip()]
+            self.assertFalse(any(isinstance(e.get("item"),dict) and e["item"].get("type")=="command_execution" for e in events))
             self.assertEqual(len((home/"rollover-calls.txt").read_text().splitlines()), 1)
             second = self.run_rollover(repo, fake, home, evidence, paths)
             self.assertEqual(second, first)
@@ -182,10 +191,9 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
         with tempfile.TemporaryDirectory() as td:
             repo, _, fake, home, evidence, paths = self.setup_flow(td)
             self.seal(repo, paths)
-            checkpoint_path = paths[3]
-            data = json.loads(checkpoint_path.read_text())
+            data = json.loads(paths[3].read_text())
             data["checkpoint"]["next_action"] = "tampered"
-            checkpoint_path.write_text(json.dumps(data), encoding="utf-8")
+            paths[3].write_text(json.dumps(data), encoding="utf-8")
             with self.assertRaises(rollover.RolloverError):
                 self.run_rollover(repo, fake, home, evidence, paths)
 
@@ -207,6 +215,15 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
             with self.assertRaises(rollover.RolloverError):
                 self.seal(repo, paths)
 
+    def test_dirty_repo_after_checkpoint_blocks_before_codex(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo, _, fake, home, evidence, paths = self.setup_flow(td)
+            self.seal(repo, paths)
+            (repo/"dirty-after.txt").write_text("dirty\n", encoding="utf-8")
+            with self.assertRaises(rollover.RolloverError):
+                self.run_rollover(repo, fake, home, evidence, paths)
+            self.assertFalse((home/"rollover-calls.txt").exists())
+
     def test_same_thread_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             repo, _, fake, home, evidence, paths = self.setup_flow(td)
@@ -218,16 +235,16 @@ print(json.dumps({"type":"turn.completed","usage":{"input_tokens":1,"output_toke
             finally:
                 os.environ.pop("FAKE_SAME_THREAD", None)
 
-    def test_missing_live_command_evidence_is_rejected(self):
+    def test_bad_live_probe_hash_from_new_thread_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
             repo, _, fake, home, evidence, paths = self.setup_flow(td)
             self.seal(repo, paths)
-            os.environ["FAKE_NO_COMMAND"] = "1"
+            os.environ["FAKE_BAD_PROBE"] = "1"
             try:
                 with self.assertRaises(rollover.RolloverError):
                     self.run_rollover(repo, fake, home, evidence, paths)
             finally:
-                os.environ.pop("FAKE_NO_COMMAND", None)
+                os.environ.pop("FAKE_BAD_PROBE", None)
 
     def test_file_change_event_is_rejected(self):
         with tempfile.TemporaryDirectory() as td:
