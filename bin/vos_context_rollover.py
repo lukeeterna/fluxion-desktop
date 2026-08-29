@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """Durable context rollover for the VOS Sol control plane.
 
-A conversation is never canonical state. This helper seals the trusted state
-of a completed zero-shuttle run into a checkpoint, then starts a *new* Codex
-exec thread from that checkpoint. The new thread must independently execute a
-read-only live-state probe and prove that both repository HEAD and platform
-still match the sealed checkpoint before continuation is accepted.
-
-The implementation intentionally reuses ``vos_sol_bridge`` JSONL/thread/model
-parsing instead of defining a second Codex protocol.
+Conversation state is never canonical. A completed zero-shuttle run is sealed
+into a checkpoint. Immediately before opening a new Codex thread, this helper
+performs its own deterministic read-only live-state probe (Git HEAD, clean
+worktree, platform), seals that probe with a nonce + SHA-256, and injects both
+sealed envelopes into a brand-new Sol thread. The model is not trusted to run
+tools for certification; controller-produced evidence is canonical.
 """
 from __future__ import annotations
 
@@ -17,6 +15,7 @@ import json
 import os
 import platform
 import re
+import secrets
 import subprocess
 import sys
 from pathlib import Path
@@ -26,6 +25,7 @@ import vos_sol_bridge as bridge
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+NONCE_RE = re.compile(r"^[0-9a-f]{32}$")
 
 
 class RolloverError(RuntimeError):
@@ -174,28 +174,50 @@ def validate_checkpoint(envelope: Any) -> tuple[dict[str, Any], str]:
     return checkpoint, digest
 
 
-def command_probe_evidence(events: list[dict[str, Any]], expected_head: str, expected_platform: str) -> bool:
-    labelled = [
-        f"VOS_HEAD={expected_head}",
-        "VOS_STATUS=",
-        f"VOS_PLATFORM={expected_platform}",
-    ]
-    legacy = [expected_head, expected_platform]
-    for event in events:
-        if event.get("type") != "item.completed":
-            continue
-        item = event.get("item")
-        if not isinstance(item, dict) or item.get("type") != "command_execution":
-            continue
-        command = str(item.get("command", ""))
-        if not all(token in command for token in ("git rev-parse HEAD", "git status --porcelain", "uname -s")):
-            continue
-        if item.get("status") != "completed" or item.get("exit_code") != 0:
-            continue
-        lines = [line.strip() for line in str(item.get("aggregated_output", "")).splitlines() if line.strip()]
-        if lines == labelled or lines == legacy:
-            return True
-    return False
+def create_live_probe(*, repo: Path, checkpoint: dict[str, Any], evidence: Path) -> tuple[dict[str, Any], str]:
+    head = git(repo, "rev-parse", "HEAD")
+    status = git(repo, "status", "--porcelain")
+    system = platform.system()
+    if head != checkpoint["expected_repo_head"]:
+        raise RolloverError("stato Git live è cambiato prima del rollover")
+    if status:
+        raise RolloverError("repo dirty prima del rollover")
+    if system != checkpoint["expected_platform"]:
+        raise RolloverError("piattaforma live diversa dal checkpoint")
+    payload = {
+        "schema_version": 1,
+        "nonce": secrets.token_hex(16),
+        "repo_head": head,
+        "worktree_clean": True,
+        "platform": system,
+    }
+    digest = sha256_bytes(canonical_json(payload))
+    envelope = {"schema_version": 1, "probe": payload, "live_probe_sha256": digest}
+    atomic_json(evidence / "context-live-probe.json", envelope)
+    return envelope, digest
+
+
+def validate_live_probe(envelope: Any, checkpoint: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    if not isinstance(envelope, dict) or set(envelope) != {"schema_version", "probe", "live_probe_sha256"}:
+        raise RolloverError("live probe envelope schema non valido")
+    if envelope.get("schema_version") != 1 or not isinstance(envelope.get("probe"), dict):
+        raise RolloverError("live probe envelope non valido")
+    probe = envelope["probe"]
+    required = {"schema_version", "nonce", "repo_head", "worktree_clean", "platform"}
+    if set(probe) != required or probe.get("schema_version") != 1:
+        raise RolloverError("live probe payload schema non valido")
+    digest = str(envelope["live_probe_sha256"])
+    if not SHA256_RE.fullmatch(digest) or digest != sha256_bytes(canonical_json(probe)):
+        raise RolloverError("live probe alterato: sha256 mismatch")
+    if not NONCE_RE.fullmatch(str(probe["nonce"])):
+        raise RolloverError("live probe nonce non valido")
+    if probe["repo_head"] != checkpoint["expected_repo_head"] or not COMMIT_RE.fullmatch(str(probe["repo_head"])):
+        raise RolloverError("live probe HEAD mismatch")
+    if probe["worktree_clean"] is not True:
+        raise RolloverError("live probe worktree non pulita")
+    if probe["platform"] != checkpoint["expected_platform"]:
+        raise RolloverError("live probe platform mismatch")
+    return probe, digest
 
 
 def no_file_changes(events: list[dict[str, Any]]) -> bool:
@@ -212,34 +234,35 @@ def rollover(*, codex: str, codex_home: Path, model: str, repo: Path,
     envelope = read_json(checkpoint_path)
     checkpoint, checkpoint_sha = validate_checkpoint(envelope)
     source_thread = str(checkpoint["source_thread_id"]).lower()
+
+    # Idempotent replay still verifies live state before returning cached evidence.
     live_head = git(repo, "rev-parse", "HEAD")
-    live_platform = platform.system()
     if live_head != checkpoint["expected_repo_head"]:
         raise RolloverError("stato Git live è cambiato prima del rollover")
     if git(repo, "status", "--porcelain"):
         raise RolloverError("repo dirty prima del rollover")
-    if live_platform != checkpoint["expected_platform"]:
+    if platform.system() != checkpoint["expected_platform"]:
         raise RolloverError("piattaforma live diversa dal checkpoint")
-
     if result_path.exists():
         cached = read_json(result_path)
         if not isinstance(cached, dict) or cached.get("checkpoint_sha256") != checkpoint_sha:
             raise RolloverError("cache rollover collision")
         return cached
 
-    command = (
-        "head=$(git rev-parse HEAD) && status=$(git status --porcelain) && platform=$(uname -s) && "
-        "printf 'VOS_HEAD=%s\\nVOS_STATUS=%s\\nVOS_PLATFORM=%s\\n' \"$head\" \"$status\" \"$platform\""
-    )
+    probe_envelope, live_probe_sha = create_live_probe(repo=repo, checkpoint=checkpoint, evidence=evidence)
+    probe, verified_probe_sha = validate_live_probe(probe_envelope, checkpoint)
+    if verified_probe_sha != live_probe_sha:
+        raise RolloverError("live probe hash interno mismatch")
+
     prompt = (
-        "You are continuing a VOS control-plane task from a durable checkpoint; the prior conversation is not canonical. "
-        "You MUST independently verify live state before continuing. "
-        f"Run exactly this read-only shell command once: `{command}`. "
-        "Do not run any other shell command and do not modify files. "
+        "You are continuing a VOS control-plane task from durable state. The prior conversation is not canonical. "
+        "The VOS controller has already performed the read-only live-state verification; do not run shell commands, tools, or modify files. "
         f"Checkpoint SHA256: {checkpoint_sha}. Checkpoint JSON: {json.dumps(checkpoint, sort_keys=True)}. "
-        "After the command, return ONLY JSON with exactly these keys: "
-        '{"checkpoint_sha256":"<exact checkpoint hash>","source_thread_id":"<exact old thread>",'
-        '"observed_head":"<git head>","platform":"<uname -s>","worktree_clean":true,'
+        f"Live probe SHA256: {live_probe_sha}. Live probe JSON: {json.dumps(probe, sort_keys=True)}. "
+        "Return ONLY JSON with exactly these keys: "
+        '{"checkpoint_sha256":"<exact checkpoint hash>","live_probe_sha256":"<exact live probe hash>",'
+        '"source_thread_id":"<exact old thread>","observed_head":"<repo_head from live probe>",'
+        '"platform":"<platform from live probe>","worktree_clean":true,'
         '"prior_result_commit":"<result commit from checkpoint>","continuation":"CONTINUE"}'
     )
     jsonl = evidence / "context-rollover.jsonl"
@@ -258,38 +281,40 @@ def rollover(*, codex: str, codex_home: Path, model: str, repo: Path,
         raise RolloverError("modello effettivo del nuovo thread non provato")
     if not no_file_changes(events):
         raise RolloverError("rollover ha prodotto file_change")
-    if not command_probe_evidence(events, live_head, live_platform):
-        raise RolloverError("manca evidenza JSONL del probe Git/piattaforma live")
+
     response = bridge.strict_json_message(bridge.final_agent_message(events))
     required = {
-        "checkpoint_sha256", "source_thread_id", "observed_head", "platform",
-        "worktree_clean", "prior_result_commit", "continuation",
+        "checkpoint_sha256", "live_probe_sha256", "source_thread_id", "observed_head",
+        "platform", "worktree_clean", "prior_result_commit", "continuation",
     }
     if set(response) != required:
         raise RolloverError("schema risposta rollover non valido")
     expected = {
         "checkpoint_sha256": checkpoint_sha,
+        "live_probe_sha256": live_probe_sha,
         "source_thread_id": source_thread,
-        "observed_head": live_head,
-        "platform": live_platform,
+        "observed_head": probe["repo_head"],
+        "platform": probe["platform"],
         "worktree_clean": True,
         "prior_result_commit": checkpoint["result_commit"],
         "continuation": "CONTINUE",
     }
     if response != expected:
-        raise RolloverError("risposta rollover non coincide con checkpoint/stato live")
+        raise RolloverError("risposta rollover non coincide con checkpoint/live probe")
 
     result = {
         "schema_version": 1,
         "status": "PASS",
         "checkpoint_sha256": checkpoint_sha,
         "checkpoint_hash_match": "PASS",
+        "live_probe_sha256": live_probe_sha,
+        "live_probe_hash_match": "PASS",
         "source_thread_id": source_thread,
         "new_thread_id": new_thread,
         "new_thread_distinct": "PASS",
         "model_actual_proven": model,
-        "live_repo_head": live_head,
-        "live_platform": live_platform,
+        "live_repo_head": probe["repo_head"],
+        "live_platform": probe["platform"],
         "live_state_match": "PASS",
         "worktree_clean": True,
         "prior_result_commit": checkpoint["result_commit"],
