@@ -1678,6 +1678,17 @@ class BookingStateMachine:
         """Handle WAITING_NAME state."""
         text_lower = text.lower()
 
+        # GAP-A5 Fix B: reject before any identity parsing
+        # so phrases such as "no grazie" cannot become client_name="No".
+        if HAS_ITALIAN_REGEX:
+            _is_reject, _ = is_rifiuto(text)
+            if _is_reject:
+                self.context.state = BookingState.IDLE
+                return StateMachineResult(
+                    next_state=BookingState.IDLE,
+                    response="Nessun problema! Sono qui se cambia idea."
+                )
+
         # =====================================================================
         # NEW CLIENT DETECTION - Check if user indicates they're new
         # =====================================================================
@@ -2151,17 +2162,6 @@ class BookingStateMachine:
                 next_state=BookingState.WAITING_SURNAME,
                 response=TEMPLATES["ask_surname_after_name"].format(name=self.context.client_name)
             )
-
-        # GAP-A5 Fix B: explicit rejection before asking again
-        # "no grazie", "lascia perdere", "non voglio", "ho cambiato idea", etc.
-        if HAS_ITALIAN_REGEX:
-            _is_reject, _ = is_rifiuto(text)
-            if _is_reject:
-                self.context.state = BookingState.IDLE
-                return StateMachineResult(
-                    next_state=BookingState.IDLE,
-                    response="Nessun problema! Sono qui se cambia idea."
-                )
 
         # Couldn't extract name
         return StateMachineResult(
