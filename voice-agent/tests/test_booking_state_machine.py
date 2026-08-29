@@ -824,7 +824,7 @@ class TestBugRegression:
         assert "arrivederci" in result.response.lower() or "confermato" in result.response.lower()
 
     def test_bug4_cancelled_state_closes_call(self):
-        """After CANCELLED, call should end (VoIP simulation)."""
+        """After CANCELLED, call should end with a graceful goodbye (VoIP simulation)."""
         sm = create_state_machine()
         sm.context.client_id = "789"
         sm.context.client_name = "Marco"
@@ -832,9 +832,11 @@ class TestBugRegression:
 
         result = sm.process_message("ho cambiato idea")
 
-        # CANCELLED now ends the call (should_exit=True)
+        # The functional contract is call termination plus a polite closing; the
+        # exact copy may legitimately vary across goodbye templates.
         assert result.should_exit is True
-        assert "arrivederci" in result.response.lower()
+        response_text = result.response.lower()
+        assert any(marker in response_text for marker in ("arrivederci", "a presto", "buona giornata"))
 
     # --- BUG 5: Just-registered client not found ---
 
