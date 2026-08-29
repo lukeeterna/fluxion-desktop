@@ -1,0 +1,59 @@
+name: SOL one-shot pre-identification rejection patch
+
+on:
+  push:
+    branches:
+      - fix/sara-gate-shell-only
+    paths:
+      - .github/workflows/sol-once-fix-preident-rejection.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/sara-gate-shell-only
+          fetch-depth: 0
+      - name: Move GAP-A5 rejection guard before identity parsing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('voice-agent/src/booking_state_machine.py')
+          text = path.read_text()
+
+          marker = '        # GAP-A5 Fix B: reject before any identity parsing\n'
+          if marker in text:
+              print('Patch already present; nothing to do.')
+              raise SystemExit(0)
+
+          anchor = '''    def _handle_waiting_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:\n        """Handle WAITING_NAME state."""\n        text_lower = text.lower()\n\n'''
+          early = '''    def _handle_waiting_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:\n        """Handle WAITING_NAME state."""\n        text_lower = text.lower()\n\n        # GAP-A5 Fix B: reject before any identity parsing\n        # so phrases such as "no grazie" cannot become client_name="No".\n        if HAS_ITALIAN_REGEX:\n            _is_reject, _ = is_rifiuto(text)\n            if _is_reject:\n                self.context.state = BookingState.IDLE\n                return StateMachineResult(\n                    next_state=BookingState.IDLE,\n                    response="Nessun problema! Sono qui se cambia idea."\n                )\n\n'''
+          late = '''        # GAP-A5 Fix B: explicit rejection before asking again\n        # "no grazie", "lascia perdere", "non voglio", "ho cambiato idea", etc.\n        if HAS_ITALIAN_REGEX:\n            _is_reject, _ = is_rifiuto(text)\n            if _is_reject:\n                self.context.state = BookingState.IDLE\n                return StateMachineResult(\n                    next_state=BookingState.IDLE,\n                    response="Nessun problema! Sono qui se cambia idea."\n                )\n\n'''
+
+          if text.count(anchor) != 1:
+              raise SystemExit(f'Expected exactly one WAITING_NAME anchor, got {text.count(anchor)}')
+          if text.count(late) != 1:
+              raise SystemExit(f'Expected exactly one late GAP-A5 block, got {text.count(late)}')
+
+          text = text.replace(anchor, early, 1)
+          text = text.replace(late, '', 1)
+          path.write_text(text)
+          PY
+      - name: Commit real product fix
+        shell: bash
+        run: |
+          if git diff --quiet -- voice-agent/src/booking_state_machine.py; then
+            echo 'No product delta to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add voice-agent/src/booking_state_machine.py
+          git commit -m 'fix(voice): reject before parsing caller identity'
+          git push origin HEAD:fix/sara-gate-shell-only
