@@ -746,15 +746,14 @@ class TestBugRegression:
     # --- BUG 2: Multi-service ignored ---
 
     def test_bug2_multi_service_extraction(self):
-        """'taglio e barba' must extract both services."""
+        """'taglio e barba' maps to the canonical composite service."""
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_SERVICE
 
-        result = sm.process_message("taglio e barba")
-        assert sm.context.services is not None
-        assert len(sm.context.services) >= 2, f"Expected >=2 services, got {sm.context.services}"
-        assert "taglio" in sm.context.services
-        assert "barba" in sm.context.services
+        sm.process_message("taglio e barba")
+        assert sm.context.services == ["taglio_+_barba"]
+        assert sm.context.service == "taglio_+_barba"
+        assert sm.context.service_display == "Taglio e Barba"
 
     def test_bug2_service_display_shows_both(self):
         """service_display must show 'Taglio e Barba', not just 'Taglio'."""
@@ -767,12 +766,12 @@ class TestBugRegression:
         assert "Barba" in sm.context.service_display
 
     def test_bug2_booking_includes_services(self):
-        """Booking dict must include services (plural) and service_display."""
+        """Booking preserves the canonical composite service and display name."""
         sm = create_state_machine()
         sm.context.client_name = "Test"
         sm.context.client_id = "1"
 
-        # Build a complete booking with multi-service
+        # Build a complete booking with the canonical combo service
         sm.context.state = BookingState.WAITING_SERVICE
         sm.process_message("taglio e barba")
         sm.process_message("domani")
@@ -780,9 +779,9 @@ class TestBugRegression:
         result = sm.process_message("confermo")
 
         assert result.booking is not None, "No booking object created"
-        assert result.booking.get("services") is not None, "services not in booking"
-        assert len(result.booking["services"]) >= 2
-        assert result.booking.get("service_display") is not None
+        assert result.booking.get("services") == ["taglio_+_barba"]
+        assert result.booking.get("service") == "taglio_+_barba"
+        assert result.booking.get("service_display") == "Taglio e Barba"
 
     # --- BUG 4: Session resets after booking ---
 
