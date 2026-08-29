@@ -1,0 +1,32 @@
+name: VOS Self-hosted Recovery Probe
+
+on:
+  push:
+    branches:
+      - sol/vos-zero-shuttle-20260828
+    paths:
+      - '.github/workflows/vos-selfhosted-recovery-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: self-hosted
+    timeout-minutes: 3
+    steps:
+      - name: Identify available self-hosted host
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RUNNER_NAME=${RUNNER_NAME:-unknown}"
+          echo "RUNNER_OS=${RUNNER_OS:-unknown}"
+          echo "MACHINE_NAME=$(hostname -s 2>/dev/null || hostname)"
+          echo "UNAME=$(uname -srm)"
+          if [ -d /Volumes/MontereyT7 ]; then
+            echo "MONTEREYT7_PRESENT=YES"
+          else
+            echo "MONTEREYT7_PRESENT=NO"
+          fi
+          echo "SELF_HOSTED_PROBE=PASS"
