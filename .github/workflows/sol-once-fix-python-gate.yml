@@ -92,6 +92,20 @@ env:
         "Kimi name-only FSM/orchestrator contract",
     )
 
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''    def test_state_count_is_14(self):\n        """E1+E4: 23 states reduced to 14."""\n        assert len(list(BookingState)) == 14\n''',
+        '''    def test_state_count_is_15(self):\n        """E1+E4 removed dead states; NAME-GATE later added CONFIRMING_NAME."""\n        assert len(list(BookingState)) == 15\n''',
+        "Phase-E state count",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''    def test_active_states_exist(self):\n        """All 14 active states exist."""\n        active = [\n            "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",\n            "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",\n            "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",\n            "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",\n        ]\n''',
+        '''    def test_active_states_exist(self):\n        """All 15 active states exist, including the later NAME-GATE state."""\n        active = [\n            "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",\n            "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",\n            "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",\n            "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",\n            "CONFIRMING_NAME",\n        ]\n''',
+        "Phase-E active state set",
+    )
+
 jobs:
   verify:
     strategy:
@@ -107,7 +121,7 @@ jobs:
         run: |
           set -euo pipefail
           python -c "$APPLY_PYTHON_GATE_FIXES"
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_session_persistence.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_phase_e_audit_p1.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
@@ -163,10 +177,10 @@ jobs:
         run: |
           set -euo pipefail
           python -c "$APPLY_PYTHON_GATE_FIXES"
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_session_persistence.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_phase_e_audit_p1.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_kimi_flow.py voice-agent/tests/test_session_persistence.py
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_kimi_flow.py voice-agent/tests/test_phase_e_audit_p1.py voice-agent/tests/test_session_persistence.py
           git commit -m 'fix(voice): repair Python CI regressions'
           git push origin HEAD:fix/sara-gate-shell-only
