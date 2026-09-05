@@ -10,6 +10,81 @@ permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: sol-python-gate-pr60
+  cancel-in-progress: true
+
+env:
+  APPLY_PYTHON_GATE_FIXES: |
+    from pathlib import Path
+
+    def replace_exact(path, old, new, label):
+        p = Path(path)
+        text = p.read_text()
+        if text.count(old) != 1:
+            raise SystemExit(f"fail-closed: {label} target mismatch")
+        p.write_text(text.replace(old, new, 1))
+
+    replace_exact(
+        "voice-agent/tests/test_booking_state_machine.py",
+        '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n''',
+        '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n''',
+        "booking regression",
+    )
+
+    replace_exact(
+        "voice-agent/src/booking_state_machine.py",
+        '''        if extracted.date and (force_update or not self.context.date):\n''',
+        '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n''',
+        "date extraction",
+    )
+
+    replace_exact(
+        "voice-agent/src/tts_engine.py",
+        '''except ImportError:\n    _EDGE_TTS_AVAILABLE = False\n''',
+        '''except ImportError:\n    edge_tts = None  # type: ignore\n    _EDGE_TTS_AVAILABLE = False\n''',
+        "Edge TTS import",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_f02_vertical_fixes.py",
+        '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n''',
+        '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n''',
+        "palestra yoga fixture",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_f02_vertical_fixes.py",
+        '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n''',
+        '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n''',
+        "palestra personal-training fixture",
+    )
+
+    for path in (
+        "voice-agent/tests/test_first_available.py",
+        "voice-agent/tests/test_cancellation_window.py",
+    ):
+        replace_exact(
+            path,
+            '''    return asyncio.get_event_loop().run_until_complete(coro)\n''',
+            '''    return asyncio.run(coro)\n''',
+            f"asyncio sync runner {path}",
+        )
+
+    replace_exact(
+        "voice-agent/tests/test_humanness_b1_b2_b3.py",
+        '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n''',
+        '''        asyncio.run(cache.warm_cache(list(phrases)))\n''',
+        "filler asyncio",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_session_persistence.py",
+        '''        asyncio.get_event_loop().run_until_complete(manager1.persist_session(s.session_id))\n''',
+        '''        asyncio.run(manager1.persist_session(s.session_id))\n''',
+        "session persistence asyncio",
+    )
+
 jobs:
   verify:
     strategy:
@@ -23,53 +98,9 @@ jobs:
       - name: Apply exact Python gate corrections
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          test_path = Path('voice-agent/tests/test_booking_state_machine.py')
-          test_text = test_path.read_text()
-          test_old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          test_new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          if test_text.count(test_old) != 1:
-              raise SystemExit('fail-closed: booking regression target mismatch')
-          test_path.write_text(test_text.replace(test_old, test_new, 1))
-
-          fsm_path = Path('voice-agent/src/booking_state_machine.py')
-          fsm_text = fsm_path.read_text()
-          fsm_old = '''        if extracted.date and (force_update or not self.context.date):\n'''
-          fsm_new = '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n'''
-          if fsm_text.count(fsm_old) != 1:
-              raise SystemExit('fail-closed: date extraction target mismatch')
-          fsm_path.write_text(fsm_text.replace(fsm_old, fsm_new, 1))
-
-          tts_path = Path('voice-agent/src/tts_engine.py')
-          tts_text = tts_path.read_text()
-          tts_old = '''except ImportError:\n    _EDGE_TTS_AVAILABLE = False\n'''
-          tts_new = '''except ImportError:\n    edge_tts = None  # type: ignore\n    _EDGE_TTS_AVAILABLE = False\n'''
-          if tts_text.count(tts_old) != 1:
-              raise SystemExit('fail-closed: Edge TTS import target mismatch')
-          tts_path.write_text(tts_text.replace(tts_old, tts_new, 1))
-
-          vertical_path = Path('voice-agent/tests/test_f02_vertical_fixes.py')
-          vertical_text = vertical_path.read_text()
-          yoga_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
-          yoga_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
-          pt_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
-          pt_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
-          if vertical_text.count(yoga_old) != 1 or vertical_text.count(pt_old) != 1:
-              raise SystemExit('fail-closed: palestra fixture target mismatch')
-          vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
-          vertical_path.write_text(vertical_text)
-
-          human_path = Path('voice-agent/tests/test_humanness_b1_b2_b3.py')
-          human_text = human_path.read_text()
-          human_old = '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n'''
-          human_new = '''        asyncio.run(cache.warm_cache(list(phrases)))\n'''
-          if human_text.count(human_old) != 1:
-              raise SystemExit('fail-closed: filler asyncio target mismatch')
-          human_path.write_text(human_text.replace(human_old, human_new, 1))
-          PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py'
+          set -euo pipefail
+          python -c "$APPLY_PYTHON_GATE_FIXES"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
@@ -119,61 +150,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: fix/sara-gate-shell-only
+          ref: ${{ github.sha }}
       - name: Reapply exact verified patch and commit
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          test_path = Path('voice-agent/tests/test_booking_state_machine.py')
-          test_text = test_path.read_text()
-          test_old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          test_new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          if test_text.count(test_old) != 1:
-              raise SystemExit('fail-closed: booking regression target mismatch')
-          test_path.write_text(test_text.replace(test_old, test_new, 1))
-
-          fsm_path = Path('voice-agent/src/booking_state_machine.py')
-          fsm_text = fsm_path.read_text()
-          fsm_old = '''        if extracted.date and (force_update or not self.context.date):\n'''
-          fsm_new = '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n'''
-          if fsm_text.count(fsm_old) != 1:
-              raise SystemExit('fail-closed: date extraction target mismatch')
-          fsm_path.write_text(fsm_text.replace(fsm_old, fsm_new, 1))
-
-          tts_path = Path('voice-agent/src/tts_engine.py')
-          tts_text = tts_path.read_text()
-          tts_old = '''except ImportError:\n    _EDGE_TTS_AVAILABLE = False\n'''
-          tts_new = '''except ImportError:\n    edge_tts = None  # type: ignore\n    _EDGE_TTS_AVAILABLE = False\n'''
-          if tts_text.count(tts_old) != 1:
-              raise SystemExit('fail-closed: Edge TTS import target mismatch')
-          tts_path.write_text(tts_text.replace(tts_old, tts_new, 1))
-
-          vertical_path = Path('voice-agent/tests/test_f02_vertical_fixes.py')
-          vertical_text = vertical_path.read_text()
-          yoga_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
-          yoga_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
-          pt_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
-          pt_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
-          if vertical_text.count(yoga_old) != 1 or vertical_text.count(pt_old) != 1:
-              raise SystemExit('fail-closed: palestra fixture target mismatch')
-          vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
-          vertical_path.write_text(vertical_text)
-
-          human_path = Path('voice-agent/tests/test_humanness_b1_b2_b3.py')
-          human_text = human_path.read_text()
-          human_old = '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n'''
-          human_new = '''        asyncio.run(cache.warm_cache(list(phrases)))\n'''
-          if human_text.count(human_old) != 1:
-              raise SystemExit('fail-closed: filler asyncio target mismatch')
-          human_path.write_text(human_text.replace(human_old, human_new, 1))
-          PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py'
+          python -c "$APPLY_PYTHON_GATE_FIXES"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_humanness_b1_b2_b3.py
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_session_persistence.py
           git commit -m 'fix(voice): repair Python CI regressions'
           git push origin HEAD:fix/sara-gate-shell-only
