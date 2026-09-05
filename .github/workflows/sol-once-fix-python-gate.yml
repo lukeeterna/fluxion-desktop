@@ -106,6 +106,20 @@ env:
         "Phase-E active state set",
     )
 
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''        assert "Taglio" in result.response or "annotato" in result.response\n''',
+        '''        # E6-FIX deliberately removed false live-transfer promises.\n        # Context is carried in lookup_params for the human handoff, while the\n        # caller receives an honest callback commitment.\n        assert "richiam" in result.response.lower()\n        assert "arrivederci" in result.response.lower()\n        assert "collega" not in result.response.lower()\n''',
+        "Phase-E escalation caller message",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''        msg = build_caller_message(summary)\n        assert "collega" in msg\n        assert "Piega" in msg\n''',
+        '''        msg = build_caller_message(summary)\n        # FIX-A/E6 contract: no fabricated colleague on the line. The detailed\n        # booking context is for the operator handoff, not repeated to caller.\n        assert "richiam" in msg.lower()\n        assert "arrivederci" in msg.lower()\n        assert "collega" not in msg.lower()\n''',
+        "Phase-E escalation manager honest callback",
+    )
+
 jobs:
   verify:
     strategy:
