@@ -49,8 +49,19 @@ jobs:
           if tts_text.count(tts_old) != 1:
               raise SystemExit('fail-closed: Edge TTS import target mismatch')
           tts_path.write_text(tts_text.replace(tts_old, tts_new, 1))
+
+          vertical_path = Path('voice-agent/tests/test_f02_vertical_fixes.py')
+          vertical_text = vertical_path.read_text()
+          yoga_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
+          yoga_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
+          pt_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
+          pt_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
+          if vertical_text.count(yoga_old) != 1 or vertical_text.count(pt_old) != 1:
+              raise SystemExit('fail-closed: palestra fixture target mismatch')
+          vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
+          vertical_path.write_text(vertical_text)
           PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py'
           test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
@@ -131,11 +142,22 @@ jobs:
           if tts_text.count(tts_old) != 1:
               raise SystemExit('fail-closed: Edge TTS import target mismatch')
           tts_path.write_text(tts_text.replace(tts_old, tts_new, 1))
+
+          vertical_path = Path('voice-agent/tests/test_f02_vertical_fixes.py')
+          vertical_text = vertical_path.read_text()
+          yoga_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
+          yoga_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n'''
+          pt_old = '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
+          pt_new = '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n'''
+          if vertical_text.count(yoga_old) != 1 or vertical_text.count(pt_old) != 1:
+              raise SystemExit('fail-closed: palestra fixture target mismatch')
+          vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
+          vertical_path.write_text(vertical_text)
           PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py'
           test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_f02_vertical_fixes.py
           git commit -m 'fix(voice): repair Python CI regressions'
           git push origin HEAD:fix/sara-gate-shell-only
