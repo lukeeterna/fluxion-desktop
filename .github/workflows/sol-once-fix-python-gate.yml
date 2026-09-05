@@ -85,6 +85,13 @@ env:
         "session persistence asyncio",
     )
 
+    replace_exact(
+        "voice-agent/tests/test_kimi_flow.py",
+        '''        assert sm.context.state == BookingState.WAITING_SURNAME\n        assert sm.context.client_name is not None\n        assert "cognome" in result.response.lower() or "piacere" in result.response.lower()\n''',
+        '''        assert sm.context.state == BookingState.WAITING_SURNAME\n        assert sm.context.client_name is not None\n        # Name-only resolution belongs to the orchestration layer: the FSM\n        # requests the DB lookup and deliberately emits no spoken response.\n        # The orchestrator then decides whether surname is needed based on\n        # zero, one, or multiple client matches.\n        assert result.needs_db_lookup\n        assert result.lookup_type == "client_by_name_only"\n        assert result.lookup_params == {"name": sm.context.client_name}\n        assert result.response == ""\n''',
+        "Kimi name-only FSM/orchestrator contract",
+    )
+
 jobs:
   verify:
     strategy:
@@ -100,7 +107,7 @@ jobs:
         run: |
           set -euo pipefail
           python -c "$APPLY_PYTHON_GATE_FIXES"
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_session_persistence.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
@@ -156,10 +163,10 @@ jobs:
         run: |
           set -euo pipefail
           python -c "$APPLY_PYTHON_GATE_FIXES"
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_session_persistence.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_session_persistence.py'
           test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_session_persistence.py
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_kimi_flow.py voice-agent/tests/test_session_persistence.py
           git commit -m 'fix(voice): repair Python CI regressions'
           git push origin HEAD:fix/sara-gate-shell-only
