@@ -1,0 +1,60 @@
+name: SOL Once Python Diagnostic
+
+on:
+  push:
+    branches: [fix/sara-gate-shell-only]
+    paths:
+      - .github/workflows/sol-once-python-diagnostic.yml
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: voice-agent/requirements-ci.txt
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: pip install -r requirements-ci.txt
+      - name: Run exact CI pytest command and publish failure excerpt
+        working-directory: voice-agent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          pytest tests/ -v --tb=short -x \
+            --ignore=tests/test_faq_retriever.py \
+            --ignore=tests/test_faq_integration.py \
+            --ignore=tests/test_vad_file.py \
+            --ignore=tests/test_voip.py \
+            --ignore=tests/test_latency_benchmark.py \
+            --ignore=tests/test_sentiment.py \
+            --ignore=tests/e2e \
+            --ignore=tests/integration \
+            --ignore=tests/test_booking_e2e_complete.py \
+            --ignore=tests/test_s158_live_full.py \
+            --ignore=tests/test_s158_multivertical.py 2>&1 | tee /tmp/pytest.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            {
+              echo '### SOL exact Python CI diagnostic'
+              echo
+              echo "HEAD: $GITHUB_SHA"
+              echo '```text'
+              tail -n 180 /tmp/pytest.log
+              echo '```'
+            } > /tmp/pr-comment.md
+            gh pr comment 60 --repo "$GITHUB_REPOSITORY" --body-file /tmp/pr-comment.md
+            exit "$rc"
+          fi
+          echo 'PYTHON_DIAGNOSTIC=GREEN'
