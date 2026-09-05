@@ -1,0 +1,146 @@
+name: VOS Fabric G1 iMac Baseline
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-g1-imac-baseline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g1-imac-baseline
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    steps:
+      - name: Preflight MacBook to iMac SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'printf "IMAC_SSH=PASS\n"'
+
+      - name: Read-only iMac production baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/vos-fabric-imac-baseline-${GITHUB_RUN_ID}.txt"
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE' | tee "$OUT"
+          set -u
+          fail=0
+
+          pass() { printf 'PASS %-28s %s\n' "$1" "${2:-}"; }
+          red()  { printf 'FAIL %-28s %s\n' "$1" "${2:-}"; fail=1; }
+
+          model="$(sysctl -n hw.model 2>/dev/null || true)"
+          os_version="$(sw_vers -productVersion 2>/dev/null || true)"
+          logical_cpu="$(sysctl -n hw.logicalcpu 2>/dev/null || true)"
+          mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || true)"
+          printf 'OBSERVED model=%s os=%s logical_cpu=%s mem_bytes=%s\n' "$model" "$os_version" "$logical_cpu" "$mem_bytes"
+
+          [ "$model" = "iMac13,1" ] && pass MODEL "$model" || red MODEL "unexpected:$model"
+          case "$os_version" in
+            12.*) pass OS "$os_version" ;;
+            *) red OS "expected Monterey 12.x, got:$os_version" ;;
+          esac
+          if [ -n "$mem_bytes" ] && awk -v b="$mem_bytes" 'BEGIN { exit !(b >= 16*1024*1024*1024) }'; then
+            pass RAM "bytes=$mem_bytes"
+          else
+            red RAM "expected >=16GiB"
+          fi
+
+          # Guardian V1 and its two observed support services must remain live.
+          if launchctl list 2>/dev/null | awk '$3=="com.zeroclaw.fall-detector" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
+            pass GUARDIAN_LAUNCHAGENT "com.zeroclaw.fall-detector"
+          else
+            red GUARDIAN_LAUNCHAGENT "not running"
+          fi
+          if launchctl list 2>/dev/null | awk '$3=="com.go2rtc" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
+            pass GO2RTC "running"
+          else
+            red GO2RTC "not running"
+          fi
+          if launchctl list 2>/dev/null | awk '$3=="com.mosquitto.broker" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
+            pass MQTT "running"
+          else
+            red MQTT "not running"
+          fi
+
+          # FLUXION production: require both known runtime processes and listeners.
+          pgrep -f 'voice-agent/backend/main.py.*--port[ =]3002' >/dev/null 2>&1 && pass FLUXION_BACKEND_PROCESS "present" || red FLUXION_BACKEND_PROCESS "missing"
+          pgrep -f 'voice-agent/engine/engine_darwin_amd64.*-port[ =]5080' >/dev/null 2>&1 && pass FLUXION_ENGINE_PROCESS "present" || red FLUXION_ENGINE_PROCESS "missing"
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && pass FLUXION_3002_LISTENER "listening" || red FLUXION_3002_LISTENER "missing"
+          if lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080'; then
+            pass FLUXION_5080_LISTENER "udp"
+          elif lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
+            pass FLUXION_5080_LISTENER "tcp"
+          else
+            red FLUXION_5080_LISTENER "missing"
+          fi
+
+          if mount | grep -q ' on /Volumes/NAS_LOCAL '; then
+            nas_free_gib="$(df -Pk /Volumes/NAS_LOCAL | awk 'NR==2 {printf "%.1f", $4/1048576}')"
+            pass NAS_LOCAL_MOUNT "free_gib=$nas_free_gib"
+            awk -v x="$nas_free_gib" 'BEGIN { exit !(x >= 100) }' && pass NAS_LOCAL_HEADROOM ">=100GiB" || red NAS_LOCAL_HEADROOM "free_gib=$nas_free_gib"
+          else
+            red NAS_LOCAL_MOUNT "not mounted"
+          fi
+
+          root_free_gib="$(df -Pk / | awk 'NR==2 {printf "%.1f", $4/1048576}')"
+          printf 'OBSERVED root_free_gib=%s\n' "$root_free_gib"
+          awk -v x="$root_free_gib" 'BEGIN { exit !(x >= 60) }' && pass ROOT_DISK_HEADROOM ">=60GiB" || red ROOT_DISK_HEADROOM "free_gib=$root_free_gib"
+
+          # Reclaimable memory estimate: free + inactive + speculative + purgeable pages.
+          vm="$(vm_stat 2>/dev/null || true)"
+          page_size="$(printf '%s\n' "$vm" | awk 'NR==1 {gsub(/[^0-9]/,"",$8); print $8}')"
+          [ -n "$page_size" ] || page_size=4096
+          pages_available="$(printf '%s\n' "$vm" | awk '
+            /Pages free:/ {gsub(/\./,"",$3); f=$3}
+            /Pages inactive:/ {gsub(/\./,"",$3); i=$3}
+            /Pages speculative:/ {gsub(/\./,"",$3); s=$3}
+            /Pages purgeable:/ {gsub(/\./,"",$3); p=$3}
+            END {printf "%.0f", f+i+s+p}')"
+          mem_available_gib="$(awk -v p="$pages_available" -v z="$page_size" 'BEGIN {printf "%.2f", (p*z)/(1024*1024*1024)}')"
+          printf 'OBSERVED reclaimable_mem_gib=%s page_size=%s\n' "$mem_available_gib" "$page_size"
+          awk -v x="$mem_available_gib" 'BEGIN { exit !(x >= 6.0) }' && pass MEMORY_HEADROOM ">=6GiB reclaimable" || red MEMORY_HEADROOM "reclaimable_gib=$mem_available_gib"
+
+          load5="$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
+          printf 'OBSERVED load5=%s logical_cpu=%s\n' "$load5" "$logical_cpu"
+          if [ -n "$load5" ] && [ -n "$logical_cpu" ] && awk -v l="$load5" -v c="$logical_cpu" 'BEGIN { exit !(l <= c*1.5) }'; then
+            pass LOAD_HEADROOM "5m=$load5 threshold=$(awk -v c="$logical_cpu" 'BEGIN {printf "%.1f", c*1.5}')"
+          else
+            red LOAD_HEADROOM "5m=$load5 logical_cpu=$logical_cpu"
+          fi
+
+          if command -v multipass >/dev/null 2>&1; then
+            mp_ver="$(multipass version 2>/dev/null | head -1 || true)"
+            pass MULTIPASS_PRESENT "$mp_ver"
+            if multipass list >/dev/null 2>&1; then
+              pass MULTIPASS_LIST "query ok"
+            else
+              red MULTIPASS_LIST "query failed"
+            fi
+            if multipass info vos-worker >/dev/null 2>&1; then
+              red VOS_WORKER_FRESHNESS "pre-existing vos-worker requires explicit inspection"
+            else
+              pass VOS_WORKER_FRESHNESS "absent"
+            fi
+          else
+            red MULTIPASS_PRESENT "command missing"
+          fi
+
+          if [ "$fail" -eq 0 ]; then
+            echo 'IMAC_PRODUCTION_BASELINE=GREEN'
+            exit 0
+          fi
+          echo 'IMAC_PRODUCTION_BASELINE=RED'
+          exit 2
+          REMOTE
+
+          shasum -a 256 "$OUT" | awk '{print "BASELINE_SHA256=" $1}'
