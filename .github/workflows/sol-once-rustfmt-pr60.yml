@@ -1,0 +1,53 @@
+name: SOL one-shot rustfmt PR60
+
+on:
+  push:
+    branches:
+      - fix/sara-gate-shell-only
+    paths:
+      - .github/workflows/sol-once-rustfmt-pr60.yml
+
+permissions:
+  contents: write
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/sara-gate-shell-only
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Apply canonical rustfmt and enforce path boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo fmt --all -- --check
+          mapfile -t changed < <(git diff --name-only)
+          if [ "${#changed[@]}" -eq 0 ]; then
+            echo 'No rustfmt delta required.'
+            exit 0
+          fi
+          for p in "${changed[@]}"; do
+            case "$p" in
+              src-tauri/src/commands/license_ed25519.rs|src-tauri/src/commands/magazzino.rs) ;;
+              *) echo "BLOCKED unexpected rustfmt path: $p" >&2; exit 2 ;;
+            esac
+          done
+          git diff --check
+      - name: Commit canonical formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src-tauri/src/commands/license_ed25519.rs src-tauri/src/commands/magazzino.rs
+          git commit -m 'style(rust): apply canonical rustfmt'
+          git push origin HEAD:fix/sara-gate-shell-only
