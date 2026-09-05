@@ -42,6 +42,7 @@ try:
     import edge_tts
     _EDGE_TTS_AVAILABLE = True
 except ImportError:
+    edge_tts = None  # type: ignore
     _EDGE_TTS_AVAILABLE = False
 
 # ─── Optional Piper Python API (preferred over subprocess in frozen mode) ─────

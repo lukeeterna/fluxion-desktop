@@ -1237,8 +1237,14 @@ class TestCancelPreIdentification:
     def test_annulla_tutto_mid_booking_still_goes_to_waiting_service(self):
         """Regression: 'annulla tutto' in WAITING_DATE → WAITING_SERVICE (non IDLE)."""
         sm = create_state_machine()
-        sm.start_booking_flow()
+        # This regression is specifically mid-booking: model an already
+        # identified client before selecting the service. Anonymous callers
+        # correctly enter WAITING_NAME after service selection.
+        sm.context.client_id = "test-client"
+        sm.context.client_name = "Test"
+        sm.context.state = BookingState.WAITING_SERVICE
         sm.process_message("taglio")   # → WAITING_DATE
+        assert sm.context.state == BookingState.WAITING_DATE
         result = sm.process_message("annulla tutto")
         assert result.next_state == BookingState.WAITING_SERVICE, (
             f"Mid-booking reset should go to WAITING_SERVICE, got {result.next_state}"

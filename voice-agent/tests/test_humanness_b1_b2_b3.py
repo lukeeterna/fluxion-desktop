@@ -74,9 +74,7 @@ class TestB1FillerPhrases:
         phrases = _extract_filler_phrases(source)
         assert phrases is not None
 
-        asyncio.get_event_loop().run_until_complete(
-            cache.warm_cache(list(phrases))
-        )
+        asyncio.run(cache.warm_cache(list(phrases)))
         for phrase in phrases:
             assert phrase.strip() in cache._cache, f"'{phrase}' not pre-warmed"
 

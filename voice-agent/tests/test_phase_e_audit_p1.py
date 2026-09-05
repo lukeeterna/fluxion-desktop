@@ -25,9 +25,9 @@ def make_sm(vertical="salone", **ctx_overrides):
 # =============================================================================
 
 class TestE1DeadStateRemoval:
-    def test_state_count_is_14(self):
-        """E1+E4: 23 states reduced to 14."""
-        assert len(list(BookingState)) == 14
+    def test_state_count_is_15(self):
+        """E1+E4 removed dead states; NAME-GATE later added CONFIRMING_NAME."""
+        assert len(list(BookingState)) == 15
 
     def test_removed_states_not_in_enum(self):
         """Removed states should not exist."""
@@ -41,12 +41,13 @@ class TestE1DeadStateRemoval:
             assert not hasattr(BookingState, name), f"{name} should be removed"
 
     def test_active_states_exist(self):
-        """All 14 active states exist."""
+        """All 15 active states exist, including the later NAME-GATE state."""
         active = [
             "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",
             "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",
             "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",
             "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",
+            "CONFIRMING_NAME",
         ]
         for name in active:
             assert hasattr(BookingState, name), f"{name} should exist"
@@ -180,7 +181,12 @@ class TestE5EscalationHandoff:
         result = sm.process_message("voglio parlare con un operatore")
         assert result.should_exit is True
         assert result.escalate_to_human is True
-        assert "Taglio" in result.response or "annotato" in result.response
+        # E6-FIX deliberately removed false live-transfer promises.
+        # Context is carried in lookup_params for the human handoff, while the
+        # caller receives an honest callback commitment.
+        assert "richiam" in result.response.lower()
+        assert "arrivederci" in result.response.lower()
+        assert "collega" not in result.response.lower()
         # Summary in lookup_params
         summary = result.lookup_params.get("escalation_summary", {})
         assert summary.get("cliente") == "Marco"
@@ -211,8 +217,11 @@ class TestE5EscalationHandoff:
         assert "Piega" in formatted
 
         msg = build_caller_message(summary)
-        assert "collega" in msg
-        assert "Piega" in msg
+        # FIX-A/E6 contract: no fabricated colleague on the line. The detailed
+        # booking context is for the operator handoff, not repeated to caller.
+        assert "richiam" in msg.lower()
+        assert "arrivederci" in msg.lower()
+        assert "collega" not in msg.lower()
 
 
 # =============================================================================

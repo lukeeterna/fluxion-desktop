@@ -283,7 +283,7 @@ class TestStateMachineTransitions:
     """Test transizioni state machine (23 stati)."""
     
     def test_all_states_defined(self, state_machine):
-        """Verifica che tutti i 14 stati attivi siano definiti (E1+E4: 9 states rimossi)."""
+        """Verifica i 15 stati attivi, incluso CONFIRMING_NAME aggiunto dal NAME-GATE."""
         expected_states = [
             BookingState.IDLE,
             BookingState.WAITING_NAME,
@@ -299,10 +299,11 @@ class TestStateMachineTransitions:
             BookingState.REGISTERING_SURNAME,
             BookingState.REGISTERING_PHONE,
             BookingState.DISAMBIGUATING_NAME,
+            BookingState.CONFIRMING_NAME,
         ]
 
         all_states = list(BookingState)
-        assert len(all_states) == 14, f"Expected 14 states, got {len(all_states)}: {[s.value for s in all_states]}"
+        assert len(all_states) == 15, f"Expected 15 states, got {len(all_states)}: {[s.value for s in all_states]}"
 
         for state in expected_states:
             assert state in all_states, f"Missing state: {state}"

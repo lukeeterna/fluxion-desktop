@@ -55,6 +55,9 @@ class TestPalestraAbbonamentoGuardrail:
     def test_non_abbonamento_palestra_service_enters_booking_flow(self):
         """Non-abbonamento palestra service must continue to WAITING_DATE normally."""
         bsm = self._make_bsm_palestra()
+        # Isolate the vertical-service guardrail from caller identification.
+        bsm.context.client_id = "test-client"
+        bsm.context.client_name = "Test"
         bsm.context.service = "yoga"
         bsm.context.state = BookingState.WAITING_SERVICE
         result = bsm._handle_waiting_service("voglio fare yoga", None)
@@ -65,6 +68,9 @@ class TestPalestraAbbonamentoGuardrail:
     def test_personal_training_palestra_enters_booking_flow(self):
         """personal_training in palestra must proceed to WAITING_DATE."""
         bsm = self._make_bsm_palestra()
+        # Isolate the vertical-service guardrail from caller identification.
+        bsm.context.client_id = "test-client"
+        bsm.context.client_name = "Test"
         bsm.context.service = "personal_training"
         bsm.context.state = BookingState.WAITING_SERVICE
         result = bsm._handle_waiting_service("voglio un personal trainer", None)

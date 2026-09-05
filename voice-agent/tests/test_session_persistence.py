@@ -236,7 +236,7 @@ class TestRecoverSessions:
         s = manager1.create_session("salone", "Salone")
         manager1.add_turn(s.session_id, "Ciao", "greeting", "Buongiorno!", 30.0, "L1_exact")
         manager1.add_turn(s.session_id, "Taglio", "booking", "Quando?", 60.0, "L2_pattern")
-        asyncio.get_event_loop().run_until_complete(manager1.persist_session(s.session_id))
+        asyncio.run(manager1.persist_session(s.session_id))
 
         manager2 = SessionManager(db_path=tmp_db)
         recovered = manager2.get_session(s.session_id)

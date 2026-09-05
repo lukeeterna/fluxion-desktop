@@ -1278,7 +1278,13 @@ class BookingStateMachine:
         date_update_result = None
 
         # Handle ExtractionResult input (normal flow)
-        if extracted.date and (force_update or not self.context.date):
+        # A date uttered while resolving identity is a birth date, not a
+        # booking date. Let the DISAMBIGUATING_NAME handler validate it.
+        if (
+            extracted.date
+            and self.context.state != BookingState.DISAMBIGUATING_NAME
+            and (force_update or not self.context.date)
+        ):
             # Skip ambiguous dates like "prossima settimana" - ask for specific day
             if HAS_ITALIAN_REGEX and extracted.date.original_text:
                 if is_ambiguous_date(extracted.date.original_text):

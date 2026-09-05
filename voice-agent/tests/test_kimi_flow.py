@@ -97,7 +97,14 @@ class TestWaitingNameToSurname:
         result = sm.process_message("sono Gino")
         assert sm.context.state == BookingState.WAITING_SURNAME
         assert sm.context.client_name is not None
-        assert "cognome" in result.response.lower() or "piacere" in result.response.lower()
+        # Name-only resolution belongs to the orchestration layer: the FSM
+        # requests the DB lookup and deliberately emits no spoken response.
+        # The orchestrator then decides whether surname is needed based on
+        # zero, one, or multiple client matches.
+        assert result.needs_db_lookup
+        assert result.lookup_type == "client_by_name_only"
+        assert result.lookup_params == {"name": sm.context.client_name}
+        assert result.response == ""
 
     def test_name_with_client_id_stays_waiting_service(self):
         """Known client (follow-up booking) → WAITING_SERVICE."""
