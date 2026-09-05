@@ -60,8 +60,16 @@ jobs:
               raise SystemExit('fail-closed: palestra fixture target mismatch')
           vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
           vertical_path.write_text(vertical_text)
+
+          human_path = Path('voice-agent/tests/test_humanness_b1_b2_b3.py')
+          human_text = human_path.read_text()
+          human_old = '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n'''
+          human_new = '''        asyncio.run(cache.warm_cache(list(phrases)))\n'''
+          if human_text.count(human_old) != 1:
+              raise SystemExit('fail-closed: filler asyncio target mismatch')
+          human_path.write_text(human_text.replace(human_old, human_new, 1))
           PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py'
           test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
@@ -153,11 +161,19 @@ jobs:
               raise SystemExit('fail-closed: palestra fixture target mismatch')
           vertical_text = vertical_text.replace(yoga_old, yoga_new, 1).replace(pt_old, pt_new, 1)
           vertical_path.write_text(vertical_text)
+
+          human_path = Path('voice-agent/tests/test_humanness_b1_b2_b3.py')
+          human_text = human_path.read_text()
+          human_old = '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n'''
+          human_new = '''        asyncio.run(cache.warm_cache(list(phrases)))\n'''
+          if human_text.count(human_old) != 1:
+              raise SystemExit('fail-closed: filler asyncio target mismatch')
+          human_path.write_text(human_text.replace(human_old, human_new, 1))
           PY
-          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py'
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py'
           test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_f02_vertical_fixes.py
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_humanness_b1_b2_b3.py
           git commit -m 'fix(voice): repair Python CI regressions'
           git push origin HEAD:fix/sara-gate-shell-only
