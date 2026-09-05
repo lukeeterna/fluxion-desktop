@@ -20,21 +20,30 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Apply exact test-fixture correction
+      - name: Apply exact Python gate corrections
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path('voice-agent/tests/test_booking_state_machine.py')
-          text = path.read_text()
-          old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'fail-closed: expected one target snippet, found {count}')
-          path.write_text(text.replace(old, new, 1))
+
+          test_path = Path('voice-agent/tests/test_booking_state_machine.py')
+          test_text = test_path.read_text()
+          test_old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          test_new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          if test_text.count(test_old) != 1:
+              raise SystemExit('fail-closed: booking regression target mismatch')
+          test_path.write_text(test_text.replace(test_old, test_new, 1))
+
+          fsm_path = Path('voice-agent/src/booking_state_machine.py')
+          fsm_text = fsm_path.read_text()
+          fsm_old = '''        if extracted.date and (force_update or not self.context.date):\n'''
+          fsm_new = '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n'''
+          if fsm_text.count(fsm_old) != 1:
+              raise SystemExit('fail-closed: date extraction target mismatch')
+          fsm_path.write_text(fsm_text.replace(fsm_old, fsm_new, 1))
           PY
-          test "$(git diff --name-only)" = "voice-agent/tests/test_booking_state_machine.py"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/tests/test_booking_state_machine.py'
+          test "$(git diff --name-only | sort)" = "$expected"
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -66,7 +75,7 @@ jobs:
           set -e
           if [ "$rc" -ne 0 ]; then
             {
-              echo "### SOL Python gate after fixture fix — Python ${{ matrix.python-version }}"
+              echo "### SOL Python gate after verified fixes — Python ${{ matrix.python-version }}"
               echo
               echo "HEAD: $GITHUB_SHA"
               echo '```text'
@@ -90,18 +99,27 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-          path = Path('voice-agent/tests/test_booking_state_machine.py')
-          text = path.read_text()
-          old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'fail-closed: expected one target snippet, found {count}')
-          path.write_text(text.replace(old, new, 1))
+
+          test_path = Path('voice-agent/tests/test_booking_state_machine.py')
+          test_text = test_path.read_text()
+          test_old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          test_new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          if test_text.count(test_old) != 1:
+              raise SystemExit('fail-closed: booking regression target mismatch')
+          test_path.write_text(test_text.replace(test_old, test_new, 1))
+
+          fsm_path = Path('voice-agent/src/booking_state_machine.py')
+          fsm_text = fsm_path.read_text()
+          fsm_old = '''        if extracted.date and (force_update or not self.context.date):\n'''
+          fsm_new = '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n'''
+          if fsm_text.count(fsm_old) != 1:
+              raise SystemExit('fail-closed: date extraction target mismatch')
+          fsm_path.write_text(fsm_text.replace(fsm_old, fsm_new, 1))
           PY
-          test "$(git diff --name-only)" = "voice-agent/tests/test_booking_state_machine.py"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/tests/test_booking_state_machine.py'
+          test "$(git diff --name-only | sort)" = "$expected"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add voice-agent/tests/test_booking_state_machine.py
-          git commit -m 'test(voice): model identified client in mid-booking reset regression'
+          git add voice-agent/src/booking_state_machine.py voice-agent/tests/test_booking_state_machine.py
+          git commit -m 'fix(voice): preserve identity disambiguation dates'
           git push origin HEAD:fix/sara-gate-shell-only
