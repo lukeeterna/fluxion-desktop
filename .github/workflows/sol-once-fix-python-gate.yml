@@ -1,0 +1,107 @@
+name: SOL Once Fix Python Gate
+
+on:
+  push:
+    branches: [fix/sara-gate-shell-only]
+    paths:
+      - .github/workflows/sol-once-fix-python-gate.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact test-fixture correction
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('voice-agent/tests/test_booking_state_machine.py')
+          text = path.read_text()
+          old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'fail-closed: expected one target snippet, found {count}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          test "$(git diff --name-only)" = "voice-agent/tests/test_booking_state_machine.py"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: voice-agent/requirements-ci.txt
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: pip install -r requirements-ci.txt
+      - name: Run exact CI pytest command
+        working-directory: voice-agent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          pytest tests/ -v --tb=short -x \
+            --ignore=tests/test_faq_retriever.py \
+            --ignore=tests/test_faq_integration.py \
+            --ignore=tests/test_vad_file.py \
+            --ignore=tests/test_voip.py \
+            --ignore=tests/test_latency_benchmark.py \
+            --ignore=tests/test_sentiment.py \
+            --ignore=tests/e2e \
+            --ignore=tests/integration \
+            --ignore=tests/test_booking_e2e_complete.py \
+            --ignore=tests/test_s158_live_full.py \
+            --ignore=tests/test_s158_multivertical.py 2>&1 | tee /tmp/pytest.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            {
+              echo "### SOL Python gate after fixture fix — Python ${{ matrix.python-version }}"
+              echo
+              echo "HEAD: $GITHUB_SHA"
+              echo '```text'
+              tail -n 180 /tmp/pytest.log
+              echo '```'
+            } > /tmp/pr-comment.md
+            gh pr comment 60 --repo "$GITHUB_REPOSITORY" --body-file /tmp/pr-comment.md
+            exit "$rc"
+          fi
+
+  commit:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/sara-gate-shell-only
+      - name: Reapply exact verified patch and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('voice-agent/tests/test_booking_state_machine.py')
+          text = path.read_text()
+          old = '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          new = '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n'''
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'fail-closed: expected one target snippet, found {count}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          test "$(git diff --name-only)" = "voice-agent/tests/test_booking_state_machine.py"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add voice-agent/tests/test_booking_state_machine.py
+          git commit -m 'test(voice): model identified client in mid-booking reset regression'
+          git push origin HEAD:fix/sara-gate-shell-only
