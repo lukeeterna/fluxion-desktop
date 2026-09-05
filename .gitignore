@@ -48,6 +48,7 @@ testedebug/*/*.png
 testedebug/*/*.jpg
 .env
 e2e-reference/
+e2e-tests/.auth/
 
 # Voice Agent (Piper TTS binaries)
 piper/

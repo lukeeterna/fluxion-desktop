@@ -1,0 +1,200 @@
+name: SOL Once Fix Python Gate
+
+on:
+  push:
+    branches: [fix/sara-gate-shell-only]
+    paths:
+      - .github/workflows/sol-once-fix-python-gate.yml
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: sol-python-gate-pr60
+  cancel-in-progress: true
+
+env:
+  APPLY_PYTHON_GATE_FIXES: |
+    from pathlib import Path
+
+    def replace_exact(path, old, new, label):
+        p = Path(path)
+        text = p.read_text()
+        if text.count(old) != 1:
+            raise SystemExit(f"fail-closed: {label} target mismatch")
+        p.write_text(text.replace(old, new, 1))
+
+    replace_exact(
+        "voice-agent/tests/test_booking_state_machine.py",
+        '''        sm = create_state_machine()\n        sm.start_booking_flow()\n        sm.process_message("taglio")   # → WAITING_DATE\n        result = sm.process_message("annulla tutto")\n''',
+        '''        sm = create_state_machine()\n        # This regression is specifically mid-booking: model an already\n        # identified client before selecting the service. Anonymous callers\n        # correctly enter WAITING_NAME after service selection.\n        sm.context.client_id = "test-client"\n        sm.context.client_name = "Test"\n        sm.context.state = BookingState.WAITING_SERVICE\n        sm.process_message("taglio")   # → WAITING_DATE\n        assert sm.context.state == BookingState.WAITING_DATE\n        result = sm.process_message("annulla tutto")\n''',
+        "booking regression",
+    )
+
+    replace_exact(
+        "voice-agent/src/booking_state_machine.py",
+        '''        if extracted.date and (force_update or not self.context.date):\n''',
+        '''        # A date uttered while resolving identity is a birth date, not a\n        # booking date. Let the DISAMBIGUATING_NAME handler validate it.\n        if (\n            extracted.date\n            and self.context.state != BookingState.DISAMBIGUATING_NAME\n            and (force_update or not self.context.date)\n        ):\n''',
+        "date extraction",
+    )
+
+    replace_exact(
+        "voice-agent/src/tts_engine.py",
+        '''except ImportError:\n    _EDGE_TTS_AVAILABLE = False\n''',
+        '''except ImportError:\n    edge_tts = None  # type: ignore\n    _EDGE_TTS_AVAILABLE = False\n''',
+        "Edge TTS import",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_f02_vertical_fixes.py",
+        '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n''',
+        '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "yoga"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio fare yoga", None)\n''',
+        "palestra yoga fixture",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_f02_vertical_fixes.py",
+        '''        bsm = self._make_bsm_palestra()\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n''',
+        '''        bsm = self._make_bsm_palestra()\n        # Isolate the vertical-service guardrail from caller identification.\n        bsm.context.client_id = "test-client"\n        bsm.context.client_name = "Test"\n        bsm.context.service = "personal_training"\n        bsm.context.state = BookingState.WAITING_SERVICE\n        result = bsm._handle_waiting_service("voglio un personal trainer", None)\n''',
+        "palestra personal-training fixture",
+    )
+
+    for path in (
+        "voice-agent/tests/test_first_available.py",
+        "voice-agent/tests/test_cancellation_window.py",
+    ):
+        replace_exact(
+            path,
+            '''    return asyncio.get_event_loop().run_until_complete(coro)\n''',
+            '''    return asyncio.run(coro)\n''',
+            f"asyncio sync runner {path}",
+        )
+
+    replace_exact(
+        "voice-agent/tests/test_humanness_b1_b2_b3.py",
+        '''        asyncio.get_event_loop().run_until_complete(\n            cache.warm_cache(list(phrases))\n        )\n''',
+        '''        asyncio.run(cache.warm_cache(list(phrases)))\n''',
+        "filler asyncio",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_session_persistence.py",
+        '''        asyncio.get_event_loop().run_until_complete(manager1.persist_session(s.session_id))\n''',
+        '''        asyncio.run(manager1.persist_session(s.session_id))\n''',
+        "session persistence asyncio",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_kimi_flow.py",
+        '''        assert sm.context.state == BookingState.WAITING_SURNAME\n        assert sm.context.client_name is not None\n        assert "cognome" in result.response.lower() or "piacere" in result.response.lower()\n''',
+        '''        assert sm.context.state == BookingState.WAITING_SURNAME\n        assert sm.context.client_name is not None\n        # Name-only resolution belongs to the orchestration layer: the FSM\n        # requests the DB lookup and deliberately emits no spoken response.\n        # The orchestrator then decides whether surname is needed based on\n        # zero, one, or multiple client matches.\n        assert result.needs_db_lookup\n        assert result.lookup_type == "client_by_name_only"\n        assert result.lookup_params == {"name": sm.context.client_name}\n        assert result.response == ""\n''',
+        "Kimi name-only FSM/orchestrator contract",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''    def test_state_count_is_14(self):\n        """E1+E4: 23 states reduced to 14."""\n        assert len(list(BookingState)) == 14\n''',
+        '''    def test_state_count_is_15(self):\n        """E1+E4 removed dead states; NAME-GATE later added CONFIRMING_NAME."""\n        assert len(list(BookingState)) == 15\n''',
+        "Phase-E state count",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''    def test_active_states_exist(self):\n        """All 14 active states exist."""\n        active = [\n            "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",\n            "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",\n            "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",\n            "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",\n        ]\n''',
+        '''    def test_active_states_exist(self):\n        """All 15 active states exist, including the later NAME-GATE state."""\n        active = [\n            "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",\n            "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",\n            "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",\n            "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",\n            "CONFIRMING_NAME",\n        ]\n''',
+        "Phase-E active state set",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''        assert "Taglio" in result.response or "annotato" in result.response\n''',
+        '''        # E6-FIX deliberately removed false live-transfer promises.\n        # Context is carried in lookup_params for the human handoff, while the\n        # caller receives an honest callback commitment.\n        assert "richiam" in result.response.lower()\n        assert "arrivederci" in result.response.lower()\n        assert "collega" not in result.response.lower()\n''',
+        "Phase-E escalation caller message",
+    )
+
+    replace_exact(
+        "voice-agent/tests/test_phase_e_audit_p1.py",
+        '''        msg = build_caller_message(summary)\n        assert "collega" in msg\n        assert "Piega" in msg\n''',
+        '''        msg = build_caller_message(summary)\n        # FIX-A/E6 contract: no fabricated colleague on the line. The detailed\n        # booking context is for the operator handoff, not repeated to caller.\n        assert "richiam" in msg.lower()\n        assert "arrivederci" in msg.lower()\n        assert "collega" not in msg.lower()\n''',
+        "Phase-E escalation manager honest callback",
+    )
+
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.13']
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply exact Python gate corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -c "$APPLY_PYTHON_GATE_FIXES"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_phase_e_audit_p1.py\nvoice-agent/tests/test_session_persistence.py'
+          test "$(git diff --name-only | sort)" = "$expected"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: voice-agent/requirements-ci.txt
+      - name: Install dependencies
+        working-directory: voice-agent
+        run: pip install -r requirements-ci.txt
+      - name: Run exact CI pytest command
+        working-directory: voice-agent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          pytest tests/ -v --tb=short -x \
+            --ignore=tests/test_faq_retriever.py \
+            --ignore=tests/test_faq_integration.py \
+            --ignore=tests/test_vad_file.py \
+            --ignore=tests/test_voip.py \
+            --ignore=tests/test_latency_benchmark.py \
+            --ignore=tests/test_sentiment.py \
+            --ignore=tests/e2e \
+            --ignore=tests/integration \
+            --ignore=tests/test_booking_e2e_complete.py \
+            --ignore=tests/test_s158_live_full.py \
+            --ignore=tests/test_s158_multivertical.py 2>&1 | tee /tmp/pytest.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [ "$rc" -ne 0 ]; then
+            {
+              echo "### SOL Python gate after verified fixes — Python ${{ matrix.python-version }}"
+              echo
+              echo "HEAD: $GITHUB_SHA"
+              echo '```text'
+              tail -n 180 /tmp/pytest.log
+              echo '```'
+            } > /tmp/pr-comment.md
+            gh pr comment 60 --repo "$GITHUB_REPOSITORY" --body-file /tmp/pr-comment.md
+            exit "$rc"
+          fi
+
+  commit:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Reapply exact verified patch and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -c "$APPLY_PYTHON_GATE_FIXES"
+          expected=$'voice-agent/src/booking_state_machine.py\nvoice-agent/src/tts_engine.py\nvoice-agent/tests/test_booking_state_machine.py\nvoice-agent/tests/test_cancellation_window.py\nvoice-agent/tests/test_f02_vertical_fixes.py\nvoice-agent/tests/test_first_available.py\nvoice-agent/tests/test_humanness_b1_b2_b3.py\nvoice-agent/tests/test_kimi_flow.py\nvoice-agent/tests/test_phase_e_audit_p1.py\nvoice-agent/tests/test_session_persistence.py'
+          test "$(git diff --name-only | sort)" = "$expected"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add voice-agent/src/booking_state_machine.py voice-agent/src/tts_engine.py voice-agent/tests/test_booking_state_machine.py voice-agent/tests/test_cancellation_window.py voice-agent/tests/test_f02_vertical_fixes.py voice-agent/tests/test_first_available.py voice-agent/tests/test_humanness_b1_b2_b3.py voice-agent/tests/test_kimi_flow.py voice-agent/tests/test_phase_e_audit_p1.py voice-agent/tests/test_session_persistence.py
+          git commit -m 'fix(voice): repair Python CI regressions'
+          git push origin HEAD:fix/sara-gate-shell-only

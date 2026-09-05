@@ -55,14 +55,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Smoke Tests
@@ -176,14 +176,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Visual Tests
@@ -222,14 +222,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Accessibility Tests

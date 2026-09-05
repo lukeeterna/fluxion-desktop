@@ -189,7 +189,10 @@ pub async fn movimento_registra(
         return Err("La quantita deve essere maggiore di zero".to_string());
     }
     if tipo != "carico" && tipo != "scarico" {
-        return Err(format!("Tipo movimento non valido: {} (atteso 'carico'|'scarico')", tipo));
+        return Err(format!(
+            "Tipo movimento non valido: {} (atteso 'carico'|'scarico')",
+            tipo
+        ));
     }
 
     let mut tx = pool
@@ -230,11 +233,7 @@ pub async fn movimento_registra(
     // - scesa a <= soglia e alert era 0 -> 1 (alert "scattato", da emettere)
     // - risalita sopra soglia          -> 0 (reset, riemettibile in futuro)
     // - altrimenti invariato
-    let nuovo_alert: i64 = if nuova_giacenza <= soglia {
-        1
-    } else {
-        0
-    };
+    let nuovo_alert: i64 = if nuova_giacenza <= soglia { 1 } else { 0 };
 
     sqlx::query(
         r#"
@@ -274,13 +273,12 @@ pub async fn movimento_registra(
     .await
     .map_err(|e| format!("Errore inserimento movimento: {}", e))?;
 
-    let movimento = sqlx::query_as::<_, MovimentoMagazzino>(
-        "SELECT * FROM movimenti_magazzino WHERE id = ?",
-    )
-    .bind(&id)
-    .fetch_one(&mut *tx)
-    .await
-    .map_err(|e| format!("Errore lettura movimento: {}", e))?;
+    let movimento =
+        sqlx::query_as::<_, MovimentoMagazzino>("SELECT * FROM movimenti_magazzino WHERE id = ?")
+            .bind(&id)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| format!("Errore lettura movimento: {}", e))?;
 
     tx.commit()
         .await
@@ -295,9 +293,7 @@ pub async fn movimento_registra(
 
 /// Articoli attivi sottoscorta (giacenza <= soglia_minima)
 #[tauri::command]
-pub async fn magazzino_sottoscorta(
-    pool: State<'_, SqlitePool>,
-) -> Result<Vec<Articolo>, String> {
+pub async fn magazzino_sottoscorta(pool: State<'_, SqlitePool>) -> Result<Vec<Articolo>, String> {
     sqlx::query_as::<_, Articolo>(
         r#"
         SELECT * FROM articoli
@@ -410,16 +406,14 @@ mod tests {
 
     async fn insert_articolo(pool: &SqlitePool, nome: &str, giacenza: i64, soglia: i64) -> String {
         let id = uuid::Uuid::new_v4().to_string();
-        sqlx::query(
-            "INSERT INTO articoli (id, nome, giacenza, soglia_minima) VALUES (?, ?, ?, ?)",
-        )
-        .bind(&id)
-        .bind(nome)
-        .bind(giacenza)
-        .bind(soglia)
-        .execute(pool)
-        .await
-        .unwrap();
+        sqlx::query("INSERT INTO articoli (id, nome, giacenza, soglia_minima) VALUES (?, ?, ?, ?)")
+            .bind(&id)
+            .bind(nome)
+            .bind(giacenza)
+            .bind(soglia)
+            .execute(pool)
+            .await
+            .unwrap();
         id
     }
 
