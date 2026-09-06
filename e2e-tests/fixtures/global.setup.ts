@@ -38,17 +38,19 @@ async function globalSetup(config: FullConfig): Promise<void> {
     await page.waitForLoadState('domcontentloaded', { timeout: 15_000 });
     await page.waitForSelector('body', { timeout: 10_000 });
 
-    // E2E exercises the application itself, not the one-time preflight wizard.
-    // Seed the exact key used by FirstRunWizard, then persist it for every test context.
+    // E2E exercises the application itself, not one-time first-run UI.
+    // Seed the exact localStorage keys consumed by the preflight wizard and
+    // network modal, then persist them for every test context.
     await page.evaluate(() => {
       window.localStorage.setItem('fluxion-preflight-completed-v1', '1');
+      window.localStorage.setItem('fluxion-network-modal-dismissed-v1', '1');
     });
 
     const authFile = path.resolve(__dirname, '../.auth/user.json');
     fs.mkdirSync(path.dirname(authFile), { recursive: true });
     await context.storageState({ path: authFile });
 
-    console.log('✅ App is running and E2E preflight state saved');
+    console.log('✅ App is running and E2E first-run state saved');
 
   } catch (error) {
     console.error('❌ App health check failed:', error);
