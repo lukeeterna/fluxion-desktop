@@ -29,6 +29,7 @@ concurrency:
 env:
   CI: true
   BASE_URL: http://localhost:1420
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   # ============================================
@@ -42,6 +43,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -86,7 +97,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     needs: smoke-tests
-    if: github.event_name == 'push' || github.event.inputs.test_suite == 'all'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.test_suite == 'all'
 
     strategy:
       fail-fast: false
@@ -96,6 +107,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -163,6 +184,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -209,6 +240,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -255,6 +296,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
 
       - name: Download All Results
         uses: actions/download-artifact@v4
