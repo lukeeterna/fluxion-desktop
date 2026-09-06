@@ -125,7 +125,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Install Dependencies (macOS)
         if: matrix.os == 'macos-latest'
