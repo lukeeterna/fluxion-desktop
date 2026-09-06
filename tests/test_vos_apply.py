@@ -4,12 +4,16 @@ import hashlib
 import importlib.util
 import json
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location('vos_apply', ROOT / 'bin' / 'vos_apply.py')
+BIN = ROOT / 'bin'
+if str(BIN) not in sys.path:
+    sys.path.insert(0, str(BIN))
+SPEC = importlib.util.spec_from_file_location('vos_apply', BIN / 'vos_apply.py')
 assert SPEC and SPEC.loader
 mod = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(mod)
