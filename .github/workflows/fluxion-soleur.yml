@@ -596,5 +596,5 @@ jobs:
           gh api "repos/${GITHUB_REPOSITORY}/issues/68" > "$RUNNER_TEMP/issue.json"
           gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/68/comments?per_page=100" --slurp | jq 'add' > "$RUNNER_TEMP/comments.json"
           python3 .github/bootstrap/fluxion-cloud-continuation.py --pr "$RUNNER_TEMP/pr.json" --issue "$RUNNER_TEMP/issue.json" --comments "$RUNNER_TEMP/comments.json" --expected-head "$SOURCE_SHA" --run-id "$GITHUB_RUN_ID" --out "$RUNNER_TEMP/checkpoint.md"
-          gh issue comment 68 --body-file "$RUNNER_TEMP/checkpoint.md"
+          gh issue comment 68 --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/checkpoint.md"
           echo "FLUXION_CLOUD_CHECKPOINT=PASS"
