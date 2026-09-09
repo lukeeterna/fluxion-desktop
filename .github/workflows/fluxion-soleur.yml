@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/bootstrap/fluxion-soleur-adapter.py'
       - '.github/workflows/fluxion-soleur.yml'
+      - '.github/bootstrap/fluxion-cloud-continuation.py'
+      - '.github/workflows/fluxion-cloud-continuation.yml'
+      - 'tests/test_fluxion_cloud_continuation.py'
   workflow_dispatch:
     inputs:
       task_json:
@@ -559,3 +562,39 @@ jobs:
           git fetch origin master
           git merge-base --is-ancestor "$APPROVED_SHA" origin/master
           echo "FLUXION_SOLEUR_PIPELINE=DONE approved_sha=$APPROVED_SHA"
+
+  cloud-pr60-bootstrap:
+    name: PR60 durable continuation checkpoint
+    needs: adapter-selftest
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 60
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Fetch exact immutable bootstrap
+        run: |
+          set -euo pipefail
+          mkdir -p .github/bootstrap tests
+          for path in .github/bootstrap/fluxion-cloud-continuation.py tests/test_fluxion_cloud_continuation.py; do
+            gh api "repos/${GITHUB_REPOSITORY}/contents/${path}?ref=${SOURCE_SHA}" --jq .content | base64 -d > "${path}"
+            test -s "${path}"
+          done
+          echo "EXACT_PR_HEAD_FETCH=PASS sha=${SOURCE_SHA}"
+
+      - name: Validate and persist bounded checkpoint
+        run: |
+          set -euo pipefail
+          python3 -m py_compile .github/bootstrap/fluxion-cloud-continuation.py
+          python3 tests/test_fluxion_cloud_continuation.py -v
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/60" > "$RUNNER_TEMP/pr.json"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/68" > "$RUNNER_TEMP/issue.json"
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/68/comments?per_page=100" --slurp | jq 'add' > "$RUNNER_TEMP/comments.json"
+          python3 .github/bootstrap/fluxion-cloud-continuation.py --pr "$RUNNER_TEMP/pr.json" --issue "$RUNNER_TEMP/issue.json" --comments "$RUNNER_TEMP/comments.json" --expected-head "$SOURCE_SHA" --run-id "$GITHUB_RUN_ID" --out "$RUNNER_TEMP/checkpoint.md"
+          gh issue comment 68 --body-file "$RUNNER_TEMP/checkpoint.md"
+          echo "FLUXION_CLOUD_CHECKPOINT=PASS"
