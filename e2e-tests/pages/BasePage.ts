@@ -105,17 +105,19 @@ export abstract class BasePage {
   // =============================================================================
 
   private labelPattern(label: string): RegExp {
-    const escaped = label.replace(/[.*+?^$()|[\]\\]/g, '\\  async fillInput(label: string, value: string): Promise<void> {
+    const escaped = label.replace(/[.*+?^$()|[\]\\]/g, '\\$&');
+    return new RegExp('^' + escaped + '\\s*\\*?$', 'i');
+  }
+
+  async fillInput(label: string, value: string): Promise<void> {
     const scope = (await this.modal.isVisible()) ? this.modal : this.page;
-    await scope.getByLabel(label, { exact: true }).fill(value);
+    await scope.getByLabel(this.labelPattern(label)).fill(value);
   }
 
   async selectOption(label: string, value: string): Promise<void> {
     const scope = (await this.modal.isVisible()) ? this.modal : this.page;
-    await scope.getByLabel(label, { exact: true }).selectOption(value);
-  }');
-    return new RegExp('^' + escaped + '\\s*\\*?
-
+    await scope.getByLabel(this.labelPattern(label)).selectOption(value);
+  }
   async checkCheckbox(label: string): Promise<void> {
     await this.page.getByRole('checkbox', { name: label }).check();
   }
