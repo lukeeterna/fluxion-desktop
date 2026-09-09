@@ -111,6 +111,7 @@ export const ClientiTable: FC<ClientiTableProps> = ({
                     size="sm"
                     onClick={() => onEdit(cliente)}
                     className="text-slate-300 hover:text-cyan-400 hover:bg-slate-800"
+                    aria-label={`Modifica ${getClienteFullName(cliente)}`}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -120,6 +121,7 @@ export const ClientiTable: FC<ClientiTableProps> = ({
                     size="sm"
                     onClick={() => onDelete(cliente)}
                     className="text-slate-300 hover:text-red-400 hover:bg-slate-800"
+                    aria-label={`Elimina ${getClienteFullName(cliente)}`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -151,7 +153,11 @@ function LoyaltyIndicator({ cliente }: { cliente: Cliente }) {
         </Badge>
       )}
       <div className="flex items-center gap-1.5 min-w-[80px]">
-        <Progress value={progress} className="w-12 h-1.5" />
+        <Progress
+          value={progress}
+          className="w-12 h-1.5"
+          aria-label={`Fedeltà di ${getClienteFullName(cliente)}: ${visits} visite su ${threshold}`}
+        />
         <span className="text-xs text-slate-400">
           {visits}/{threshold}
         </span>

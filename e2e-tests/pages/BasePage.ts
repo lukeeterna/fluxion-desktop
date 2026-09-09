@@ -105,11 +105,13 @@ export abstract class BasePage {
   // =============================================================================
 
   async fillInput(label: string, value: string): Promise<void> {
-    await this.page.getByLabel(label).fill(value);
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByLabel(label, { exact: true }).fill(value);
   }
 
   async selectOption(label: string, value: string): Promise<void> {
-    await this.page.getByLabel(label).selectOption(value);
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByLabel(label, { exact: true }).selectOption(value);
   }
 
   async checkCheckbox(label: string): Promise<void> {

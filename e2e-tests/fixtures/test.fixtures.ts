@@ -45,6 +45,7 @@ export const test = base.extend<TestFixtures>({
 
   // Impostazioni Page Object
   impostazioniPage: async ({ page }, use) => {
+    await page.addInitScript({ path: path.join(__dirname, 'tauri-mock.js') });
     const impostazioniPage = new ImpostazioniPage(page);
     await use(impostazioniPage);
   },

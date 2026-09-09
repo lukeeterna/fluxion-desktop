@@ -150,7 +150,7 @@ export const Clienti: FC = () => {
         <Button
           data-testid="new-client"
           onClick={handleNewCliente}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white"
+          className="bg-cyan-700 hover:bg-cyan-600 text-white"
         >
           <Plus className="w-5 h-5 mr-2" />
           Nuovo Cliente
