@@ -118,6 +118,7 @@ export abstract class BasePage {
     const scope = (await this.modal.isVisible()) ? this.modal : this.page;
     await scope.getByLabel(this.labelPattern(label)).selectOption(value);
   }
+
   async checkCheckbox(label: string): Promise<void> {
     await this.page.getByRole('checkbox', { name: label }).check();
   }
