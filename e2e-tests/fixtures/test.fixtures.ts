@@ -8,6 +8,7 @@
  */
 
 import { test as base, expect } from '@playwright/test';
+import path from 'path';
 import { DashboardPage } from '../pages/DashboardPage';
 import { ClientiPage, ClienteData } from '../pages/ClientiPage';
 import { ImpostazioniPage } from '../pages/ImpostazioniPage';
@@ -37,6 +38,7 @@ export const test = base.extend<TestFixtures>({
 
   // Clienti Page Object
   clientiPage: async ({ page }, use) => {
+    await page.addInitScript({ path: path.join(__dirname, 'tauri-mock.js') });
     const clientiPage = new ClientiPage(page);
     await use(clientiPage);
   },
