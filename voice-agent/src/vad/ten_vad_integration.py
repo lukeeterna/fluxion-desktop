@@ -18,6 +18,7 @@ Note: File retains original name for import compatibility.
 
 import numpy as np
 import os
+import tempfile
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional, Callable, List
@@ -87,7 +88,7 @@ class VADConfig:
 
     # Debug
     dump_audio: bool = False
-    dump_path: str = os.path.join(os.environ.get("TEMP", "/tmp"), "vad_debug")
+    dump_path: str = os.path.join(tempfile.gettempdir(), "vad_debug")
 
 
 @dataclass
