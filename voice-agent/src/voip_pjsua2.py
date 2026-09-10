@@ -20,6 +20,7 @@ import os
 import queue
 import struct
 import sys
+import tempfile
 import threading
 import time
 import wave
@@ -27,6 +28,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+_PJSIP_LOG_PATH = os.path.join(tempfile.gettempdir(), "sara-pjsip-s244.log")
 
 # S238 FIX F2: dump backtrace of ALL Python threads on SIGABRT.
 # The pjlib grp_lock_unset_owner_thread assertion (lock.c:279) fires from a
@@ -830,7 +833,7 @@ class VoIPManager:
 
             try:
                 _s244_fd = _os.open(
-                    "/tmp/sara-pjsip-s244.log",
+                    _PJSIP_LOG_PATH,
                     _os.O_WRONLY | _os.O_CREAT | _os.O_APPEND,
                     0o644,
                 )
@@ -925,7 +928,7 @@ class VoIPManager:
         ep_cfg.logConfig.level = 5
         ep_cfg.logConfig.consoleLevel = 5
         try:
-            ep_cfg.logConfig.filename = "/tmp/sara-pjsip-s244.log"
+            ep_cfg.logConfig.filename = _PJSIP_LOG_PATH
             ep_cfg.logConfig.fileFlags = 0  # truncate on each run
             # Decor bitmask: year+month+day+time+micro+thread_name+thread_id
             ep_cfg.logConfig.decor = 0xFFFF
