@@ -10,11 +10,10 @@ import sys
 import pytest
 from datetime import datetime, timedelta
 from pathlib import Path
-from dataclasses import asdict
 
 # Add parent paths for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 VERTICALS_DIR = Path(__file__).parent.parent / "verticals"
 
@@ -23,11 +22,25 @@ VERTICALS_DIR = Path(__file__).parent.parent / "verticals"
 # H1: Sub-vertical individual configs
 # =============================================================================
 
+
 class TestH1SubVerticalConfigs:
     """Test all 6 sub-verticals have complete config files."""
 
-    SUB_VERTICALS = ["barbiere", "beauty", "odontoiatra", "fisioterapia", "gommista", "toelettatura"]
-    REQUIRED_FILES = ["config.json", "config.py", "entities.py", "intents.py", "faqs.json"]
+    SUB_VERTICALS = [
+        "barbiere",
+        "beauty",
+        "odontoiatra",
+        "fisioterapia",
+        "gommista",
+        "toelettatura",
+    ]
+    REQUIRED_FILES = [
+        "config.json",
+        "config.py",
+        "entities.py",
+        "intents.py",
+        "faqs.json",
+    ]
 
     @pytest.mark.parametrize("vertical", SUB_VERTICALS)
     def test_all_required_files_exist(self, vertical):
@@ -75,7 +88,10 @@ class TestH1SubVerticalConfigs:
         config_path = VERTICALS_DIR / vertical / "config.json"
         with open(config_path) as f:
             config = json.load(f)
-        assert "NOME_ATTIVITA" in config["variables"] or "NOME_STUDIO" in config["variables"]
+        assert (
+            "NOME_ATTIVITA" in config["variables"]
+            or "NOME_STUDIO" in config["variables"]
+        )
 
     @pytest.mark.parametrize("vertical", SUB_VERTICALS)
     def test_faqs_json_valid(self, vertical):
@@ -98,6 +114,7 @@ class TestH1BarbiereEntities:
 
     def _get_extractor(self):
         from verticals.barbiere.entities import BarbiereEntityExtractor
+
         return BarbiereEntityExtractor()
 
     def test_extract_taglio(self):
@@ -146,6 +163,7 @@ class TestH1BarbiereIntents:
 
     def _get_classifier(self):
         from verticals.barbiere.intents import BarbiereIntentClassifier, IntentType
+
         return BarbiereIntentClassifier(), IntentType
 
     def test_prenotazione(self):
@@ -179,6 +197,7 @@ class TestH1BeautyEntities:
 
     def _get_extractor(self):
         from verticals.beauty.entities import BeautyEntityExtractor
+
         return BeautyEntityExtractor()
 
     def test_extract_pulizia_viso(self):
@@ -207,6 +226,7 @@ class TestH1OdontoiatraEntities:
 
     def _get_extractor(self):
         from verticals.odontoiatra.entities import OdontoiatraEntityExtractor
+
         return OdontoiatraEntityExtractor()
 
     def test_extract_igiene(self):
@@ -239,6 +259,7 @@ class TestH1FisioterapiaEntities:
 
     def _get_extractor(self):
         from verticals.fisioterapia.entities import FisioterapiaEntityExtractor
+
         return FisioterapiaEntityExtractor()
 
     def test_extract_tecarterapia(self):
@@ -255,7 +276,9 @@ class TestH1FisioterapiaEntities:
 
     def test_urgency_alta(self):
         ext = self._get_extractor()
-        assert ext.extract_urgency("colpo della strega, non riesco a muovermi") == "alta"
+        assert (
+            ext.extract_urgency("colpo della strega, non riesco a muovermi") == "alta"
+        )
 
 
 class TestH1GommistaEntities:
@@ -263,6 +286,7 @@ class TestH1GommistaEntities:
 
     def _get_extractor(self):
         from verticals.gommista.entities import GommistaEntityExtractor
+
         return GommistaEntityExtractor()
 
     def test_extract_cambio_gomme(self):
@@ -291,6 +315,7 @@ class TestH1ToelettaturaEntities:
 
     def _get_extractor(self):
         from verticals.toelettatura.entities import ToelettaturaEntityExtractor
+
         return ToelettaturaEntityExtractor()
 
     def test_extract_bagno(self):
@@ -325,6 +350,7 @@ class TestH1ToelettaturaEntities:
 # H2: Expanded medical triage rules
 # =============================================================================
 
+
 class TestH2MedicalTriageExpanded:
     """Test expanded medical triage rules."""
 
@@ -357,7 +383,10 @@ class TestH2MedicalTriageExpanded:
         rules = self._load_triage_rules()
         emergency = [r for r in rules if r["urgency"] == "emergency"]
         for rule in emergency:
-            assert "118" in rule["response"] or "pronto soccorso" in rule["response"].lower()
+            assert (
+                "118" in rule["response"]
+                or "pronto soccorso" in rule["response"].lower()
+            )
 
     def test_dental_trauma_covered(self):
         rules = self._load_triage_rules()
@@ -378,30 +407,36 @@ class TestH2MedicalTriageExpanded:
         with open(config_path) as f:
             config = json.load(f)
         rules = config.get("triage_rules", [])
-        assert len(rules) >= 3, f"Fisioterapia needs >= 3 triage rules, got {len(rules)}"
+        assert len(rules) >= 3, (
+            f"Fisioterapia needs >= 3 triage rules, got {len(rules)}"
+        )
 
 
 # =============================================================================
 # H3: Vertical-aware analytics (verification only)
 # =============================================================================
 
+
 class TestH3VerticalAnalytics:
     """Verify vertical_id tracking in analytics."""
 
     def test_conversation_session_has_verticale_id(self):
         from src.analytics import ConversationSession
+
         session = ConversationSession()
-        assert hasattr(session, 'verticale_id')
+        assert hasattr(session, "verticale_id")
         assert session.verticale_id == ""
 
     def test_analytics_start_session_accepts_verticale_id(self):
         from src.analytics import ConversationLogger
+
         logger = ConversationLogger(db_path=":memory:")
         session_id = logger.start_session(verticale_id="barbiere")
         assert session_id is not None
 
     def test_analytics_get_metrics_filters_by_vertical(self):
         from src.analytics import ConversationLogger
+
         logger = ConversationLogger(db_path=":memory:")
         # Should not raise when filtering by vertical
         metrics = logger.get_metrics(verticale_id="salone", days=7)
@@ -412,14 +447,15 @@ class TestH3VerticalAnalytics:
 # H4: Cross-vertical composite customer cards
 # =============================================================================
 
+
 class TestH4CompositeCustomerCards:
     """Test CompositeCustomerCard functionality."""
 
     def test_create_composite(self):
         from src.vertical_schemas import CustomerCardFactory
+
         composite = CustomerCardFactory.create_composite(
-            customer_id="test-001",
-            verticals=["odontoiatra", "fisioterapia"]
+            customer_id="test-001", verticals=["odontoiatra", "fisioterapia"]
         )
         assert composite.customer_id == "test-001"
         assert len(composite.get_verticals()) == 2
@@ -428,48 +464,65 @@ class TestH4CompositeCustomerCards:
 
     def test_composite_get_card(self):
         from src.vertical_schemas import CustomerCardFactory, SchedaOdontoiatrica
+
         composite = CustomerCardFactory.create_composite(
-            customer_id="test-002",
-            verticals=["odontoiatra"]
+            customer_id="test-002", verticals=["odontoiatra"]
         )
         card = composite.get_card("odontoiatra")
         assert isinstance(card, SchedaOdontoiatrica)
 
     def test_composite_with_profile(self):
-        from src.vertical_schemas import CustomerCardFactory, CustomerProfile, CustomerTier
+        from src.vertical_schemas import (
+            CustomerCardFactory,
+            CustomerProfile,
+            CustomerTier,
+        )
+
         profile = CustomerProfile(
-            customer_id="test-003", phone="3331234567",
-            name="Mario", surname="Rossi",
-            tier=CustomerTier.GOLD, allergies=["lattice"]
+            customer_id="test-003",
+            phone="3331234567",
+            name="Mario",
+            surname="Rossi",
+            tier=CustomerTier.GOLD,
+            allergies=["lattice"],
         )
         composite = CustomerCardFactory.create_composite(
-            customer_id="test-003",
-            verticals=["beauty", "odontoiatra"],
-            profile=profile
+            customer_id="test-003", verticals=["beauty", "odontoiatra"], profile=profile
         )
         assert composite.profile.name == "Mario"
         assert "lattice" in composite.get_all_allergies()
 
     def test_composite_aggregate_allergies(self):
         from src.vertical_schemas import (
-            CompositeCustomerCard, SchedaOdontoiatrica, SchedaEstetica,
-            CustomerProfile, CustomerTier
+            CompositeCustomerCard,
+            SchedaOdontoiatrica,
+            SchedaEstetica,
+            CustomerProfile,
         )
+
         profile = CustomerProfile(
-            customer_id="test-004", phone="333", name="Anna", surname="Bianchi",
-            allergies=["penicillina"]
+            customer_id="test-004",
+            phone="333",
+            name="Anna",
+            surname="Bianchi",
+            allergies=["penicillina"],
         )
         composite = CompositeCustomerCard(
-            customer_id="test-004", profile=profile,
+            customer_id="test-004",
+            profile=profile,
             created_at=datetime.now().isoformat(),
             updated_at=datetime.now().isoformat(),
         )
-        dental = SchedaOdontoiatrica(customer_id="test-004", created_at=datetime.now().isoformat())
+        dental = SchedaOdontoiatrica(
+            customer_id="test-004", created_at=datetime.now().isoformat()
+        )
         dental.allergia_lattice = True
         dental.allergia_anestesia = True
         composite.add_card("odontoiatra", dental)
 
-        beauty = SchedaEstetica(customer_id="test-004", created_at=datetime.now().isoformat())
+        beauty = SchedaEstetica(
+            customer_id="test-004", created_at=datetime.now().isoformat()
+        )
         beauty.allergie_prodotti = ["henné"]
         composite.add_card("beauty", beauty)
 
@@ -481,6 +534,7 @@ class TestH4CompositeCustomerCards:
 
     def test_composite_medical_warnings(self):
         from src.vertical_schemas import CompositeCustomerCard, AnamnesiBase
+
         composite = CompositeCustomerCard(
             customer_id="test-005",
             created_at=datetime.now().isoformat(),
@@ -499,9 +553,9 @@ class TestH4CompositeCustomerCards:
 
     def test_composite_to_dict(self):
         from src.vertical_schemas import CustomerCardFactory
+
         composite = CustomerCardFactory.create_composite(
-            customer_id="test-006",
-            verticals=["barbiere", "beauty"]
+            customer_id="test-006", verticals=["barbiere", "beauty"]
         )
         d = composite.to_dict()
         assert d["customer_id"] == "test-006"
@@ -510,21 +564,35 @@ class TestH4CompositeCustomerCards:
         assert "cards" in d
 
     def test_factory_sub_vertical_mapping(self):
-        from src.vertical_schemas import CustomerCardFactory, SchedaParrucchiere, SchedaVeicolo, SchedaEstetica
-        assert isinstance(CustomerCardFactory.create_card("barbiere", "x"), SchedaParrucchiere)
-        assert isinstance(CustomerCardFactory.create_card("gommista", "x"), SchedaVeicolo)
-        assert isinstance(CustomerCardFactory.create_card("beauty", "x"), SchedaEstetica)
+        from src.vertical_schemas import (
+            CustomerCardFactory,
+            SchedaParrucchiere,
+            SchedaVeicolo,
+            SchedaEstetica,
+        )
+
+        assert isinstance(
+            CustomerCardFactory.create_card("barbiere", "x"), SchedaParrucchiere
+        )
+        assert isinstance(
+            CustomerCardFactory.create_card("gommista", "x"), SchedaVeicolo
+        )
+        assert isinstance(
+            CustomerCardFactory.create_card("beauty", "x"), SchedaEstetica
+        )
 
 
 # =============================================================================
 # H5: Vertical business hours in availability checker
 # =============================================================================
 
+
 class TestH5VerticalBusinessHours:
     """Test per-vertical business hours configuration."""
 
     def _get_config(self, vertical):
         from src.availability_checker import AvailabilityConfig
+
         return AvailabilityConfig.for_vertical(vertical)
 
     def test_palestra_early_opening(self):
@@ -584,8 +652,18 @@ class TestH5VerticalBusinessHours:
 
     def test_all_verticals_have_configs(self):
         """Every registered vertical has a business hours config."""
-        verticals = ["salone", "barbiere", "beauty", "medical", "odontoiatra",
-                      "fisioterapia", "palestra", "auto", "gommista", "toelettatura"]
+        verticals = [
+            "salone",
+            "barbiere",
+            "beauty",
+            "medical",
+            "odontoiatra",
+            "fisioterapia",
+            "palestra",
+            "auto",
+            "gommista",
+            "toelettatura",
+        ]
         for v in verticals:
             config = self._get_config(v)
             assert config.opening_time != "", f"{v} has empty opening_time"
@@ -596,19 +674,36 @@ class TestH5VerticalBusinessHours:
 # Integration: vertical manager recognizes new sub-verticals
 # =============================================================================
 
+
 class TestVerticalManagerIntegration:
     """Test that vertical_manager.py recognizes the new sub-verticals."""
 
     def test_vertical_type_enum_has_sub_verticals(self):
         from verticals.vertical_manager import VerticalType
-        sub_verticals = ["barbiere", "beauty", "odontoiatra", "fisioterapia", "gommista", "toelettatura"]
+
+        sub_verticals = [
+            "barbiere",
+            "beauty",
+            "odontoiatra",
+            "fisioterapia",
+            "gommista",
+            "toelettatura",
+        ]
         for sv in sub_verticals:
-            assert any(vt.value == sv for vt in VerticalType), f"{sv} not in VerticalType enum"
+            assert any(vt.value == sv for vt in VerticalType), (
+                f"{sv} not in VerticalType enum"
+            )
 
     def test_config_json_loadable_for_all(self):
         """All sub-verticals have loadable config.json."""
-        from verticals.vertical_manager import VerticalType
-        sub_verticals = ["barbiere", "beauty", "odontoiatra", "fisioterapia", "gommista", "toelettatura"]
+        sub_verticals = [
+            "barbiere",
+            "beauty",
+            "odontoiatra",
+            "fisioterapia",
+            "gommista",
+            "toelettatura",
+        ]
         for sv in sub_verticals:
             config_path = VERTICALS_DIR / sv / "config.json"
             with open(config_path) as f:

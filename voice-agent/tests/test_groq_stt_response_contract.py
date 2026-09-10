@@ -21,6 +21,7 @@ sys.modules["stt"] = fake_stt
 groq_client = importlib.import_module("groq_client")
 GroqClient = groq_client.GroqClient
 
+
 class _Transcriptions:
     def __init__(self, response):
         self.response = response
@@ -28,9 +29,11 @@ class _Transcriptions:
     def create(self, **_kwargs):
         return self.response
 
+
 class _ResponseObject:
     def __init__(self, text):
         self.text = text
+
 
 def _client(response):
     client = GroqClient.__new__(GroqClient)
@@ -40,19 +43,33 @@ def _client(response):
     )
     return client
 
+
 class GroqSTTResponseContractTests(unittest.TestCase):
     def test_plain_string(self):
-        self.assertEqual(asyncio.run(_client("  ciao  ").transcribe_audio(b"wav")), "ciao")
+        self.assertEqual(
+            asyncio.run(_client("  ciao  ").transcribe_audio(b"wav")), "ciao"
+        )
 
     def test_object_text(self):
-        self.assertEqual(asyncio.run(_client(_ResponseObject("  buongiorno  ")).transcribe_audio(b"wav")), "buongiorno")
+        self.assertEqual(
+            asyncio.run(
+                _client(_ResponseObject("  buongiorno  ")).transcribe_audio(b"wav")
+            ),
+            "buongiorno",
+        )
 
     def test_mapping_text(self):
-        self.assertEqual(asyncio.run(_client({"text": "  salve  "}).transcribe_audio(b"wav")), "salve")
+        self.assertEqual(
+            asyncio.run(_client({"text": "  salve  "}).transcribe_audio(b"wav")),
+            "salve",
+        )
 
     def test_unknown_schema_fails_closed(self):
-        with self.assertRaisesRegex(RuntimeError, "Unsupported Groq transcription response type"):
+        with self.assertRaisesRegex(
+            RuntimeError, "Unsupported Groq transcription response type"
+        ):
             asyncio.run(_client(object()).transcribe_audio(b"wav"))
+
 
 if __name__ == "__main__":
     unittest.main()

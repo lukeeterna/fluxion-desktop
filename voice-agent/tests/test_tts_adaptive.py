@@ -29,6 +29,7 @@ from tts_download_manager import TTSDownloadManager  # noqa: E402
 
 # ─── Availability helpers ──────────────────────────────────────────────────────
 
+
 def _piper_available() -> bool:
     """Return True if PiperTTSEngine can be instantiated (binary + model present)."""
     try:
@@ -47,8 +48,8 @@ def _edge_tts_available() -> bool:
 # TestTTSEngineSelector
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestTTSEngineSelector:
 
+class TestTTSEngineSelector:
     def test_detect_hardware_returns_required_keys(self):
         """detect_hardware() must return dict with ram_gb, cpu_cores, avx2, capable."""
         hw = TTSEngineSelector.detect_hardware()
@@ -113,8 +114,8 @@ class TestTTSEngineSelector:
 # TestTTSDownloadManager
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestTTSDownloadManager:
 
+class TestTTSDownloadManager:
     def test_read_mode_returns_string(self):
         """read_mode() always returns a string ('quality', 'fast', or 'auto')."""
         mode = TTSDownloadManager.read_mode()
@@ -125,6 +126,7 @@ class TestTTSDownloadManager:
         """write_mode('fast') persists and read_mode() returns 'fast'."""
         tmp_mode_file = tmp_path / ".tts_mode"
         import tts_download_manager
+
         monkeypatch.setattr(tts_download_manager, "_MODE_FILE", tmp_mode_file)
 
         TTSDownloadManager.write_mode("fast")
@@ -134,6 +136,7 @@ class TestTTSDownloadManager:
         """write_mode('quality') persists and read_mode() returns 'quality'."""
         tmp_mode_file = tmp_path / ".tts_mode"
         import tts_download_manager
+
         monkeypatch.setattr(tts_download_manager, "_MODE_FILE", tmp_mode_file)
 
         TTSDownloadManager.write_mode("quality")
@@ -154,9 +157,11 @@ class TestTTSDownloadManager:
 # TestPiperTTSEngineLatency
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestPiperTTSEngineLatency:
 
-    @pytest.mark.skipif(not _piper_available(), reason="Piper binary/model not available")
+class TestPiperTTSEngineLatency:
+    @pytest.mark.skipif(
+        not _piper_available(), reason="Piper binary/model not available"
+    )
     def test_piper_synthesis_produces_wav_bytes(self):
         """PiperTTSEngine.synthesize() returns non-empty bytes starting with RIFF header."""
         engine = PiperTTSEngine()
@@ -167,7 +172,9 @@ class TestPiperTTSEngineLatency:
         assert len(wav) > 100
         assert wav[:4] == b"RIFF", f"Expected RIFF WAV header, got {wav[:4]!r}"
 
-    @pytest.mark.skipif(not _piper_available(), reason="Piper binary/model not available")
+    @pytest.mark.skipif(
+        not _piper_available(), reason="Piper binary/model not available"
+    )
     def test_piper_p95_latency_under_200ms(self):
         """PiperTTSEngine P95 latency must be <= 200ms (N=20, warmup=2)."""
         engine = PiperTTSEngine()
@@ -190,7 +197,9 @@ class TestPiperTTSEngineLatency:
         p95_idx = int(0.95 * len(latencies)) - 1
         p95_ms = latencies[max(p95_idx, 0)]
 
-        print(f"\n[Piper Latency] P50={latencies[len(latencies)//2]:.1f}ms  P95={p95_ms:.1f}ms")
+        print(
+            f"\n[Piper Latency] P50={latencies[len(latencies) // 2]:.1f}ms  P95={p95_ms:.1f}ms"
+        )
         assert p95_ms <= 200, (
             f"Piper P95 latency {p95_ms:.1f}ms exceeds 200ms threshold"
         )
@@ -200,8 +209,8 @@ class TestPiperTTSEngineLatency:
 # TestEdgeTTSEngineLatency
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TestEdgeTTSEngineLatency:
 
+class TestEdgeTTSEngineLatency:
     @pytest.mark.skipif(not _edge_tts_available(), reason="edge-tts not installed")
     def test_edge_tts_synthesis_produces_wav_bytes(self):
         """EdgeTTSEngine.synthesize() returns non-empty WAV bytes."""

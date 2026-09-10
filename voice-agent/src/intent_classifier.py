@@ -22,13 +22,21 @@ from enum import Enum
 try:
     try:
         from .italian_regex import (
-            is_conferma, is_rifiuto, is_escalation,
-            strip_fillers, detect_correction, CorrectionType,
+            is_conferma,
+            is_rifiuto,
+            is_escalation,
+            strip_fillers,
+            detect_correction,
+            CorrectionType,
         )
     except ImportError:
         from italian_regex import (
-            is_conferma, is_rifiuto, is_escalation,
-            strip_fillers, detect_correction, CorrectionType,
+            is_conferma,
+            is_rifiuto,
+            is_escalation,
+            strip_fillers,  # noqa: F401
+            detect_correction,  # noqa: F401
+            CorrectionType,  # noqa: F401
         )
     HAS_ITALIAN_REGEX = True
 except ImportError:
@@ -37,6 +45,7 @@ except ImportError:
 # =============================================================================
 # INTENT CATEGORIES
 # =============================================================================
+
 
 class IntentCategory(Enum):
     CORTESIA = "cortesia"
@@ -54,6 +63,7 @@ class IntentCategory(Enum):
 @dataclass
 class IntentResult:
     """Result of intent classification."""
+
     intent: str
     category: IntentCategory
     confidence: float
@@ -66,7 +76,7 @@ class IntentResult:
             "category": self.category.value,
             "confidence": self.confidence,
             "response": self.response,
-            "needs_groq": self.needs_groq
+            "needs_groq": self.needs_groq,
         }
 
 
@@ -78,45 +88,133 @@ class IntentResult:
 # 50+ phrases for enterprise coverage
 CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     # === SALUTI ===
-    "buongiorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso aiutarla?"),
-    "buonasera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Sara, come posso aiutarla?"),
-    "buon pomeriggio": ("greeting_afternoon", IntentCategory.CORTESIA, "Buon pomeriggio! Come posso esserle utile?"),
-    "salve": ("greeting_neutral", IntentCategory.CORTESIA, "Salve! Come posso aiutarla oggi?"),
-    "ciao": ("greeting_informal", IntentCategory.CORTESIA, "Ciao! Come posso aiutarti?"),
-    "buona sera": ("greeting_evening", IntentCategory.CORTESIA, "Buonasera! Sono Sara, come posso aiutarla?"),
-    "buon giorno": ("greeting_morning", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso aiutarla?"),
-    "pronto": ("greeting_phone", IntentCategory.CORTESIA, "Pronto, sono Sara! Come posso aiutarla?"),
-    "si pronto": ("greeting_phone", IntentCategory.CORTESIA, "Buongiorno! Sono Sara, come posso esserle utile?"),
-
+    "buongiorno": (
+        "greeting_morning",
+        IntentCategory.CORTESIA,
+        "Buongiorno! Sono Sara, come posso aiutarla?",
+    ),
+    "buonasera": (
+        "greeting_evening",
+        IntentCategory.CORTESIA,
+        "Buonasera! Sono Sara, come posso aiutarla?",
+    ),
+    "buon pomeriggio": (
+        "greeting_afternoon",
+        IntentCategory.CORTESIA,
+        "Buon pomeriggio! Come posso esserle utile?",
+    ),
+    "salve": (
+        "greeting_neutral",
+        IntentCategory.CORTESIA,
+        "Salve! Come posso aiutarla oggi?",
+    ),
+    "ciao": (
+        "greeting_informal",
+        IntentCategory.CORTESIA,
+        "Ciao! Come posso aiutarti?",
+    ),
+    "buona sera": (
+        "greeting_evening",
+        IntentCategory.CORTESIA,
+        "Buonasera! Sono Sara, come posso aiutarla?",
+    ),
+    "buon giorno": (
+        "greeting_morning",
+        IntentCategory.CORTESIA,
+        "Buongiorno! Sono Sara, come posso aiutarla?",
+    ),
+    "pronto": (
+        "greeting_phone",
+        IntentCategory.CORTESIA,
+        "Pronto, sono Sara! Come posso aiutarla?",
+    ),
+    "si pronto": (
+        "greeting_phone",
+        IntentCategory.CORTESIA,
+        "Buongiorno! Sono Sara, come posso esserle utile?",
+    ),
     # === CONGEDI ===
-    "arrivederci": ("goodbye_formal", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
-    "arrivederla": ("goodbye_very_formal", IntentCategory.CORTESIA, "Arrivederla, è stato un piacere assisterla!"),
+    "arrivederci": (
+        "goodbye_formal",
+        IntentCategory.CORTESIA,
+        "Arrivederci, buona giornata!",
+    ),
+    "arrivederla": (
+        "goodbye_very_formal",
+        IntentCategory.CORTESIA,
+        "Arrivederla, è stato un piacere assisterla!",
+    ),
     "a presto": ("goodbye_soon", IntentCategory.CORTESIA, "A presto! Buona giornata!"),
-    "ci vediamo": ("goodbye_informal", IntentCategory.CORTESIA, "Ci vediamo! A presto!"),
-    "buona giornata": ("goodbye_day", IntentCategory.CORTESIA, "Grazie, buona giornata anche a lei!"),
-    "buona serata": ("goodbye_evening", IntentCategory.CORTESIA, "Grazie, buona serata anche a lei!"),
-    "alla prossima": ("goodbye_next", IntentCategory.CORTESIA, "Alla prossima! Buona giornata!"),
+    "ci vediamo": (
+        "goodbye_informal",
+        IntentCategory.CORTESIA,
+        "Ci vediamo! A presto!",
+    ),
+    "buona giornata": (
+        "goodbye_day",
+        IntentCategory.CORTESIA,
+        "Grazie, buona giornata anche a lei!",
+    ),
+    "buona serata": (
+        "goodbye_evening",
+        IntentCategory.CORTESIA,
+        "Grazie, buona serata anche a lei!",
+    ),
+    "alla prossima": (
+        "goodbye_next",
+        IntentCategory.CORTESIA,
+        "Alla prossima! Buona giornata!",
+    ),
     "addio": ("goodbye_final", IntentCategory.CORTESIA, "Arrivederci!"),
-
     # === RINGRAZIAMENTI ===
     "grazie": ("thanks", IntentCategory.CORTESIA, "Prego!"),
-    "grazie mille": ("thanks_big", IntentCategory.CORTESIA, "Di nulla, buona giornata!"),
+    "grazie mille": (
+        "thanks_big",
+        IntentCategory.CORTESIA,
+        "Di nulla, buona giornata!",
+    ),
     "molte grazie": ("thanks_many", IntentCategory.CORTESIA, "Prego, è un piacere!"),
     "ti ringrazio": ("thanks_you", IntentCategory.CORTESIA, "Figurati!"),
-    "la ringrazio": ("thanks_formal", IntentCategory.CORTESIA, "Prego, è stato un piacere!"),
+    "la ringrazio": (
+        "thanks_formal",
+        IntentCategory.CORTESIA,
+        "Prego, è stato un piacere!",
+    ),
     "grazie tante": ("thanks_lots", IntentCategory.CORTESIA, "Di niente!"),
-    "mille grazie": ("thanks_thousand", IntentCategory.CORTESIA, "Prego, a disposizione!"),
+    "mille grazie": (
+        "thanks_thousand",
+        IntentCategory.CORTESIA,
+        "Prego, a disposizione!",
+    ),
     "grazie davvero": ("thanks_really", IntentCategory.CORTESIA, "Figuriamoci!"),
-    "grazie di tutto": ("thanks_all", IntentCategory.CORTESIA, "Prego, buona giornata!"),
-
+    "grazie di tutto": (
+        "thanks_all",
+        IntentCategory.CORTESIA,
+        "Prego, buona giornata!",
+    ),
     # === SCUSE ===
     "scusa": ("apology_informal", IntentCategory.CORTESIA, "Nessun problema!"),
-    "scusi": ("apology_formal", IntentCategory.CORTESIA, "Nessun problema, mi dica pure."),
-    "mi scusi": ("apology_very_formal", IntentCategory.CORTESIA, "Non si preoccupi, mi dica."),
-    "perdonami": ("apology_pardon_inf", IntentCategory.CORTESIA, "Figurati, dimmi pure!"),
-    "mi perdoni": ("apology_pardon_for", IntentCategory.CORTESIA, "Non c'è problema, mi dica."),
+    "scusi": (
+        "apology_formal",
+        IntentCategory.CORTESIA,
+        "Nessun problema, mi dica pure.",
+    ),
+    "mi scusi": (
+        "apology_very_formal",
+        IntentCategory.CORTESIA,
+        "Non si preoccupi, mi dica.",
+    ),
+    "perdonami": (
+        "apology_pardon_inf",
+        IntentCategory.CORTESIA,
+        "Figurati, dimmi pure!",
+    ),
+    "mi perdoni": (
+        "apology_pardon_for",
+        IntentCategory.CORTESIA,
+        "Non c'è problema, mi dica.",
+    ),
     "chiedo scusa": ("apology_ask", IntentCategory.CORTESIA, "Nessun problema!"),
-
     # === CONFERME BREVI ===
     "ok": ("ack_ok", IntentCategory.CONFERMA, "Perfetto!"),
     "va bene": ("ack_fine", IntentCategory.CONFERMA, "Ottimo!"),
@@ -156,78 +254,290 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
     "per me ok": ("ack_for_me_ok2", IntentCategory.CONFERMA, "Ottimo!"),
     "sono d'accordo": ("ack_i_agree", IntentCategory.CONFERMA, "Bene!"),
     "dai": ("ack_dai", IntentCategory.CONFERMA, "Perfetto!"),
-
     # === NEGAZIONI BREVI ===
     "no": ("neg_no", IntentCategory.RIFIUTO, "D'accordo, mi dica cosa preferisce."),
     "no no": ("neg_no_no", IntentCategory.RIFIUTO, "D'accordo. Cosa preferisce?"),
-    "no grazie": ("neg_no_thanks", IntentCategory.RIFIUTO, "Va bene! Posso aiutarla con altro?"),
-    "no, grazie": ("neg_no_thanks_comma", IntentCategory.RIFIUTO, "Va bene! Posso aiutarla con altro?"),  # CoVe 2026: with comma
+    "no grazie": (
+        "neg_no_thanks",
+        IntentCategory.RIFIUTO,
+        "Va bene! Posso aiutarla con altro?",
+    ),
+    "no, grazie": (
+        "neg_no_thanks_comma",
+        IntentCategory.RIFIUTO,
+        "Va bene! Posso aiutarla con altro?",
+    ),  # CoVe 2026: with comma
     "non mi va": ("neg_dont_want", IntentCategory.RIFIUTO, "Capisco. Cosa preferisce?"),
-    "non mi interessa": ("neg_not_interested", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
-    "non mi serve": ("neg_not_needed", IntentCategory.RIFIUTO, "Va bene. Posso aiutarla con altro?"),
-    "niente": ("neg_nothing", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
-    "lascia stare": ("neg_leave", IntentCategory.RIFIUTO, "Va bene. Mi dica se posso aiutarla con altro."),
-    "lascia perdere": ("neg_leave_it", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
-    "meglio di no": ("neg_better_not", IntentCategory.RIFIUTO, "Capisco. Cosa preferisce?"),
-    "direi di no": ("neg_id_say_no", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
-    "non credo": ("neg_dont_think", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
-    "forse no": ("neg_maybe_not", IntentCategory.RIFIUTO, "D'accordo. Mi dica cosa preferisce."),
-    "ci devo pensare": ("neg_think_about", IntentCategory.RIFIUTO, "Certo, la ricontatti quando vuole."),
-    "preferisco di no": ("neg_prefer_not", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
-    "non se ne parla": ("neg_out_of_question", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
-    "assolutamente no": ("neg_absolutely_not", IntentCategory.RIFIUTO, "D'accordo. Posso aiutarla con altro?"),
-    "per niente": ("neg_not_at_all", IntentCategory.RIFIUTO, "Capisco. Posso aiutarla con altro?"),
-    "ho cambiato idea": ("neg_changed_mind", IntentCategory.RIFIUTO, "D'accordo, nessun problema. Posso aiutarla con altro?"),
-    "annulla": ("neg_cancel", IntentCategory.CANCELLAZIONE, "Va bene, annullo. Posso aiutarla con altro?"),
-
+    "non mi interessa": (
+        "neg_not_interested",
+        IntentCategory.RIFIUTO,
+        "Capisco. Posso aiutarla con altro?",
+    ),
+    "non mi serve": (
+        "neg_not_needed",
+        IntentCategory.RIFIUTO,
+        "Va bene. Posso aiutarla con altro?",
+    ),
+    "niente": (
+        "neg_nothing",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Posso aiutarla con altro?",
+    ),
+    "lascia stare": (
+        "neg_leave",
+        IntentCategory.RIFIUTO,
+        "Va bene. Mi dica se posso aiutarla con altro.",
+    ),
+    "lascia perdere": (
+        "neg_leave_it",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Posso aiutarla con altro?",
+    ),
+    "meglio di no": (
+        "neg_better_not",
+        IntentCategory.RIFIUTO,
+        "Capisco. Cosa preferisce?",
+    ),
+    "direi di no": (
+        "neg_id_say_no",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Posso aiutarla con altro?",
+    ),
+    "non credo": (
+        "neg_dont_think",
+        IntentCategory.RIFIUTO,
+        "Capisco. Posso aiutarla con altro?",
+    ),
+    "forse no": (
+        "neg_maybe_not",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Mi dica cosa preferisce.",
+    ),
+    "ci devo pensare": (
+        "neg_think_about",
+        IntentCategory.RIFIUTO,
+        "Certo, la ricontatti quando vuole.",
+    ),
+    "preferisco di no": (
+        "neg_prefer_not",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Posso aiutarla con altro?",
+    ),
+    "non se ne parla": (
+        "neg_out_of_question",
+        IntentCategory.RIFIUTO,
+        "Capisco. Posso aiutarla con altro?",
+    ),
+    "assolutamente no": (
+        "neg_absolutely_not",
+        IntentCategory.RIFIUTO,
+        "D'accordo. Posso aiutarla con altro?",
+    ),
+    "per niente": (
+        "neg_not_at_all",
+        IntentCategory.RIFIUTO,
+        "Capisco. Posso aiutarla con altro?",
+    ),
+    "ho cambiato idea": (
+        "neg_changed_mind",
+        IntentCategory.RIFIUTO,
+        "D'accordo, nessun problema. Posso aiutarla con altro?",
+    ),
+    "annulla": (
+        "neg_cancel",
+        IntentCategory.CANCELLAZIONE,
+        "Va bene, annullo. Posso aiutarla con altro?",
+    ),
     # === FRASI COMPOSTE COMUNI (congedo + ringraziamento) ===
-    "grazie arrivederci": ("thanks_goodbye", IntentCategory.CORTESIA, "Prego! Arrivederci, buona giornata!"),
-    "grazie mille arrivederci": ("thanks_big_goodbye", IntentCategory.CORTESIA, "Di nulla! Arrivederci, buona giornata!"),
-    "grazie a presto": ("thanks_goodbye_soon", IntentCategory.CORTESIA, "Prego! A presto!"),
-    "grazie mille a presto": ("thanks_big_goodbye_soon", IntentCategory.CORTESIA, "Di nulla! A presto!"),
-    "arrivederci grazie": ("goodbye_thanks", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
-    "ok arrivederci": ("ack_goodbye", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
+    "grazie arrivederci": (
+        "thanks_goodbye",
+        IntentCategory.CORTESIA,
+        "Prego! Arrivederci, buona giornata!",
+    ),
+    "grazie mille arrivederci": (
+        "thanks_big_goodbye",
+        IntentCategory.CORTESIA,
+        "Di nulla! Arrivederci, buona giornata!",
+    ),
+    "grazie a presto": (
+        "thanks_goodbye_soon",
+        IntentCategory.CORTESIA,
+        "Prego! A presto!",
+    ),
+    "grazie mille a presto": (
+        "thanks_big_goodbye_soon",
+        IntentCategory.CORTESIA,
+        "Di nulla! A presto!",
+    ),
+    "arrivederci grazie": (
+        "goodbye_thanks",
+        IntentCategory.CORTESIA,
+        "Prego! Arrivederci!",
+    ),
+    "ok arrivederci": (
+        "ack_goodbye",
+        IntentCategory.CORTESIA,
+        "Arrivederci, buona giornata!",
+    ),
     "ok grazie": ("ack_thanks", IntentCategory.CORTESIA, "Prego!"),
     "ok grazie mille": ("ack_thanks_big", IntentCategory.CORTESIA, "Di nulla!"),
-    "va bene grazie": ("fine_thanks", IntentCategory.CORTESIA, "Prego! Buona giornata!"),
+    "va bene grazie": (
+        "fine_thanks",
+        IntentCategory.CORTESIA,
+        "Prego! Buona giornata!",
+    ),
     "va bene arrivederci": ("fine_goodbye", IntentCategory.CORTESIA, "Arrivederci!"),
-    "perfetto arrivederci": ("perfect_goodbye", IntentCategory.CORTESIA, "Arrivederci!"),
+    "perfetto arrivederci": (
+        "perfect_goodbye",
+        IntentCategory.CORTESIA,
+        "Arrivederci!",
+    ),
     "perfetto grazie": ("perfect_thanks", IntentCategory.CORTESIA, "Prego!"),
-
     # S142: Compound goodbye phrases (from NLU audit)
-    "grazie a tutti": ("goodbye_thanks_all", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
-    "basta cosi": ("goodbye_basta_cosi", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
-    "basta così": ("goodbye_basta_cosi2", IntentCategory.CORTESIA, "Arrivederci, buona giornata!"),
+    "grazie a tutti": (
+        "goodbye_thanks_all",
+        IntentCategory.CORTESIA,
+        "Prego! Arrivederci!",
+    ),
+    "basta cosi": (
+        "goodbye_basta_cosi",
+        IntentCategory.CORTESIA,
+        "Arrivederci, buona giornata!",
+    ),
+    "basta così": (
+        "goodbye_basta_cosi2",
+        IntentCategory.CORTESIA,
+        "Arrivederci, buona giornata!",
+    ),
     "ho finito": ("goodbye_ho_finito", IntentCategory.CORTESIA, "Bene! Arrivederci!"),
-    "non ho altro": ("goodbye_non_ho_altro", IntentCategory.CORTESIA, "Perfetto! Arrivederci!"),
-    "nient altro": ("goodbye_nientaltro", IntentCategory.CORTESIA, "Bene! Arrivederci!"),
-    "niente altro grazie": ("goodbye_niente_altro", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
+    "non ho altro": (
+        "goodbye_non_ho_altro",
+        IntentCategory.CORTESIA,
+        "Perfetto! Arrivederci!",
+    ),
+    "nient altro": (
+        "goodbye_nientaltro",
+        IntentCategory.CORTESIA,
+        "Bene! Arrivederci!",
+    ),
+    "niente altro grazie": (
+        "goodbye_niente_altro",
+        IntentCategory.CORTESIA,
+        "Prego! Arrivederci!",
+    ),
     "niente altro": ("goodbye_niente_altro2", IntentCategory.CORTESIA, "Arrivederci!"),
-    "ciao a presto": ("goodbye_ciao_presto", IntentCategory.CORTESIA, "Ciao! A presto!"),
-    "bene grazie": ("goodbye_bene_grazie", IntentCategory.CORTESIA, "Prego! Buona giornata!"),
+    "ciao a presto": (
+        "goodbye_ciao_presto",
+        IntentCategory.CORTESIA,
+        "Ciao! A presto!",
+    ),
+    "bene grazie": (
+        "goodbye_bene_grazie",
+        IntentCategory.CORTESIA,
+        "Prego! Buona giornata!",
+    ),
     "ok ci sentiamo": ("goodbye_ok_ci_sentiamo", IntentCategory.CORTESIA, "A presto!"),
-    "va bene ci vediamo": ("goodbye_vabene_ci_vediamo", IntentCategory.CORTESIA, "Ci vediamo! A presto!"),
-    "grazie dell aiuto": ("goodbye_thanks_help", IntentCategory.CORTESIA, "Prego! Arrivederci!"),
-
+    "va bene ci vediamo": (
+        "goodbye_vabene_ci_vediamo",
+        IntentCategory.CORTESIA,
+        "Ci vediamo! A presto!",
+    ),
+    "grazie dell aiuto": (
+        "goodbye_thanks_help",
+        IntentCategory.CORTESIA,
+        "Prego! Arrivederci!",
+    ),
     # === RICHIESTA OPERATORE ===
-    "operatore": ("operator_request", IntentCategory.OPERATORE, "La metto in contatto con un operatore, un attimo..."),
-    "operatrice": ("operator_request_f", IntentCategory.OPERATORE, "La metto in contatto con un'operatrice, un attimo..."),
-    "parlo con una persona": ("operator_person", IntentCategory.OPERATORE, "Certo, la connetto con un operatore."),
-    "voglio parlare con qualcuno": ("operator_someone", IntentCategory.OPERATORE, "La metto in contatto con un operatore."),
-    "voglio parlare con una persona": ("operator_person2", IntentCategory.OPERATORE, "La connetto subito con un operatore."),
-    "persona vera": ("operator_real", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
-    "persona reale": ("operator_real2", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
-    "operatore umano": ("operator_human", IntentCategory.OPERATORE, "Certo, la metto in contatto con un operatore."),
-    "essere umano": ("operator_human2", IntentCategory.OPERATORE, "La connetto con un operatore."),
-    "passami il titolare": ("operator_owner", IntentCategory.OPERATORE, "La metto in contatto con il titolare."),
-    "voglio il titolare": ("operator_owner2", IntentCategory.OPERATORE, "La metto in contatto con il titolare."),
-    "parlare col responsabile": ("operator_manager", IntentCategory.OPERATORE, "La connetto con il responsabile."),
-    "mi passi il capo": ("operator_boss", IntentCategory.OPERATORE, "La metto in contatto con il responsabile."),
-    "richiamatemi": ("operator_callback", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
-    "chiamatemi": ("operator_callback2", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
-    "fatemi chiamare": ("operator_callback3", IntentCategory.OPERATORE, "Provvedo a farla richiamare."),
-    "non voglio parlare con un robot": ("operator_no_robot", IntentCategory.OPERATORE, "Capisco, la connetto con un operatore."),
-    "sei un robot": ("operator_robot_detect", IntentCategory.OPERATORE, "Sono un assistente virtuale. La connetto con un operatore se preferisce."),
+    "operatore": (
+        "operator_request",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con un operatore, un attimo...",
+    ),
+    "operatrice": (
+        "operator_request_f",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con un'operatrice, un attimo...",
+    ),
+    "parlo con una persona": (
+        "operator_person",
+        IntentCategory.OPERATORE,
+        "Certo, la connetto con un operatore.",
+    ),
+    "voglio parlare con qualcuno": (
+        "operator_someone",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con un operatore.",
+    ),
+    "voglio parlare con una persona": (
+        "operator_person2",
+        IntentCategory.OPERATORE,
+        "La connetto subito con un operatore.",
+    ),
+    "persona vera": (
+        "operator_real",
+        IntentCategory.OPERATORE,
+        "Capisco, la connetto con un operatore.",
+    ),
+    "persona reale": (
+        "operator_real2",
+        IntentCategory.OPERATORE,
+        "Capisco, la connetto con un operatore.",
+    ),
+    "operatore umano": (
+        "operator_human",
+        IntentCategory.OPERATORE,
+        "Certo, la metto in contatto con un operatore.",
+    ),
+    "essere umano": (
+        "operator_human2",
+        IntentCategory.OPERATORE,
+        "La connetto con un operatore.",
+    ),
+    "passami il titolare": (
+        "operator_owner",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con il titolare.",
+    ),
+    "voglio il titolare": (
+        "operator_owner2",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con il titolare.",
+    ),
+    "parlare col responsabile": (
+        "operator_manager",
+        IntentCategory.OPERATORE,
+        "La connetto con il responsabile.",
+    ),
+    "mi passi il capo": (
+        "operator_boss",
+        IntentCategory.OPERATORE,
+        "La metto in contatto con il responsabile.",
+    ),
+    "richiamatemi": (
+        "operator_callback",
+        IntentCategory.OPERATORE,
+        "Provvedo a farla richiamare.",
+    ),
+    "chiamatemi": (
+        "operator_callback2",
+        IntentCategory.OPERATORE,
+        "Provvedo a farla richiamare.",
+    ),
+    "fatemi chiamare": (
+        "operator_callback3",
+        IntentCategory.OPERATORE,
+        "Provvedo a farla richiamare.",
+    ),
+    "non voglio parlare con un robot": (
+        "operator_no_robot",
+        IntentCategory.OPERATORE,
+        "Capisco, la connetto con un operatore.",
+    ),
+    "sei un robot": (
+        "operator_robot_detect",
+        IntentCategory.OPERATORE,
+        "Sono un assistente virtuale. La connetto con un operatore se preferisce.",
+    ),
 }
 
 # Aliases for common variations (map to canonical form)
@@ -260,6 +570,7 @@ CORTESIA_ALIASES: Dict[str, str] = {
 # TEXT NORMALIZATION
 # =============================================================================
 
+
 def normalize_input(text: str) -> str:
     """
     Normalize text for matching.
@@ -273,13 +584,14 @@ def normalize_input(text: str) -> str:
     text = text.lower()
 
     # Remove accents: NFD decomposition separates base char from accent
-    text = ''.join(
-        c for c in unicodedata.normalize('NFD', text)
-        if unicodedata.category(c) != 'Mn'  # Mn = Mark, Nonspacing
+    text = "".join(
+        c
+        for c in unicodedata.normalize("NFD", text)
+        if unicodedata.category(c) != "Mn"  # Mn = Mark, Nonspacing
     )
 
     # Strip and collapse spaces
-    text = ' '.join(text.split())
+    text = " ".join(text.split())
 
     return text
 
@@ -287,6 +599,7 @@ def normalize_input(text: str) -> str:
 # =============================================================================
 # LAYER 1: EXACT MATCH
 # =============================================================================
+
 
 def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResult]:
     """
@@ -316,12 +629,13 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
             category=category,
             confidence=1.0,
             response=response,
-            needs_groq=False
+            needs_groq=False,
         )
 
     # 1b. Match after stripping punctuation (handles "grazie mille, arrivederci" → "grazie mille arrivederci")
     import re as _re
-    normalized_no_punct = ' '.join(_re.sub(r'[^\w\s]', ' ', normalized).split())
+
+    normalized_no_punct = " ".join(_re.sub(r"[^\w\s]", " ", normalized).split())
     if normalized_no_punct != normalized and normalized_no_punct in CORTESIA_EXACT:
         intent_name, category, response = CORTESIA_EXACT[normalized_no_punct]
         return IntentResult(
@@ -329,7 +643,7 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
             category=category,
             confidence=0.98,
             response=response,
-            needs_groq=False
+            needs_groq=False,
         )
 
     # 2. Alias lookup
@@ -342,7 +656,7 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
                 category=category,
                 confidence=0.95,  # Slightly lower for alias
                 response=response,
-                needs_groq=False
+                needs_groq=False,
             )
 
     # 3. Fuzzy match with Levenshtein (for typos)
@@ -369,7 +683,7 @@ def exact_match_intent(text: str, max_distance: int = 2) -> Optional[IntentResul
                     category=category,
                     confidence=confidence,
                     response=response,
-                    needs_groq=False
+                    needs_groq=False,
                 )
         except ImportError:
             # Levenshtein not installed, skip fuzzy matching
@@ -517,19 +831,41 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
     _negation_cancellation = re.search(
         r"\b(?:no\s+)?non\s+(?:voglio\s+|intendo\s+|desidero\s+|devo\s+|posso\s+)?"
         r"(?:cancellare?|annullare?|disdire?|eliminare?)\b",
-        normalized, re.IGNORECASE
+        normalized,
+        re.IGNORECASE,
     )
 
     # Strong intent keywords that indicate clear intent (CoVe 2026)
     STRONG_KEYWORDS = {
-        IntentCategory.PRENOTAZIONE: [r'\bprenot', r'\bappuntament', r'\bfissare\b', r'\bprendere\b'],
-        IntentCategory.CANCELLAZIONE: [r'\bcancell', r'\bannull', r'\belimin', r'\bdisdir'],
-        IntentCategory.SPOSTAMENTO: [r'\bspost', r'\banticip', r'\bposticip', r'\brimand', r'\bmodific'],
-        IntentCategory.WAITLIST: [r'\blista\b', r'\battesa', r'\bavvis'],
-        IntentCategory.INFO: [r'\bcosta', r'\bprezzo', r'\borari', r'\bquanto'],
-        IntentCategory.CONFERMA: [r'\bs[iì]\b', r'\bok\b', r'\bva\s+bene', r'\bconferm'],
-        IntentCategory.RIFIUTO: [r'\bno\b', r'\bnon\b', r'\bannull'],
-        IntentCategory.OPERATORE: [r'\boperator', r'\bpersona\b', r'\buman'],
+        IntentCategory.PRENOTAZIONE: [
+            r"\bprenot",
+            r"\bappuntament",
+            r"\bfissare\b",
+            r"\bprendere\b",
+        ],
+        IntentCategory.CANCELLAZIONE: [
+            r"\bcancell",
+            r"\bannull",
+            r"\belimin",
+            r"\bdisdir",
+        ],
+        IntentCategory.SPOSTAMENTO: [
+            r"\bspost",
+            r"\banticip",
+            r"\bposticip",
+            r"\brimand",
+            r"\bmodific",
+        ],
+        IntentCategory.WAITLIST: [r"\blista\b", r"\battesa", r"\bavvis"],
+        IntentCategory.INFO: [r"\bcosta", r"\bprezzo", r"\borari", r"\bquanto"],
+        IntentCategory.CONFERMA: [
+            r"\bs[iì]\b",
+            r"\bok\b",
+            r"\bva\s+bene",
+            r"\bconferm",
+        ],
+        IntentCategory.RIFIUTO: [r"\bno\b", r"\bnon\b", r"\bannull"],
+        IntentCategory.OPERATORE: [r"\boperator", r"\bpersona\b", r"\buman"],
     }
 
     for category, patterns in INTENT_PATTERNS.items():
@@ -547,17 +883,17 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
             # Base confidence 0.65 (was 0.3) + 0.08 per additional match
             base_confidence = 0.65
             bonus = (matches - 1) * 0.08
-            
+
             # Check for strong keywords (CoVe boost)
             strong_match = False
             for strong_pattern in STRONG_KEYWORDS.get(category, []):
                 if re.search(strong_pattern, normalized, re.IGNORECASE):
                     strong_match = True
                     break
-            
+
             if strong_match:
                 base_confidence = 0.75  # Boost for strong intent keywords
-            
+
             confidence = min(1.0, base_confidence + bonus)
             scores[category] = confidence
 
@@ -573,7 +909,7 @@ def pattern_based_intent(text: str) -> Optional[IntentResult]:
         category=category,
         confidence=confidence,
         response=None,  # Response determined by downstream handler
-        needs_groq=confidence < 0.7  # Low confidence → maybe use Groq
+        needs_groq=confidence < 0.7,  # Low confidence → maybe use Groq
     )
 
 
@@ -591,13 +927,17 @@ def _get_semantic_classifier():
     if _semantic_classifier is None:
         try:
             from nlu.semantic_classifier import SemanticIntentClassifier
+
             _semantic_classifier = SemanticIntentClassifier(min_confidence=0.4)
             _semantic_classifier.fit()
         except ImportError:
             return None
         except Exception as e:
             import logging
-            logging.getLogger(__name__).warning(f"Failed to load semantic classifier: {e}")
+
+            logging.getLogger(__name__).warning(
+                f"Failed to load semantic classifier: {e}"
+            )
             return None
     return _semantic_classifier
 
@@ -649,13 +989,14 @@ def semantic_intent_classify(text: str) -> Optional[IntentResult]:
         category=category,
         confidence=result.confidence,
         response=None,
-        needs_groq=result.confidence < 0.5
+        needs_groq=result.confidence < 0.5,
     )
 
 
 # =============================================================================
 # HYBRID CLASSIFIER (PUBLIC API)
 # =============================================================================
+
 
 def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult:
     """
@@ -692,7 +1033,7 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
                 category=IntentCategory.CONFERMA,
                 confidence=conf_score,
                 response=None,
-                needs_groq=False
+                needs_groq=False,
             )
         # Check rifiuto
         is_rif, rif_score = is_rifiuto(text)
@@ -702,7 +1043,7 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
                 category=IntentCategory.RIFIUTO,
                 confidence=rif_score,
                 response=None,
-                needs_groq=False
+                needs_groq=False,
             )
         # Check escalation
         is_esc, esc_score, esc_type = is_escalation(text)
@@ -712,7 +1053,7 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
                 category=IntentCategory.OPERATORE,
                 confidence=esc_score,
                 response=None,
-                needs_groq=False
+                needs_groq=False,
             )
 
     # Layer 2: Pattern-based
@@ -730,7 +1071,10 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
         # unless a regex pattern already confirmed the intent.
         if (
             semantic_result.category == IntentCategory.SPOSTAMENTO
-            and (pattern_result is None or pattern_result.category != IntentCategory.SPOSTAMENTO)
+            and (
+                pattern_result is None
+                or pattern_result.category != IntentCategory.SPOSTAMENTO
+            )
             and semantic_result.confidence < 0.6
         ):
             pass  # Fall through to lower-threshold pattern check
@@ -747,7 +1091,7 @@ def classify_intent(text: str, verticale: Optional[Dict] = None) -> IntentResult
         category=IntentCategory.UNKNOWN,
         confidence=0.0,
         response=None,
-        needs_groq=True
+        needs_groq=True,
     )
 
 

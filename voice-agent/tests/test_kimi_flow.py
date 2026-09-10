@@ -15,18 +15,16 @@ Key behaviors tested:
 
 import pytest
 from datetime import date
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from booking_state_machine import (
     BookingStateMachine,
     BookingState,
-    BookingContext,
-    StateMachineResult,
-    TEMPLATES,
 )
 
 
@@ -41,29 +39,34 @@ def create_sm(vertical="salone"):
 # MOCK FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def mock_db_connection():
     """Mock per le connessioni DB - restituisce un mock generico."""
-    with patch('availability_checker.aiohttp.ClientSession') as mock_session:
+    with patch("availability_checker.aiohttp.ClientSession") as mock_session:
         # Configura il mock per restituire una risposta vuota (nessun slot occupato)
         mock_response = AsyncMock()
         mock_response.status = 200
         mock_response.json.return_value = {"slots": []}
-        
+
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value = mock_response
         mock_context.__aexit__.return_value = False
-        
-        mock_session.return_value.__aenter__.return_value.get.return_value = mock_context
-        mock_session.return_value.__aenter__.return_value.post.return_value = mock_context
-        
+
+        mock_session.return_value.__aenter__.return_value.get.return_value = (
+            mock_context
+        )
+        mock_session.return_value.__aenter__.return_value.post.return_value = (
+            mock_context
+        )
+
         yield mock_session
 
 
 @pytest.fixture
 def mock_booked_slots():
     """Mock per _get_booked_slots - restituisce lista vuota di default."""
-    with patch('availability_checker.AvailabilityChecker._get_booked_slots') as mock:
+    with patch("availability_checker.AvailabilityChecker._get_booked_slots") as mock:
         mock.return_value = []
         yield mock
 
@@ -71,14 +74,14 @@ def mock_booked_slots():
 @pytest.fixture
 def mock_week_with_slots():
     """Mock per check_week che restituisce giorni disponibili fittizi."""
-    with patch('availability_checker.AvailabilityChecker.check_week') as mock:
+    with patch("availability_checker.AvailabilityChecker.check_week") as mock:
         mock.return_value = {
             "available_days": [
                 {"date": "2026-02-09", "day_name": "lunedì", "slot_count": 8},
                 {"date": "2026-02-10", "day_name": "martedì", "slot_count": 6},
                 {"date": "2026-02-11", "day_name": "mercoledì", "slot_count": 10},
             ],
-            "week_start": "2026-02-09"
+            "week_start": "2026-02-09",
         }
         yield mock
 
@@ -86,6 +89,7 @@ def mock_week_with_slots():
 # =============================================================================
 # WAITING_NAME → WAITING_SURNAME routing
 # =============================================================================
+
 
 class TestWaitingNameToSurname:
     """Test that WAITING_NAME routes to WAITING_SURNAME instead of WAITING_SERVICE."""
@@ -112,7 +116,7 @@ class TestWaitingNameToSurname:
         sm.context.state = BookingState.WAITING_NAME
         sm.context.client_name = "Gino"
         sm.context.client_id = "42"
-        result = sm.process_message("Gino")
+        sm.process_message("Gino")
         assert sm.context.state == BookingState.WAITING_SERVICE
 
     def test_full_name_triggers_db_lookup(self):
@@ -134,13 +138,14 @@ class TestWaitingNameToSurname:
         """'Sono nuovo' → REGISTERING_SURNAME (legacy flow)."""
         sm = create_sm()
         sm.context.state = BookingState.WAITING_NAME
-        result = sm.process_message("Sono nuovo, non sono mai stato da voi")
+        sm.process_message("Sono nuovo, non sono mai stato da voi")
         assert sm.context.state == BookingState.REGISTERING_SURNAME
 
 
 # =============================================================================
 # WAITING_SURNAME handler
 # =============================================================================
+
 
 class TestWaitingSurname:
     """Test the WAITING_SURNAME state handler."""
@@ -180,7 +185,7 @@ class TestWaitingSurname:
         sm = create_sm()
         sm.context.state = BookingState.WAITING_SURNAME
         sm.context.client_name = "Marco"
-        result = sm.process_message("il cognome è Arquati")
+        sm.process_message("il cognome è Arquati")
         assert sm.context.client_surname is not None
         assert "arquati" in sm.context.client_surname.lower()
 
@@ -208,6 +213,7 @@ class TestWaitingSurname:
 # IDLE routing with surname
 # =============================================================================
 
+
 class TestIdleWithSurname:
     """Test _handle_idle routes correctly based on surname presence."""
 
@@ -216,7 +222,7 @@ class TestIdleWithSurname:
         sm = create_sm()
         sm.context.state = BookingState.IDLE
         sm.context.client_name = "Marco"
-        result = sm.process_message("ciao")
+        sm.process_message("ciao")
         assert sm.context.state == BookingState.WAITING_SURNAME
 
     def test_idle_name_and_surname_does_lookup(self):
@@ -243,6 +249,7 @@ class TestIdleWithSurname:
 # CONFIRMING_PHONE handler
 # =============================================================================
 
+
 class TestConfirmingPhone:
     """Test the CONFIRMING_PHONE state handler."""
 
@@ -265,7 +272,7 @@ class TestConfirmingPhone:
         sm.context.state = BookingState.CONFIRMING_PHONE
         sm.context.client_name = "Gino"
         sm.context.client_phone = "3331234567"
-        result = sm.process_message("no")
+        sm.process_message("no")
         assert sm.context.state == BookingState.REGISTERING_PHONE
         assert sm.context.client_phone is None
 
@@ -275,9 +282,12 @@ class TestConfirmingPhone:
         sm.context.state = BookingState.CONFIRMING_PHONE
         sm.context.client_name = "Gino"
         sm.context.client_phone = "3331234567"
-        result = sm.process_message("no è 3339876543")
+        sm.process_message("no è 3339876543")
         # Should either go back to phone or update and re-confirm
-        assert sm.context.state in (BookingState.CONFIRMING_PHONE, BookingState.REGISTERING_PHONE)
+        assert sm.context.state in (
+            BookingState.CONFIRMING_PHONE,
+            BookingState.REGISTERING_PHONE,
+        )
 
     def test_registering_phone_now_goes_to_confirming(self):
         """Phone collected in REGISTERING_PHONE → CONFIRMING_PHONE (not REGISTERING_CONFIRM)."""
@@ -294,6 +304,7 @@ class TestConfirmingPhone:
 # =============================================================================
 # Ambiguous date → week_availability lookup
 # =============================================================================
+
 
 class TestAmbiguousDateLookup:
     """Test that ambiguous dates trigger week_availability lookup."""
@@ -343,12 +354,14 @@ class TestAmbiguousDateLookup:
 # Availability checker — check_week (with mocks)
 # =============================================================================
 
+
 class TestCheckWeek:
     """Test the check_week method of AvailabilityChecker with mocked DB."""
 
     @pytest.fixture
     def checker(self):
         from availability_checker import AvailabilityChecker, AvailabilityConfig
+
         config = AvailabilityConfig(
             working_days=[1, 2, 3, 4, 5, 6],  # Mon-Sat
         )
@@ -359,7 +372,7 @@ class TestCheckWeek:
         """check_week returns dict with available_days list."""
         result = await checker.check_week(
             week_offset=1,
-            reference_date=date(2026, 2, 2)  # Monday
+            reference_date=date(2026, 2, 2),  # Monday
         )
         assert "available_days" in result
         assert "week_start" in result
@@ -375,7 +388,7 @@ class TestCheckWeek:
         """check_week with offset=0 skips past days."""
         result = await checker.check_week(
             week_offset=0,
-            reference_date=date(2026, 2, 4)  # Wednesday
+            reference_date=date(2026, 2, 4),  # Wednesday
         )
         # Should only include Thu, Fri, Sat (not Mon, Tue, Wed)
         for day in result["available_days"]:
@@ -385,7 +398,9 @@ class TestCheckWeek:
     @pytest.mark.asyncio
     async def test_check_week_with_mocked_slots(self, checker):
         """Test che il mock dei slot funzioni correttamente."""
-        with patch.object(checker, '_get_booked_slots', return_value=["10:00", "11:00"]):
+        with patch.object(
+            checker, "_get_booked_slots", return_value=["10:00", "11:00"]
+        ):
             result = await checker.check_date("2026-02-09", "taglio")
             # I slot alle 10:00 e 11:00 dovrebbero essere occupati
             slot_times = [s.time for s in result.available_slots]
@@ -396,6 +411,7 @@ class TestCheckWeek:
 # =============================================================================
 # Full guided flow (state machine only — no orchestrator)
 # =============================================================================
+
 
 class TestGuidedFlowStateMachine:
     """Test the complete guided flow through the state machine."""
@@ -424,7 +440,7 @@ class TestGuidedFlowStateMachine:
         sm.context.client_phone = "3331234567"
         sm.context.state = BookingState.IDLE
 
-        result = sm.process_message("vorrei un altro appuntamento")
+        sm.process_message("vorrei un altro appuntamento")
         # Should go to WAITING_SERVICE, not WAITING_SURNAME
         assert sm.context.state == BookingState.WAITING_SERVICE
 

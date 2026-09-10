@@ -6,7 +6,6 @@ to Italian spoken form before synthesis, so Piper reads "tredici marzo"
 instead of "tredici barra tre".
 """
 
-import pytest
 import sys
 import os
 
@@ -36,7 +35,9 @@ class TestDatePreprocessing:
 
     def test_full_date_in_sentence(self):
         result = preprocess_for_tts("Conferma per il 25/12/2026 ore 15:00")
-        assert result == "Conferma per il venticinque dicembre duemilaventisei ore 15:00"
+        assert (
+            result == "Conferma per il venticinque dicembre duemilaventisei ore 15:00"
+        )
 
     def test_booking_confirmation_message(self):
         """Real-world message from _build_booking_confirmation_message."""
@@ -52,13 +53,24 @@ class TestDatePreprocessing:
 
     def test_all_months(self):
         months = [
-            (1, "gennaio"), (2, "febbraio"), (3, "marzo"), (4, "aprile"),
-            (5, "maggio"), (6, "giugno"), (7, "luglio"), (8, "agosto"),
-            (9, "settembre"), (10, "ottobre"), (11, "novembre"), (12, "dicembre"),
+            (1, "gennaio"),
+            (2, "febbraio"),
+            (3, "marzo"),
+            (4, "aprile"),
+            (5, "maggio"),
+            (6, "giugno"),
+            (7, "luglio"),
+            (8, "agosto"),
+            (9, "settembre"),
+            (10, "ottobre"),
+            (11, "novembre"),
+            (12, "dicembre"),
         ]
         for month_num, month_name in months:
             result = preprocess_for_tts(f"15/{month_num:02d}")
-            assert month_name in result, f"Month {month_num} → expected '{month_name}' in '{result}'"
+            assert month_name in result, (
+                f"Month {month_num} → expected '{month_name}' in '{result}'"
+            )
 
     def test_no_date_unchanged(self):
         text = "Buongiorno, come posso aiutarla?"
@@ -128,32 +140,38 @@ class TestItalianNumberPreprocessing:
 
     def test_number_to_italian_zero(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(0) == "zero"
 
     def test_number_to_italian_units(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(1) == "uno"
         assert _number_to_italian(9) == "nove"
         assert _number_to_italian(19) == "diciannove"
 
     def test_number_to_italian_tens(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(21) == "ventuno"
         assert _number_to_italian(28) == "ventotto"
         assert _number_to_italian(50) == "cinquanta"
 
     def test_number_to_italian_hundreds(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(100) == "cento"
         assert _number_to_italian(200) == "duecento"
         assert _number_to_italian(497) == "quattrocentonovantasette"
 
     def test_number_to_italian_thousands(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(1000) == "mille"
         assert _number_to_italian(3000) == "tremila"
 
     def test_number_to_italian_million(self):
         from tts import _number_to_italian
+
         assert _number_to_italian(1000000) == "un milione"
         assert "due milioni" in _number_to_italian(2000000)

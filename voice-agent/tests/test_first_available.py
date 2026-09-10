@@ -13,15 +13,13 @@ import asyncio
 import sys
 from pathlib import Path
 from datetime import date, timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
+from unittest.mock import patch
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from availability_checker import (
     AvailabilityChecker,
-    AvailabilityConfig,
     AvailabilityResult,
     TimeSlot,
     UnavailabilityReason,
@@ -32,6 +30,7 @@ from availability_checker import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_result_with_slots(*times: str) -> AvailabilityResult:
     """Build a fake AvailabilityResult with available slots."""
     slots = [TimeSlot(time=t, available=True) for t in times]
@@ -39,7 +38,12 @@ def _make_result_with_slots(*times: str) -> AvailabilityResult:
 
 
 def _make_empty_result() -> AvailabilityResult:
-    return AvailabilityResult(date="", available_slots=[], unavailable_reason=UnavailabilityReason.CLOSED, message="chiuso")
+    return AvailabilityResult(
+        date="",
+        available_slots=[],
+        unavailable_reason=UnavailabilityReason.CLOSED,
+        message="chiuso",
+    )
 
 
 def _run(coro):
@@ -50,8 +54,8 @@ def _run(coro):
 # T1: happy path — trova il primo slot disponibile domani
 # ---------------------------------------------------------------------------
 
-class TestCheckFirstAvailable:
 
+class TestCheckFirstAvailable:
     def test_returns_first_slot_tomorrow(self):
         """Il primo giorno con slot viene restituito correttamente."""
         checker = AvailabilityChecker()
@@ -98,11 +102,15 @@ class TestCheckFirstAvailable:
             return _make_empty_result()
 
         with patch.object(checker, "check_date", side_effect=fake_check_date):
-            result = _run(checker.check_first_available(days_ahead=14, exclude_days=["monday"]))
+            result = _run(
+                checker.check_first_available(days_ahead=14, exclude_days=["monday"])
+            )
 
         # Nessuna data nel call_log deve essere un lunedi
         for ds in call_log:
-            assert date.fromisoformat(ds).isoweekday() != 1, f"{ds} e lunedi, non doveva essere chiamato"
+            assert date.fromisoformat(ds).isoweekday() != 1, (
+                f"{ds} e lunedi, non doveva essere chiamato"
+            )
 
         assert result["available"] is True
 
@@ -119,7 +127,9 @@ class TestCheckFirstAvailable:
         # Esclude Tuesday (con vari formati)
         with patch.object(checker, "check_date", side_effect=fake_check_date):
             result = _run(
-                checker.check_first_available(days_ahead=14, exclude_days=["Tuesday", "WEDNESDAY"])
+                checker.check_first_available(
+                    days_ahead=14, exclude_days=["Tuesday", "WEDNESDAY"]
+                )
             )
 
         # Se il primo martedi viene saltato ma altri giorni restano liberi
@@ -134,7 +144,9 @@ class TestCheckFirstAvailable:
             return _make_result_with_slots("14:00")
 
         with patch.object(checker, "check_date", side_effect=fake_check_date):
-            result = _run(checker.check_first_available(days_ahead=3, exclude_days=None))
+            result = _run(
+                checker.check_first_available(days_ahead=3, exclude_days=None)
+            )
 
         assert result["available"] is True
         tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -202,7 +214,17 @@ class TestCheckFirstAvailable:
         assert any(ch.isdigit() for ch in display)
         # deve contenere almeno uno dei mesi italiani
         italian_months = [
-            "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+            "gennaio",
+            "febbraio",
+            "marzo",
+            "aprile",
+            "maggio",
+            "giugno",
+            "luglio",
+            "agosto",
+            "settembre",
+            "ottobre",
+            "novembre",
+            "dicembre",
         ]
         assert any(m in display.lower() for m in italian_months)

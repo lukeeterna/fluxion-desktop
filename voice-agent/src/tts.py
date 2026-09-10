@@ -24,11 +24,13 @@ from enum import Enum
 try:
     from .tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
     from .tts_download_manager import TTSDownloadManager
+
     _ADAPTIVE_ENGINE_AVAILABLE = True
 except ImportError:
     try:
-        from tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
+        from tts_engine import create_tts_engine, TTSMode, TTSEngineSelector  # noqa: F401
         from tts_download_manager import TTSDownloadManager
+
         _ADAPTIVE_ENGINE_AVAILABLE = True
     except ImportError:
         _ADAPTIVE_ENGINE_AVAILABLE = False
@@ -42,44 +44,100 @@ logger = logging.getLogger(__name__)
 
 # Matches Italian mobile (3xxxxxxxxx) and landline (0x...) phone numbers,
 # optionally prefixed with +39 or 0039. Must be isolated by word boundaries.
-_PHONE_RE = re.compile(
-    r'\b((?:\+39|0039)?(?:[3][0-9]{8,9}|0[0-9]{8,9}))\b'
-)
+_PHONE_RE = re.compile(r"\b((?:\+39|0039)?(?:[3][0-9]{8,9}|0[0-9]{8,9}))\b")
 
 # ─── Date expansion for TTS ────────────────────────────────────────────────────
 _MONTHS_IT = {
-    1: "gennaio", 2: "febbraio", 3: "marzo", 4: "aprile",
-    5: "maggio", 6: "giugno", 7: "luglio", 8: "agosto",
-    9: "settembre", 10: "ottobre", 11: "novembre", 12: "dicembre",
+    1: "gennaio",
+    2: "febbraio",
+    3: "marzo",
+    4: "aprile",
+    5: "maggio",
+    6: "giugno",
+    7: "luglio",
+    8: "agosto",
+    9: "settembre",
+    10: "ottobre",
+    11: "novembre",
+    12: "dicembre",
 }
 _ORDINALS_IT = {
-    1: "primo", 2: "due", 3: "tre", 4: "quattro", 5: "cinque",
-    6: "sei", 7: "sette", 8: "otto", 9: "nove", 10: "dieci",
-    11: "undici", 12: "dodici", 13: "tredici", 14: "quattordici",
-    15: "quindici", 16: "sedici", 17: "diciassette", 18: "diciotto",
-    19: "diciannove", 20: "venti", 21: "ventuno", 22: "ventidue",
-    23: "ventitre", 24: "ventiquattro", 25: "venticinque",
-    26: "ventisei", 27: "ventisette", 28: "ventotto", 29: "ventinove",
-    30: "trenta", 31: "trentuno",
+    1: "primo",
+    2: "due",
+    3: "tre",
+    4: "quattro",
+    5: "cinque",
+    6: "sei",
+    7: "sette",
+    8: "otto",
+    9: "nove",
+    10: "dieci",
+    11: "undici",
+    12: "dodici",
+    13: "tredici",
+    14: "quattordici",
+    15: "quindici",
+    16: "sedici",
+    17: "diciassette",
+    18: "diciotto",
+    19: "diciannove",
+    20: "venti",
+    21: "ventuno",
+    22: "ventidue",
+    23: "ventitre",
+    24: "ventiquattro",
+    25: "venticinque",
+    26: "ventisei",
+    27: "ventisette",
+    28: "ventotto",
+    29: "ventinove",
+    30: "trenta",
+    31: "trentuno",
 }
 _YEARS_IT = {
-    2024: "duemilaventiquattro", 2025: "duemilaventicinque",
-    2026: "duemilaventisei", 2027: "duemilaventisette",
+    2024: "duemilaventiquattro",
+    2025: "duemilaventicinque",
+    2026: "duemilaventisei",
+    2027: "duemilaventisette",
 }
 # Matches DD/MM/YYYY (full) or DD/MM (short) — only valid day/month ranges
-_DATE_FULL_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})/(\d{4})\b')
-_DATE_SHORT_RE = re.compile(r'\b(\d{1,2})/(\d{1,2})\b')
+_DATE_FULL_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
+_DATE_SHORT_RE = re.compile(r"\b(\d{1,2})/(\d{1,2})\b")
 
 # ─── Italian number-to-words for TTS ────────────────────────────────────────
 _UNITS_IT = [
-    "", "uno", "due", "tre", "quattro", "cinque",
-    "sei", "sette", "otto", "nove", "dieci",
-    "undici", "dodici", "tredici", "quattordici", "quindici",
-    "sedici", "diciassette", "diciotto", "diciannove",
+    "",
+    "uno",
+    "due",
+    "tre",
+    "quattro",
+    "cinque",
+    "sei",
+    "sette",
+    "otto",
+    "nove",
+    "dieci",
+    "undici",
+    "dodici",
+    "tredici",
+    "quattordici",
+    "quindici",
+    "sedici",
+    "diciassette",
+    "diciotto",
+    "diciannove",
 ]
 _TENS_IT = [
-    "", "", "venti", "trenta", "quaranta", "cinquanta",
-    "sessanta", "settanta", "ottanta", "novanta",
+    "",
+    "",
+    "venti",
+    "trenta",
+    "quaranta",
+    "cinquanta",
+    "sessanta",
+    "settanta",
+    "ottanta",
+    "novanta",
 ]
 
 
@@ -144,11 +202,9 @@ def _under_thousand(n: int) -> str:
 
 # Matches Italian thousands-separator numbers: 1.000, 3.500, 1.500.000
 # Must have dot every 3 digits. Negative lookbehind for / avoids matching dates.
-_ITALIAN_NUMBER_RE = re.compile(
-    r'(?<!/)\b(\d{1,3}(?:\.\d{3})+)\b'
-)
+_ITALIAN_NUMBER_RE = re.compile(r"(?<!/)\b(\d{1,3}(?:\.\d{3})+)\b")
 # Simple integers (4+ digits, no dots) — e.g. "3000" without separator
-_PLAIN_NUMBER_RE = re.compile(r'\b(\d{4,9})\b')
+_PLAIN_NUMBER_RE = re.compile(r"\b(\d{4,9})\b")
 
 
 def _expand_italian_number(m: re.Match) -> str:
@@ -225,8 +281,8 @@ def preprocess_for_tts(text: str) -> str:
     # Plain large integers (4+ digits without dots)
     # Must run AFTER phone expansion to avoid conflicts
     def _expand_phone(m: re.Match) -> str:
-        digits = re.sub(r'\D', '', m.group(0))
-        return ' '.join(digits)
+        digits = re.sub(r"\D", "", m.group(0))
+        return " ".join(digits)
 
     text = _PHONE_RE.sub(_expand_phone, text)
 
@@ -245,11 +301,12 @@ VOICE_NAME = "Sara"  # Public-facing name for the voice assistant
 
 class TTSEngine(Enum):
     """Available TTS engines."""
+
     CHATTERBOX = "chatterbox"  # Legacy — maps to QUALITY adaptive engine
-    PIPER = "piper"            # Fallback: Fast, lightweight
-    SYSTEM = "system"          # Last resort: macOS say
-    QUALITY = "quality"        # New: Qwen3-TTS adaptive (high quality)
-    FAST = "fast"              # New: Piper adaptive (low latency)
+    PIPER = "piper"  # Fallback: Fast, lightweight
+    SYSTEM = "system"  # Last resort: macOS say
+    QUALITY = "quality"  # New: Qwen3-TTS adaptive (high quality)
+    FAST = "fast"  # New: Piper adaptive (low latency)
 
 
 # Default TTS engine
@@ -272,6 +329,7 @@ _CHATTERBOX_CONFIG = {
 # CHATTERBOX TTS (Primary Engine)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class ChatterboxTTS:
     """
     Chatterbox Italian TTS - Best quality for Italian voice agent.
@@ -285,7 +343,7 @@ class ChatterboxTTS:
         device: str = "cpu",
         exaggeration: float = 0.4,
         cfg: float = 0.4,
-        lazy_load: bool = True
+        lazy_load: bool = True,
     ):
         """
         Initialize Chatterbox TTS.
@@ -315,8 +373,7 @@ class ChatterboxTTS:
 
             logger.info(f"Loading {VOICE_NAME} TTS (device={self.device})...")
             ChatterboxTTS._model = CBModel.from_pretrained(
-                _CHATTERBOX_CONFIG["model_id"],
-                device=self.device
+                _CHATTERBOX_CONFIG["model_id"], device=self.device
             )
             self._loaded = True
             logger.info(f"✅ {VOICE_NAME} TTS loaded successfully")
@@ -347,9 +404,7 @@ class ChatterboxTTS:
 
         # Generate audio
         wav = ChatterboxTTS._model.generate(
-            text,
-            exaggeration=self.exaggeration,
-            cfg=self.cfg
+            text, exaggeration=self.exaggeration, cfg=self.cfg
         )
 
         # Save to temp file and read bytes
@@ -358,6 +413,7 @@ class ChatterboxTTS:
 
         try:
             import torchaudio as ta
+
             ta.save(output_path, wav, ChatterboxTTS._model.sr)
 
             with open(output_path, "rb") as f:
@@ -377,12 +433,11 @@ class ChatterboxTTS:
             text = "[it] " + text
 
         wav = ChatterboxTTS._model.generate(
-            text,
-            exaggeration=self.exaggeration,
-            cfg=self.cfg
+            text, exaggeration=self.exaggeration, cfg=self.cfg
         )
 
         import torchaudio as ta
+
         ta.save(output_path, wav, ChatterboxTTS._model.sr)
 
         return output_path
@@ -403,6 +458,7 @@ class ChatterboxTTS:
 # PIPER TTS (Fallback Engine)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class PiperTTS:
     """Piper TTS wrapper - Fast fallback engine."""
 
@@ -414,6 +470,7 @@ class PiperTTS:
         """Initialize Piper TTS."""
         # FLUXION models directory — writable for model downloads
         from resource_path import get_writable_root
+
         self.models_dir = get_writable_root() / "models" / "tts"
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
@@ -422,6 +479,7 @@ class PiperTTS:
             self.piper_binary = Path(piper_binary)
         else:
             import sys
+
             venv_bin = Path(sys.executable).parent / "piper"
             venv_bin_exe = Path(sys.executable).parent / "piper.exe"
 
@@ -429,7 +487,12 @@ class PiperTTS:
                 possible_paths = [
                     venv_bin_exe,
                     Path(sys.executable).parent.parent / "Scripts" / "piper.exe",
-                    Path.home() / "AppData" / "Local" / "Programs" / "piper" / "piper.exe",
+                    Path.home()
+                    / "AppData"
+                    / "Local"
+                    / "Programs"
+                    / "piper"
+                    / "piper.exe",
                     Path("C:/Program Files/piper/piper.exe"),
                 ]
             else:
@@ -459,7 +522,9 @@ class PiperTTS:
     def _validate(self):
         """Validate piper and model exist."""
         if self.piper_binary is None or not self.piper_binary.exists():
-            raise RuntimeError("Piper binary not found. Install with: pip install piper-tts")
+            raise RuntimeError(
+                "Piper binary not found. Install with: pip install piper-tts"
+            )
 
         if not self.model_path.exists():
             raise RuntimeError(f"Voice model not found: {self.model_path}")
@@ -472,11 +537,13 @@ class PiperTTS:
         try:
             process = await asyncio.create_subprocess_exec(
                 str(self.piper_binary),
-                "--model", str(self.model_path),
-                "--output_file", output_path,
+                "--model",
+                str(self.model_path),
+                "--output_file",
+                output_path,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
 
             stdout, stderr = await process.communicate(text.encode())
@@ -497,11 +564,13 @@ class PiperTTS:
         """Convert text to speech and save to file."""
         process = await asyncio.create_subprocess_exec(
             str(self.piper_binary),
-            "--model", str(self.model_path),
-            "--output_file", output_path,
+            "--model",
+            str(self.model_path),
+            "--output_file",
+            output_path,
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+            stderr=asyncio.subprocess.PIPE,
         )
 
         stdout, stderr = await process.communicate(text.encode())
@@ -526,6 +595,7 @@ class PiperTTS:
 # SYSTEM TTS (Last Resort Fallback)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class SystemTTS:
     """Fallback TTS using OS-native speech synthesis (cross-platform)."""
 
@@ -535,6 +605,7 @@ class SystemTTS:
     async def synthesize(self, text: str) -> bytes:
         """Synthesize using OS-native TTS (macOS: say/afconvert, Windows: pyttsx3)."""
         import sys
+
         if sys.platform == "win32":
             return await self._synthesize_windows(text)
         else:
@@ -548,22 +619,27 @@ class SystemTTS:
         try:
             process = await asyncio.create_subprocess_exec(
                 "say",
-                "-v", self.voice,
-                "-o", output_path,
+                "-v",
+                self.voice,
+                "-o",
+                output_path,
                 text,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await process.communicate()
 
             wav_path = output_path.replace(".aiff", ".wav")
             convert = await asyncio.create_subprocess_exec(
                 "afconvert",
-                "-f", "WAVE",
-                "-d", "LEI16@16000",
-                output_path, wav_path,
+                "-f",
+                "WAVE",
+                "-d",
+                "LEI16@16000",
+                output_path,
+                wav_path,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                stderr=asyncio.subprocess.PIPE,
             )
             await convert.communicate()
 
@@ -580,7 +656,7 @@ class SystemTTS:
     async def _synthesize_windows(self, text: str) -> bytes:
         """Windows synthesis via pyttsx3 + Windows SAPI5."""
         try:
-            import pyttsx3
+            import pyttsx3  # noqa: F401
         except ImportError:
             raise RuntimeError(
                 "pyttsx3 non installato. Su Windows esegui: pip install pyttsx3"
@@ -602,6 +678,7 @@ class SystemTTS:
     def _pyttsx3_save(self, text: str, output_path: str) -> None:
         """Synchronous pyttsx3 synthesis (run in executor)."""
         import pyttsx3
+
         engine = pyttsx3.init()
         # Try to set an Italian voice if available
         for voice in engine.getProperty("voices"):
@@ -615,6 +692,7 @@ class SystemTTS:
     def get_info(self) -> dict:
         """Get TTS configuration info."""
         import sys
+
         return {
             "engine": "system",
             "platform": sys.platform,
@@ -627,10 +705,11 @@ class SystemTTS:
 # TTS FACTORY
 # ═══════════════════════════════════════════════════════════════════
 
+
 def get_tts(
     engine: TTSEngine = DEFAULT_ENGINE,
     use_piper: bool = True,  # Legacy parameter — kept for backward compat
-    **kwargs
+    **kwargs,
 ):
     """
     Get TTS instance. Now delegates to FluxionTTS Adaptive engine selector.
@@ -664,7 +743,9 @@ def get_tts(
             )
             return adaptive_engine
         except Exception as e:
-            logger.warning(f"AdaptiveTTS selector failed ({e}), falling back to PiperTTS")
+            logger.warning(
+                f"AdaptiveTTS selector failed ({e}), falling back to PiperTTS"
+            )
 
     # Fallback: try Piper directly
     try:
@@ -685,6 +766,7 @@ def get_sara_tts(**kwargs) -> Union[ChatterboxTTS, PiperTTS, SystemTTS]:
 # ═══════════════════════════════════════════════════════════════════
 # TTS CACHE WRAPPER
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TTSCache:
     """
@@ -726,7 +808,8 @@ class TTSCache:
         except Exception as exc:
             logger.warning(
                 "[TTSCache] Primary engine failed (%s: %s), falling back to SystemTTS",
-                type(exc).__name__, exc,
+                type(exc).__name__,
+                exc,
             )
             try:
                 fallback = SystemTTS()
@@ -739,7 +822,9 @@ class TTSCache:
 
     async def warm_cache(self, texts: List[str]) -> None:
         """Pre-synthesize a list of strings concurrently at startup."""
-        uncached = [t.strip() for t in texts if t.strip() and t.strip() not in self._cache]
+        uncached = [
+            t.strip() for t in texts if t.strip() and t.strip() not in self._cache
+        ]
         if not uncached:
             return
 
@@ -768,6 +853,7 @@ class TTSCache:
 # TEST
 # ═══════════════════════════════════════════════════════════════════
 
+
 async def test_tts():
     """Test TTS."""
     print("=" * 60)
@@ -778,7 +864,7 @@ async def test_tts():
 
     # Test Chatterbox
     try:
-        print(f"\n1. Testing Chatterbox (primary)...")
+        print("\n1. Testing Chatterbox (primary)...")
         tts = ChatterboxTTS()
         audio = await tts.synthesize(test_phrase)
         print(f"   ✅ Generated {len(audio)} bytes")
@@ -789,7 +875,7 @@ async def test_tts():
 
     # Test Piper fallback
     try:
-        print(f"\n2. Testing Piper (fallback)...")
+        print("\n2. Testing Piper (fallback)...")
         tts = PiperTTS()
         audio = await tts.synthesize(test_phrase)
         print(f"   ✅ Generated {len(audio)} bytes")
@@ -799,7 +885,7 @@ async def test_tts():
         print(f"   ❌ Piper not available: {e}")
 
     # System fallback
-    print(f"\n3. Testing System TTS (last resort)...")
+    print("\n3. Testing System TTS (last resort)...")
     tts = SystemTTS()
     audio = await tts.synthesize(test_phrase)
     print(f"   ✅ Generated {len(audio)} bytes")

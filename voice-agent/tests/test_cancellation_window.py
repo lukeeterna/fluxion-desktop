@@ -18,9 +18,8 @@ import tempfile
 import os
 from pathlib import Path
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch, AsyncMock
+from unittest.mock import MagicMock, patch
 
-import pytest
 import asyncio
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -32,6 +31,7 @@ from booking_manager import BookingManager, Booking, BookingStatus
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _run(coro):
     return asyncio.run(coro)
 
@@ -39,6 +39,7 @@ def _run(coro):
 def _make_booking_with_datetime(booking_id: str, appt_dt: datetime) -> Booking:
     """Create a Booking whose date/time correspond to appt_dt."""
     from vertical_schemas import CustomerTier
+
     return Booking(
         booking_id=booking_id,
         customer_id="c1",
@@ -69,8 +70,8 @@ def _make_db(booking: Booking) -> MagicMock:
 # Tests: BookingManager.cancel_booking() with cancellation window
 # ---------------------------------------------------------------------------
 
-class TestCancellationWindowBookingManager:
 
+class TestCancellationWindowBookingManager:
     def test_cancel_4h_before_window24_rejected(self):
         """Cancellazione 4h prima con finestra 24h -> rifiutata."""
         appt_dt = datetime.now() + timedelta(hours=4)
@@ -151,18 +152,16 @@ class TestCancellationWindowBookingManager:
 # Tests: _get_cancellation_window_hours() with real SQLite
 # ---------------------------------------------------------------------------
 
-class TestGetCancellationWindowFromDB:
 
+class TestGetCancellationWindowFromDB:
     def _create_db_with_setting(self, value: str) -> str:
         """Create temp SQLite with faq_settings and return path."""
         tmp = tempfile.mktemp(suffix=".db")
         conn = sqlite3.connect(tmp)
-        conn.execute(
-            "CREATE TABLE faq_settings (chiave TEXT PRIMARY KEY, valore TEXT)"
-        )
+        conn.execute("CREATE TABLE faq_settings (chiave TEXT PRIMARY KEY, valore TEXT)")
         conn.execute(
             "INSERT INTO faq_settings (chiave, valore) VALUES ('ore_disdetta', ?)",
-            (value,)
+            (value,),
         )
         conn.commit()
         conn.close()
@@ -185,9 +184,7 @@ class TestGetCancellationWindowFromDB:
         """Se chiave ore_disdetta non c'e, restituisce 24."""
         tmp = tempfile.mktemp(suffix=".db")
         conn = sqlite3.connect(tmp)
-        conn.execute(
-            "CREATE TABLE faq_settings (chiave TEXT PRIMARY KEY, valore TEXT)"
-        )
+        conn.execute("CREATE TABLE faq_settings (chiave TEXT PRIMARY KEY, valore TEXT)")
         conn.commit()
         conn.close()
         try:
@@ -208,6 +205,7 @@ class TestGetCancellationWindowFromDB:
 # la dipendenza da `groq` che non e installato su MacBook.
 # La funzione reale in orchestrator.py usa la stessa identica logica.
 # ---------------------------------------------------------------------------
+
 
 def _check_cancellation_window_logic(
     appointment_data,
@@ -242,7 +240,6 @@ def _check_cancellation_window_logic(
 
 
 class TestOrchestratorCancellationWindow:
-
     def test_window_blocked_4h_before(self):
         """Dentro la finestra -> (True, messaggio) — blocca la cancellazione."""
         appt_dt = datetime.now() + timedelta(hours=4)
@@ -251,7 +248,9 @@ class TestOrchestratorCancellationWindow:
             "ora": appt_dt.strftime("%H:%M"),
         }
 
-        blocked, msg = _check_cancellation_window_logic(appointment_data, window_hours=24)
+        blocked, msg = _check_cancellation_window_logic(
+            appointment_data, window_hours=24
+        )
 
         assert blocked is True
         assert len(msg) > 0
@@ -265,7 +264,9 @@ class TestOrchestratorCancellationWindow:
             "ora": appt_dt.strftime("%H:%M"),
         }
 
-        blocked, msg = _check_cancellation_window_logic(appointment_data, window_hours=24)
+        blocked, msg = _check_cancellation_window_logic(
+            appointment_data, window_hours=24
+        )
 
         assert blocked is False
         assert msg == ""

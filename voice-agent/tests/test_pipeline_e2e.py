@@ -19,10 +19,8 @@ Run with: pytest voice-agent/tests/test_pipeline_e2e.py -v
 
 import sys
 import time
-import asyncio
 from pathlib import Path
-from typing import Dict, List, Tuple
-from unittest.mock import Mock, patch, AsyncMock
+from typing import Dict, List
 from dataclasses import dataclass
 
 import pytest
@@ -35,20 +33,21 @@ from intent_classifier import (
     exact_match_intent,
     pattern_based_intent,
     IntentCategory,
-    IntentResult,
 )
-from entity_extractor import extract_all, extract_date, extract_time
-from booking_state_machine import BookingStateMachine, BookingState, BookingContext
-from faq_manager import FAQManager, FAQConfig, create_faq_manager
+from entity_extractor import extract_all
+from booking_state_machine import BookingStateMachine, BookingState
+from faq_manager import FAQManager
 
 
 # =============================================================================
 # TEST DATA: CONVERSATION SCENARIOS
 # =============================================================================
 
+
 @dataclass
 class ConversationTurn:
     """A single turn in a conversation."""
+
     user_input: str
     expected_intent: str
     expected_response_contains: List[str] = None
@@ -58,6 +57,7 @@ class ConversationTurn:
 @dataclass
 class ConversationScenario:
     """A complete conversation scenario for testing."""
+
     name: str
     verticale: str
     turns: List[ConversationTurn]
@@ -74,7 +74,7 @@ CORTESIA_SCENARIOS = [
             ConversationTurn("Grazie", "cortesia", ["Prego"]),
             ConversationTurn("Arrivederci", "cortesia", ["Arrivederci"]),
         ],
-        expected_outcome="conversation_ended"
+        expected_outcome="conversation_ended",
     ),
     ConversationScenario(
         name="greeting_variations",
@@ -84,7 +84,7 @@ CORTESIA_SCENARIOS = [
             ConversationTurn("Buonasera", "cortesia", ["Buonasera"]),
             ConversationTurn("Grazie mille", "cortesia", ["Prego", "nulla"]),
         ],
-        expected_outcome="conversation_ended"
+        expected_outcome="conversation_ended",
     ),
 ]
 
@@ -98,10 +98,10 @@ INFO_SCENARIOS = [
                 "Quanto costa un taglio donna?",
                 "info",
                 ["€35", "35"],
-                {"category": "prezzi"}
+                {"category": "prezzi"},
             ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
     ConversationScenario(
         name="opening_hours",
@@ -113,7 +113,7 @@ INFO_SCENARIOS = [
                 ["9:00", "9", "apriamo"],
             ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
     ConversationScenario(
         name="payment_methods",
@@ -125,7 +125,7 @@ INFO_SCENARIOS = [
                 ["Satispay", "accettiamo"],
             ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
     ConversationScenario(
         name="parking_info",
@@ -137,7 +137,7 @@ INFO_SCENARIOS = [
                 ["parcheggio", "gratuito"],
             ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
 ]
 
@@ -151,19 +151,13 @@ BOOKING_SCENARIOS = [
                 "Vorrei prenotare un taglio",
                 "prenotazione",
                 ["servizio", "quando", "taglio"],
-                {"service": "taglio"}
+                {"service": "taglio"},
             ),
             ConversationTurn(
-                "Domani",
-                "prenotazione",
-                ["ora", "che ora"],
-                {"has_date": True}
+                "Domani", "prenotazione", ["ora", "che ora"], {"has_date": True}
             ),
             ConversationTurn(
-                "Alle 15",
-                "prenotazione",
-                ["conferma", "riepilogo"],
-                {"time": "15:00"}
+                "Alle 15", "prenotazione", ["conferma", "riepilogo"], {"time": "15:00"}
             ),
             ConversationTurn(
                 "Sì, confermo",
@@ -171,7 +165,7 @@ BOOKING_SCENARIOS = [
                 ["confermata", "prenotazione"],
             ),
         ],
-        expected_outcome="booking_completed"
+        expected_outcome="booking_completed",
     ),
     ConversationScenario(
         name="booking_with_all_info",
@@ -181,10 +175,10 @@ BOOKING_SCENARIOS = [
                 "Vorrei prenotare un taglio per domani alle 10",
                 "prenotazione",
                 ["conferma", "riepilogo", "taglio"],
-                {"service": "taglio", "has_date": True, "time": "10:00"}
+                {"service": "taglio", "has_date": True, "time": "10:00"},
             ),
         ],
-        expected_outcome="booking_in_progress"
+        expected_outcome="booking_in_progress",
     ),
 ]
 
@@ -200,7 +194,7 @@ CANCELLATION_SCENARIOS = [
                 ["cancell", "appuntamento"],
             ),
         ],
-        expected_outcome="cancellation_requested"
+        expected_outcome="cancellation_requested",
     ),
 ]
 
@@ -222,7 +216,7 @@ MIXED_SCENARIOS = [
                 ["quando", "servizio"],
             ),
         ],
-        expected_outcome="booking_in_progress"
+        expected_outcome="booking_in_progress",
     ),
     ConversationScenario(
         name="multiple_questions",
@@ -230,9 +224,11 @@ MIXED_SCENARIOS = [
         turns=[
             ConversationTurn("A che ora chiudete?", "info", ["chiud", "19"]),
             ConversationTurn("Siete aperti il lunedì?", "info", ["lunedì", "chius"]),
-            ConversationTurn("Come posso pagare?", "info", ["carta", "contanti", "Satispay"]),
+            ConversationTurn(
+                "Come posso pagare?", "info", ["carta", "contanti", "Satispay"]
+            ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
 ]
 
@@ -244,7 +240,7 @@ EDGE_CASE_SCENARIOS = [
         turns=[
             ConversationTurn("Bongiorno", "cortesia", ["Buongiorno"]),  # typo
         ],
-        expected_outcome="handled"
+        expected_outcome="handled",
     ),
     ConversationScenario(
         name="paraphrased_price_query",
@@ -256,7 +252,7 @@ EDGE_CASE_SCENARIOS = [
                 ["€", "cost", "tagli"],
             ),
         ],
-        expected_outcome="info_provided"
+        expected_outcome="info_provided",
     ),
 ]
 
@@ -265,21 +261,72 @@ EDGE_CASE_SCENARIOS = [
 # FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def faq_manager():
     """Create FAQ manager with test data."""
     manager = FAQManager()
     test_faqs = [
-        {"id": "faq_001", "question": "Quanto costa un taglio donna?", "answer": "Il taglio donna costa €35.", "category": "prezzi"},
-        {"id": "faq_002", "question": "Quanto costa un taglio uomo?", "answer": "Il taglio uomo costa €18.", "category": "prezzi"},
-        {"id": "faq_003", "question": "A che ora aprite?", "answer": "Apriamo alle 9:00.", "category": "orari"},
-        {"id": "faq_004", "question": "A che ora chiudete?", "answer": "Chiudiamo alle 19:00.", "category": "orari"},
-        {"id": "faq_005", "question": "Siete aperti il lunedì?", "answer": "No, il lunedì siamo chiusi.", "category": "orari"},
-        {"id": "faq_006", "question": "Accettate Satispay?", "answer": "Sì, accettiamo Satispay oltre a contanti e carte.", "category": "pagamenti"},
-        {"id": "faq_007", "question": "Come posso pagare?", "answer": "Accettiamo contanti, carte e Satispay.", "category": "pagamenti"},
-        {"id": "faq_008", "question": "C'è parcheggio?", "answer": "Sì, parcheggio gratuito davanti al salone.", "category": "parcheggio"},
-        {"id": "faq_009", "question": "Devo prenotare?", "answer": "Consigliamo la prenotazione.", "category": "prenotazioni"},
-        {"id": "faq_010", "question": "Quanto costa il colore?", "answer": "Il colore costa €55.", "category": "prezzi"},
+        {
+            "id": "faq_001",
+            "question": "Quanto costa un taglio donna?",
+            "answer": "Il taglio donna costa €35.",
+            "category": "prezzi",
+        },
+        {
+            "id": "faq_002",
+            "question": "Quanto costa un taglio uomo?",
+            "answer": "Il taglio uomo costa €18.",
+            "category": "prezzi",
+        },
+        {
+            "id": "faq_003",
+            "question": "A che ora aprite?",
+            "answer": "Apriamo alle 9:00.",
+            "category": "orari",
+        },
+        {
+            "id": "faq_004",
+            "question": "A che ora chiudete?",
+            "answer": "Chiudiamo alle 19:00.",
+            "category": "orari",
+        },
+        {
+            "id": "faq_005",
+            "question": "Siete aperti il lunedì?",
+            "answer": "No, il lunedì siamo chiusi.",
+            "category": "orari",
+        },
+        {
+            "id": "faq_006",
+            "question": "Accettate Satispay?",
+            "answer": "Sì, accettiamo Satispay oltre a contanti e carte.",
+            "category": "pagamenti",
+        },
+        {
+            "id": "faq_007",
+            "question": "Come posso pagare?",
+            "answer": "Accettiamo contanti, carte e Satispay.",
+            "category": "pagamenti",
+        },
+        {
+            "id": "faq_008",
+            "question": "C'è parcheggio?",
+            "answer": "Sì, parcheggio gratuito davanti al salone.",
+            "category": "parcheggio",
+        },
+        {
+            "id": "faq_009",
+            "question": "Devo prenotare?",
+            "answer": "Consigliamo la prenotazione.",
+            "category": "prenotazioni",
+        },
+        {
+            "id": "faq_010",
+            "question": "Quanto costa il colore?",
+            "answer": "Il colore costa €55.",
+            "category": "prezzi",
+        },
     ]
     for faq in test_faqs:
         manager.add_faq(faq["question"], faq["answer"], faq["category"], faq["id"])
@@ -304,21 +351,25 @@ def state_machine():
 # TEST: LAYER 1 - EXACT MATCH
 # =============================================================================
 
+
 class TestLayer1ExactMatch:
     """Test Layer 1: Exact match for cortesia phrases."""
 
-    @pytest.mark.parametrize("input_text,expected_category", [
-        ("Buongiorno", IntentCategory.CORTESIA),
-        ("Buonasera", IntentCategory.CORTESIA),
-        ("Grazie", IntentCategory.CORTESIA),
-        ("Grazie mille", IntentCategory.CORTESIA),
-        ("Arrivederci", IntentCategory.CORTESIA),
-        ("Ciao", IntentCategory.CORTESIA),
-        ("Ok", IntentCategory.CONFERMA),
-        ("Va bene", IntentCategory.CONFERMA),
-        ("Sì", IntentCategory.CONFERMA),
-        ("No", IntentCategory.RIFIUTO),
-    ])
+    @pytest.mark.parametrize(
+        "input_text,expected_category",
+        [
+            ("Buongiorno", IntentCategory.CORTESIA),
+            ("Buonasera", IntentCategory.CORTESIA),
+            ("Grazie", IntentCategory.CORTESIA),
+            ("Grazie mille", IntentCategory.CORTESIA),
+            ("Arrivederci", IntentCategory.CORTESIA),
+            ("Ciao", IntentCategory.CORTESIA),
+            ("Ok", IntentCategory.CONFERMA),
+            ("Va bene", IntentCategory.CONFERMA),
+            ("Sì", IntentCategory.CONFERMA),
+            ("No", IntentCategory.RIFIUTO),
+        ],
+    )
     def test_exact_match_categories(self, input_text, expected_category):
         """Test that cortesia phrases are correctly matched."""
         result = classify_intent(input_text)
@@ -331,7 +382,9 @@ class TestLayer1ExactMatch:
         # Should match "Buongiorno" with Levenshtein distance
         if result:
             # Result is IntentResult
-            assert result.category == IntentCategory.CORTESIA or "Buongiorno" in (result.response or "")
+            assert result.category == IntentCategory.CORTESIA or "Buongiorno" in (
+                result.response or ""
+            )
 
     def test_exact_match_latency(self):
         """Test Layer 1 latency is <5ms."""
@@ -351,38 +404,55 @@ class TestLayer1ExactMatch:
 # TEST: LAYER 2 - INTENT CLASSIFICATION
 # =============================================================================
 
+
 class TestLayer2IntentClassification:
     """Test Layer 2: Pattern-based intent classification."""
 
-    @pytest.mark.parametrize("input_text,expected_category", [
-        # Prenotazione patterns - well supported
-        ("Vorrei prenotare un taglio", IntentCategory.PRENOTAZIONE),
-        ("Voglio fissare un appuntamento", IntentCategory.PRENOTAZIONE),
-        ("Mi serve un appuntamento per domani", IntentCategory.PRENOTAZIONE),
-        ("Posso prenotare per sabato?", IntentCategory.PRENOTAZIONE),
-        # Cancellation - use clear keywords
-        ("Voglio cancellare il mio appuntamento", IntentCategory.CANCELLAZIONE),
-        ("Annulla la prenotazione", IntentCategory.CANCELLAZIONE),
-        # Info patterns - use patterns that match classifier
-        ("Che orari fate?", IntentCategory.INFO),
-    ])
+    @pytest.mark.parametrize(
+        "input_text,expected_category",
+        [
+            # Prenotazione patterns - well supported
+            ("Vorrei prenotare un taglio", IntentCategory.PRENOTAZIONE),
+            ("Voglio fissare un appuntamento", IntentCategory.PRENOTAZIONE),
+            ("Mi serve un appuntamento per domani", IntentCategory.PRENOTAZIONE),
+            ("Posso prenotare per sabato?", IntentCategory.PRENOTAZIONE),
+            # Cancellation - use clear keywords
+            ("Voglio cancellare il mio appuntamento", IntentCategory.CANCELLAZIONE),
+            ("Annulla la prenotazione", IntentCategory.CANCELLAZIONE),
+            # Info patterns - use patterns that match classifier
+            ("Che orari fate?", IntentCategory.INFO),
+        ],
+    )
     def test_intent_patterns(self, input_text, expected_category):
         """Test pattern-based intent classification."""
         result = classify_intent(input_text)
         assert result.category == expected_category
-        assert result.confidence >= 0.38  # Lowered for more specific patterns (E4-S1/S2)
+        assert (
+            result.confidence >= 0.38
+        )  # Lowered for more specific patterns (E4-S1/S2)
 
-    @pytest.mark.parametrize("input_text,expected_categories", [
-        # These may match multiple categories or need fallback
-        ("Quanto costa un taglio?", [IntentCategory.INFO, IntentCategory.PRENOTAZIONE]),
-        ("Dove siete?", [IntentCategory.INFO, IntentCategory.UNKNOWN]),
-        ("Accettate carte?", [IntentCategory.INFO, IntentCategory.UNKNOWN]),
-        ("Devo disdire la prenotazione", [IntentCategory.CANCELLAZIONE, IntentCategory.PRENOTAZIONE]),
-    ])
+    @pytest.mark.parametrize(
+        "input_text,expected_categories",
+        [
+            # These may match multiple categories or need fallback
+            (
+                "Quanto costa un taglio?",
+                [IntentCategory.INFO, IntentCategory.PRENOTAZIONE],
+            ),
+            ("Dove siete?", [IntentCategory.INFO, IntentCategory.UNKNOWN]),
+            ("Accettate carte?", [IntentCategory.INFO, IntentCategory.UNKNOWN]),
+            (
+                "Devo disdire la prenotazione",
+                [IntentCategory.CANCELLAZIONE, IntentCategory.PRENOTAZIONE],
+            ),
+        ],
+    )
     def test_intent_patterns_ambiguous(self, input_text, expected_categories):
         """Test intent patterns that may have multiple valid classifications."""
         result = classify_intent(input_text)
-        assert result.category in expected_categories, f"'{input_text}' got {result.category}, expected one of {expected_categories}"
+        assert result.category in expected_categories, (
+            f"'{input_text}' got {result.category}, expected one of {expected_categories}"
+        )
 
     def test_intent_latency(self):
         """Test Layer 2 latency is <20ms."""
@@ -406,6 +476,7 @@ class TestLayer2IntentClassification:
 # =============================================================================
 # TEST: LAYER 3 - FAQ RETRIEVAL
 # =============================================================================
+
 
 class TestLayer3FAQRetrieval:
     """Test Layer 3: Hybrid FAQ retrieval."""
@@ -457,6 +528,7 @@ class TestLayer3FAQRetrieval:
 # =============================================================================
 # TEST: FULL PIPELINE E2E
 # =============================================================================
+
 
 class TestFullPipelineE2E:
     """Test complete 4-layer pipeline end-to-end."""
@@ -534,15 +606,22 @@ class TestFullPipelineE2E:
         for scenario in CORTESIA_SCENARIOS:
             for turn in scenario.turns:
                 result = self.process_query(turn.user_input, faq_manager)
-                assert result["layer_used"] == "L1_EXACT", f"Expected L1 for '{turn.user_input}'"
-                assert result["intent"] == "cortesia" or result["intent"] in ["conferma", "rifiuto"]
+                assert result["layer_used"] == "L1_EXACT", (
+                    f"Expected L1 for '{turn.user_input}'"
+                )
+                assert result["intent"] == "cortesia" or result["intent"] in [
+                    "conferma",
+                    "rifiuto",
+                ]
 
     def test_info_e2e(self, faq_manager):
         """Test info queries use Layer 2+3."""
         for scenario in INFO_SCENARIOS:
             for turn in scenario.turns:
                 result = self.process_query(turn.user_input, faq_manager)
-                assert result["layer_used"] in ["L2_INTENT", "L3_FAQ"], f"Expected L2/L3 for '{turn.user_input}'"
+                assert result["layer_used"] in ["L2_INTENT", "L3_FAQ"], (
+                    f"Expected L2/L3 for '{turn.user_input}'"
+                )
 
                 # Check response contains expected strings
                 if turn.expected_response_contains and result["response"]:
@@ -550,14 +629,18 @@ class TestFullPipelineE2E:
                         exp.lower() in result["response"].lower()
                         for exp in turn.expected_response_contains
                     )
-                    assert found_any, f"Response '{result['response']}' missing expected content"
+                    assert found_any, (
+                        f"Response '{result['response']}' missing expected content"
+                    )
 
     def test_booking_e2e(self, faq_manager):
         """Test booking queries use Layer 2."""
         for scenario in BOOKING_SCENARIOS:
             turn = scenario.turns[0]
             result = self.process_query(turn.user_input, faq_manager)
-            assert result["intent"] == "prenotazione", f"Expected prenotazione for '{turn.user_input}'"
+            assert result["intent"] == "prenotazione", (
+                f"Expected prenotazione for '{turn.user_input}'"
+            )
 
     def test_e2e_latency(self, faq_manager):
         """Test E2E latency is <200ms (without Groq)."""
@@ -580,7 +663,7 @@ class TestFullPipelineE2E:
         max_latency = max(latencies)
         p95_latency = sorted(latencies)[int(len(latencies) * 0.95)]
 
-        print(f"\nE2E Latency Stats:")
+        print("\nE2E Latency Stats:")
         print(f"  Average: {avg_latency:.2f}ms")
         print(f"  P95: {p95_latency:.2f}ms")
         print(f"  Max: {max_latency:.2f}ms")
@@ -592,6 +675,7 @@ class TestFullPipelineE2E:
 # =============================================================================
 # TEST: STATE MACHINE INTEGRATION
 # =============================================================================
+
 
 class TestStateMachineIntegration:
     """Test state machine integration with pipeline."""
@@ -622,7 +706,10 @@ class TestStateMachineIntegration:
         # If still not in CONFIRMING, provide remaining info
         # Need 6 iterations to handle all states (NAME, DISAMBIGUATING, SERVICE, DATE, TIME)
         for _ in range(6):
-            if state_machine.context.state in [BookingState.CONFIRMING, BookingState.COMPLETED]:
+            if state_machine.context.state in [
+                BookingState.CONFIRMING,
+                BookingState.COMPLETED,
+            ]:
                 break
             current = state_machine.context.state
             if current == BookingState.WAITING_NAME:
@@ -649,10 +736,15 @@ class TestStateMachineIntegration:
         state_machine.process_message("Vorrei prenotare un taglio")
 
         # User changes mind with clear "cambio" keyword
-        result = state_machine.process_message("cambio idea, volevo colore")
+        state_machine.process_message("cambio idea, volevo colore")
         # Should reset and ask for service again (or extract new service)
         # WAITING_NAME is also valid since flow now asks for name first
-        assert state_machine.context.state in [BookingState.WAITING_NAME, BookingState.WAITING_SERVICE, BookingState.WAITING_DATE, BookingState.IDLE]
+        assert state_machine.context.state in [
+            BookingState.WAITING_NAME,
+            BookingState.WAITING_SERVICE,
+            BookingState.WAITING_DATE,
+            BookingState.IDLE,
+        ]
 
     def test_booking_cancellation(self, state_machine):
         """Test booking cancellation mid-flow."""
@@ -660,14 +752,19 @@ class TestStateMachineIntegration:
         state_machine.process_message("domani")
 
         # Cancel with clear pattern that matches INTERRUPTION_PATTERNS["reset"]
-        result = state_machine.process_message("annulla tutto")
+        state_machine.process_message("annulla tutto")
         # State machine resets on interruption
-        assert state_machine.context.state in [BookingState.CANCELLED, BookingState.IDLE, BookingState.WAITING_SERVICE]
+        assert state_machine.context.state in [
+            BookingState.CANCELLED,
+            BookingState.IDLE,
+            BookingState.WAITING_SERVICE,
+        ]
 
 
 # =============================================================================
 # TEST: ENTITY EXTRACTION INTEGRATION
 # =============================================================================
+
 
 class TestEntityExtractionIntegration:
     """Test entity extraction in pipeline context."""
@@ -691,7 +788,9 @@ class TestEntityExtractionIntegration:
 
     def test_multiple_entities(self):
         """Test extracting multiple entities from one message."""
-        result = extract_all("Sono Mario, vorrei prenotare un taglio per domani alle 10")
+        result = extract_all(
+            "Sono Mario, vorrei prenotare un taglio per domani alle 10"
+        )
         assert result.name is not None
         assert result.date is not None
         assert result.time is not None
@@ -700,6 +799,7 @@ class TestEntityExtractionIntegration:
 # =============================================================================
 # TEST: ACCURACY METRICS
 # =============================================================================
+
 
 class TestAccuracyMetrics:
     """Test accuracy metrics for the pipeline."""
@@ -725,11 +825,13 @@ class TestAccuracyMetrics:
             if result.category == expected:
                 correct += 1
             else:
-                print(f"MISS: '{query}' expected {expected.value}, got {result.category.value}")
+                print(
+                    f"MISS: '{query}' expected {expected.value}, got {result.category.value}"
+                )
 
         accuracy = correct / len(test_cases)
-        print(f"\nIntent accuracy: {accuracy*100:.1f}% ({correct}/{len(test_cases)})")
-        assert accuracy >= 0.9, f"Intent accuracy {accuracy*100:.1f}% < 90%"
+        print(f"\nIntent accuracy: {accuracy * 100:.1f}% ({correct}/{len(test_cases)})")
+        assert accuracy >= 0.9, f"Intent accuracy {accuracy * 100:.1f}% < 90%"
 
     def test_faq_accuracy(self, faq_manager):
         """Test FAQ retrieval accuracy."""
@@ -749,16 +851,19 @@ class TestAccuracyMetrics:
                 correct += 1
             else:
                 answer = result.answer if result else "None"
-                print(f"MISS: '{query}' expected '{expected_in_answer}', got '{answer[:50]}...'")
+                print(
+                    f"MISS: '{query}' expected '{expected_in_answer}', got '{answer[:50]}...'"
+                )
 
         accuracy = correct / len(test_cases)
-        print(f"\nFAQ accuracy: {accuracy*100:.1f}% ({correct}/{len(test_cases)})")
-        assert accuracy >= 0.8, f"FAQ accuracy {accuracy*100:.1f}% < 80%"
+        print(f"\nFAQ accuracy: {accuracy * 100:.1f}% ({correct}/{len(test_cases)})")
+        assert accuracy >= 0.8, f"FAQ accuracy {accuracy * 100:.1f}% < 80%"
 
 
 # =============================================================================
 # TEST: PERFORMANCE BENCHMARK
 # =============================================================================
+
 
 class TestPerformanceBenchmark:
     """Performance benchmarks for the pipeline."""

@@ -52,12 +52,14 @@ FRAME_HANGUP = 0x11
 FRAME_BYTES = 320  # 20ms PCM16 @ 8kHz mono
 
 # --- Soglie replicate da voip_pjsua2.py (§4) ---
-BARGE_IN_MARGIN = 500      # RMS sopra echo atteso per triggerare barge-in (voip_pjsua2.py:1130)
-BARGE_IN_THRESHOLD = 4     # 80ms speech sostenuto (voip_pjsua2.py:1131)
-ECHO_ATTENUATION = 0.5     # echo ~50% energia TX (voip_pjsua2.py:1132)
-VAD_SPEECH_THRESHOLD = 400 # RMS soglia turn (voip_pjsua2.py: turn_rms<400 → skip)
-VAD_SILENCE_TIMEOUT = 50   # frame silenzio (~1000ms @ 20ms) fine-turno
-VAD_MIN_SPEECH_FRAMES = 15 # ≥300ms speech (voip_pjsua2.py:1207)
+BARGE_IN_MARGIN = (
+    500  # RMS sopra echo atteso per triggerare barge-in (voip_pjsua2.py:1130)
+)
+BARGE_IN_THRESHOLD = 4  # 80ms speech sostenuto (voip_pjsua2.py:1131)
+ECHO_ATTENUATION = 0.5  # echo ~50% energia TX (voip_pjsua2.py:1132)
+VAD_SPEECH_THRESHOLD = 400  # RMS soglia turn (voip_pjsua2.py: turn_rms<400 → skip)
+VAD_SILENCE_TIMEOUT = 50  # frame silenzio (~1000ms @ 20ms) fine-turno
+VAD_MIN_SPEECH_FRAMES = 15  # ≥300ms speech (voip_pjsua2.py:1207)
 
 # --- Turn-taking half-duplex (T-SARA-TURNTAKING FASE 2, spec §4) ---
 # Grace dopo l'ultimo frame TX: l'engine Go emette ~200ms oltre la coda Python vuota
@@ -65,14 +67,14 @@ VAD_MIN_SPEECH_FRAMES = 15 # ≥300ms speech (voip_pjsua2.py:1207)
 # vuota. Teniamo lo stato SPEAKING per questa finestra così RX non entra in STT.
 TX_GRACE_S = 0.180
 # Barge-in adattivo (spec 2.2): trigger = rms > max(soglia_base, k·echo_floor) sostenuto.
-BARGE_IN_K = 2.5           # [LEGACY diagnostico] moltiplicatore sopra l'echo-floor RX
+BARGE_IN_K = 2.5  # [LEGACY diagnostico] moltiplicatore sopra l'echo-floor RX
 # FIX-BARGEIN-2 (founder/giudice ratificato, opzione (b) emendata): durante SPEAKING la
 # soglia barge si àncora al TX di Sara (l'eco di linea è ∝ energia TX × attenuazione), NON
 # più al floor RX. tx_ref = max(deque ultimi ~20 _current_tx_rms ≈400ms) copre il ritardo
 # di propagazione TX→eco. Il floor RX resta SOLO nel marker diagnostico.
-BARGE_TX_K = 0.4           # moltiplicatore soglia barge riferita al TX (thr = k·tx_ref)
-BARGE_IN_SUSTAIN = 13      # ~260ms sostenuti (spec 2.2: ≥250-300ms, robusto su eco reale)
-ECHO_FLOOR_ALPHA = 0.15    # coeff. media mobile echo-floor (RX durante TX)
+BARGE_TX_K = 0.4  # moltiplicatore soglia barge riferita al TX (thr = k·tx_ref)
+BARGE_IN_SUSTAIN = 13  # ~260ms sostenuti (spec 2.2: ≥250-300ms, robusto su eco reale)
+ECHO_FLOOR_ALPHA = 0.15  # coeff. media mobile echo-floor (RX durante TX)
 # Ring-buffer pre-trigger (spec 2.4): inoltra a STT i frame del trigger, no perdita
 # delle prime parole del chiamante.
 RX_PRETRIGGER_FRAMES = BARGE_IN_SUSTAIN + 4  # ~340ms
@@ -84,8 +86,8 @@ RX_PRETRIGGER_FRAMES = BARGE_IN_SUSTAIN + 4  # ~340ms
 # nessun turno completa mai) → il numero risulta OCCUPATO per tutti i clienti successivi.
 # Dopo IDLE_REPROMPT_S di silenzio combinato (né Sara né chiamante) → UN reprompt;
 # dopo altri IDLE_HANGUP_S di silenzio → congedo cortese + hangup legittimo loggato.
-IDLE_REPROMPT_S = 22.0   # ~20-25s senza parlato del chiamante → reprompt
-IDLE_HANGUP_S = 18.0     # +~15-20s dopo il reprompt ancora muto → congedo + hangup
+IDLE_REPROMPT_S = 22.0  # ~20-25s senza parlato del chiamante → reprompt
+IDLE_HANGUP_S = 18.0  # +~15-20s dopo il reprompt ancora muto → congedo + hangup
 IDLE_REPROMPT_TEXT = "Pronto, è ancora in linea?"
 IDLE_GOODBYE_TEXT = "Non la sento più. Grazie per aver chiamato, arrivederci."
 
@@ -93,6 +95,7 @@ IDLE_GOODBYE_TEXT = "Non la sento più. Grazie per aver chiamato, arrivederci."
 @dataclass
 class SIPConfig:
     """Config SIP letta dalle STESSE env di Sara (voip_pjsua2.py SIPConfig.from_env)."""
+
     username: str
     password: str
     server: str
@@ -120,7 +123,9 @@ class GoEngineVoIPManager:
       await hangup()->bool, await stop().
     """
 
-    def __init__(self, config: SIPConfig, bridge_host: str = "127.0.0.1", bridge_port: int = 8300):
+    def __init__(
+        self, config: SIPConfig, bridge_host: str = "127.0.0.1", bridge_port: int = 8300
+    ):
         self.config = config
         self.bridge_host = bridge_host
         self.bridge_port = bridge_port
@@ -174,12 +179,15 @@ class GoEngineVoIPManager:
         # → alimenta get_percentile_stats (count). Best-effort: mai bloccare il media-layer.
         try:
             from src.analytics import get_logger
+
             self._analytics = get_logger()
         except Exception as exc:  # pragma: no cover
             logger.warning("analytics non disponibile: %s", exc)
             self._analytics = None
         self._analytics_sid: Optional[str] = None
-        self._verticale_id: str = os.getenv("VOICE_VERTICALE", "salone").strip() or "salone"
+        self._verticale_id: str = (
+            os.getenv("VOICE_VERTICALE", "salone").strip() or "salone"
+        )
 
         # ADDENDUM W / REGOLA #32: capture dual-stream WAV per il GIUDICE su chiamata reale.
         # Gated da SARA_TEST_CAPTURE=1 (default OFF → zero file, zero overhead in produzione).
@@ -189,7 +197,9 @@ class GoEngineVoIPManager:
         self._cap_rx = bytearray()
         self._cap_tx = bytearray()
         self._cap_ts: Optional[str] = None
-        self._cap_max_bytes = 8000 * 2 * 300  # ~300s @8kHz PCM16 per traccia (bound memoria)
+        self._cap_max_bytes = (
+            8000 * 2 * 300
+        )  # ~300s @8kHz PCM16 per traccia (bound memoria)
 
     # --- interfaccia VoIPManager ---
 
@@ -218,17 +228,23 @@ class GoEngineVoIPManager:
         # child engine e poi rilancia l'handler precedente (best-effort, solo main thread).
         self._install_signal_handlers()
 
-        t_accept = threading.Thread(target=self._accept_loop, daemon=True, name="goengine-accept")
+        t_accept = threading.Thread(
+            target=self._accept_loop, daemon=True, name="goengine-accept"
+        )
         t_accept.start()
         self._threads.append(t_accept)
 
         # 2) supervisione engine (spawn + backoff restart).
-        t_sup = threading.Thread(target=self._supervise_engine, daemon=True, name="goengine-supervise")
+        t_sup = threading.Thread(
+            target=self._supervise_engine, daemon=True, name="goengine-supervise"
+        )
         t_sup.start()
         self._threads.append(t_sup)
 
         # 3) turn-taking VAD loop (consuma rx_queue → pipeline).
-        t_audio = threading.Thread(target=self._audio_processing_loop, daemon=True, name="goengine-audio")
+        t_audio = threading.Thread(
+            target=self._audio_processing_loop, daemon=True, name="goengine-audio"
+        )
         t_audio.start()
         self._threads.append(t_audio)
 
@@ -237,7 +253,11 @@ class GoEngineVoIPManager:
             if self._registered:
                 break
             await asyncio.sleep(0.1)
-        logger.info("GoEngine start: registered=%s reg_status=%s", self._registered, self._reg_status)
+        logger.info(
+            "GoEngine start: registered=%s reg_status=%s",
+            self._registered,
+            self._reg_status,
+        )
         # [TARATURA][BOOT] parametri turn-taking al boot, con provenienza file:riga (solo logging).
         logger.info(
             "[TARATURA][BOOT] reprompt_timer=%.1fs (voip_goengine.py:87) | "
@@ -245,9 +265,12 @@ class GoEngineVoIPManager:
             "vad_silence_timeout=%d frame ~%dms endpointing (voip_goengine.py:59) | "
             "vad_min_speech_frames=%d ~%dms (voip_goengine.py:60) | "
             "E6_strike_threshold=3 (booking_state_machine.py:3086)",
-            IDLE_REPROMPT_S, VAD_SPEECH_THRESHOLD,
-            VAD_SILENCE_TIMEOUT, VAD_SILENCE_TIMEOUT * 20,
-            VAD_MIN_SPEECH_FRAMES, VAD_MIN_SPEECH_FRAMES * 20,
+            IDLE_REPROMPT_S,
+            VAD_SPEECH_THRESHOLD,
+            VAD_SILENCE_TIMEOUT,
+            VAD_SILENCE_TIMEOUT * 20,
+            VAD_MIN_SPEECH_FRAMES,
+            VAD_MIN_SPEECH_FRAMES * 20,
         )
         # Ritorna True se il motore è vivo (registrazione può arrivare poco dopo).
         return self._running
@@ -376,6 +399,7 @@ class GoEngineVoIPManager:
     def _on_status(self, payload: bytes):
         try:
             import json
+
             data = json.loads(payload.decode("utf-8"))
             self._registered = bool(data.get("registered", False))
             self._reg_status = int(data.get("reg_status", 0))
@@ -401,13 +425,17 @@ class GoEngineVoIPManager:
         # Apri sessione analytics per la chiamata (i turni la aggiornano → count).
         if self._analytics is not None:
             try:
-                verticale = getattr(self.pipeline, "verticale_id", None) or self._verticale_id
+                verticale = (
+                    getattr(self.pipeline, "verticale_id", None) or self._verticale_id
+                )
                 self._analytics_sid = self._analytics.start_session(verticale)
             except Exception as exc:
                 logger.warning("analytics.start_session errore: %s", exc)
                 self._analytics_sid = None
         # Greeting DAL CERVELLO (non nell'engine).
-        threading.Thread(target=self._send_greeting, args=(caller,), daemon=True).start()
+        threading.Thread(
+            target=self._send_greeting, args=(caller,), daemon=True
+        ).start()
 
     def _on_call_end(self):
         logger.info("CALL_END")
@@ -454,12 +482,16 @@ class GoEngineVoIPManager:
             env["VOIP_SIP_SERVER"] = self.config.server
             args = [
                 engine_bin,
-                "-port", str(self.config.local_port),
-                "-bridge", f"{self.bridge_host}:{self.bridge_port}",
+                "-port",
+                str(self.config.local_port),
+                "-bridge",
+                f"{self.bridge_host}:{self.bridge_port}",
             ]
             if self.config.external:
                 args += ["-external", self.config.external]
-            logger.info("spawn engine: %s", " ".join(a for a in args if "PASS" not in a))
+            logger.info(
+                "spawn engine: %s", " ".join(a for a in args if "PASS" not in a)
+            )
             try:
                 self._proc = subprocess.Popen(args, env=env, start_new_session=True)
             except OSError as exc:
@@ -472,7 +504,9 @@ class GoEngineVoIPManager:
             self._proc.wait()
             if not self._running or self._stop_evt.is_set():
                 return
-            logger.warning("engine terminato (rc=%s), restart con backoff", self._proc.returncode)
+            logger.warning(
+                "engine terminato (rc=%s), restart con backoff", self._proc.returncode
+            )
             self._registered = False
             self._reg_status = 0
             if self._stop_evt.wait(backoff):
@@ -481,8 +515,10 @@ class GoEngineVoIPManager:
 
     def _install_signal_handlers(self):
         """DIFETTO B: su SIGTERM/SIGINT killa l'engine (atexit non copre i segnali)."""
+
         def _make(sig):
             prev = signal.getsignal(sig)
+
             def _handler(signum, frame):
                 try:
                     self._atexit_kill_engine()
@@ -491,13 +527,17 @@ class GoEngineVoIPManager:
                         prev(signum, frame)
                     else:
                         raise SystemExit(0)
+
             return _handler
+
         try:
             for sig in (signal.SIGTERM, signal.SIGINT):
                 signal.signal(sig, _make(sig))
         except (ValueError, OSError) as exc:
             # non nel main thread: fallback su atexit soltanto.
-            logger.warning("signal handler non installato (%s); resta atexit + reap-orfani", exc)
+            logger.warning(
+                "signal handler non installato (%s); resta atexit + reap-orfani", exc
+            )
 
     def _atexit_kill_engine(self):
         """DIFETTO B: killa il child engine (e il suo gruppo) su interprete in uscita."""
@@ -524,7 +564,9 @@ class GoEngineVoIPManager:
         binpath = self._engine_binary_path()
         binname = os.path.basename(binpath)
         try:
-            out = subprocess.run(["pgrep", "-f", binname], capture_output=True, text=True, timeout=5)
+            out = subprocess.run(
+                ["pgrep", "-f", binname], capture_output=True, text=True, timeout=5
+            )
         except (OSError, subprocess.SubprocessError) as exc:
             logger.warning("reap orfani: pgrep fallito: %s", exc)
             return
@@ -539,8 +581,12 @@ class GoEngineVoIPManager:
                 continue
             # verifica che il comando contenga davvero il path del binario engine
             try:
-                cmd = subprocess.run(["ps", "-o", "command=", "-p", str(pid)],
-                                     capture_output=True, text=True, timeout=3).stdout
+                cmd = subprocess.run(
+                    ["ps", "-o", "command=", "-p", str(pid)],
+                    capture_output=True,
+                    text=True,
+                    timeout=3,
+                ).stdout
             except (OSError, subprocess.SubprocessError):
                 continue
             if binname not in cmd:
@@ -558,7 +604,9 @@ class GoEngineVoIPManager:
     @staticmethod
     def _engine_binary_path() -> str:
         # Binario buildato accanto ai sorgenti engine/.
-        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # voice-agent/
+        here = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        )  # voice-agent/
         cand = os.path.join(here, "engine", "engine_darwin_amd64")
         if os.path.exists(cand):
             return cand
@@ -595,7 +643,7 @@ class GoEngineVoIPManager:
         if src_rate != 8000:
             pcm_data, _ = audioop.ratecv(pcm_data, 2, 1, src_rate, 8000, None)
         for i in range(0, len(pcm_data), FRAME_BYTES):
-            chunk = pcm_data[i:i + FRAME_BYTES]
+            chunk = pcm_data[i : i + FRAME_BYTES]
             if len(chunk) < FRAME_BYTES:
                 chunk = chunk + b"\x00" * (FRAME_BYTES - len(chunk))
             try:
@@ -650,8 +698,12 @@ class GoEngineVoIPManager:
                 # nella grace è ora retto da _tx_last_frame_ts, non da questo RMS stale.
                 self._current_tx_rms = 0.0
                 if time.time() - _last_log >= 1.0:
-                    logger.info("[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
-                                self._m_tx_drained, self._m_tx_written, self._m_tx_bytes)
+                    logger.info(
+                        "[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
+                        self._m_tx_drained,
+                        self._m_tx_written,
+                        self._m_tx_bytes,
+                    )
                     _last_log = time.time()
                 continue
             self._m_tx_drained += 1
@@ -672,19 +724,27 @@ class GoEngineVoIPManager:
                 # in ritardo: non accumulare debito, risincronizza.
                 _next = time.monotonic()
             if time.time() - _last_log >= 1.0:
-                logger.info("[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
-                            self._m_tx_drained, self._m_tx_written, self._m_tx_bytes)
+                logger.info(
+                    "[GATE2R-PY-TX] drained=%d written=%d bytes=%d",
+                    self._m_tx_drained,
+                    self._m_tx_written,
+                    self._m_tx_bytes,
+                )
                 _last_log = time.time()
 
     def _audio_processing_loop(self):
         """Turn-taking VAD energy-based su rx_queue + barge-in. Replica §4 1/4."""
         # TX pump separato: invia audio appena disponibile (no pacing lato Python).
-        t_tx = threading.Thread(target=self._tx_pump, daemon=True, name="goengine-txpump")
+        t_tx = threading.Thread(
+            target=self._tx_pump, daemon=True, name="goengine-txpump"
+        )
         t_tx.start()
         self._threads.append(t_tx)
 
         # Idle-monitor separato (FASE 3.0): reprompt + hangup su silenzio a livello chiamata.
-        t_idle = threading.Thread(target=self._idle_monitor_loop, daemon=True, name="goengine-idle")
+        t_idle = threading.Thread(
+            target=self._idle_monitor_loop, daemon=True, name="goengine-idle"
+        )
         t_idle.start()
         self._threads.append(t_idle)
 
@@ -725,22 +785,29 @@ class GoEngineVoIPManager:
                 last_marker_ts = now
                 logger.info(
                     "[RX-MARK] rms=%.0f tx_ref=%.0f thr=%.0f floor=%.0f stato=%s sustain=%d",
-                    rms, tx_ref, thr, self._echo_floor,
-                    "SPEAKING" if sara_speaking else "LISTENING", barge_in_frames,
+                    rms,
+                    tx_ref,
+                    thr,
+                    self._echo_floor,
+                    "SPEAKING" if sara_speaking else "LISTENING",
+                    barge_in_frames,
                 )
 
             if sara_speaking:
                 # Echo-floor mantenuto SOLO per diagnostica marker (fuori dalla soglia thr).
                 self._echo_floor = (
-                    (1.0 - ECHO_FLOOR_ALPHA) * self._echo_floor + ECHO_FLOOR_ALPHA * rms
-                )
+                    1.0 - ECHO_FLOOR_ALPHA
+                ) * self._echo_floor + ECHO_FLOOR_ALPHA * rms
                 rx_ring.append(frame)
                 if rms > thr:
                     barge_in_frames += 1
                     if barge_in_frames >= BARGE_IN_SUSTAIN:
                         logger.info(
                             "BARGE-IN: rms=%.0f thr=%.0f floor=%.0f (pre=%d frame)",
-                            rms, thr, self._echo_floor, len(rx_ring),
+                            rms,
+                            thr,
+                            self._echo_floor,
+                            len(rx_ring),
                         )
                         self.clear_tx()  # svuota TX + stop invio + fine grace
                         # Idle-timeout (FASE 3.0): il chiamante ha parlato → riarma il timer.
@@ -771,7 +838,10 @@ class GoEngineVoIPManager:
                     silence_frames += 1
                     speech.extend(frame)
 
-            if speech_frames >= VAD_MIN_SPEECH_FRAMES and silence_frames >= VAD_SILENCE_TIMEOUT:
+            if (
+                speech_frames >= VAD_MIN_SPEECH_FRAMES
+                and silence_frames >= VAD_SILENCE_TIMEOUT
+            ):
                 full_audio = bytes(speech)
                 speech.clear()
                 speech_frames = 0
@@ -790,7 +860,10 @@ class GoEngineVoIPManager:
             # dal VAD (endpoint→LISTENING) e viene dispatchato ORA → t0 per la latenza
             # percepita fine-utterance→audio-out (solo logging, nessuna logica).
             _t_endpoint = time.monotonic()
-            logger.info("[TARATURA][ENDPOINT] fine-utterance caller → dispatch NLU (bytes=%d)", len(audio_8k))
+            logger.info(
+                "[TARATURA][ENDPOINT] fine-utterance caller → dispatch NLU (bytes=%d)",
+                len(audio_8k),
+            )
             audio_16k, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
             fut = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
@@ -801,8 +874,10 @@ class GoEngineVoIPManager:
             if result:
                 logger.info(
                     "[TARATURA][SLOT] intent=%r servizio=%r servizio_id=%r slots=%r",
-                    result.get("intent"), result.get("servizio"),
-                    result.get("servizio_id"), result.get("slots"),
+                    result.get("intent"),
+                    result.get("servizio"),
+                    result.get("servizio_id"),
+                    result.get("slots"),
                 )
             # Log del turno REALE in conversation_turns (stesso writer letto da
             # /api/metrics/latency). Alimenta get_percentile_stats(count). Best-effort.
@@ -812,7 +887,8 @@ class GoEngineVoIPManager:
                 logger.info(
                     "risposta TTS in coda TX (%dB) | [TARATURA] latenza "
                     "fine-utterance→audio-out=%.0fms",
-                    len(result["audio_response"]), (time.monotonic() - _t_endpoint) * 1000,
+                    len(result["audio_response"]),
+                    (time.monotonic() - _t_endpoint) * 1000,
                 )
             if result and result.get("should_exit"):
                 # FSM-HANGUP GUARD (FASE 2 spec 2.3): Sara NON riaggancia mai per prima.
@@ -832,11 +908,14 @@ class GoEngineVoIPManager:
                 )
                 if _explicit_goodbye:
                     # Hangup dopo che la coda TX si svuota.
-                    threading.Thread(target=self._hangup_after_drain, daemon=True).start()
+                    threading.Thread(
+                        target=self._hangup_after_drain, daemon=True
+                    ).start()
                 else:
                     logger.info(
                         "HANGUP soppresso (FSM-guard): should_exit ma intent non-congedo "
-                        "(%r) — Sara resta in linea", _intent,
+                        "(%r) — Sara resta in linea",
+                        _intent,
                     )
         except Exception as exc:
             logger.warning("process_caller_audio errore: %s", exc, exc_info=True)
@@ -856,7 +935,9 @@ class GoEngineVoIPManager:
             return
         try:
             if self._analytics_sid is None:
-                verticale = getattr(self.pipeline, "verticale_id", None) or self._verticale_id
+                verticale = (
+                    getattr(self.pipeline, "verticale_id", None) or self._verticale_id
+                )
                 self._analytics_sid = self._analytics.start_session(verticale)
             self._analytics.log_turn(
                 session_id_or_turn=self._analytics_sid,
@@ -907,7 +988,9 @@ class GoEngineVoIPManager:
             last_audio = max(self._last_caller_voice_ts, self._tx_last_frame_ts)
             if not self._idle_reprompted:
                 if now - last_audio >= IDLE_REPROMPT_S:
-                    logger.info("IDLE: %.0fs di silenzio chiamante → reprompt", now - last_audio)
+                    logger.info(
+                        "IDLE: %.0fs di silenzio chiamante → reprompt", now - last_audio
+                    )
                     self._idle_reprompted = True
                     self._idle_reprompt_ts = now
                     self._speak_canned(IDLE_REPROMPT_TEXT)
@@ -916,7 +999,8 @@ class GoEngineVoIPManager:
                 since = now - max(self._idle_reprompt_ts, self._tx_last_frame_ts)
                 if since >= IDLE_HANGUP_S:
                     logger.info(
-                        "HANGUP timeout-silenzio: chiamante muto %.0fs dopo il reprompt", since,
+                        "HANGUP timeout-silenzio: chiamante muto %.0fs dopo il reprompt",
+                        since,
                     )
                     self._speak_canned(IDLE_GOODBYE_TEXT)
                     self._idle_reprompted = False
@@ -936,7 +1020,9 @@ class GoEngineVoIPManager:
             logger.warning("_speak_canned: pipeline.tts assente, salto %r", text)
             return
         try:
-            fut = asyncio.run_coroutine_threadsafe(tts.synthesize(text), self._main_loop)
+            fut = asyncio.run_coroutine_threadsafe(
+                tts.synthesize(text), self._main_loop
+            )
             audio = fut.result(timeout=15)
             if audio:
                 self.queue_tts_audio(audio)
@@ -964,11 +1050,15 @@ class GoEngineVoIPManager:
         # Interleave campione-per-campione (PCM16) → stereo.
         stereo = bytearray(len(rx) * 2)
         for i in range(0, len(rx), 2):
-            stereo[i * 2:i * 2 + 2] = rx[i:i + 2]
-            stereo[i * 2 + 2:i * 2 + 4] = tx[i:i + 2]
-        here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # voice-agent/
+            stereo[i * 2 : i * 2 + 2] = rx[i : i + 2]
+            stereo[i * 2 + 2 : i * 2 + 4] = tx[i : i + 2]
+        here = os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))
+        )  # voice-agent/
         repo_root = os.path.dirname(here)
-        out_dir = os.path.join(repo_root, ".claude", "cache", "T-SARA-TURNTAKING", "calls")
+        out_dir = os.path.join(
+            repo_root, ".claude", "cache", "T-SARA-TURNTAKING", "calls"
+        )
         os.makedirs(out_dir, exist_ok=True)
         ts = self._cap_ts or time.strftime("%Y%m%d-%H%M%S")
         path = os.path.join(out_dir, f"call_{ts}.wav")
@@ -979,8 +1069,13 @@ class GoEngineVoIPManager:
             wf.writeframes(bytes(stereo))
         rx_rms = self._rms(bytes(self._cap_rx)) if self._cap_rx else 0.0
         tx_rms = self._rms(bytes(self._cap_tx)) if self._cap_tx else 0.0
-        logger.info("capture WAV-giudice scritto: %s (rx_rms=%.0f tx_rms=%.0f bytes_stereo=%d)",
-                    path, rx_rms, tx_rms, len(stereo))
+        logger.info(
+            "capture WAV-giudice scritto: %s (rx_rms=%.0f tx_rms=%.0f bytes_stereo=%d)",
+            path,
+            rx_rms,
+            tx_rms,
+            len(stereo),
+        )
 
     @staticmethod
     def _rms(pcm: bytes) -> float:

@@ -14,12 +14,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from booking_state_machine import BookingStateMachine, BookingState, BookingContext
+from booking_state_machine import BookingStateMachine, BookingState
 
 
 # =============================================================================
 # GAP-G3: PALESTRA ABBONAMENTO SOFT ESCALATION
 # =============================================================================
+
 
 class TestPalestraAbbonamentoGuardrail:
     """Palestra 'abbonamento' service must redirect to segreteria, not start booking flow."""
@@ -37,9 +38,10 @@ class TestPalestraAbbonamentoGuardrail:
         assert result.next_state == BookingState.WAITING_SERVICE, (
             f"Expected WAITING_SERVICE (soft escalation), got {result.next_state}"
         )
-        assert "segreteria" in result.response.lower() or "personal training" in result.response.lower(), (
-            f"Expected redirect to segreteria, got: {result.response}"
-        )
+        assert (
+            "segreteria" in result.response.lower()
+            or "personal training" in result.response.lower()
+        ), f"Expected redirect to segreteria, got: {result.response}"
 
     def test_abbonamento_response_mentions_alternative(self):
         """Redirect response must suggest alternative bookable services."""
@@ -48,9 +50,10 @@ class TestPalestraAbbonamentoGuardrail:
         bsm.context.state = BookingState.WAITING_SERVICE
         result = bsm._handle_waiting_service("iscrizione palestra", None)
         response_lower = result.response.lower()
-        assert any(kw in response_lower for kw in ["corso", "personal training", "sessione", "prenotare"]), (
-            f"Response should suggest bookable alternatives, got: {result.response}"
-        )
+        assert any(
+            kw in response_lower
+            for kw in ["corso", "personal training", "sessione", "prenotare"]
+        ), f"Response should suggest bookable alternatives, got: {result.response}"
 
     def test_non_abbonamento_palestra_service_enters_booking_flow(self):
         """Non-abbonamento palestra service must continue to WAITING_DATE normally."""
@@ -97,12 +100,14 @@ class TestPalestraAbbonamentoGuardrail:
 # GAP-G2: MEDICAL URGENCY 118 ADVISORY
 # =============================================================================
 
+
 class TestMedicalUrgencyIntercept:
     """Medical urgency keyword detection in italian_regex (used by orchestrator intercept)."""
 
     def test_urgency_subito_detected(self):
         """'subito' must set urgency='urgente' for medical vertical."""
         from entity_extractor import extract_vertical_entities
+
         result = extract_vertical_entities("ho bisogno subito di un medico", "medical")
         assert result.urgency == "urgente", (
             f"'ho bisogno subito' must set urgency='urgente', got: {result.urgency}"
@@ -111,12 +116,14 @@ class TestMedicalUrgencyIntercept:
     def test_urgency_keyword_urgenza(self):
         """'urgenza' keyword must set urgency='urgente'."""
         from entity_extractor import extract_vertical_entities
+
         result = extract_vertical_entities("ho un'urgenza medica", "medical")
         assert result.urgency == "urgente"
 
     def test_urgency_pronto_soccorso_visit_type(self):
         """'pronto soccorso' must set visit_type='urgenza' (intercepted as medical urgency)."""
         from entity_extractor import extract_vertical_entities
+
         result = extract_vertical_entities("devo andare al pronto soccorso", "medical")
         assert result.visit_type == "urgenza", (
             f"'pronto soccorso' must set visit_type='urgenza', got: {result.visit_type}"
@@ -125,7 +132,10 @@ class TestMedicalUrgencyIntercept:
     def test_non_urgent_medical_no_urgency(self):
         """Standard booking request must NOT set urgency or urgenza visit_type."""
         from entity_extractor import extract_vertical_entities
-        result = extract_vertical_entities("vorrei prenotare una visita la prossima settimana", "medical")
+
+        result = extract_vertical_entities(
+            "vorrei prenotare una visita la prossima settimana", "medical"
+        )
         assert result.urgency is None, (
             "Standard medical booking must not trigger urgency"
         )
@@ -136,6 +146,7 @@ class TestMedicalUrgencyIntercept:
     def test_urgency_in_non_medical_vertical_returns_none(self):
         """extract_vertical_entities for non-medical vertical returns None urgency."""
         from entity_extractor import extract_vertical_entities
+
         result = extract_vertical_entities("ho urgenza di un taglio!", "salone")
         # salone vertical doesn't extract medical entities
         assert result.urgency is None

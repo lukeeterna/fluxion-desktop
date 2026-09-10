@@ -81,7 +81,9 @@ def init_sentry() -> bool:
         from sentry_sdk.integrations.aiohttp import AioHttpIntegration
         from sentry_sdk.integrations.logging import LoggingIntegration
     except ImportError as e:
-        logger.warning("sentry-sdk non installato (%s) — crash reporter disabilitato", e)
+        logger.warning(
+            "sentry-sdk non installato (%s) — crash reporter disabilitato", e
+        )
         return False
 
     # Read version from voice-agent (fallback se PyInstaller frozen)

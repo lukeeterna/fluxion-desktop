@@ -14,7 +14,7 @@ import sqlite3
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -149,20 +149,26 @@ def _seed_dormant_clients(db_path: str):
     conn = sqlite3.connect(db_path)
     now = datetime.now()
     # Client 1: Active (last booking 5 days ago)
-    conn.execute("INSERT INTO clienti VALUES ('c1', 'Mario', 'Rossi', '+39333001', NULL, 1, NULL)")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c1', 'Mario', 'Rossi', '+39333001', NULL, 1, NULL)"
+    )
     conn.execute("INSERT INTO servizi VALUES ('s1', 'Taglio')")
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a1', 'c1', 's1', NULL, ?, 'Confermato', NULL)",
         ((now - timedelta(days=5)).strftime("%Y-%m-%dT10:00:00"),),
     )
     # Client 2: Dormant (last booking 90 days ago)
-    conn.execute("INSERT INTO clienti VALUES ('c2', 'Luca', 'Bianchi', '+39333002', NULL, 1, NULL)")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c2', 'Luca', 'Bianchi', '+39333002', NULL, 1, NULL)"
+    )
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a2', 'c2', 's1', NULL, ?, 'Completato', NULL)",
         ((now - timedelta(days=90)).strftime("%Y-%m-%dT10:00:00"),),
     )
     # Client 3: Dormant (75 days) but has future appointment — NOT dormant
-    conn.execute("INSERT INTO clienti VALUES ('c3', 'Anna', 'Verdi', '+39333003', NULL, 1, NULL)")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c3', 'Anna', 'Verdi', '+39333003', NULL, 1, NULL)"
+    )
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a3', 'c3', 's1', NULL, ?, 'Completato', NULL)",
         ((now - timedelta(days=75)).strftime("%Y-%m-%dT10:00:00"),),
@@ -172,19 +178,25 @@ def _seed_dormant_clients(db_path: str):
         ((now + timedelta(days=3)).strftime("%Y-%m-%dT10:00:00"),),
     )
     # Client 4: Dormant (100 days), no WA consent
-    conn.execute("INSERT INTO clienti VALUES ('c4', 'Giulia', 'Neri', '+39333004', NULL, 0, NULL)")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c4', 'Giulia', 'Neri', '+39333004', NULL, 0, NULL)"
+    )
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a5', 'c4', 's1', NULL, ?, 'Completato', NULL)",
         ((now - timedelta(days=100)).strftime("%Y-%m-%dT10:00:00"),),
     )
     # Client 5: Dormant (80 days), deleted — should be excluded
-    conn.execute("INSERT INTO clienti VALUES ('c5', 'Deleted', 'User', '+39333005', NULL, 1, '2026-01-01')")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c5', 'Deleted', 'User', '+39333005', NULL, 1, '2026-01-01')"
+    )
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a6', 'c5', 's1', NULL, ?, 'Completato', NULL)",
         ((now - timedelta(days=80)).strftime("%Y-%m-%dT10:00:00"),),
     )
     # Client 6: Dormant (65 days) — should be included
-    conn.execute("INSERT INTO clienti VALUES ('c6', 'Paolo', 'Gialli', '+39333006', NULL, 1, NULL)")
+    conn.execute(
+        "INSERT INTO clienti VALUES ('c6', 'Paolo', 'Gialli', '+39333006', NULL, 1, NULL)"
+    )
     conn.execute(
         "INSERT INTO appuntamenti VALUES ('a7', 'c6', 's1', NULL, ?, 'Completato', NULL)",
         ((now - timedelta(days=65)).strftime("%Y-%m-%dT10:00:00"),),
@@ -209,11 +221,25 @@ def _seed_analytics_data(db_path: str, scenario: str = "normal"):
                 """INSERT INTO conversations (id, verticale_id, started_at, outcome, total_turns,
                    total_latency_ms, groq_usage_count, escalation_reason, booking_created)
                    VALUES (?, 'salone', ?, ?, ?, ?, ?, ?, ?)""",
-                (cid, started, outcome, 5, 2500.0, 1 if i % 3 == 0 else 0,
-                 escalation, 1 if outcome == "completed" else 0),
+                (
+                    cid,
+                    started,
+                    outcome,
+                    5,
+                    2500.0,
+                    1 if i % 3 == 0 else 0,
+                    escalation,
+                    1 if outcome == "completed" else 0,
+                ),
             )
             # Add turns with FSM states
-            states = ["idle", "waiting_service", "waiting_date", "waiting_time", "confirming"]
+            states = [
+                "idle",
+                "waiting_service",
+                "waiting_date",
+                "waiting_time",
+                "confirming",
+            ]
             for t in range(5):
                 tid = f"turn_{i}_{t}"
                 conn.execute(
@@ -221,8 +247,20 @@ def _seed_analytics_data(db_path: str, scenario: str = "normal"):
                        user_input, intent, intent_confidence, response, latency_ms, layer_used,
                        frustration_level, fsm_state)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (tid, cid, t, started, f"input_{t}", "booking", 0.85, f"resp_{t}",
-                     500.0, "L2", 0, states[t]),
+                    (
+                        tid,
+                        cid,
+                        t,
+                        started,
+                        f"input_{t}",
+                        "booking",
+                        0.85,
+                        f"resp_{t}",
+                        500.0,
+                        "L2",
+                        0,
+                        states[t],
+                    ),
                 )
 
     elif scenario == "problematic":
@@ -235,8 +273,12 @@ def _seed_analytics_data(db_path: str, scenario: str = "normal"):
                 """INSERT INTO conversations (id, verticale_id, started_at, outcome, total_turns,
                    total_latency_ms, escalation_reason, booking_created)
                    VALUES (?, 'salone', ?, ?, 8, 4000.0, ?, 0)""",
-                (cid, started, outcome,
-                 "user_frustrated" if outcome == "escalated" else None),
+                (
+                    cid,
+                    started,
+                    outcome,
+                    "user_frustrated" if outcome == "escalated" else None,
+                ),
             )
             # Turns: stuck in waiting_date (loop), high frustration, low confidence
             for t in range(8):
@@ -247,8 +289,20 @@ def _seed_analytics_data(db_path: str, scenario: str = "normal"):
                        user_input, intent, intent_confidence, response, latency_ms, layer_used,
                        frustration_level, fsm_state)
                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (tid, cid, t, started, f"input_{t}", "unknown", 0.3, f"resp_{t}",
-                     3500.0, "L4", 3 if t >= 4 else 1, state),
+                    (
+                        tid,
+                        cid,
+                        t,
+                        started,
+                        f"input_{t}",
+                        "unknown",
+                        0.3,
+                        f"resp_{t}",
+                        3500.0,
+                        "L4",
+                        3 if t >= 4 else 1,
+                        state,
+                    ),
                 )
 
     conn.commit()
@@ -267,6 +321,7 @@ class TestG2DormantClientQuery:
         """Clients >60 days without booking should be found."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         names = [c["nome"] for c in dormant]
@@ -277,6 +332,7 @@ class TestG2DormantClientQuery:
         """Clients with recent bookings should NOT be found."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         names = [c["nome"] for c in dormant]
@@ -286,6 +342,7 @@ class TestG2DormantClientQuery:
         """Clients with future bookings should NOT be recalled."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         names = [c["nome"] for c in dormant]
@@ -295,6 +352,7 @@ class TestG2DormantClientQuery:
         """Clients without WA consent should NOT be recalled."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         names = [c["nome"] for c in dormant]
@@ -304,6 +362,7 @@ class TestG2DormantClientQuery:
         """Deleted clients should NOT be recalled."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         names = [c["nome"] for c in dormant]
@@ -313,6 +372,7 @@ class TestG2DormantClientQuery:
         """Dormant clients sorted by most absent first."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant = _get_dormant_clients(days_threshold=60)
         if len(dormant) >= 2:
@@ -322,6 +382,7 @@ class TestG2DormantClientQuery:
         """Custom threshold should change results."""
         _seed_dormant_clients(temp_db)
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             dormant_30 = _get_dormant_clients(days_threshold=30)
             dormant_95 = _get_dormant_clients(days_threshold=95)
@@ -332,6 +393,7 @@ class TestG2DormantClientQuery:
     def test_no_db_returns_empty(self):
         """Missing DB should return empty list gracefully."""
         from reminder_scheduler import _get_dormant_clients
+
         with patch("reminder_scheduler._get_db_path", return_value=None):
             dormant = _get_dormant_clients()
         assert dormant == []
@@ -342,7 +404,8 @@ class TestG2RecallIdempotency:
 
     def test_mark_and_check_sent(self, temp_recall_log):
         """Marking recall as sent should be detectable."""
-        from reminder_scheduler import _mark_recall_sent, _recall_recently_sent, _RECALL_LOG_PATH
+        from reminder_scheduler import _mark_recall_sent, _recall_recently_sent
+
         with patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)):
             _mark_recall_sent("c1")
             assert _recall_recently_sent("c1", min_days=30)
@@ -350,12 +413,14 @@ class TestG2RecallIdempotency:
     def test_not_recently_sent(self, temp_recall_log):
         """Client not in log should return False."""
         from reminder_scheduler import _recall_recently_sent
+
         with patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)):
             assert not _recall_recently_sent("c999", min_days=30)
 
     def test_old_recall_not_recent(self, temp_recall_log):
         """Recall sent >30 days ago should not block new recall."""
-        from reminder_scheduler import _recall_recently_sent, _RECALL_LOG_PATH
+        from reminder_scheduler import _recall_recently_sent
+
         old_date = (datetime.now() - timedelta(days=35)).strftime("%Y-%m-%d")
         with open(temp_recall_log, "w") as f:
             json.dump({"c1": old_date}, f)
@@ -375,8 +440,11 @@ class TestG2RecallJob:
         wa_client.send_message.return_value = {"success": True}
 
         from reminder_scheduler import check_and_recall_dormant
-        with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)), \
-             patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)):
+
+        with (
+            patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)),
+            patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)),
+        ):
             await check_and_recall_dormant(wa_client)
 
         assert wa_client.send_message.call_count >= 1
@@ -393,8 +461,11 @@ class TestG2RecallJob:
         wa_client.send_message.return_value = {"success": True}
 
         from reminder_scheduler import check_and_recall_dormant, DORMANT_MAX_PER_DAY
-        with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)), \
-             patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)):
+
+        with (
+            patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)),
+            patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)),
+        ):
             await check_and_recall_dormant(wa_client)
         assert wa_client.send_message.call_count <= DORMANT_MAX_PER_DAY
 
@@ -406,6 +477,7 @@ class TestG2RecallJob:
         wa_client.is_connected.return_value = False
 
         from reminder_scheduler import check_and_recall_dormant
+
         with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)):
             await check_and_recall_dormant(wa_client)
         wa_client.send_message.assert_not_called()
@@ -414,6 +486,7 @@ class TestG2RecallJob:
     async def test_skips_wa_none(self):
         """Job should handle None WA client gracefully."""
         from reminder_scheduler import check_and_recall_dormant
+
         await check_and_recall_dormant(None)  # Should not crash
 
     @pytest.mark.asyncio
@@ -425,8 +498,11 @@ class TestG2RecallJob:
         wa_client.send_message.return_value = {"success": True}
 
         from reminder_scheduler import check_and_recall_dormant
-        with patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)), \
-             patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)):
+
+        with (
+            patch("reminder_scheduler._get_db_path", return_value=Path(temp_db)),
+            patch("reminder_scheduler._RECALL_LOG_PATH", Path(temp_recall_log)),
+        ):
             await check_and_recall_dormant(wa_client)
             first_count = wa_client.send_message.call_count
             await check_and_recall_dormant(wa_client)
@@ -446,6 +522,7 @@ class TestG5ProactiveOffer:
     def _make_caller_profile(self, **kwargs):
         """Create a CallerProfile-like object."""
         from caller_memory import CallerProfile
+
         defaults = {
             "phone_number": "+39333001",
             "client_name": "Mario",
@@ -461,6 +538,7 @@ class TestG5ProactiveOffer:
     def test_proactive_offer_field_exists(self):
         """BookingContext should have proactive_offer field."""
         from booking_state_machine import BookingContext
+
         ctx = BookingContext()
         assert hasattr(ctx, "proactive_offer")
         assert ctx.proactive_offer is False
@@ -468,6 +546,7 @@ class TestG5ProactiveOffer:
     def test_reject_proactive_offer_resets_service(self):
         """Saying 'no' to proactive offer should clear service and go to WAITING_SERVICE."""
         from booking_state_machine import BookingStateMachine, BookingState
+
         sm = BookingStateMachine()
         # Simulate proactive offer state
         sm.context.state = BookingState.WAITING_DATE
@@ -487,6 +566,7 @@ class TestG5ProactiveOffer:
     def test_accept_proactive_offer_continues_to_date(self):
         """Accepting proactive offer should continue normally in WAITING_DATE."""
         from booking_state_machine import BookingStateMachine, BookingState
+
         sm = BookingStateMachine()
         sm.context.state = BookingState.WAITING_DATE
         sm.context.proactive_offer = True
@@ -503,6 +583,7 @@ class TestG5ProactiveOffer:
     def test_reject_words_all_work(self):
         """All rejection words should trigger the reset."""
         from booking_state_machine import BookingStateMachine, BookingState
+
         reject_words = ["no", "altro", "diverso", "cambiare", "niente"]
         for word in reject_words:
             sm = BookingStateMachine()
@@ -511,7 +592,9 @@ class TestG5ProactiveOffer:
             sm.context.service = "taglio"
             sm.context.services = ["taglio"]
             result = sm.process(word)
-            assert result.next_state == BookingState.WAITING_SERVICE, f"Failed for '{word}'"
+            assert result.next_state == BookingState.WAITING_SERVICE, (
+                f"Failed for '{word}'"
+            )
 
     def test_proactive_offer_only_for_frequent_callers(self):
         """Callers with call_count < 2 should NOT get proactive offer."""
@@ -566,7 +649,9 @@ class TestG5ProactiveGreetingBuild:
         # Simulate greeting construction (same logic as _build_proactive_greeting)
         svc_display = profile.last_service.capitalize()
         op_str = f" con {profile.last_operator}" if profile.last_operator else ""
-        pref_str = f" Di solito il {profile.preferred_day} alle {profile.preferred_time}."
+        pref_str = (
+            f" Di solito il {profile.preferred_day} alle {profile.preferred_time}."
+        )
 
         greeting = (
             f"Salone Test, buongiorno! "
@@ -583,6 +668,7 @@ class TestG5ProactiveGreetingBuild:
     async def test_proactive_sets_fsm_to_waiting_date(self):
         """After proactive greeting, FSM should be in WAITING_DATE."""
         from booking_state_machine import BookingContext, BookingState
+
         ctx = BookingContext()
         ctx.state = BookingState.WAITING_DATE
         ctx.proactive_offer = True
@@ -603,6 +689,7 @@ class TestG6WeeklySummary:
         """Summary should compute correct metrics."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import _query_weekly_summary
+
         conn = sqlite3.connect(temp_analytics_db)
         summary = _query_weekly_summary(conn, days=7)
         conn.close()
@@ -615,6 +702,7 @@ class TestG6WeeklySummary:
     def test_summary_empty_db(self, temp_analytics_db):
         """Empty DB should return 0 conversations."""
         from weekly_learning import _query_weekly_summary
+
         conn = sqlite3.connect(temp_analytics_db)
         summary = _query_weekly_summary(conn, days=7)
         conn.close()
@@ -628,6 +716,7 @@ class TestG6StateAbandonment:
         """Should find states where conversations end badly."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_state_abandonment
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_state_abandonment(conn, days=7)
         conn.close()
@@ -639,6 +728,7 @@ class TestG6StateAbandonment:
         """Healthy data should have less abandonment."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import _query_state_abandonment
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_state_abandonment(conn, days=7)
         conn.close()
@@ -654,12 +744,15 @@ class TestG6StateLoops:
         """Should find conversations with repeated states."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_state_loops
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_state_loops(conn, days=7)
         conn.close()
         assert len(results) > 0
         # waiting_date repeated 6x in problematic scenario
-        assert any(r["state"] == "waiting_date" and r["repeat_count"] >= 3 for r in results)
+        assert any(
+            r["state"] == "waiting_date" and r["repeat_count"] >= 3 for r in results
+        )
 
 
 class TestG6BottleneckStates:
@@ -669,6 +762,7 @@ class TestG6BottleneckStates:
         """Should find states with high average latency."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_bottleneck_states
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_bottleneck_states(conn, days=7)
         conn.close()
@@ -684,6 +778,7 @@ class TestG6EscalationPatterns:
         """Should find most common escalation reasons."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_escalation_patterns
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_escalation_patterns(conn, days=7)
         conn.close()
@@ -699,6 +794,7 @@ class TestG6LowConfidence:
         """Should find intents with consistently low confidence."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_low_confidence_patterns
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_low_confidence_patterns(conn, days=7)
         conn.close()
@@ -713,6 +809,7 @@ class TestG6FrustrationHotspots:
         """Should find states with high frustration."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import _query_frustration_hotspots
+
         conn = sqlite3.connect(temp_analytics_db)
         results = _query_frustration_hotspots(conn, days=7)
         conn.close()
@@ -727,7 +824,10 @@ class TestG6InsightDerivation:
         """Problematic data should generate actionable insights."""
         _seed_analytics_data(temp_analytics_db, "problematic")
         from weekly_learning import generate_weekly_report
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
             report = generate_weekly_report(days=7)
         insights = report.get("insights", [])
         assert len(insights) >= 2  # At least completion rate + loops/frustration
@@ -736,7 +836,10 @@ class TestG6InsightDerivation:
         """Healthy data should have fewer/no alarming insights."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import generate_weekly_report
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
             report = generate_weekly_report(days=7)
         insights = report.get("insights", [])
         # Normal scenario: 70% completion should trigger warning
@@ -750,8 +853,11 @@ class TestG6ReportPersistence:
         """Report should be persisted in weekly_reports table."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import generate_weekly_report
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
-            report = generate_weekly_report(days=7)
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
+            generate_weekly_report(days=7)
 
         conn = sqlite3.connect(temp_analytics_db)
         row = conn.execute("SELECT COUNT(*) FROM weekly_reports").fetchone()
@@ -762,7 +868,10 @@ class TestG6ReportPersistence:
         """Should retrieve the most recent report."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import generate_weekly_report, get_latest_report
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
             generate_weekly_report(days=7)
             latest = get_latest_report()
         assert latest is not None
@@ -777,7 +886,10 @@ class TestG6WhatsAppFormat:
         """Report should be formatted for WA readability."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import generate_weekly_report, format_report_for_wa
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
             report = generate_weekly_report(days=7)
         wa_text = format_report_for_wa(report)
         assert "Report Settimanale Sara" in wa_text
@@ -786,6 +898,7 @@ class TestG6WhatsAppFormat:
     def test_format_empty_report(self):
         """Empty report should be handled gracefully."""
         from weekly_learning import format_report_for_wa
+
         report = {"summary": {"total_conversations": 0}, "period_days": 7}
         wa_text = format_report_for_wa(report)
         assert "nessuna conversazione" in wa_text
@@ -799,14 +912,21 @@ class TestG6AsyncJob:
         """Async job should complete without errors."""
         _seed_analytics_data(temp_analytics_db, "normal")
         from weekly_learning import run_weekly_learning
-        with patch("weekly_learning._get_analytics_db_path", return_value=temp_analytics_db):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path", return_value=temp_analytics_db
+        ):
             await run_weekly_learning()  # Should not raise
 
     @pytest.mark.asyncio
     async def test_run_weekly_learning_no_db(self):
         """Job should handle missing DB gracefully."""
         from weekly_learning import run_weekly_learning
-        with patch("weekly_learning._get_analytics_db_path", return_value="/nonexistent/path.db"):
+
+        with patch(
+            "weekly_learning._get_analytics_db_path",
+            return_value="/nonexistent/path.db",
+        ):
             await run_weekly_learning()  # Should not raise
 
 
@@ -822,11 +942,12 @@ class TestG2G6SchedulerRegistration:
     async def test_scheduler_has_dormant_recall_job(self):
         """Scheduler should include dormant_recall job."""
         try:
-            from apscheduler.schedulers.asyncio import AsyncIOScheduler
+            from apscheduler.schedulers.asyncio import AsyncIOScheduler  # noqa: F401
         except ImportError:
             pytest.skip("APScheduler not installed")
 
         from reminder_scheduler import start_reminder_scheduler
+
         wa_client = MagicMock()
         wa_client.is_connected.return_value = False
         scheduler = start_reminder_scheduler(wa_client)
@@ -840,11 +961,12 @@ class TestG2G6SchedulerRegistration:
     async def test_scheduler_has_weekly_learning_job(self):
         """Scheduler should include weekly_learning job."""
         try:
-            from apscheduler.schedulers.asyncio import AsyncIOScheduler
+            from apscheduler.schedulers.asyncio import AsyncIOScheduler  # noqa: F401
         except ImportError:
             pytest.skip("APScheduler not installed")
 
         from reminder_scheduler import start_reminder_scheduler
+
         wa_client = MagicMock()
         wa_client.is_connected.return_value = False
         scheduler = start_reminder_scheduler(wa_client)

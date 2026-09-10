@@ -45,7 +45,11 @@ def deterministic_booking_state_machine_tests(request, monkeypatch):
     original_factory = getattr(module, "create_state_machine", None)
     booking_state_machine_cls = getattr(module, "BookingStateMachine", None)
     reference_date = getattr(module, "REFERENCE_DATE", None)
-    if not callable(original_factory) or booking_state_machine_cls is None or reference_date is None:
+    if (
+        not callable(original_factory)
+        or booking_state_machine_cls is None
+        or reference_date is None
+    ):
         return
 
     fsm_module = sys.modules[booking_state_machine_cls.__module__]

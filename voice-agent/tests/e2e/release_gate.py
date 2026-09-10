@@ -46,7 +46,6 @@ from test_sara_stress_per_verticale import (  # noqa: E402
     R,
     VERTICALS,
     URL,
-    api,
     health,
     process,
     reset,
@@ -76,16 +75,17 @@ DB_PATH = os.environ.get(
 # Soglie release gate (calibrate S200)
 # Hard-fail su P50 (mediana = vera latenza user-facing tipica) + % sample lenti
 # (regressione sistemica vs outlier). P95 mantenuto come WARN per monitoring.
-LATENCY_P50_HARD_FAIL_MS = 1500   # Mediana > 1500ms = regressione user-facing reale
-LATENCY_SLOW_SAMPLE_MS = 5000      # Soglia "sample lento"
+LATENCY_P50_HARD_FAIL_MS = 1500  # Mediana > 1500ms = regressione user-facing reale
+LATENCY_SLOW_SAMPLE_MS = 5000  # Soglia "sample lento"
 LATENCY_SLOW_RATIO_HARD_FAIL = 0.30  # >30% sample > 5s = regressione sistemica
-LATENCY_P95_WARN_MS = 2000         # Target SLO v1.1 (informativo)
-LATENCY_P95_HARD_FAIL_MS = 12000   # Catastrofica only (pipeline completely broken)
+LATENCY_P95_WARN_MS = 2000  # Target SLO v1.1 (informativo)
+LATENCY_P95_HARD_FAIL_MS = 12000  # Catastrofica only (pipeline completely broken)
 
 
 # ============================================================================
 # Tier 2 — Extended verticals smoke
 # ============================================================================
+
 
 def run_extended_smoke(vert):
     """Smoke test per verticali extended (config-only, no Python differenziato).
@@ -100,7 +100,9 @@ def run_extended_smoke(vert):
     r = set_vertical(vert)
     if not r.get("success", True) and "error" in r:
         # Vertical non riconosciuto dalla pipeline (config-only filesystem)
-        R.WARN(tag, scenario, "set-vertical not supported: %s" % r.get("error", "")[:60])
+        R.WARN(
+            tag, scenario, "set-vertical not supported: %s" % r.get("error", "")[:60]
+        )
         # Continuiamo con vertical default — testiamo che pipeline non crashi
     else:
         R.OK(tag, scenario, "set-vertical accepted")
@@ -124,22 +126,38 @@ def run_extended_smoke(vert):
     fsm = r.get("fsm_state", "")
     ms = r.get("_ms", 0)
     fsm_valid = fsm in (
-        "waiting_service", "waiting_name", "waiting_date", "waiting_time",
-        "propose_registration", "registering_name", "registering_surname",
-        "asking_service", "asking_date", "asking_name", "collecting_info",
+        "waiting_service",
+        "waiting_name",
+        "waiting_date",
+        "waiting_time",
+        "propose_registration",
+        "registering_name",
+        "registering_surname",
+        "asking_service",
+        "asking_date",
+        "asking_name",
+        "collecting_info",
     )
     if fsm_valid:
         R.OK(tag, scenario, "Booking intent -> fsm=%s" % fsm, ms)
-    elif any(kw in resp for kw in ["servizio", "quale", "che cosa", "prenot", "appuntamento", "nome"]):
+    elif any(
+        kw in resp
+        for kw in ["servizio", "quale", "che cosa", "prenot", "appuntamento", "nome"]
+    ):
         R.OK(tag, scenario, "Booking intent -> resp keyword match", ms)
     else:
-        R.FAIL(tag, scenario, "Booking intent -> fsm=%s resp='%s'" % (fsm, resp[:60]), ms)
+        R.FAIL(
+            tag, scenario, "Booking intent -> fsm=%s resp='%s'" % (fsm, resp[:60]), ms
+        )
 
     # Closing graceful
     r = process("Grazie, arrivederci")
     resp = r.get("response", "").lower()
     ms = r.get("_ms", 0)
-    if any(kw in resp for kw in ["arrivederci", "buona giornata", "presto", "risentir", "ciao"]):
+    if any(
+        kw in resp
+        for kw in ["arrivederci", "buona giornata", "presto", "risentir", "ciao"]
+    ):
         R.OK(tag, scenario, "Closing OK", ms)
     else:
         R.WARN(tag, scenario, "Closing -> resp='%s'" % resp[:60], ms)
@@ -148,6 +166,7 @@ def run_extended_smoke(vert):
 # ============================================================================
 # Tier 3 — DB integrity post-test
 # ============================================================================
+
 
 def verify_db_state():
     """Verifica DB SQLite integrita' schema + attivita' recente."""
@@ -204,7 +223,11 @@ def verify_db_state():
             if orphans == 0:
                 R.OK(tag, "FK_INTEGRITY", "zero appuntamenti orfani")
             else:
-                R.FAIL(tag, "FK_INTEGRITY", "%d appuntamenti con cliente_id non risolvibile" % orphans)
+                R.FAIL(
+                    tag,
+                    "FK_INTEGRITY",
+                    "%d appuntamenti con cliente_id non risolvibile" % orphans,
+                )
         except sqlite3.OperationalError as e:
             R.WARN(tag, "FK_INTEGRITY", "query failed: %s" % str(e)[:80])
 
@@ -216,6 +239,7 @@ def verify_db_state():
 # ============================================================================
 # Argparse minimale (no dipendenze)
 # ============================================================================
+
 
 def parse_args(argv):
     opts = {
@@ -251,6 +275,7 @@ def parse_args(argv):
 # MAIN
 # ============================================================================
 
+
 def main():
     opts = parse_args(sys.argv)
 
@@ -266,11 +291,14 @@ def main():
     if not h or h.get("status") != "ok":
         print("FATAL: pipeline non raggiungibile a %s" % URL)
         sys.exit(2)
-    print("Pipeline UP: %s | STT=%s | TTS=%s" % (
-        h.get("version", "?"),
-        h.get("features", {}).get("stt", "?"),
-        h.get("features", {}).get("tts", "?"),
-    ))
+    print(
+        "Pipeline UP: %s | STT=%s | TTS=%s"
+        % (
+            h.get("version", "?"),
+            h.get("features", {}).get("stt", "?"),
+            h.get("features", {}).get("tts", "?"),
+        )
+    )
 
     t_start = time.time()
 
@@ -315,8 +343,7 @@ def main():
     # - Slow-ratio hard-fail: >30% sample > 5000ms = regressione sistemica
     # - P95 catastrofico: >12000ms = pipeline completely broken
     # - P95 > 2000ms = WARN-only (monitoring SLO, non release-blocker)
-    warmup_skipped = 0
-    effective_latencies = list(R.latencies)
+    list(R.latencies)
     p50_val = 0
     p95_val = 0
     slow_ratio = 0.0
@@ -329,22 +356,42 @@ def main():
 
         # Hard-fail 1: P50 mediana
         if p50_val > LATENCY_P50_HARD_FAIL_MS:
-            R.FAIL("LATENCY", "P50", "P50=%dms > %dms hard-fail (regressione user-facing)" % (p50_val, LATENCY_P50_HARD_FAIL_MS))
+            R.FAIL(
+                "LATENCY",
+                "P50",
+                "P50=%dms > %dms hard-fail (regressione user-facing)"
+                % (p50_val, LATENCY_P50_HARD_FAIL_MS),
+            )
             summary_ok = False
 
         # Hard-fail 2: slow-ratio
         if slow_ratio > LATENCY_SLOW_RATIO_HARD_FAIL:
-            R.FAIL("LATENCY", "SLOW_RATIO", "%.0f%% sample > %dms (regressione sistemica)" % (slow_ratio * 100, LATENCY_SLOW_SAMPLE_MS))
+            R.FAIL(
+                "LATENCY",
+                "SLOW_RATIO",
+                "%.0f%% sample > %dms (regressione sistemica)"
+                % (slow_ratio * 100, LATENCY_SLOW_SAMPLE_MS),
+            )
             summary_ok = False
 
         # Hard-fail 3: P95 catastrofico (pipeline broken)
         if p95_val > LATENCY_P95_HARD_FAIL_MS:
-            R.FAIL("LATENCY", "P95_CATASTROFICA", "P95=%dms > %dms (pipeline broken)" % (p95_val, LATENCY_P95_HARD_FAIL_MS))
+            R.FAIL(
+                "LATENCY",
+                "P95_CATASTROFICA",
+                "P95=%dms > %dms (pipeline broken)"
+                % (p95_val, LATENCY_P95_HARD_FAIL_MS),
+            )
             summary_ok = False
 
         # WARN-only: P95 sopra SLO target
         if p95_val > LATENCY_P95_WARN_MS and p95_val <= LATENCY_P95_HARD_FAIL_MS:
-            R.WARN("LATENCY", "P95_SLO", "P95=%dms > target %dms (monitoring only)" % (p95_val, LATENCY_P95_WARN_MS))
+            R.WARN(
+                "LATENCY",
+                "P95_SLO",
+                "P95=%dms > target %dms (monitoring only)"
+                % (p95_val, LATENCY_P95_WARN_MS),
+            )
 
     # JSON report machine-readable
     report = {
@@ -383,9 +430,7 @@ def main():
         }
 
     # Failures detail
-    report["failures"] = [
-        line for line in R.log if line.startswith("FAIL")
-    ]
+    report["failures"] = [line for line in R.log if line.startswith("FAIL")]
 
     try:
         with open(opts["report_path"], "w") as f:

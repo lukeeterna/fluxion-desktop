@@ -21,21 +21,20 @@ Usage:
 """
 
 import logging
-import struct
 from collections import deque
-from dataclasses import dataclass, field
-from typing import Deque, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Deque, List, Optional
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 # ── Thresholds (Italian prosody — higher than English defaults) ──────────────
-_RMS_RATIO_THRESHOLD: float = 2.5      # baseline × 2.5 = raised voice
+_RMS_RATIO_THRESHOLD: float = 2.5  # baseline × 2.5 = raised voice
 _PITCH_VAR_THRESHOLD_HZ: float = 30.0  # std-dev Hz above which speech is emotional
-_ZCR_HIGH_THRESHOLD: float = 0.18      # fraction of zero-crossings = fast/agitated
-_MIN_PITCH_HZ: float = 80.0            # F0 floor (male voice)
-_MAX_PITCH_HZ: float = 400.0           # F0 ceiling (female/child)
+_ZCR_HIGH_THRESHOLD: float = 0.18  # fraction of zero-crossings = fast/agitated
+_MIN_PITCH_HZ: float = 80.0  # F0 floor (male voice)
+_MAX_PITCH_HZ: float = 400.0  # F0 ceiling (female/child)
 
 # Rolling window: 20 frames × 100ms = ~2s of history
 _HISTORY_MAXLEN: int = 20
@@ -49,16 +48,18 @@ _W_ZCR: float = 0.15
 @dataclass
 class FrustrationResult:
     """Acoustic frustration analysis for a single audio chunk."""
-    rms: float               # Root-mean-square energy of the chunk
-    zcr: float               # Zero-crossing rate (0.0 – 0.5)
-    pitch_hz: float          # Estimated fundamental frequency (Hz); 0.0 = unvoiced
-    frustration_score: float # Combined score in [0.0, 1.0]
-    is_calibrated: bool      # False until calibration baseline is established
+
+    rms: float  # Root-mean-square energy of the chunk
+    zcr: float  # Zero-crossing rate (0.0 – 0.5)
+    pitch_hz: float  # Estimated fundamental frequency (Hz); 0.0 = unvoiced
+    frustration_score: float  # Combined score in [0.0, 1.0]
+    is_calibrated: bool  # False until calibration baseline is established
 
 
 @dataclass
 class _FrameFeatures:
     """Internal storage for a single frame's features."""
+
     rms: float
     zcr: float
     pitch_hz: float
@@ -212,7 +213,10 @@ class AcousticFrustrationDetector:
             logger.info(
                 "Acoustic frustration detected: score=%.2f  rms=%.4f  "
                 "zcr=%.3f  pitch=%.1fHz",
-                score, rms, zcr, pitch,
+                score,
+                rms,
+                zcr,
+                pitch,
             )
 
         return FrustrationResult(
@@ -255,7 +259,7 @@ class AcousticFrustrationDetector:
         """Root-mean-square energy of the frame."""
         if len(samples) == 0:
             return 0.0
-        return float(np.sqrt(np.mean(samples ** 2)))
+        return float(np.sqrt(np.mean(samples**2)))
 
     @staticmethod
     def _compute_zcr(samples: np.ndarray) -> float:

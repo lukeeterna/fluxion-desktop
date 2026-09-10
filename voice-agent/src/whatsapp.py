@@ -18,26 +18,30 @@ import re
 import subprocess
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from .analytics import ConversationLogger, ConversationOutcome, get_logger
+from .analytics import ConversationLogger, get_logger
 
 
 # =============================================================================
 # Configuration
 # =============================================================================
 
+
 @dataclass
 class WhatsAppConfig:
     """WhatsApp service configuration."""
+
     # Paths (relative to FLUXION root)
     # S206: era .parent x4 → risaliva fuori dal repo (/Volumes/.../ invece di .../fluxion/).
     # service_path risolveva a "/Volumes/.../scripts/whatsapp-service.cjs" (inesistente)
     # → autostart S205-P5 silentemente no-op. 3 parent: whatsapp.py → src → voice-agent → fluxion.
-    fluxion_root: Path = field(default_factory=lambda: Path(__file__).parent.parent.parent)
+    fluxion_root: Path = field(
+        default_factory=lambda: Path(__file__).parent.parent.parent
+    )
     session_dir: Path = field(default_factory=lambda: Path.home() / ".whatsapp-session")
     service_script: str = "scripts/whatsapp-service.cjs"
 
@@ -70,12 +74,17 @@ class WhatsAppConfig:
             self.session_dir = Path(self.session_dir)
         if not self.node_path:
             import shutil
+
             env_override = os.environ.get("FLUXION_NODE_PATH", "").strip()
             if env_override and Path(env_override).is_file():
                 self.node_path = env_override
             else:
                 # Search PATH esteso (Homebrew + system) — nohup subprocess loses PATH.
-                for candidate in ("/usr/local/bin/node", "/opt/homebrew/bin/node", "/opt/local/bin/node"):
+                for candidate in (
+                    "/usr/local/bin/node",
+                    "/opt/homebrew/bin/node",
+                    "/opt/local/bin/node",
+                ):
                     if Path(candidate).is_file():
                         self.node_path = candidate
                         break
@@ -110,6 +119,7 @@ class WhatsAppConfig:
 
 class ConnectionStatus(Enum):
     """WhatsApp connection status."""
+
     NOT_INITIALIZED = "not_initialized"
     INITIALIZING = "initializing"
     WAITING_QR = "waiting_qr"
@@ -123,6 +133,7 @@ class ConnectionStatus(Enum):
 
 class MessageDirection(Enum):
     """Message direction."""
+
     INBOUND = "inbound"
     OUTBOUND = "outbound"
 
@@ -131,9 +142,11 @@ class MessageDirection(Enum):
 # Data Classes
 # =============================================================================
 
+
 @dataclass
 class WhatsAppMessage:
     """WhatsApp message."""
+
     id: str = ""
     phone: str = ""
     name: str = ""
@@ -166,8 +179,14 @@ class WhatsAppMessage:
             phone=data.get("from", data.get("to", data.get("phone", ""))),
             name=data.get("name", ""),
             body=data.get("body", ""),
-            timestamp=datetime.fromisoformat(data["timestamp"]) if "timestamp" in data else datetime.now(),
-            direction=MessageDirection(data.get("type", "inbound").replace("received", "inbound").replace("sent", "outbound")),
+            timestamp=datetime.fromisoformat(data["timestamp"])
+            if "timestamp" in data
+            else datetime.now(),
+            direction=MessageDirection(
+                data.get("type", "inbound")
+                .replace("received", "inbound")
+                .replace("sent", "outbound")
+            ),
             reply_to=data.get("inReplyTo"),
             confidence=data.get("confidence", 0.0),
             passed_to_operator=data.get("passedToOperator", False),
@@ -177,6 +196,7 @@ class WhatsAppMessage:
 @dataclass
 class PendingQuestion:
     """Pending question for operator review."""
+
     id: str = ""
     question: str = ""
     from_phone: str = ""
@@ -196,10 +216,14 @@ class PendingQuestion:
             from_phone=data.get("fromPhone", ""),
             from_name=data.get("fromName", ""),
             category=data.get("category", ""),
-            timestamp=datetime.fromisoformat(data["timestamp"]) if "timestamp" in data else datetime.now(),
+            timestamp=datetime.fromisoformat(data["timestamp"])
+            if "timestamp" in data
+            else datetime.now(),
             status=data.get("status", "pending"),
             operator_response=data.get("operatorResponse"),
-            response_timestamp=datetime.fromisoformat(data["responseTimestamp"]) if data.get("responseTimestamp") else None,
+            response_timestamp=datetime.fromisoformat(data["responseTimestamp"])
+            if data.get("responseTimestamp")
+            else None,
         )
 
 
@@ -207,15 +231,11 @@ class PendingQuestion:
 # Rate Limiter
 # =============================================================================
 
+
 class WhatsAppRateLimiter:
     """Rate limiter for WhatsApp messages."""
 
-    def __init__(
-        self,
-        per_minute: int = 3,
-        per_hour: int = 30,
-        per_day: int = 200
-    ):
+    def __init__(self, per_minute: int = 3, per_hour: int = 30, per_day: int = 200):
         self.limits = {
             "minute": per_minute,
             "hour": per_hour,
@@ -249,8 +269,7 @@ class WhatsAppRateLimiter:
         """Check if we can send a message."""
         self._reset_if_needed()
         return all(
-            self.counters[period] < self.limits[period]
-            for period in self.counters
+            self.counters[period] < self.limits[period] for period in self.counters
         )
 
     def record_sent(self):
@@ -268,9 +287,12 @@ class WhatsAppRateLimiter:
                 for period in self.counters
             },
             "next_reset": {
-                period: int(self.reset_intervals[period] - (time.time() - self.reset_times[period]))
+                period: int(
+                    self.reset_intervals[period]
+                    - (time.time() - self.reset_times[period])
+                )
                 for period in self.counters
-            }
+            },
         }
 
 
@@ -278,13 +300,18 @@ class WhatsAppRateLimiter:
 # Message Templates
 # =============================================================================
 
+
 class WhatsAppTemplates:
     """WhatsApp message templates."""
 
     @staticmethod
     def conferma(
-        nome: str, servizio: str, data: str, ora: str,
-        operatore: Optional[str] = None, nome_attivita: Optional[str] = None
+        nome: str,
+        servizio: str,
+        data: str,
+        ora: str,
+        operatore: Optional[str] = None,
+        nome_attivita: Optional[str] = None,
     ) -> str:
         """Appointment confirmation template - cordiale e con leve commerciali."""
         attivita = nome_attivita or "noi"
@@ -306,8 +333,12 @@ class WhatsAppTemplates:
 
     @staticmethod
     def booking_confirm_interactive(
-        nome: str, servizio: str, data: str, ora: str,
-        operatore: Optional[str] = None, nome_attivita: Optional[str] = None
+        nome: str,
+        servizio: str,
+        data: str,
+        ora: str,
+        operatore: Optional[str] = None,
+        nome_attivita: Optional[str] = None,
     ) -> str:
         """
         Gap #4 CoVe 2026: invio immediato alla prenotazione con 3 CTA interattive.
@@ -399,7 +430,9 @@ class WhatsAppTemplates:
     @staticmethod
     def error() -> str:
         """Error template."""
-        return "Mi dispiace, c'è un problema tecnico. Prova a chiamarci direttamente! 📞"
+        return (
+            "Mi dispiace, c'è un problema tecnico. Prova a chiamarci direttamente! 📞"
+        )
 
     @staticmethod
     def menu(nome: str) -> str:
@@ -418,6 +451,7 @@ class WhatsAppTemplates:
 # =============================================================================
 # WhatsApp Client
 # =============================================================================
+
 
 class WhatsAppClient:
     """
@@ -516,7 +550,9 @@ class WhatsAppClient:
             True if service started successfully
         """
         if not self.config.service_path.exists():
-            raise FileNotFoundError(f"WhatsApp service not found: {self.config.service_path}")
+            raise FileNotFoundError(
+                f"WhatsApp service not found: {self.config.service_path}"
+            )
 
         try:
             # Start service in background
@@ -546,13 +582,13 @@ class WhatsAppClient:
             Normalized phone number (39XXXXXXXXX)
         """
         # Remove non-digit characters
-        cleaned = re.sub(r'\D', '', phone)
+        cleaned = re.sub(r"\D", "", phone)
 
         # Add Italy prefix if missing
-        if cleaned.startswith('0'):
-            cleaned = '39' + cleaned[1:]
-        elif not cleaned.startswith('39'):
-            cleaned = '39' + cleaned
+        if cleaned.startswith("0"):
+            cleaned = "39" + cleaned[1:]
+        elif not cleaned.startswith("39"):
+            cleaned = "39" + cleaned
 
         return cleaned
 
@@ -634,7 +670,7 @@ class WhatsAppClient:
         phone: str,
         appointment_id: str,
         client_name: str = "Cliente",
-        callback_handler=None
+        callback_handler=None,
     ) -> None:
         """
         Registra un reminder inviato come 'in attesa di conferma'.
@@ -649,14 +685,11 @@ class WhatsAppClient:
         """
         normalized = self.normalize_phone(phone)
         if callback_handler is not None:
-            callback_handler.register_pending_appointment(normalized, appointment_id, client_name)
+            callback_handler.register_pending_appointment(
+                normalized, appointment_id, client_name
+            )
 
-    def send_template(
-        self,
-        phone: str,
-        template_name: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    def send_template(self, phone: str, template_name: str, **kwargs) -> Dict[str, Any]:
         """
         Send templated message.
 
@@ -680,9 +713,7 @@ class WhatsAppClient:
     # =========================================================================
 
     def get_messages(
-        self,
-        since: Optional[datetime] = None,
-        limit: int = 100
+        self, since: Optional[datetime] = None, limit: int = 100
     ) -> List[WhatsAppMessage]:
         """
         Get messages from log file.
@@ -742,9 +773,7 @@ class WhatsAppClient:
         return [q for q in questions if q.status == "pending"]
 
     async def process_message(
-        self,
-        message: WhatsAppMessage,
-        verticale_id: str = "salone"
+        self, message: WhatsAppMessage, verticale_id: str = "salone"
     ) -> Optional[str]:
         """
         Process incoming message with VoiceOrchestrator (preferred) or VoicePipeline.
@@ -897,6 +926,7 @@ class WhatsAppClient:
 # Analytics Extension
 # =============================================================================
 
+
 def _add_whatsapp_logging_to_analytics():
     """Add WhatsApp message logging methods to ConversationLogger."""
 
@@ -951,29 +981,33 @@ def _add_whatsapp_logging_to_analytics():
             Message ID
         """
         import uuid
+
         msg_id = str(uuid.uuid4())
 
         with self._get_connection() as conn:
             # Ensure table exists
             conn.executescript(WHATSAPP_SCHEMA)
 
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO whatsapp_messages (
                     id, conversation_id, phone, name, body, direction,
                     timestamp, confidence, passed_to_operator, template_used
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                msg_id,
-                conversation_id,
-                phone,
-                name,
-                body,
-                direction,
-                datetime.now().isoformat(),
-                confidence,
-                passed_to_operator,
-                template_used,
-            ))
+            """,
+                (
+                    msg_id,
+                    conversation_id,
+                    phone,
+                    name,
+                    body,
+                    direction,
+                    datetime.now().isoformat(),
+                    confidence,
+                    passed_to_operator,
+                    template_used,
+                ),
+            )
             conn.commit()
 
         return msg_id
@@ -1006,7 +1040,8 @@ def _add_whatsapp_logging_to_analytics():
                     date_filter = " WHERE timestamp <= ?"
                 params.append(end_date.isoformat())
 
-            row = conn.execute(f"""
+            row = conn.execute(
+                f"""
                 SELECT
                     COUNT(*) as total_messages,
                     SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_messages,
@@ -1016,7 +1051,9 @@ def _add_whatsapp_logging_to_analytics():
                     COUNT(DISTINCT phone) as unique_contacts
                 FROM whatsapp_messages
                 {date_filter}
-            """, params).fetchone()
+            """,
+                params,
+            ).fetchone()
 
             return {
                 "total_messages": row["total_messages"] or 0,
@@ -1045,6 +1082,7 @@ _add_whatsapp_logging_to_analytics()
 # =============================================================================
 # WhatsApp Manager (High-Level Interface)
 # =============================================================================
+
 
 class WhatsAppManager:
     """
@@ -1127,7 +1165,9 @@ class WhatsAppManager:
 
     async def _handle_message(self, message: WhatsAppMessage):
         """Handle incoming message."""
-        print(f"[WhatsApp] From {message.name or message.phone}: {message.body[:50]}...")
+        print(
+            f"[WhatsApp] From {message.name or message.phone}: {message.body[:50]}..."
+        )
 
         # Process with pipeline
         response = await self.client.process_message(message)

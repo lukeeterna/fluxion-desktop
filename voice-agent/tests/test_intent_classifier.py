@@ -39,7 +39,6 @@ CORTESIA_TEST_CASES = [
     ("Pronto", IntentCategory.CORTESIA, 1.0),
     ("Buon pomeriggio", IntentCategory.CORTESIA, 1.0),
     ("si pronto", IntentCategory.CORTESIA, 1.0),
-
     # === SALUTI CON TYPO (Typos) - 6 cases ===
     ("buongorno", IntentCategory.CORTESIA, 0.7),  # typo
     ("bongorno", IntentCategory.CORTESIA, 0.7),  # typo
@@ -47,7 +46,6 @@ CORTESIA_TEST_CASES = [
     ("ciaoo", IntentCategory.CORTESIA, 0.7),  # typo (alias)
     ("grazzie", IntentCategory.CORTESIA, 0.7),  # typo (alias)
     ("arivederci", IntentCategory.CORTESIA, 0.7),  # typo (alias)
-
     # === CONGEDI (Goodbyes) - 8 cases ===
     ("Arrivederci", IntentCategory.CORTESIA, 1.0),
     ("arrivederla", IntentCategory.CORTESIA, 1.0),
@@ -57,7 +55,6 @@ CORTESIA_TEST_CASES = [
     ("Buona serata", IntentCategory.CORTESIA, 1.0),
     ("Alla prossima", IntentCategory.CORTESIA, 1.0),
     ("addio", IntentCategory.CORTESIA, 1.0),
-
     # === RINGRAZIAMENTI (Thanks) - 10 cases ===
     ("Grazie", IntentCategory.CORTESIA, 1.0),
     ("grazie mille", IntentCategory.CORTESIA, 1.0),
@@ -69,7 +66,6 @@ CORTESIA_TEST_CASES = [
     ("Grazie davvero", IntentCategory.CORTESIA, 1.0),
     ("Grazie di tutto", IntentCategory.CORTESIA, 1.0),
     ("grassie", IntentCategory.CORTESIA, 0.7),  # alias
-
     # === SCUSE (Apologies) - 6 cases ===
     ("Scusa", IntentCategory.CORTESIA, 1.0),
     ("Scusi", IntentCategory.CORTESIA, 1.0),
@@ -77,7 +73,6 @@ CORTESIA_TEST_CASES = [
     ("Perdonami", IntentCategory.CORTESIA, 1.0),
     ("Mi perdoni", IntentCategory.CORTESIA, 1.0),
     ("Chiedo scusa", IntentCategory.CORTESIA, 1.0),
-
     # === CONFERME (Confirmations) - 10 cases ===
     ("Ok", IntentCategory.CONFERMA, 1.0),
     ("ok", IntentCategory.CONFERMA, 1.0),
@@ -99,7 +94,6 @@ PATTERN_TEST_CASES = [
     ("Avete disponibilità sabato?", IntentCategory.PRENOTAZIONE, 0.4),
     ("Sono liberi lunedì?", IntentCategory.PRENOTAZIONE, 0.4),
     ("Posso prenotare?", IntentCategory.PRENOTAZIONE, 0.4),
-
     # === INFO (Information) - 6 cases ===
     ("Quanto costa un taglio?", IntentCategory.INFO, 0.4),
     ("Che orari fate?", IntentCategory.INFO, 0.4),
@@ -107,13 +101,11 @@ PATTERN_TEST_CASES = [
     ("Accettate carte?", IntentCategory.INFO, 0.4),
     ("Che servizi offrite?", IntentCategory.INFO, 0.4),
     ("Vorrei informazioni", IntentCategory.INFO, 0.4),
-
     # === CANCELLAZIONE (Cancellation) - 4 cases ===
     ("Voglio annullare", IntentCategory.CANCELLAZIONE, 0.4),
     ("Devo cancellare l'appuntamento", IntentCategory.CANCELLAZIONE, 0.4),
     ("Non posso venire", IntentCategory.CANCELLAZIONE, 0.4),
     ("Disdico la prenotazione", IntentCategory.CANCELLAZIONE, 0.4),
-
     # === OPERATORE (Operator) - 3 cases ===
     ("Operatore", IntentCategory.OPERATORE, 1.0),  # exact match
     ("Voglio parlare con una persona", IntentCategory.OPERATORE, 0.4),
@@ -131,6 +123,7 @@ NEGATIVE_TEST_CASES = [
 # =============================================================================
 # TESTS
 # =============================================================================
+
 
 class TestNormalization:
     """Test text normalization."""
@@ -196,7 +189,10 @@ class TestPatternMatch:
             result = pattern_based_intent(phrase)
 
             # Operatore might be exact match
-            if expected_category == IntentCategory.OPERATORE and phrase.lower() == "operatore":
+            if (
+                expected_category == IntentCategory.OPERATORE
+                and phrase.lower() == "operatore"
+            ):
                 # This should be caught by exact match first
                 continue
 
@@ -303,4 +299,5 @@ class TestSpostamentoHardened:
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

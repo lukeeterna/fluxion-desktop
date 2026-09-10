@@ -21,7 +21,7 @@ import sys
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from dataclasses import dataclass, field
 
 import pytest
@@ -29,10 +29,10 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from intent_classifier import classify_intent, IntentCategory
+from intent_classifier import classify_intent
 from entity_extractor import extract_all
-from booking_state_machine import BookingStateMachine, BookingState, StateMachineResult
-from faq_manager import FAQManager, FAQConfig, create_faq_manager
+from booking_state_machine import BookingStateMachine, BookingState
+from faq_manager import FAQManager
 
 
 # =============================================================================
@@ -76,9 +76,11 @@ VERTICALE_SERVICES = {
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class VerticaleTestResult:
     """Results for a single verticale test."""
+
     verticale: str
     faq_tests_passed: int
     faq_tests_total: int
@@ -104,6 +106,7 @@ class VerticaleTestResult:
 @dataclass
 class IntegrationTestReport:
     """Full integration test report."""
+
     verticale_results: Dict[str, VerticaleTestResult]
     total_tests: int
     total_passed: int
@@ -128,13 +131,14 @@ class IntegrationTestReport:
                     "errors": r.errors,
                 }
                 for name, r in self.verticale_results.items()
-            }
+            },
         }
 
 
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def load_conversations():
@@ -206,6 +210,7 @@ def studio_state_machine():
 # TEST: SALONE VERTICALE
 # =============================================================================
 
+
 class TestSaloneVerticale:
     """Integration tests for salone (hairdresser) verticale."""
 
@@ -226,7 +231,9 @@ class TestSaloneVerticale:
             else:
                 print(f"MISS: '{query}' -> {result.answer if result else 'None'}")
 
-        assert passed >= len(test_cases) * 0.7, f"Price FAQ accuracy {passed}/{len(test_cases)} < 70%"
+        assert passed >= len(test_cases) * 0.7, (
+            f"Price FAQ accuracy {passed}/{len(test_cases)} < 70%"
+        )
 
     def test_salone_faq_hours(self, salone_manager):
         """Test salone hours FAQ retrieval."""
@@ -242,7 +249,9 @@ class TestSaloneVerticale:
             if result and expected.lower() in result.answer.lower():
                 passed += 1
 
-        assert passed >= len(test_cases) * 0.6, f"Hours FAQ accuracy {passed}/{len(test_cases)} < 60%"
+        assert passed >= len(test_cases) * 0.6, (
+            f"Hours FAQ accuracy {passed}/{len(test_cases)} < 60%"
+        )
 
     def test_salone_booking_flow(self, salone_state_machine):
         """Test complete salone booking flow."""
@@ -298,12 +307,15 @@ class TestSaloneVerticale:
 
         for text, expected_service in test_cases:
             result = extract_all(text, services)
-            assert result.service == expected_service, f"'{text}' -> {result.service} != {expected_service}"
+            assert result.service == expected_service, (
+                f"'{text}' -> {result.service} != {expected_service}"
+            )
 
 
 # =============================================================================
 # TEST: PALESTRA VERTICALE
 # =============================================================================
+
 
 class TestPalestraVerticale:
     """Integration tests for palestra (gym) verticale."""
@@ -324,7 +336,9 @@ class TestPalestraVerticale:
             else:
                 print(f"MISS: '{query}' -> {result.answer if result else 'None'}")
 
-        assert passed >= len(test_cases) * 0.6, f"Palestra price FAQ accuracy {passed}/{len(test_cases)} < 60%"
+        assert passed >= len(test_cases) * 0.6, (
+            f"Palestra price FAQ accuracy {passed}/{len(test_cases)} < 60%"
+        )
 
     def test_palestra_faq_hours(self, palestra_manager):
         """Test palestra hours FAQ retrieval."""
@@ -387,12 +401,15 @@ class TestPalestraVerticale:
 
         for text, expected_service in test_cases:
             result = extract_all(text, services)
-            assert result.service == expected_service, f"'{text}' -> {result.service} != {expected_service}"
+            assert result.service == expected_service, (
+                f"'{text}' -> {result.service} != {expected_service}"
+            )
 
 
 # =============================================================================
 # TEST: STUDIO MEDICO VERTICALE
 # =============================================================================
+
 
 class TestStudioMedicoVerticale:
     """Integration tests for studio medico (medical office) verticale."""
@@ -483,12 +500,15 @@ class TestStudioMedicoVerticale:
 
         for text, expected_service in test_cases:
             result = extract_all(text, services)
-            assert result.service == expected_service, f"'{text}' -> {result.service} != {expected_service}"
+            assert result.service == expected_service, (
+                f"'{text}' -> {result.service} != {expected_service}"
+            )
 
 
 # =============================================================================
 # TEST: CROSS-VERTICALE ISOLATION
 # =============================================================================
+
 
 class TestCrossVerticaleIsolation:
     """Test that verticali don't interfere with each other."""
@@ -535,6 +555,7 @@ class TestCrossVerticaleIsolation:
 # TEST: FULL CONVERSATION FLOWS
 # =============================================================================
 
+
 class TestFullConversationFlows:
     """Test complete conversation flows from test_conversations.json."""
 
@@ -542,7 +563,7 @@ class TestFullConversationFlows:
         self,
         turns: List[Dict],
         faq_manager: FAQManager,
-        state_machine: BookingStateMachine
+        state_machine: BookingStateMachine,
     ) -> Tuple[int, int, List[str]]:
         """
         Run a conversation and count successes.
@@ -566,7 +587,9 @@ class TestFullConversationFlows:
                 if actual_intent == expected_intent or expected_intent in actual_intent:
                     passed += 1
                 else:
-                    errors.append(f"Intent: '{user_input}' -> {actual_intent} != {expected_intent}")
+                    errors.append(
+                        f"Intent: '{user_input}' -> {actual_intent} != {expected_intent}"
+                    )
 
             # Check FAQ response if expected
             expected_response = turn.get("expected_response_contains", [])
@@ -577,7 +600,9 @@ class TestFullConversationFlows:
                     if any(exp.lower() in answer_lower for exp in expected_response):
                         pass  # Already counted above
                     else:
-                        errors.append(f"FAQ: '{user_input}' -> missing {expected_response}")
+                        errors.append(
+                            f"FAQ: '{user_input}' -> missing {expected_response}"
+                        )
 
             # Process through state machine if booking-related
             if expected_intent in ["prenotazione", "conferma", "cancellazione"]:
@@ -585,7 +610,9 @@ class TestFullConversationFlows:
 
         return passed, total, errors
 
-    def test_salone_conversations(self, load_conversations, salone_manager, salone_state_machine):
+    def test_salone_conversations(
+        self, load_conversations, salone_manager, salone_state_machine
+    ):
         """Test salone conversation flows."""
         conversations = load_conversations.get("conversations", [])
         salone_convos = [c for c in conversations if c.get("verticale") == "salone"]
@@ -597,25 +624,28 @@ class TestFullConversationFlows:
         for conv in salone_convos[:5]:  # Test first 5 salone conversations
             salone_state_machine.reset()
             passed, total, errors = self.run_conversation(
-                conv["turns"],
-                salone_manager,
-                salone_state_machine
+                conv["turns"], salone_manager, salone_state_machine
             )
             total_passed += passed
             total_turns += total
             all_errors.extend(errors)
 
         accuracy = total_passed / max(1, total_turns)
-        print(f"\nSalone conversation accuracy: {accuracy*100:.1f}% ({total_passed}/{total_turns})")
+        print(
+            f"\nSalone conversation accuracy: {accuracy * 100:.1f}% ({total_passed}/{total_turns})"
+        )
         if all_errors:
             print(f"Errors: {all_errors[:5]}")
 
-        assert accuracy >= 0.6, f"Salone conversation accuracy {accuracy*100:.1f}% < 60%"
+        assert accuracy >= 0.6, (
+            f"Salone conversation accuracy {accuracy * 100:.1f}% < 60%"
+        )
 
 
 # =============================================================================
 # TEST: PERFORMANCE BENCHMARKS
 # =============================================================================
+
 
 class TestPerformanceBenchmarks:
     """Performance benchmarks across all verticali."""
@@ -639,8 +669,12 @@ class TestPerformanceBenchmarks:
             avg_latency = sum(latencies) / len(latencies)
             max_latency = max(latencies)
 
-            print(f"\n{verticale} FAQ latency: avg={avg_latency:.2f}ms, max={max_latency:.2f}ms")
-            assert avg_latency < 20, f"{verticale} avg latency {avg_latency:.2f}ms > 20ms"
+            print(
+                f"\n{verticale} FAQ latency: avg={avg_latency:.2f}ms, max={max_latency:.2f}ms"
+            )
+            assert avg_latency < 20, (
+                f"{verticale} avg latency {avg_latency:.2f}ms > 20ms"
+            )
 
     def test_intent_latency_consistency(self):
         """Test intent classification latency is consistent."""
@@ -678,12 +712,15 @@ class TestPerformanceBenchmarks:
             total_time = (time.time() - start) * 1000
 
             print(f"\n{verticale} booking flow: {total_time:.2f}ms")
-            assert total_time < 50, f"{verticale} booking flow {total_time:.2f}ms > 50ms"
+            assert total_time < 50, (
+                f"{verticale} booking flow {total_time:.2f}ms > 50ms"
+            )
 
 
 # =============================================================================
 # TEST: INTEGRATION REPORT
 # =============================================================================
+
 
 class TestIntegrationReport:
     """Generate integration test report."""
@@ -697,7 +734,7 @@ class TestIntegrationReport:
                 "total_faq_passed": 0,
                 "total_booking_tests": 0,
                 "total_booking_passed": 0,
-            }
+            },
         }
 
         # Test each verticale
@@ -755,15 +792,20 @@ class TestIntegrationReport:
         for verticale, data in report_data["verticali"].items():
             accuracy = data["faq_accuracy"] * 100
             print(f"\n{verticale.upper()}:")
-            print(f"  FAQ Accuracy: {accuracy:.1f}% ({data['faq_passed']}/{data['faq_total']})")
+            print(
+                f"  FAQ Accuracy: {accuracy:.1f}% ({data['faq_passed']}/{data['faq_total']})"
+            )
 
-        total_acc = report_data["summary"]["total_faq_passed"] / report_data["summary"]["total_faq_tests"]
+        total_acc = (
+            report_data["summary"]["total_faq_passed"]
+            / report_data["summary"]["total_faq_tests"]
+        )
         print(f"\n{'=' * 60}")
-        print(f"OVERALL FAQ ACCURACY: {total_acc*100:.1f}%")
+        print(f"OVERALL FAQ ACCURACY: {total_acc * 100:.1f}%")
         print("=" * 60)
 
         # Assert overall accuracy
-        assert total_acc >= 0.6, f"Overall FAQ accuracy {total_acc*100:.1f}% < 60%"
+        assert total_acc >= 0.6, f"Overall FAQ accuracy {total_acc * 100:.1f}% < 60%"
 
 
 # =============================================================================

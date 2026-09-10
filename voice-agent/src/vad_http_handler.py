@@ -12,64 +12,69 @@ Endpoints:
 - GET  /api/voice/vad/status - Get VAD state
 """
 
-import asyncio
 import audioop
 import struct
 import time
-from typing import Optional, Dict, Any, Callable
+from typing import Optional, Dict, Callable
 from dataclasses import dataclass, field
 from aiohttp import web
 import logging
 
 try:
-    from .vad import FluxionVAD, VADConfig, VADState
+    from .vad import FluxionVAD, VADConfig, VADState  # noqa: F401
 except ImportError:
-    from vad import FluxionVAD, VADConfig, VADState
+    from vad import FluxionVAD, VADConfig
 
 logger = logging.getLogger(__name__)
 
 
-def add_wav_header(pcm_data: bytes, sample_rate: int = 16000, channels: int = 1, bits_per_sample: int = 16) -> bytes:
+def add_wav_header(
+    pcm_data: bytes,
+    sample_rate: int = 16000,
+    channels: int = 1,
+    bits_per_sample: int = 16,
+) -> bytes:
     """
     Add WAV header to raw PCM audio data.
-    
+
     Groq Whisper API expects a valid WAV file, not raw PCM.
     This function creates a proper WAV header for the PCM data.
-    
+
     Args:
         pcm_data: Raw PCM audio bytes (16-bit signed integer)
         sample_rate: Sample rate in Hz (default: 16000)
         channels: Number of channels (default: 1 for mono)
         bits_per_sample: Bits per sample (default: 16)
-    
+
     Returns:
         Complete WAV file as bytes
     """
     byte_rate = sample_rate * channels * bits_per_sample // 8
     block_align = channels * bits_per_sample // 8
     data_size = len(pcm_data)
-    
+
     # WAV header structure
-    header = b'RIFF'
-    header += struct.pack('<I', 36 + data_size)  # Chunk size
-    header += b'WAVE'
-    header += b'fmt '
-    header += struct.pack('<I', 16)              # Subchunk1 size (16 for PCM)
-    header += struct.pack('<H', 1)               # Audio format (1 = PCM)
-    header += struct.pack('<H', channels)        # Number of channels
-    header += struct.pack('<I', sample_rate)     # Sample rate
-    header += struct.pack('<I', byte_rate)       # Byte rate
-    header += struct.pack('<H', block_align)     # Block align
-    header += struct.pack('<H', bits_per_sample) # Bits per sample
-    header += b'data'
-    header += struct.pack('<I', data_size)       # Data chunk size
-    
+    header = b"RIFF"
+    header += struct.pack("<I", 36 + data_size)  # Chunk size
+    header += b"WAVE"
+    header += b"fmt "
+    header += struct.pack("<I", 16)  # Subchunk1 size (16 for PCM)
+    header += struct.pack("<H", 1)  # Audio format (1 = PCM)
+    header += struct.pack("<H", channels)  # Number of channels
+    header += struct.pack("<I", sample_rate)  # Sample rate
+    header += struct.pack("<I", byte_rate)  # Byte rate
+    header += struct.pack("<H", block_align)  # Block align
+    header += struct.pack("<H", bits_per_sample)  # Bits per sample
+    header += b"data"
+    header += struct.pack("<I", data_size)  # Data chunk size
+
     return header + pcm_data
 
 
 @dataclass
 class VADSession:
     """Active VAD session state."""
+
     session_id: str
     vad: FluxionVAD
     speech_buffer: bytearray = field(default_factory=bytearray)
@@ -94,10 +99,7 @@ class VADHTTPHandler:
     """
 
     def __init__(
-        self,
-        orchestrator,
-        groq_client,
-        vad_config: Optional[VADConfig] = None
+        self, orchestrator, groq_client, vad_config: Optional[VADConfig] = None
     ):
         self.orchestrator = orchestrator
         self.groq = groq_client
@@ -105,10 +107,10 @@ class VADHTTPHandler:
         # VAD configuration — natural conversation timing (Retell/Vapi benchmark)
         # Human turn gap: 200-300ms. Longer = feels robotic.
         self.vad_config = vad_config or VADConfig(
-            vad_threshold=0.4,          # Sensitive enough for soft speech
-            silence_duration_ms=350,     # 350ms silence = end of turn (was 500)
-            prefix_padding_ms=150,       # Keep 150ms before speech (was 200)
-            hop_size_ms=10              # 10ms frame resolution
+            vad_threshold=0.4,  # Sensitive enough for soft speech
+            silence_duration_ms=350,  # 350ms silence = end of turn (was 500)
+            prefix_padding_ms=150,  # Keep 150ms before speech (was 200)
+            hop_size_ms=10,  # 10ms frame resolution
         )
 
         # Active VAD sessions (session_id -> VADSession)
@@ -128,7 +130,9 @@ class VADHTTPHandler:
         app.router.add_post("/api/voice/vad/speaking", self.vad_speaking_handler)
 
         # Auto-VAD process endpoint (combines chunk processing with auto-STT)
-        app.router.add_post("/api/voice/process-with-vad", self.process_with_vad_handler)
+        app.router.add_post(
+            "/api/voice/process-with-vad", self.process_with_vad_handler
+        )
 
         # Shorthand routes
         app.router.add_post("/vad/start", self.vad_start_handler)
@@ -148,30 +152,28 @@ class VADHTTPHandler:
             vad.start()
 
             # Store session
-            session = VADSession(
-                session_id=session_id,
-                vad=vad
-            )
+            session = VADSession(session_id=session_id, vad=vad)
             self._sessions[session_id] = session
 
             logger.info(f"VAD session started: {session_id}")
 
-            return web.json_response({
-                "success": True,
-                "session_id": session_id,
-                "config": {
-                    "threshold": self.vad_config.vad_threshold,
-                    "silence_ms": self.vad_config.silence_duration_ms,
-                    "prefix_ms": self.vad_config.prefix_padding_ms
+            return web.json_response(
+                {
+                    "success": True,
+                    "session_id": session_id,
+                    "config": {
+                        "threshold": self.vad_config.vad_threshold,
+                        "silence_ms": self.vad_config.silence_duration_ms,
+                        "prefix_ms": self.vad_config.prefix_padding_ms,
+                    },
                 }
-            })
+            )
 
         except Exception as e:
             logger.error("VAD start error: %s", e, exc_info=True)
-            return web.json_response({
-                "success": False,
-                "error": "Errore interno del server"
-            }, status=500)
+            return web.json_response(
+                {"success": False, "error": "Errore interno del server"}, status=500
+            )
 
     async def vad_chunk_handler(self, request: web.Request) -> web.Response:
         """
@@ -199,24 +201,30 @@ class VADHTTPHandler:
             audio_hex = data.get("audio_hex", "")
 
             if not session_id or session_id not in self._sessions:
-                return web.json_response({
-                    "success": False,
-                    "error": "Invalid or missing session_id"
-                }, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Invalid or missing session_id"},
+                    status=400,
+                )
 
             session = self._sessions[session_id]
 
             try:
                 audio_chunk = bytes.fromhex(audio_hex)
             except ValueError as e:
-                return web.json_response({"success": False, "error": f"Invalid audio_hex: {e}"}, status=400)
+                return web.json_response(
+                    {"success": False, "error": f"Invalid audio_hex: {e}"}, status=400
+                )
 
             # Resample to 16kHz if needed (WKWebView may send 48kHz)
             actual_rate = data.get("sample_rate", 16000)
             if actual_rate != 16000 and actual_rate > 0:
-                audio_chunk, _ = audioop.ratecv(audio_chunk, 2, 1, actual_rate, 16000, None)
+                audio_chunk, _ = audioop.ratecv(
+                    audio_chunk, 2, 1, actual_rate, 16000, None
+                )
                 if session.total_chunks == 0:
-                    logger.info("[%s] Resampling from %dHz to 16000Hz", session_id, actual_rate)
+                    logger.info(
+                        "[%s] Resampling from %dHz to 16000Hz", session_id, actual_rate
+                    )
 
             # Process through VAD
             result = session.vad.process_audio(audio_chunk)
@@ -230,9 +238,16 @@ class VADHTTPHandler:
                 logger.info(
                     "[%s] chunk #%d: %d bytes (%d samples), state=%s, prob=%.3f, "
                     "event=%s, speaking=%s, audio_max=%d, audio_rms=%.1f",
-                    session_id, session.total_chunks, len(audio_chunk), n_samples,
-                    result.state.name, result.probability, result.event, session.is_speaking,
-                    max_val, rms
+                    session_id,
+                    session.total_chunks,
+                    len(audio_chunk),
+                    n_samples,
+                    result.state.name,
+                    result.probability,
+                    result.event,
+                    session.is_speaking,
+                    max_val,
+                    rms,
                 )
 
             response = {
@@ -250,7 +265,9 @@ class VADHTTPHandler:
                     # User is interrupting Sara — signal barge-in to frontend
                     response["barge_in"] = True
                     response["event"] = "barge_in"
-                    logger.info(f"[{session_id}] BARGE-IN: user speaking during TTS — signal stop")
+                    logger.info(
+                        f"[{session_id}] BARGE-IN: user speaking during TTS — signal stop"
+                    )
                     # Do NOT suppress — let the frontend stop TTS and process the turn
                     session.is_speaking = True
                     session.turn_start_time = time.time()
@@ -298,10 +315,9 @@ class VADHTTPHandler:
 
         except Exception as e:
             logger.error("VAD chunk error: %s", e, exc_info=True)
-            return web.json_response({
-                "success": False,
-                "error": "Errore interno del server"
-            }, status=500)
+            return web.json_response(
+                {"success": False, "error": "Errore interno del server"}, status=500
+            )
 
     async def vad_stop_handler(self, request: web.Request) -> web.Response:
         """Stop a VAD session."""
@@ -315,29 +331,25 @@ class VADHTTPHandler:
 
                 stats = {
                     "total_chunks": session.total_chunks,
-                    "events": len(session.events)
+                    "events": len(session.events),
                 }
 
                 del self._sessions[session_id]
                 logger.info(f"VAD session stopped: {session_id}")
 
-                return web.json_response({
-                    "success": True,
-                    "session_id": session_id,
-                    "stats": stats
-                })
+                return web.json_response(
+                    {"success": True, "session_id": session_id, "stats": stats}
+                )
             else:
-                return web.json_response({
-                    "success": False,
-                    "error": "Session not found"
-                }, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Session not found"}, status=404
+                )
 
         except Exception as e:
             logger.error("VAD stop error: %s", e, exc_info=True)
-            return web.json_response({
-                "success": False,
-                "error": "Errore interno del server"
-            }, status=500)
+            return web.json_response(
+                {"success": False, "error": "Errore interno del server"}, status=500
+            )
 
     async def vad_speaking_handler(self, request: web.Request) -> web.Response:
         """
@@ -351,7 +363,9 @@ class VADHTTPHandler:
             speaking = bool(data.get("speaking", False))
 
             if not session_id or session_id not in self._sessions:
-                return web.json_response({"success": False, "error": "Session not found"}, status=404)
+                return web.json_response(
+                    {"success": False, "error": "Session not found"}, status=404
+                )
 
             session = self._sessions[session_id]
             session.is_tts_playing = speaking
@@ -367,7 +381,9 @@ class VADHTTPHandler:
 
         except Exception as e:
             logger.error("VAD speaking error: %s", e, exc_info=True)
-            return web.json_response({"success": False, "error": "Errore interno del server"}, status=500)
+            return web.json_response(
+                {"success": False, "error": "Errore interno del server"}, status=500
+            )
 
     async def vad_status_handler(self, request: web.Request) -> web.Response:
         """Get VAD session status."""
@@ -375,19 +391,20 @@ class VADHTTPHandler:
 
         if session_id and session_id in self._sessions:
             session = self._sessions[session_id]
-            return web.json_response({
-                "success": True,
-                "session_id": session_id,
-                "state": session.vad.state.name if session.vad else "STOPPED",
-                "is_speaking": session.is_speaking,
-                "buffer_size": len(session.speech_buffer),
-                "total_chunks": session.total_chunks
-            })
+            return web.json_response(
+                {
+                    "success": True,
+                    "session_id": session_id,
+                    "state": session.vad.state.name if session.vad else "STOPPED",
+                    "is_speaking": session.is_speaking,
+                    "buffer_size": len(session.speech_buffer),
+                    "total_chunks": session.total_chunks,
+                }
+            )
         else:
-            return web.json_response({
-                "success": True,
-                "active_sessions": list(self._sessions.keys())
-            })
+            return web.json_response(
+                {"success": True, "active_sessions": list(self._sessions.keys())}
+            )
 
     async def process_with_vad_handler(self, request: web.Request) -> web.Response:
         """
@@ -411,10 +428,9 @@ class VADHTTPHandler:
             session_id = data.get("session_id")
 
             if not audio_hex:
-                return web.json_response({
-                    "success": False,
-                    "error": "Missing audio_hex"
-                }, status=400)
+                return web.json_response(
+                    {"success": False, "error": "Missing audio_hex"}, status=400
+                )
 
             audio_data = bytes.fromhex(audio_hex)
 
@@ -428,7 +444,7 @@ class VADHTTPHandler:
             max_prob = 0.0
 
             for i in range(0, len(audio_data), chunk_size):
-                chunk = audio_data[i:i+chunk_size]
+                chunk = audio_data[i : i + chunk_size]
                 if len(chunk) < chunk_size:
                     chunk = chunk + bytes(chunk_size - len(chunk))
                 result = vad.process_audio(chunk)
@@ -439,16 +455,18 @@ class VADHTTPHandler:
             vad.stop()
 
             if not has_speech:
-                return web.json_response({
-                    "success": True,
-                    "vad": {
-                        "has_speech": False,
-                        "max_probability": max_prob,
-                        "skipped": True
-                    },
-                    "response": "",
-                    "transcription": ""
-                })
+                return web.json_response(
+                    {
+                        "success": True,
+                        "vad": {
+                            "has_speech": False,
+                            "max_probability": max_prob,
+                            "skipped": True,
+                        },
+                        "response": "",
+                        "transcription": "",
+                    }
+                )
 
             # Speech detected - process through pipeline
             # Add WAV header to PCM data before sending to Groq (Groq expects WAV, not raw PCM)
@@ -456,53 +474,50 @@ class VADHTTPHandler:
             transcription = await self.groq.transcribe_audio(wav_data)
 
             result = await self.orchestrator.process(
-                user_input=transcription,
-                session_id=session_id
+                user_input=transcription, session_id=session_id
             )
 
             # Build response
             response = {
                 "success": True,
-                "vad": {
-                    "has_speech": True,
-                    "max_probability": max_prob
-                },
+                "vad": {"has_speech": True, "max_probability": max_prob},
                 "transcription": transcription,
                 "response": result.response,
                 "intent": result.intent,
                 "layer": result.layer.value,
                 "audio_base64": result.audio_bytes.hex() if result.audio_bytes else "",
                 "session_id": result.session_id,
-                "latency_ms": result.latency_ms
+                "latency_ms": result.latency_ms,
             }
 
             if result.booking_created:
                 response["booking_action"] = {
                     "action": "booking_created",
                     "booking_id": result.booking_id,
-                    "context": result.booking_context
+                    "context": result.booking_context,
                 }
             elif result.booking_context:
                 response["booking_action"] = {
                     "action": "booking_in_progress",
-                    "context": result.booking_context
+                    "context": result.booking_context,
                 }
 
             return web.json_response(response)
 
         except Exception as e:
             logger.error("VAD process-with-vad error: %s", e, exc_info=True)
-            return web.json_response({
-                "success": False,
-                "error": "Errore interno del server"
-            }, status=500)
+            return web.json_response(
+                {"success": False, "error": "Errore interno del server"}, status=500
+            )
 
     def cleanup_stale_sessions(self, max_age_seconds: int = 300):
         """Remove VAD sessions older than max_age_seconds."""
         now = time.time()
         stale = [
-            sid for sid, session in self._sessions.items()
-            if session.turn_start_time and (now - session.turn_start_time) > max_age_seconds
+            sid
+            for sid, session in self._sessions.items()
+            if session.turn_start_time
+            and (now - session.turn_start_time) > max_age_seconds
         ]
         for sid in stale:
             self._sessions[sid].vad.stop()

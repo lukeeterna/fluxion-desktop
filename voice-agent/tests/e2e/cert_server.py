@@ -13,6 +13,7 @@ NLU, FSM, RAG, TTS, database access and the HTTP API are the production code fro
 the candidate worktree. The caller must pass an explicit env file and candidate
 SHA; the shell gate independently proves that the worktree HEAD matches that SHA.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -23,9 +24,15 @@ from pathlib import Path
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="FLUXION exact-SHA Sara certification server")
-    parser.add_argument("--env-file", required=True, help="Existing trusted local .env file")
-    parser.add_argument("--sha", required=True, help="Candidate commit SHA for evidence logging")
+    parser = argparse.ArgumentParser(
+        description="FLUXION exact-SHA Sara certification server"
+    )
+    parser.add_argument(
+        "--env-file", required=True, help="Existing trusted local .env file"
+    )
+    parser.add_argument(
+        "--sha", required=True, help="Candidate commit SHA for evidence logging"
+    )
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=3102)
     return parser.parse_args()
@@ -57,8 +64,10 @@ class _NoopWhatsAppClient:
 
     def __getattr__(self, name):
         if name.startswith("send"):
+
             def _disabled(*args, **kwargs):
                 return False
+
             return _disabled
         raise AttributeError(name)
 

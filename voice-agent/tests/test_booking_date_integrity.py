@@ -35,6 +35,7 @@ from availability_checker import AvailabilityConfig
 # HELPERS
 # =============================================================================
 
+
 def _setup_at_waiting_date(reference: datetime) -> BookingStateMachine:
     """Create a state machine at WAITING_DATE with a service already selected."""
     sm = BookingStateMachine(reference_date=reference)
@@ -103,8 +104,8 @@ class _StubGroqNLU:
 # GUARD 1 -- FSM date-write horizon/identity guard (_set_context_date)
 # =============================================================================
 
-class TestGuard1DateWriteChokepoint:
 
+class TestGuard1DateWriteChokepoint:
     def test_row1_narrow_scenario_matches_extractor_and_stays_in_horizon(self):
         """'lunedi prossimo' from a fresh WAITING_DATE: FSM date == extractor date."""
         reference = datetime.now()
@@ -119,16 +120,24 @@ class TestGuard1DateWriteChokepoint:
         assert sm.context.date == expected_iso
         assert result.next_state == BookingState.WAITING_TIME
 
-        max_advance_days = AvailabilityConfig.for_vertical(sm.context.vertical).max_advance_days
-        days_ahead = (datetime.strptime(expected_iso, "%Y-%m-%d").date() - reference.date()).days
+        max_advance_days = AvailabilityConfig.for_vertical(
+            sm.context.vertical
+        ).max_advance_days
+        days_ahead = (
+            datetime.strptime(expected_iso, "%Y-%m-%d").date() - reference.date()
+        ).days
         assert 0 <= days_ahead <= max_advance_days
 
     def test_row2_setter_rejects_out_of_horizon_and_leaves_date_untouched(self):
         """A synthetic out-of-horizon ISO date must never become context.date."""
         reference = datetime.now()
         sm = _setup_at_waiting_date(reference)
-        max_advance_days = AvailabilityConfig.for_vertical(sm.context.vertical).max_advance_days
-        out_of_horizon = (reference + timedelta(days=max_advance_days + 30)).strftime("%Y-%m-%d")
+        max_advance_days = AvailabilityConfig.for_vertical(
+            sm.context.vertical
+        ).max_advance_days
+        out_of_horizon = (reference + timedelta(days=max_advance_days + 30)).strftime(
+            "%Y-%m-%d"
+        )
 
         assert sm.context.date is None
 
@@ -142,6 +151,7 @@ class TestGuard1DateWriteChokepoint:
 # GUARD 2 -- Correction-rejection must clear stale date
 # =============================================================================
 
+
 class TestGuard2CorrectionRejectionClearsStaleDate:
     """Rejecting a date correction must never leave a stale context.date behind."""
 
@@ -152,7 +162,9 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
 
         reject = sm.process_message("tra 90 giorni")
         assert reject.next_state == BookingState.WAITING_DATE
-        assert sm.context.date is None, "stale date must be cleared on rejected correction"
+        assert sm.context.date is None, (
+            "stale date must be cleared on rejected correction"
+        )
         assert sm.context.date_display is None
 
         phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)
@@ -169,7 +181,9 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
 
         reject = sm.process_message("no, volevo tra 90 giorni")
         assert reject.next_state == BookingState.WAITING_DATE
-        assert sm.context.date is None, "stale date must be cleared on rejected correction"
+        assert sm.context.date is None, (
+            "stale date must be cleared on rejected correction"
+        )
         assert sm.context.date_display is None
 
         phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)
@@ -187,7 +201,9 @@ class TestGuard2CorrectionRejectionClearsStaleDate:
 
         reject = sm.process_message("mah")
         assert reject.next_state == BookingState.WAITING_DATE
-        assert sm.context.date is None, "stale date must be cleared on rejected correction"
+        assert sm.context.date is None, (
+            "stale date must be cleared on rejected correction"
+        )
         assert sm.context.date_display is None
 
         phrase, expected_new_iso = _distinct_valid_date_phrase(reference, accepted_date)

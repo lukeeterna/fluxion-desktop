@@ -6,7 +6,6 @@ and that turn detection triggers correctly.
 """
 
 import sys
-import pytest
 from unittest.mock import MagicMock
 
 # Mock native dependencies not available on MacBook (Python 3.13)
@@ -17,12 +16,13 @@ for _mod in ("pjsua2", "audioop"):
         sys.modules[_mod] = MagicMock()
 
 
-from src.voip_pjsua2 import VoIPManager, SIPConfig
+from src.voip_pjsua2 import VoIPManager, SIPConfig  # noqa: E402
 
 
 # =============================================================================
 # Test VAD Silence Timeout Value
 # =============================================================================
+
 
 class TestSilenceTimeoutValue:
     """Test that the silence timeout is correctly set to 50 frames (1000ms)."""
@@ -50,6 +50,7 @@ class TestSilenceTimeoutValue:
 # =============================================================================
 # Test VAD Turn Detection Logic
 # =============================================================================
+
 
 class TestVADTurnDetection:
     """Test that turn detection triggers after correct number of silence frames."""

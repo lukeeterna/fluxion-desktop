@@ -17,6 +17,7 @@ Usage:
 
 Env vars: GROQ_API_KEY, GROQ_API_KEY_2, GROQ_API_KEY_3
 """
+
 import os
 from typing import List
 

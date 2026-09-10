@@ -11,12 +11,11 @@ All tests mock edge_tts — no network required.
 Python 3.9 compatible.
 """
 
-import asyncio
 import os
 import struct
 import sys
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -25,6 +24,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
+
 
 def _make_minimal_mp3() -> bytes:
     """Return minimal valid MP3 bytes (MPEG frame header + padding)."""
@@ -80,6 +80,7 @@ async def _mock_stream_generator(chunks):
 
 # ─── Tests ───────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture
 def wav_bytes():
     """Pre-built minimal WAV for comparison."""
@@ -104,8 +105,10 @@ class TestEdgeTTSStreaming:
         ]
         mock_comm_instance.stream = lambda: _mock_stream_generator(chunks)
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+        ):
             mock_edge.Communicate.return_value = mock_comm_instance
 
             engine = MagicMock()
@@ -122,7 +125,12 @@ class TestEdgeTTSStreaming:
 
             # Import and call real synthesize on mock engine
             from tts_engine import EdgeTTSEngine
-            result = await EdgeTTSEngine.synthesize.__wrapped__(engine) if hasattr(EdgeTTSEngine.synthesize, '__wrapped__') else await EdgeTTSEngine.synthesize(engine, "Buongiorno")
+
+            result = (
+                await EdgeTTSEngine.synthesize.__wrapped__(engine)
+                if hasattr(EdgeTTSEngine.synthesize, "__wrapped__")
+                else await EdgeTTSEngine.synthesize(engine, "Buongiorno")
+            )
 
         # Verify RIFF header
         assert result[:4] == b"RIFF", "WAV must start with RIFF"
@@ -148,18 +156,23 @@ class TestEdgeTTSStreaming:
         class FakeFile:
             def __init__(self):
                 pass
+
             def write(self, data):
                 written_data.extend(data)
+
             def __enter__(self):
                 return self
+
             def __exit__(self, *a):
                 pass
 
         mock_comm = MagicMock()
         mock_comm.stream = lambda: _mock_stream_generator(chunks)
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+        ):
             mock_edge.Communicate.return_value = mock_comm
 
             from tts_engine import EdgeTTSEngine
@@ -180,7 +193,7 @@ class TestEdgeTTSStreaming:
 
             engine._convert_mp3_to_wav = fake_convert
 
-            result = await engine.synthesize("Test")
+            await engine.synthesize("Test")
 
         # Only audio chunks should have been written
         expected = mp3_chunk_1 + mp3_chunk_2
@@ -200,8 +213,10 @@ class TestEdgeTTSStreaming:
         # save() works as fallback
         mock_comm.save = AsyncMock()
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+        ):
             mock_edge.Communicate.return_value = mock_comm
 
             from tts_engine import EdgeTTSEngine
@@ -236,8 +251,10 @@ class TestEdgeTTSStreaming:
         mock_comm.stream = broken_stream
         mock_comm.save = AsyncMock()
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+        ):
             mock_edge.Communicate.return_value = mock_comm
 
             from tts_engine import EdgeTTSEngine
@@ -277,9 +294,11 @@ class TestEdgeTTSStreaming:
             created_paths.append(t.name)
             return t
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True), \
-             patch("tts_engine.tempfile.NamedTemporaryFile", side_effect=tracking_temp):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+            patch("tts_engine.tempfile.NamedTemporaryFile", side_effect=tracking_temp),
+        ):
             mock_edge.Communicate.return_value = mock_comm
 
             from tts_engine import EdgeTTSEngine
@@ -308,8 +327,10 @@ class TestEdgeTTSStreaming:
         mock_comm.stream = MagicMock(side_effect=Exception("stream dead"))
         mock_comm.save = AsyncMock(side_effect=Exception("save also dead"))
 
-        with patch("tts_engine.edge_tts") as mock_edge, \
-             patch("tts_engine._EDGE_TTS_AVAILABLE", True):
+        with (
+            patch("tts_engine.edge_tts") as mock_edge,
+            patch("tts_engine._EDGE_TTS_AVAILABLE", True),
+        ):
             mock_edge.Communicate.return_value = mock_comm
 
             from tts_engine import EdgeTTSEngine

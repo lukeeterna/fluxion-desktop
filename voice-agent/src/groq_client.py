@@ -16,9 +16,11 @@ from groq import Groq, AsyncGroq
 try:
     try:
         from .groq_key_pool import GroqKeyPool
+
         _HAS_KEY_POOL = True
     except ImportError:
         from groq_key_pool import GroqKeyPool
+
         _HAS_KEY_POOL = True
 except ImportError:
     _HAS_KEY_POOL = False
@@ -64,7 +66,9 @@ class GroqClient:
         else:
             self.client = None
             self.async_client = None
-            print("[GroqClient] ⚠️  Offline mode: nessuna API key → FasterWhisper only, LLM L4 disabilitato")
+            print(
+                "[GroqClient] ⚠️  Offline mode: nessuna API key → FasterWhisper only, LLM L4 disabilitato"
+            )
 
         # F03: Key pool for 429 rotation (falls back gracefully if only 1 key or no key)
         if _HAS_KEY_POOL:
@@ -84,7 +88,9 @@ class GroqClient:
                 if prefer_offline_stt:
                     print("[GroqClient] STT: FasterWhisper primary + Groq fallback")
                 else:
-                    print("[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)")
+                    print(
+                        "[GroqClient] STT: Groq primary (~200ms) + FasterWhisper fallback (lazy)"
+                    )
             except (ImportError, OSError, RuntimeError) as e:
                 print(f"[GroqClient] Hybrid STT init failed, using Groq only: {e}")
 
@@ -98,11 +104,11 @@ class GroqClient:
     @staticmethod
     def _is_retriable(e: Exception) -> bool:
         """True for 429 rate limit or 503 server errors."""
-        status = getattr(e, 'status_code', None)
+        status = getattr(e, "status_code", None)
         if status in (429, 503):
             return True
         err_str = str(e)
-        return '429' in err_str or 'rate_limit' in err_str.lower() or '503' in err_str
+        return "429" in err_str or "rate_limit" in err_str.lower() or "503" in err_str
 
     @staticmethod
     def _normalize_transcription_response(response: Any) -> str:
@@ -110,7 +116,11 @@ class GroqClient:
         if isinstance(response, str):
             return response.strip()
 
-        text = response.get("text") if isinstance(response, dict) else getattr(response, "text", None)
+        text = (
+            response.get("text")
+            if isinstance(response, dict)
+            else getattr(response, "text", None)
+        )
         if not isinstance(text, str):
             raise TypeError(
                 f"Unsupported Groq transcription response type: {type(response).__name__}"
@@ -152,7 +162,9 @@ class GroqClient:
             except (OSError, RuntimeError) as e:
                 print(f"[STT] Hybrid engine failed, falling back to Groq: {e}")
             except Exception as e:
-                print(f"[STT] Hybrid engine unexpected error, falling back to Groq: {e}")
+                print(
+                    f"[STT] Hybrid engine unexpected error, falling back to Groq: {e}"
+                )
 
         # Fallback to direct Groq API call
         try:
@@ -177,7 +189,7 @@ class GroqClient:
         messages: List[Dict[str, str]],
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
-        max_tokens: int = 300
+        max_tokens: int = 300,
     ) -> str:
         """
         Generate response using Groq Llama.
@@ -194,10 +206,7 @@ class GroqClient:
         full_messages = []
 
         if system_prompt:
-            full_messages.append({
-                "role": "system",
-                "content": system_prompt
-            })
+            full_messages.append({"role": "system", "content": system_prompt})
 
         full_messages.extend(messages)
 
@@ -206,7 +215,9 @@ class GroqClient:
             for attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
                 if attempt > 0:
                     delay = _GROQ_BACKOFF_DELAYS[attempt - 1]
-                    print(f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay*1000:.0f}ms")
+                    print(
+                        f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay * 1000:.0f}ms"
+                    )
                     await asyncio.sleep(delay)
                 try:
                     # B1 FIX CoVe2026: timeout 3s — evita hang su rete instabile
@@ -216,9 +227,9 @@ class GroqClient:
                             model=LLM_MODEL,
                             messages=full_messages,
                             temperature=temperature,
-                            max_tokens=max_tokens
+                            max_tokens=max_tokens,
                         ),
-                        timeout=3.0
+                        timeout=3.0,
                     )
                     return response.choices[0].message.content.strip()
                 except asyncio.TimeoutError:
@@ -240,7 +251,7 @@ class GroqClient:
         self,
         audio_data: bytes,
         conversation_history: List[Dict[str, str]],
-        system_prompt: str
+        system_prompt: str,
     ) -> Dict[str, Any]:
         """
         Full pipeline: STT -> LLM -> Response.
@@ -261,37 +272,58 @@ class GroqClient:
         transcription = await self.transcribe_audio(audio_data)
 
         # Step 2: Add to history
-        messages = conversation_history + [
-            {"role": "user", "content": transcription}
-        ]
+        messages = conversation_history + [{"role": "user", "content": transcription}]
 
         # Step 3: Generate response
         response = await self.generate_response(
-            messages=messages,
-            system_prompt=system_prompt
+            messages=messages, system_prompt=system_prompt
         )
 
         # Step 4: Detect intent (simple keyword matching)
         intent = self._detect_intent(transcription)
 
-        return {
-            "transcription": transcription,
-            "response": response,
-            "intent": intent
-        }
+        return {"transcription": transcription, "response": response, "intent": intent}
 
     def _detect_intent(self, text: str) -> str:
         """Simple intent detection from text."""
         text_lower = text.lower()
 
         intents = {
-            "prenotazione": ["prenotare", "appuntamento", "fissare", "prendere", "disponibilità"],
+            "prenotazione": [
+                "prenotare",
+                "appuntamento",
+                "fissare",
+                "prendere",
+                "disponibilità",
+            ],
             "cancellazione": ["cancellare", "disdire", "annullare", "eliminare"],
-            "spostamento": ["spostare", "cambiare", "modificare", "anticipare", "posticipare"],
+            "spostamento": [
+                "spostare",
+                "cambiare",
+                "modificare",
+                "anticipare",
+                "posticipare",
+            ],
             "informazioni": ["quanto costa", "prezzo", "prezzi", "orari", "servizi"],
-            "waitlist": ["lista d'attesa", "lista attesa", "avvisami", "avvisatemi", "chiamami quando", "fatemi sapere", "primo posto disponibile"],
-            "conferma": ["sì", "va bene", "ok", "confermo", "perfetto", "certo", "assolutamente"],
-            "negazione": ["no", "non voglio", "annulla", "lascia stare", "niente"]
+            "waitlist": [
+                "lista d'attesa",
+                "lista attesa",
+                "avvisami",
+                "avvisatemi",
+                "chiamami quando",
+                "fatemi sapere",
+                "primo posto disponibile",
+            ],
+            "conferma": [
+                "sì",
+                "va bene",
+                "ok",
+                "confermo",
+                "perfetto",
+                "certo",
+                "assolutamente",
+            ],
+            "negazione": ["no", "non voglio", "annulla", "lascia stare", "niente"],
         }
 
         for intent, keywords in intents.items():
@@ -312,16 +344,16 @@ class GroqClient:
         temperature: float = 0.7,
         max_tokens: int = 300,
         model: Optional[str] = None,
-        min_chunk_size: int = 20
+        min_chunk_size: int = 20,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate response with streaming - Yields TTS-ready chunks.
-        
+
         Best Practice 2026 (Reddit r/LLMDevs):
         - Non aspettare LLM completion, stream tokens immediatamente
         - Buffering intelligente: yield su punteggiatura o buffer size
         - Parallel TTS: inizia sintesi vocale mentre LLM ancora genera
-        
+
         Args:
             messages: Conversation history
             system_prompt: System instructions
@@ -329,7 +361,7 @@ class GroqClient:
             max_tokens: Max response length
             model: Model name (default: llama-3.3-70b-versatile)
             min_chunk_size: Min characters before yielding
-            
+
         Yields:
             Dict con: {"text": str, "is_final": bool, "latency_ms": float}
         """
@@ -342,7 +374,7 @@ class GroqClient:
         start_time = time.perf_counter()
         buffer = ""
         first_token_time = None
-        sentence_delimiters = ['.', '!', '?', ';', ':', '\n']
+        sentence_delimiters = [".", "!", "?", ";", ":", "\n"]
 
         try:
             semaphore = self._get_llm_semaphore()
@@ -350,7 +382,9 @@ class GroqClient:
             for _attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
                 if _attempt > 0:
                     _delay = _GROQ_BACKOFF_DELAYS[_attempt - 1]
-                    print(f"[GroqClient] Streaming rate limit, retry {_attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {_delay*1000:.0f}ms")
+                    print(
+                        f"[GroqClient] Streaming rate limit, retry {_attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {_delay * 1000:.0f}ms"
+                    )
                     await asyncio.sleep(_delay)
                 try:
                     # B1 FIX CoVe2026: timeout 5s su avvio stream
@@ -363,7 +397,7 @@ class GroqClient:
                                 max_tokens=max_tokens,
                                 stream=True,
                             ),
-                            timeout=5.0
+                            timeout=5.0,
                         )
                     break
                 except asyncio.TimeoutError:
@@ -377,12 +411,12 @@ class GroqClient:
 
             async for chunk in stream:
                 delta = chunk.choices[0].delta.content or ""
-                
+
                 if first_token_time is None and delta:
                     first_token_time = time.perf_counter() - start_time
-                
+
                 buffer += delta
-                
+
                 # Yield su condizioni
                 should_yield = False
                 if len(buffer) >= min_chunk_size * 3:  # Max chunk
@@ -392,37 +426,48 @@ class GroqClient:
                     if any(d in buffer for d in sentence_delimiters):
                         should_yield = True
                     # Check parole di transizione italiane
-                    transition_words = [' e ', ' ma ', ' però ', ' quindi ', ' allora ', ' per ']
+                    transition_words = [
+                        " e ",
+                        " ma ",
+                        " però ",
+                        " quindi ",
+                        " allora ",
+                        " per ",
+                    ]
                     if any(w in buffer.lower() for w in transition_words):
                         should_yield = True
-                
+
                 if should_yield:
                     # Trova punto ottimale per spezzare
                     split_point = len(buffer)
-                    for delim in ['. ', '! ', '? ', '; ', ': ', '\n', ' e ', ' ma ']:
+                    for delim in [". ", "! ", "? ", "; ", ": ", "\n", " e ", " ma "]:
                         idx = buffer.rfind(delim, min_chunk_size // 2, len(buffer))
                         if idx > 0:
                             split_point = idx + len(delim)
                             break
-                    
+
                     to_yield = buffer[:split_point].strip()
                     buffer = buffer[split_point:].strip()
-                    
+
                     if to_yield:
                         yield {
                             "text": to_yield,
                             "is_final": False,
                             "latency_ms": (time.perf_counter() - start_time) * 1000,
-                            "first_token_ms": first_token_time * 1000 if first_token_time else 0
+                            "first_token_ms": first_token_time * 1000
+                            if first_token_time
+                            else 0,
                         }
-            
+
             # Yield finale
             if buffer.strip():
                 yield {
                     "text": buffer.strip(),
                     "is_final": True,
                     "latency_ms": (time.perf_counter() - start_time) * 1000,
-                    "first_token_ms": first_token_time * 1000 if first_token_time else 0
+                    "first_token_ms": first_token_time * 1000
+                    if first_token_time
+                    else 0,
                 }
 
         except asyncio.CancelledError:
@@ -435,13 +480,13 @@ class GroqClient:
                     messages=messages,
                     system_prompt=system_prompt,
                     temperature=temperature,
-                    max_tokens=max_tokens
+                    max_tokens=max_tokens,
                 )
                 yield {
                     "text": response,
                     "is_final": True,
                     "latency_ms": (time.perf_counter() - start_time) * 1000,
-                    "first_token_ms": 0
+                    "first_token_ms": 0,
                 }
             except asyncio.CancelledError:
                 raise
@@ -452,13 +497,13 @@ class GroqClient:
         self,
         messages: List[Dict[str, str]],
         system_prompt: Optional[str] = None,
-        complexity: str = "auto"
+        complexity: str = "auto",
     ) -> str:
         """
         Generate with automatic model selection.
-        
+
         Args:
-            complexity: "simple" -> mixtral-8x7b (fast), 
+            complexity: "simple" -> mixtral-8x7b (fast),
                        "complex" -> llama-3.3-70b (accurate),
                        "auto" -> decide based on context
         """
@@ -469,12 +514,12 @@ class GroqClient:
         else:  # auto
             # Euristiche per determinare complessità
             last_message = messages[-1]["content"].lower() if messages else ""
-            simple_patterns = ['sì', 'no', 'va bene', 'confermo', 'cancella', 'grazie']
+            simple_patterns = ["sì", "no", "va bene", "confermo", "cancella", "grazie"]
             if any(p in last_message for p in simple_patterns):
                 model = "mixtral-8x7b-32768"
             else:
                 model = LLM_MODEL
-        
+
         full_messages = []
         if system_prompt:
             full_messages.append({"role": "system", "content": system_prompt})
@@ -485,7 +530,9 @@ class GroqClient:
             for attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
                 if attempt > 0:
                     delay = _GROQ_BACKOFF_DELAYS[attempt - 1]
-                    print(f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay*1000:.0f}ms")
+                    print(
+                        f"[GroqClient] LLM rate limit, retry {attempt}/{len(_GROQ_BACKOFF_DELAYS)} in {delay * 1000:.0f}ms"
+                    )
                     await asyncio.sleep(delay)
                 try:
                     response = await asyncio.to_thread(
@@ -493,7 +540,7 @@ class GroqClient:
                         model=model,
                         messages=full_messages,
                         temperature=0.7,
-                        max_tokens=300
+                        max_tokens=300,
                     )
                     return response.choices[0].message.content.strip()
                 except Exception as e:
@@ -510,7 +557,7 @@ async def test_groq():
     # Test LLM
     response = await client.generate_response(
         messages=[{"role": "user", "content": "Ciao, come stai?"}],
-        system_prompt="Sei Sara, assistente vocale di un salone di bellezza. Rispondi brevemente in italiano."
+        system_prompt="Sei Sara, assistente vocale di un salone di bellezza. Rispondi brevemente in italiano.",
     )
     print(f"LLM Response: {response}")
 
@@ -519,4 +566,5 @@ async def test_groq():
 
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(test_groq())

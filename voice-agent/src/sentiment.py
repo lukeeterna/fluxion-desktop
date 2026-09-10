@@ -13,6 +13,7 @@ import re
 
 class Sentiment(Enum):
     """Sentiment classification."""
+
     POSITIVE = "positive"
     NEUTRAL = "neutral"
     NEGATIVE = "negative"
@@ -20,6 +21,7 @@ class Sentiment(Enum):
 
 class FrustrationLevel(Enum):
     """Frustration intensity levels."""
+
     NONE = 0
     LOW = 1
     MEDIUM = 2
@@ -30,6 +32,7 @@ class FrustrationLevel(Enum):
 @dataclass
 class SentimentResult:
     """Result of sentiment analysis."""
+
     sentiment: Sentiment
     confidence: float
     frustration_level: FrustrationLevel
@@ -70,7 +73,6 @@ class SentimentAnalyzer:
         "fa schifo": 4,
         "vaffanculo": 4,
         "cazzo": 4,
-
         # High frustration (weight 3)
         "non capisco": 3,
         "non ho capito": 3,
@@ -80,7 +82,6 @@ class SentimentAnalyzer:
         "ridicolo": 3,
         "inutile": 3,
         "non funziona": 3,
-
         # Medium frustration (weight 2)
         "non va bene": 2,
         "sbagliato": 2,
@@ -93,7 +94,6 @@ class SentimentAnalyzer:
         "frustrante": 2,
         "stanco": 2,
         "scocciato": 2,
-
         # Low frustration (weight 1) - only as standalone words
         "aspetta": 1,
         "un attimo": 1,
@@ -109,21 +109,54 @@ class SentimentAnalyzer:
 
     # Positive sentiment keywords
     POSITIVE_KEYWORDS: List[str] = [
-        "grazie", "perfetto", "ottimo", "bene", "benissimo",
-        "fantastico", "eccellente", "bravo", "brava", "gentile",
-        "gentilissimo", "ok", "va bene", "d'accordo", "capito",
-        "chiaro", "sì", "certo", "esatto", "giusto",
-        "magnifico", "meraviglioso", "splendido", "contento",
-        "soddisfatto", "felice",
+        "grazie",
+        "perfetto",
+        "ottimo",
+        "bene",
+        "benissimo",
+        "fantastico",
+        "eccellente",
+        "bravo",
+        "brava",
+        "gentile",
+        "gentilissimo",
+        "ok",
+        "va bene",
+        "d'accordo",
+        "capito",
+        "chiaro",
+        "sì",
+        "certo",
+        "esatto",
+        "giusto",
+        "magnifico",
+        "meraviglioso",
+        "splendido",
+        "contento",
+        "soddisfatto",
+        "felice",
     ]
 
     # Negative sentiment keywords (beyond frustration)
     # These are matched as substrings (multi-word) or word boundaries (single word)
     NEGATIVE_KEYWORDS: List[str] = [
-        "male", "brutto", "sbagliato", "non mi piace",
-        "deludente", "deluso", "arrabbiato", "nervoso", "scontento",
-        "dispiaciuto", "peccato", "sfortunatamente", "purtroppo",
-        "triste", "preoccupato", "annoiato", "che schifo",
+        "male",
+        "brutto",
+        "sbagliato",
+        "non mi piace",
+        "deludente",
+        "deluso",
+        "arrabbiato",
+        "nervoso",
+        "scontento",
+        "dispiaciuto",
+        "peccato",
+        "sfortunatamente",
+        "purtroppo",
+        "triste",
+        "preoccupato",
+        "annoiato",
+        "che schifo",
     ]
 
     # Single-word negative keywords requiring word boundary matching
@@ -183,7 +216,8 @@ class SentimentAnalyzer:
         # Try to import TextBlob-it for enhanced analysis
         self._textblob_available = False
         try:
-            from textblob import TextBlob
+            from textblob import TextBlob  # noqa: F401
+
             self._textblob_available = True
         except ImportError:
             pass
@@ -222,7 +256,7 @@ class SentimentAnalyzer:
         cumulative_frustration = frustration_score
         if include_history and self._conversation_history:
             recent_scores = [
-                score for _, score in self._conversation_history[-self.history_window:]
+                score for _, score in self._conversation_history[-self.history_window :]
             ]
             cumulative_frustration += sum(recent_scores)
 
@@ -239,7 +273,9 @@ class SentimentAnalyzer:
         # 9. Update history
         self._conversation_history.append((text, frustration_score))
         if len(self._conversation_history) > self.history_window * 2:
-            self._conversation_history = self._conversation_history[-self.history_window:]
+            self._conversation_history = self._conversation_history[
+                -self.history_window :
+            ]
 
         # 10. Calculate confidence based on evidence strength
         confidence = self._calculate_confidence(
@@ -311,13 +347,16 @@ class SentimentAnalyzer:
         if self._textblob_available:
             try:
                 from textblob import TextBlob
+
                 blob = TextBlob(text)
                 # TextBlob polarity is -1 to 1
                 polarity = blob.sentiment.polarity
                 if polarity > 0.1:
                     scores["positive"] = max(scores["positive"], 0.5 + polarity * 0.5)
                 elif polarity < -0.1:
-                    scores["negative"] = max(scores["negative"], 0.5 + abs(polarity) * 0.5)
+                    scores["negative"] = max(
+                        scores["negative"], 0.5 + abs(polarity) * 0.5
+                    )
             except Exception:
                 pass  # Fallback to keyword-based
 
@@ -370,7 +409,10 @@ class SentimentAnalyzer:
             return True, "critical_frustration"
 
         # High frustration with threshold exceeded
-        if frustration_level == FrustrationLevel.HIGH and cumulative_score >= self.escalation_threshold:
+        if (
+            frustration_level == FrustrationLevel.HIGH
+            and cumulative_score >= self.escalation_threshold
+        ):
             return True, "cumulative_frustration"
 
         return False, None

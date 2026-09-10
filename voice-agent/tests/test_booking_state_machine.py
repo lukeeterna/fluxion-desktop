@@ -23,8 +23,6 @@ from booking_state_machine import (
     BookingStateMachine,
     BookingState,
     BookingContext,
-    StateMachineResult,
-    DEFAULT_SERVICES,
 )
 
 
@@ -40,6 +38,7 @@ REFERENCE_DATE = datetime(2026, 1, 13, 10, 0, 0)  # Tuesday, January 13, 2026
 # HELPER FUNCTIONS
 # =============================================================================
 
+
 def create_state_machine() -> BookingStateMachine:
     """Create a state machine with fixed reference date."""
     return BookingStateMachine(reference_date=REFERENCE_DATE)
@@ -48,6 +47,7 @@ def create_state_machine() -> BookingStateMachine:
 # =============================================================================
 # TEST: NORMAL BOOKING FLOW
 # =============================================================================
+
 
 class TestNormalBookingFlow:
     """Test the complete normal booking flow."""
@@ -65,7 +65,9 @@ class TestNormalBookingFlow:
         result = sm.process_message("vorrei un taglio")
         assert result.next_state == BookingState.WAITING_DATE
         assert sm.context.service == "taglio"
-        assert "giorno" in result.response.lower() or "quando" in result.response.lower()
+        assert (
+            "giorno" in result.response.lower() or "quando" in result.response.lower()
+        )
 
         # Provide date
         result = sm.process_message("domani")
@@ -78,7 +80,10 @@ class TestNormalBookingFlow:
         assert result.next_state == BookingState.CONFIRMING
         assert sm.context.time == "15:00"
         confirmation_text = result.response.lower()
-        assert any(marker in confirmation_text for marker in ("conferma", "riepilogo", "tutto giusto"))
+        assert any(
+            marker in confirmation_text
+            for marker in ("conferma", "riepilogo", "tutto giusto")
+        )
 
         # E4: Confirm → COMPLETED directly (no ASKING_CLOSE_CONFIRMATION)
         result = sm.process_message("sì confermo")
@@ -122,6 +127,7 @@ class TestNormalBookingFlow:
 # TEST: STATE TRANSITIONS
 # =============================================================================
 
+
 class TestStateTransitions:
     """Test state transitions."""
 
@@ -138,7 +144,7 @@ class TestStateTransitions:
         sm = create_state_machine()
         sm.start_booking_flow()
 
-        result = sm.process_message("voglio fare il colore")
+        sm.process_message("voglio fare il colore")
 
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.service == "colore"
@@ -149,7 +155,7 @@ class TestStateTransitions:
         sm.start_booking_flow()
         sm.process_message("piega")
 
-        result = sm.process_message("lunedì prossimo")
+        sm.process_message("lunedì prossimo")
 
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.date is not None
@@ -161,7 +167,7 @@ class TestStateTransitions:
         sm.process_message("taglio")
         sm.process_message("domani")
 
-        result = sm.process_message("alle 10 e mezza")
+        sm.process_message("alle 10 e mezza")
 
         assert sm.context.state == BookingState.CONFIRMING
         assert sm.context.time == "10:30"
@@ -197,6 +203,7 @@ class TestStateTransitions:
 # TEST: INTERRUPTION HANDLING
 # =============================================================================
 
+
 class TestInterruptionHandling:
     """Test interruption handling patterns."""
 
@@ -208,7 +215,7 @@ class TestInterruptionHandling:
         sm.process_message("domani")
 
         # User wants to restart
-        result = sm.process_message("no aspetta, ricominciamo")
+        sm.process_message("no aspetta, ricominciamo")
 
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert sm.context.service is None
@@ -221,7 +228,7 @@ class TestInterruptionHandling:
         sm.start_booking_flow()
         sm.process_message("taglio domani alle 15")
 
-        result = sm.process_message("annulla tutto")
+        sm.process_message("annulla tutto")
 
         assert sm.context.state == BookingState.WAITING_SERVICE
 
@@ -236,7 +243,9 @@ class TestInterruptionHandling:
         # Should acknowledge but stay in same state
         assert result.next_state == BookingState.WAITING_DATE
         acknowledgement = result.response.lower()
-        assert any(marker in acknowledgement for marker in ("cambiare", "dica", "dimmi"))
+        assert any(
+            marker in acknowledgement for marker in ("cambiare", "dica", "dimmi")
+        )
 
     def test_operator_escalation(self):
         """Test 'operatore' triggers escalation."""
@@ -262,6 +271,7 @@ class TestInterruptionHandling:
 # TEST: CONFIRMATION CHANGES
 # =============================================================================
 
+
 class TestConfirmationChanges:
     """Test changing info during confirmation."""
 
@@ -274,7 +284,7 @@ class TestConfirmationChanges:
         sm.process_message("alle 15")
 
         # Now in CONFIRMING, want to change service
-        result = sm.process_message("cambio servizio")
+        sm.process_message("cambio servizio")
 
         assert sm.context.state == BookingState.WAITING_SERVICE
         assert sm.context.service is None
@@ -287,7 +297,7 @@ class TestConfirmationChanges:
         sm.process_message("domani")
         sm.process_message("alle 15")
 
-        result = sm.process_message("cambio giorno")
+        sm.process_message("cambio giorno")
 
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.date is None
@@ -300,7 +310,7 @@ class TestConfirmationChanges:
         sm.process_message("domani")
         sm.process_message("alle 15")
 
-        result = sm.process_message("cambio orario")
+        sm.process_message("cambio orario")
 
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.time is None
@@ -309,6 +319,7 @@ class TestConfirmationChanges:
 # =============================================================================
 # TEST: ENTITY EXTRACTION INTEGRATION
 # =============================================================================
+
 
 class TestEntityExtractionIntegration:
     """Test integration with entity extractor."""
@@ -338,7 +349,7 @@ class TestEntityExtractionIntegration:
         sm.process_message("taglio")
 
         # Test various date formats
-        result = sm.process_message("dopodomani")
+        sm.process_message("dopodomani")
         assert sm.context.date is not None
         expected_date = (REFERENCE_DATE + timedelta(days=2)).strftime("%Y-%m-%d")
         assert sm.context.date == expected_date
@@ -350,7 +361,7 @@ class TestEntityExtractionIntegration:
         sm.process_message("taglio")
         sm.process_message("domani")
 
-        result = sm.process_message("alle 9 e mezza")
+        sm.process_message("alle 9 e mezza")
         assert sm.context.time == "09:30"
 
     def test_approximate_time_handling(self):
@@ -360,7 +371,7 @@ class TestEntityExtractionIntegration:
         sm.process_message("taglio")
         sm.process_message("domani")
 
-        result = sm.process_message("di pomeriggio")
+        sm.process_message("di pomeriggio")
         assert sm.context.time == "15:00"
         assert sm.context.time_is_approximate is True
 
@@ -369,7 +380,7 @@ class TestEntityExtractionIntegration:
         sm = create_state_machine()
         sm.context.state = BookingState.WAITING_NAME
 
-        result = sm.process_message("mi chiamo Laura Bianchi")
+        sm.process_message("mi chiamo Laura Bianchi")
         assert sm.context.client_name == "Laura"
         assert sm.context.client_surname == "Bianchi"
 
@@ -377,6 +388,7 @@ class TestEntityExtractionIntegration:
 # =============================================================================
 # TEST: CONTEXT PERSISTENCE
 # =============================================================================
+
 
 class TestContextPersistence:
     """Test context serialization and deserialization."""
@@ -388,7 +400,7 @@ class TestContextPersistence:
             service="taglio",
             service_display="Taglio",
             client_name="Mario",
-            turns_count=3
+            turns_count=3,
         )
 
         json_str = ctx.to_json()
@@ -401,29 +413,31 @@ class TestContextPersistence:
 
     def test_context_from_json(self):
         """Test context deserialization to JSON."""
-        json_str = json.dumps({
-            "state": "confirming",
-            "service": "colore",
-            "service_display": "Colore",
-            "date": "2026-01-15",
-            "date_display": "mercoledì 15 gennaio",
-            "time": "10:00",
-            "time_display": "alle 10:00",
-            "client_name": "Anna",
-            "client_id": None,
-            "client_phone": None,
-            "client_email": None,
-            "operator_id": None,
-            "operator_name": None,
-            "operator_requested": False,
-            "notes": None,
-            "created_at": None,
-            "updated_at": None,
-            "turns_count": 5,
-            "time_is_approximate": False,
-            "was_interrupted": False,
-            "previous_state": None
-        })
+        json_str = json.dumps(
+            {
+                "state": "confirming",
+                "service": "colore",
+                "service_display": "Colore",
+                "date": "2026-01-15",
+                "date_display": "mercoledì 15 gennaio",
+                "time": "10:00",
+                "time_display": "alle 10:00",
+                "client_name": "Anna",
+                "client_id": None,
+                "client_phone": None,
+                "client_email": None,
+                "operator_id": None,
+                "operator_name": None,
+                "operator_requested": False,
+                "notes": None,
+                "created_at": None,
+                "updated_at": None,
+                "turns_count": 5,
+                "time_is_approximate": False,
+                "was_interrupted": False,
+                "previous_state": None,
+            }
+        )
 
         ctx = BookingContext.from_json(json_str)
 
@@ -440,7 +454,7 @@ class TestContextPersistence:
             service="piega",
             date="2026-01-20",
             client_name="Giuseppe",
-            turns_count=4
+            turns_count=4,
         )
 
         json_str = original.to_json()
@@ -459,7 +473,7 @@ class TestContextPersistence:
             service="taglio",
             service_display="Taglio",
             date="2026-01-15",
-            date_display="mercoledì 15 gennaio"
+            date_display="mercoledì 15 gennaio",
         )
 
         # Create new state machine and restore context
@@ -467,7 +481,7 @@ class TestContextPersistence:
         sm.set_context(ctx)
 
         # Process should continue from WAITING_TIME
-        result = sm.process_message("alle 16")
+        sm.process_message("alle 16")
 
         assert sm.context.state == BookingState.CONFIRMING
         assert sm.context.time == "16:00"
@@ -476,6 +490,7 @@ class TestContextPersistence:
 # =============================================================================
 # TEST: CONTEXT METHODS
 # =============================================================================
+
 
 class TestContextMethods:
     """Test BookingContext utility methods."""
@@ -488,7 +503,7 @@ class TestContextMethods:
             date="2026-01-15",
             date_display="mercoledì 15 gennaio",
             time="10:00",
-            time_display="alle 10:00"
+            time_display="alle 10:00",
         )
 
         summary = ctx.get_summary()
@@ -502,7 +517,7 @@ class TestContextMethods:
             service_display="Colore",
             date_display="domani",
             time_display="alle 15:00",
-            operator_name="Maria"
+            operator_name="Maria",
         )
 
         summary = ctx.get_summary()
@@ -542,7 +557,7 @@ class TestContextMethods:
             service="taglio",
             client_name="Mario",
             client_id="123",
-            turns_count=5
+            turns_count=5,
         )
 
         d = ctx.to_dict()
@@ -556,6 +571,7 @@ class TestContextMethods:
 # =============================================================================
 # TEST: INITIAL CONTEXT
 # =============================================================================
+
 
 class TestInitialContext:
     """Test starting flow with pre-populated context."""
@@ -583,6 +599,7 @@ class TestInitialContext:
 # TEST: ERROR HANDLING
 # =============================================================================
 
+
 class TestErrorHandling:
     """Test error cases and recovery."""
 
@@ -604,7 +621,7 @@ class TestErrorHandling:
         sm.start_booking_flow()
         sm.process_message("taglio")
 
-        result = sm.process_message("il giorno blu")
+        sm.process_message("il giorno blu")
 
         assert sm.context.state == BookingState.WAITING_DATE
         assert sm.context.date is None
@@ -616,7 +633,7 @@ class TestErrorHandling:
         sm.process_message("taglio")
         sm.process_message("domani")
 
-        result = sm.process_message("quando capita")
+        sm.process_message("quando capita")
 
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.time is None
@@ -628,11 +645,11 @@ class TestErrorHandling:
         sm.process_message("taglio")
 
         # Invalid date
-        result = sm.process_message("xyz")
+        sm.process_message("xyz")
         assert sm.context.state == BookingState.WAITING_DATE
 
         # Valid date
-        result = sm.process_message("domani")
+        sm.process_message("domani")
         assert sm.context.state == BookingState.WAITING_TIME
         assert sm.context.date is not None
 
@@ -640,6 +657,7 @@ class TestErrorHandling:
 # =============================================================================
 # TEST: CONFIRMATION VARIATIONS
 # =============================================================================
+
 
 class TestConfirmationVariations:
     """Test various confirmation phrases."""
@@ -664,7 +682,9 @@ class TestConfirmationVariations:
 
             result = sm.process_message(response)
             # E4: CONFIRMING → COMPLETED directly
-            assert result.next_state == BookingState.COMPLETED, f"Failed CONFIRMING→COMPLETED for '{response}'"
+            assert result.next_state == BookingState.COMPLETED, (
+                f"Failed CONFIRMING→COMPLETED for '{response}'"
+            )
             assert result.should_exit is True
 
     def test_negative_responses(self):
@@ -682,12 +702,15 @@ class TestConfirmationVariations:
             sm.process_message("taglio domani alle 15")
 
             result = sm.process_message(response)
-            assert result.next_state == BookingState.CANCELLED, f"Failed for '{response}'"
+            assert result.next_state == BookingState.CANCELLED, (
+                f"Failed for '{response}'"
+            )
 
 
 # =============================================================================
 # BUG REGRESSION TESTS (Gino conversation)
 # =============================================================================
+
 
 class TestBugRegression:
     """Regression tests for bugs found during Gino live conversation."""
@@ -701,11 +724,15 @@ class TestBugRegression:
         sm.context.is_new_client = True
         sm.context.state = BookingState.REGISTERING_SURNAME
 
-        result = sm.process_message("Di Nanni")
+        sm.process_message("Di Nanni")
 
-        assert sm.context.client_name == "Gino", f"client_name was overwritten to '{sm.context.client_name}'"
+        assert sm.context.client_name == "Gino", (
+            f"client_name was overwritten to '{sm.context.client_name}'"
+        )
         assert sm.context.client_surname is not None, "client_surname not set"
-        assert "nanni" in sm.context.client_surname.lower(), f"client_surname wrong: '{sm.context.client_surname}'"
+        assert "nanni" in sm.context.client_surname.lower(), (
+            f"client_surname wrong: '{sm.context.client_surname}'"
+        )
 
     def test_bug1_surname_single_word_preserved(self):
         """Single-word surname preserves existing client_name."""
@@ -821,7 +848,10 @@ class TestBugRegression:
 
         # COMPLETED now ends the call (should_exit=True)
         assert result.should_exit is True
-        assert "arrivederci" in result.response.lower() or "confermato" in result.response.lower()
+        assert (
+            "arrivederci" in result.response.lower()
+            or "confermato" in result.response.lower()
+        )
 
     def test_bug4_cancelled_state_closes_call(self):
         """After CANCELLED, call should end with a graceful goodbye (VoIP simulation)."""
@@ -836,7 +866,10 @@ class TestBugRegression:
         # exact copy may legitimately vary across goodbye templates.
         assert result.should_exit is True
         response_text = result.response.lower()
-        assert any(marker in response_text for marker in ("arrivederci", "a presto", "buona giornata"))
+        assert any(
+            marker in response_text
+            for marker in ("arrivederci", "a presto", "buona giornata")
+        )
 
     # --- BUG 5: Just-registered client not found ---
 
@@ -873,7 +906,9 @@ class TestBugRegression:
 
         # Should go to WAITING_SERVICE without DB lookup
         assert sm.context.state == BookingState.WAITING_SERVICE
-        assert not result.needs_db_lookup, "Should not need DB lookup when client_id is set"
+        assert not result.needs_db_lookup, (
+            "Should not need DB lookup when client_id is set"
+        )
         assert "Gino" in result.response
 
 
@@ -881,16 +916,21 @@ class TestBugRegression:
 # WHATSAPP FAQ PATTERN TESTS
 # =============================================================================
 
+
 class TestWhatsAppFAQ:
     """Test WhatsApp FAQ pattern detection (L0a handler)."""
 
     def setup_method(self):
         import re
+
         # Mirror the patterns from orchestrator._WA_FAQ_PATTERNS
         self.patterns = [
             re.compile(r"\bwhatsapp\b", re.IGNORECASE),
             re.compile(r"\bconferma\s+(?:via|su|per|tramite)\b", re.IGNORECASE),
-            re.compile(r"\b(?:mandate|inviate|spedite)\s+(?:conferma|messaggio|notifica)\b", re.IGNORECASE),
+            re.compile(
+                r"\b(?:mandate|inviate|spedite)\s+(?:conferma|messaggio|notifica)\b",
+                re.IGNORECASE,
+            ),
         ]
 
     def _matches(self, text: str) -> bool:
@@ -922,6 +962,7 @@ class TestWhatsAppFAQ:
 # BUG 4: Back-navigation from WAITING_TIME to WAITING_DATE
 # =============================================================================
 
+
 class TestBug4BackNavigationFromWaitingTime:
     """BUG 4: User can change date while in WAITING_TIME state."""
 
@@ -939,8 +980,9 @@ class TestBug4BackNavigationFromWaitingTime:
         """'non posso lunedì, facciamo mercoledì' → back to WAITING_DATE."""
         sm = self._setup_at_waiting_time()
         result = sm.process_message("non posso lunedì, facciamo mercoledì")
-        assert result.next_state == BookingState.WAITING_DATE, \
+        assert result.next_state == BookingState.WAITING_DATE, (
             f"Expected WAITING_DATE, got {result.next_state}"
+        )
         assert sm.context.date is None, "Date should be cleared"
 
     def test_weekday_without_time(self):
@@ -967,7 +1009,9 @@ class TestBug4BackNavigationFromWaitingTime:
     def test_conversation_replay(self):
         """Replay: 'per forza lunedì non possiamo fare tra mercoledì e giovedì?'"""
         sm = self._setup_at_waiting_time()
-        result = sm.process_message("Senti, per forza lunedì non possiamo fare tra mercoledì e giovedì?")
+        result = sm.process_message(
+            "Senti, per forza lunedì non possiamo fare tra mercoledì e giovedì?"
+        )
         assert result.next_state == BookingState.WAITING_DATE
         assert sm.context.date is None
         assert sm.context.time is None
@@ -983,6 +1027,7 @@ class TestBug4BackNavigationFromWaitingTime:
 # BUG 2: Service correction in WAITING_DATE
 # =============================================================================
 
+
 class TestBug2ServiceCorrectionInWaitingDate:
     """BUG 2: User can add/change services while in WAITING_DATE state."""
 
@@ -996,13 +1041,17 @@ class TestBug2ServiceCorrectionInWaitingDate:
             sm.context.services = services
             sm.context.service = services[0]
             from booking_state_machine import SERVICE_DISPLAY
+
             display_names = [SERVICE_DISPLAY.get(s, s.capitalize()) for s in services]
             sm.context.service_display = " e ".join(display_names)
         elif service:
             sm.context.service = service
             sm.context.services = [service]
             from booking_state_machine import SERVICE_DISPLAY
-            sm.context.service_display = SERVICE_DISPLAY.get(service, service.capitalize())
+
+            sm.context.service_display = SERVICE_DISPLAY.get(
+                service, service.capitalize()
+            )
         return sm
 
     def test_add_service_no_date(self):
@@ -1026,7 +1075,7 @@ class TestBug2ServiceCorrectionInWaitingDate:
     def test_add_multiple_services(self):
         """'voglio anche barba e colore' → merges both services."""
         sm = self._setup_at_waiting_date(service="taglio")
-        result = sm.process_message("voglio anche barba e colore")
+        sm.process_message("voglio anche barba e colore")
         assert "taglio" in sm.context.services
         assert "barba" in sm.context.services
         assert "colore" in sm.context.services
@@ -1034,7 +1083,7 @@ class TestBug2ServiceCorrectionInWaitingDate:
     def test_no_duplicate_services(self):
         """Already-existing service is NOT added again."""
         sm = self._setup_at_waiting_date(services=["taglio", "barba"])
-        result = sm.process_message("voglio anche taglio e colore")
+        sm.process_message("voglio anche taglio e colore")
         assert sm.context.services.count("taglio") == 1
         assert "colore" in sm.context.services
 
@@ -1049,7 +1098,7 @@ class TestBug2ServiceCorrectionInWaitingDate:
         """'venerdì' with no service mention → normal date extraction, no service merge."""
         sm = self._setup_at_waiting_date(service="taglio")
         original_services = list(sm.context.services)
-        result = sm.process_message("venerdì")
+        sm.process_message("venerdì")
         assert sm.context.services == original_services
         assert sm.context.date is not None
 
@@ -1058,15 +1107,17 @@ class TestBug2ServiceCorrectionInWaitingDate:
 # F02.1-03: BUG 1 — NEGATED CANCEL GUARD
 # =============================================================================
 
+
 class TestNegatedCancelGuard:
     """Bug 1 F02.1: 'non voglio cancellare' must keep the booking, not cancel it."""
 
     def test_negated_cancel_regex_matches(self):
         """The _NEGATED_CANCEL pattern must match expected phrases."""
         import re
+
         _NEGATED_CANCEL = re.compile(
             r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
-            re.IGNORECASE
+            re.IGNORECASE,
         )
         assert _NEGATED_CANCEL.search("non voglio cancellare")
         assert _NEGATED_CANCEL.search("non intendo annullare")
@@ -1077,9 +1128,10 @@ class TestNegatedCancelGuard:
 
     def test_negated_cancel_regex_case_insensitive(self):
         import re
+
         _NEGATED_CANCEL = re.compile(
             r"\bnon\s+(?:voglio|intendo|desidero)\s+(?:cancellare?|annullare?|disdire?)\b",
-            re.IGNORECASE
+            re.IGNORECASE,
         )
         assert _NEGATED_CANCEL.search("NON VOGLIO CANCELLARE")
         assert _NEGATED_CANCEL.search("Non Intendo Annullare")
@@ -1089,6 +1141,7 @@ class TestNegatedCancelGuard:
 # F02.1-03: BUG 5 — EXTRA ENTITIES IN CONFIRMING STATE
 # =============================================================================
 
+
 class TestExtraEntitiesInConfirming:
     """Bug 5 F02.1: extra_entities must appear in CONFIRMING state response."""
 
@@ -1096,14 +1149,14 @@ class TestExtraEntitiesInConfirming:
         """Medical specialty appears in confirmation message."""
         sm = create_state_machine()
         sm.start_booking_flow()
-        sm.context.extra_entities = {'specialty': 'Cardiologia'}
-        sm.context.client_name = 'Mario Rossi'
-        sm.context.service = 'visita'
+        sm.context.extra_entities = {"specialty": "Cardiologia"}
+        sm.context.client_name = "Mario Rossi"
+        sm.context.service = "visita"
         sm.context.state = BookingState.CONFIRMING
 
         result = sm.process_message("si confermo")
         if result.response:
-            assert 'Cardiologia' in result.response, (
+            assert "Cardiologia" in result.response, (
                 f"Expected 'Cardiologia' in response, got: {result.response}"
             )
 
@@ -1111,14 +1164,14 @@ class TestExtraEntitiesInConfirming:
         """Vehicle plate appears in confirmation message."""
         sm = create_state_machine()
         sm.start_booking_flow()
-        sm.context.extra_entities = {'vehicle_plate': 'AB123CD'}
-        sm.context.client_name = 'Gino Bianchi'
-        sm.context.service = 'tagliando'
+        sm.context.extra_entities = {"vehicle_plate": "AB123CD"}
+        sm.context.client_name = "Gino Bianchi"
+        sm.context.service = "tagliando"
         sm.context.state = BookingState.CONFIRMING
 
         result = sm.process_message("si confermo")
         if result.response:
-            assert 'AB123CD' in result.response, (
+            assert "AB123CD" in result.response, (
                 f"Expected 'AB123CD' in response, got: {result.response}"
             )
 
@@ -1127,8 +1180,8 @@ class TestExtraEntitiesInConfirming:
         sm = create_state_machine()
         sm.start_booking_flow()
         sm.context.extra_entities = {}
-        sm.context.client_name = 'Luca Verdi'
-        sm.context.service = 'taglio'
+        sm.context.client_name = "Luca Verdi"
+        sm.context.service = "taglio"
         sm.context.state = BookingState.CONFIRMING
 
         result = sm.process_message("si confermo")
@@ -1138,10 +1191,10 @@ class TestExtraEntitiesInConfirming:
         """If context has no extra_entities attr at all, must not crash."""
         sm = create_state_machine()
         sm.start_booking_flow()
-        if hasattr(sm.context, 'extra_entities'):
-            delattr(sm.context, 'extra_entities')
-        sm.context.client_name = 'Luca Verdi'
-        sm.context.service = 'taglio'
+        if hasattr(sm.context, "extra_entities"):
+            delattr(sm.context, "extra_entities")
+        sm.context.client_name = "Luca Verdi"
+        sm.context.service = "taglio"
         sm.context.state = BookingState.CONFIRMING
 
         result = sm.process_message("si confermo")
@@ -1152,7 +1205,7 @@ class TestExtraEntitiesInConfirming:
 # TESTS: GAP-A5 — Cancel in WAITING_NAME / WAITING_SURNAME → IDLE
 # =============================================================================
 
-import pytest as _pytest
+import pytest as _pytest  # noqa: E402
 
 
 class TestCancelPreIdentification:
@@ -1218,13 +1271,16 @@ class TestCancelPreIdentification:
         result = sm.process_message("no grazie")
         assert result.next_state == BookingState.IDLE
 
-    @_pytest.mark.parametrize("phrase", [
-        "no grazie",
-        "lascia perdere",
-        "non voglio",
-        "ho cambiato idea",
-        "annulla tutto",
-    ])
+    @_pytest.mark.parametrize(
+        "phrase",
+        [
+            "no grazie",
+            "lascia perdere",
+            "non voglio",
+            "ho cambiato idea",
+            "annulla tutto",
+        ],
+    )
     def test_rejection_phrases_waiting_name_parametric(self, phrase):
         """Parametric: frasi di rifiuto in WAITING_NAME → IDLE."""
         sm = create_state_machine()
@@ -1243,7 +1299,7 @@ class TestCancelPreIdentification:
         sm.context.client_id = "test-client"
         sm.context.client_name = "Test"
         sm.context.state = BookingState.WAITING_SERVICE
-        sm.process_message("taglio")   # → WAITING_DATE
+        sm.process_message("taglio")  # → WAITING_DATE
         assert sm.context.state == BookingState.WAITING_DATE
         result = sm.process_message("annulla tutto")
         assert result.next_state == BookingState.WAITING_SERVICE, (
@@ -1256,9 +1312,9 @@ class TestCancelPreIdentification:
         sm.context.state = BookingState.WAITING_NAME
         result = sm.process_message("annulla tutto")
         response_lower = result.response.lower()
-        assert any(kw in response_lower for kw in ["problema", "aspettiamo", "idea", "vuole"]), (
-            f"Response should be graceful, got: {result.response!r}"
-        )
+        assert any(
+            kw in response_lower for kw in ["problema", "aspettiamo", "idea", "vuole"]
+        ), f"Response should be graceful, got: {result.response!r}"
 
 
 # =============================================================================
@@ -1267,4 +1323,5 @@ class TestCancelPreIdentification:
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

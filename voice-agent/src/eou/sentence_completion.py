@@ -42,7 +42,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 
 # ---------------------------------------------------------------------------
@@ -50,28 +49,77 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 # Conjunctions/prepositions that signal an OPEN clause when sentence-final
-_INCOMPLETE_CLOSERS: frozenset = frozenset({
-    "e", "ma", "però", "perche", "perché", "oppure",
-    "quando", "dove", "se", "che", "quindi", "allora",
-    "come", "anche", "poi", "mentre", "dopo", "prima",
-    "affinché", "affinche", "sebbene", "nonostante",
-    "benché", "benche", "dunque", "poiché", "poiche",
-    "giacché", "giacche",
-})
+_INCOMPLETE_CLOSERS: frozenset = frozenset(
+    {
+        "e",
+        "ma",
+        "però",
+        "perche",
+        "perché",
+        "oppure",
+        "quando",
+        "dove",
+        "se",
+        "che",
+        "quindi",
+        "allora",
+        "come",
+        "anche",
+        "poi",
+        "mentre",
+        "dopo",
+        "prima",
+        "affinché",
+        "affinche",
+        "sebbene",
+        "nonostante",
+        "benché",
+        "benche",
+        "dunque",
+        "poiché",
+        "poiche",
+        "giacché",
+        "giacche",
+    }
+)
 
 # Pragmatic COMPLETE closers (full utterances or utterance-final tags)
-_COMPLETE_CLOSERS: frozenset = frozenset({
-    "grazie", "arrivederci", "ciao", "salve",
-    "perfetto", "benissimo", "esatto", "capito", "bene",
-    "ok", "okay", "va", "bene", "d'accordo", "concordo",
-    "ecco", "appunto", "certamente", "assolutamente",
-    "ovviamente", "certo",
-})
+_COMPLETE_CLOSERS: frozenset = frozenset(
+    {
+        "grazie",
+        "arrivederci",
+        "ciao",
+        "salve",
+        "perfetto",
+        "benissimo",
+        "esatto",
+        "capito",
+        "bene",
+        "ok",
+        "okay",
+        "va",
+        "bene",
+        "d'accordo",
+        "concordo",
+        "ecco",
+        "appunto",
+        "certamente",
+        "assolutamente",
+        "ovviamente",
+        "certo",
+    }
+)
 
 # Polar short answers — high confidence complete
-_POLAR_ANSWERS: frozenset = frozenset({
-    "sì", "si", "no", "nope", "yep",
-})
+_POLAR_ANSWERS: frozenset = frozenset(
+    {
+        "sì",
+        "si",
+        "no",
+        "nope",
+        "yep",
+    }
+)
 
 # Multi-word complete endings (checked as suffix on normalised text)
 _COMPLETE_SUFFIXES: tuple = (
@@ -151,6 +199,7 @@ def analyze_sentence_completion(text: str) -> SentenceCompletionResult:
 # ---------------------------------------------------------------------------
 # Internal implementation
 # ---------------------------------------------------------------------------
+
 
 def _normalize(text: str) -> str:
     """Lowercase and collapse whitespace."""

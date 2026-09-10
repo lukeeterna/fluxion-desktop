@@ -51,7 +51,9 @@ class _Context(SimpleNamespace):
 
 def _make_orchestrator(state: BookingState):
     """Build only the attributes touched by process() on fast local paths."""
-    orch = orchestrator_mod.VoiceOrchestrator.__new__(orchestrator_mod.VoiceOrchestrator)
+    orch = orchestrator_mod.VoiceOrchestrator.__new__(
+        orchestrator_mod.VoiceOrchestrator
+    )
 
     context = _Context(
         state=state,

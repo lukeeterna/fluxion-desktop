@@ -10,31 +10,34 @@ import functools
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Dict, Optional, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class ErrorCategory(Enum):
     """Categories of errors for appropriate handling."""
-    NETWORK = "network"           # Connection issues, timeouts
-    SERVICE = "service"           # API errors, rate limits
-    VALIDATION = "validation"     # Invalid input/output
-    TIMEOUT = "timeout"           # Operation took too long
-    UNKNOWN = "unknown"           # Unexpected errors
+
+    NETWORK = "network"  # Connection issues, timeouts
+    SERVICE = "service"  # API errors, rate limits
+    VALIDATION = "validation"  # Invalid input/output
+    TIMEOUT = "timeout"  # Operation took too long
+    UNKNOWN = "unknown"  # Unexpected errors
 
 
 class RecoveryAction(Enum):
     """Actions to take when error occurs."""
-    RETRY = "retry"               # Retry the operation
-    FALLBACK = "fallback"         # Use fallback response
-    ESCALATE = "escalate"         # Escalate to operator
-    ABORT = "abort"               # Stop processing
+
+    RETRY = "retry"  # Retry the operation
+    FALLBACK = "fallback"  # Use fallback response
+    ESCALATE = "escalate"  # Escalate to operator
+    ABORT = "abort"  # Stop processing
 
 
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior."""
+
     max_retries: int = 3
     base_delay_ms: int = 100
     max_delay_ms: int = 2000
@@ -45,17 +48,19 @@ class RetryConfig:
 @dataclass
 class TimeoutConfig:
     """Timeout configuration per layer."""
-    layer_0_sentiment_ms: int = 100      # Sentiment analysis
-    layer_1_exact_ms: int = 50           # Exact match
-    layer_2_intent_ms: int = 100         # Intent classification
-    layer_3_faq_ms: int = 500            # FAQ retrieval
-    layer_4_groq_ms: int = 2000          # Groq LLM fallback
-    total_max_ms: int = 3000             # Total pipeline timeout
+
+    layer_0_sentiment_ms: int = 100  # Sentiment analysis
+    layer_1_exact_ms: int = 50  # Exact match
+    layer_2_intent_ms: int = 100  # Intent classification
+    layer_3_faq_ms: int = 500  # FAQ retrieval
+    layer_4_groq_ms: int = 2000  # Groq LLM fallback
+    total_max_ms: int = 3000  # Total pipeline timeout
 
 
 @dataclass
 class RecoveryResult:
     """Result of a recovery operation."""
+
     success: bool
     value: Any
     attempts: int
@@ -82,13 +87,11 @@ FALLBACK_RESPONSES: Dict[str, str] = {
     "cortesia": "Prego, sono a sua disposizione.",
     "operatore": "La passo subito a un operatore. Un momento di pazienza...",
     "waitlist": "Mi dispiace, ho avuto un problema con la lista d'attesa. Può riprovare?",
-
     # By error type
     "network": "Mi dispiace, ho avuto un problema di connessione. Può riprovare tra qualche secondo?",
     "timeout": "Mi scusi, ci sta mettendo più tempo del previsto. Può riprovare?",
     "service": "Mi dispiace, il servizio non è disponibile in questo momento. Può riprovare tra poco?",
     "validation": "Mi scusi, non ho capito bene. Può ripetere per favore?",
-
     # Generic fallback
     "default": "Mi dispiace, ho avuto un problema. Può riprovare o preferisce parlare con un operatore?",
 }
@@ -104,7 +107,7 @@ ESCALATION_RESPONSES: Dict[str, str] = {
 def get_fallback_response(
     intent: Optional[str] = None,
     error_category: Optional[ErrorCategory] = None,
-    context: Optional[Dict[str, Any]] = None
+    context: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Get appropriate fallback response based on context.
@@ -143,10 +146,8 @@ def get_escalation_response(reason: str = "max_retries") -> str:
 # Retry Logic with Exponential Backoff
 # =============================================================================
 
-def calculate_delay(
-    attempt: int,
-    config: RetryConfig = DEFAULT_RETRY_CONFIG
-) -> float:
+
+def calculate_delay(attempt: int, config: RetryConfig = DEFAULT_RETRY_CONFIG) -> float:
     """
     Calculate delay for retry attempt using exponential backoff.
 
@@ -160,7 +161,7 @@ def calculate_delay(
     import random
 
     # Exponential backoff
-    delay_ms = config.base_delay_ms * (config.exponential_base ** attempt)
+    delay_ms = config.base_delay_ms * (config.exponential_base**attempt)
 
     # Cap at max delay
     delay_ms = min(delay_ms, config.max_delay_ms)
@@ -178,7 +179,7 @@ async def retry_with_backoff(
     *args,
     config: RetryConfig = DEFAULT_RETRY_CONFIG,
     error_handler: Optional[Callable[[Exception, int], None]] = None,
-    **kwargs
+    **kwargs,
 ) -> RecoveryResult:
     """
     Execute function with retry and exponential backoff.
@@ -211,7 +212,9 @@ async def retry_with_backoff(
                 attempts=attempt + 1,
                 total_time_ms=elapsed_ms,
                 error=None,
-                recovery_action=RecoveryAction.RETRY if attempt > 0 else RecoveryAction.RETRY
+                recovery_action=RecoveryAction.RETRY
+                if attempt > 0
+                else RecoveryAction.RETRY,
             )
 
         except (KeyboardInterrupt, SystemExit, asyncio.CancelledError):
@@ -233,15 +236,12 @@ async def retry_with_backoff(
         attempts=config.max_retries,
         total_time_ms=elapsed_ms,
         error=str(last_error),
-        recovery_action=RecoveryAction.FALLBACK
+        recovery_action=RecoveryAction.FALLBACK,
     )
 
 
 def retry_sync_with_backoff(
-    func: Callable[..., T],
-    *args,
-    config: RetryConfig = DEFAULT_RETRY_CONFIG,
-    **kwargs
+    func: Callable[..., T], *args, config: RetryConfig = DEFAULT_RETRY_CONFIG, **kwargs
 ) -> RecoveryResult:
     """
     Synchronous version of retry with backoff.
@@ -268,7 +268,9 @@ def retry_sync_with_backoff(
                 attempts=attempt + 1,
                 total_time_ms=elapsed_ms,
                 error=None,
-                recovery_action=RecoveryAction.RETRY if attempt > 0 else RecoveryAction.RETRY
+                recovery_action=RecoveryAction.RETRY
+                if attempt > 0
+                else RecoveryAction.RETRY,
             )
 
         except (KeyboardInterrupt, SystemExit):
@@ -291,7 +293,7 @@ def retry_sync_with_backoff(
         attempts=config.max_retries,
         total_time_ms=elapsed_ms,
         error=str(last_error),
-        recovery_action=RecoveryAction.FALLBACK
+        recovery_action=RecoveryAction.FALLBACK,
     )
 
 
@@ -299,19 +301,17 @@ def retry_sync_with_backoff(
 # Timeout Handling
 # =============================================================================
 
+
 class TimeoutError(Exception):
     """Custom timeout error with context."""
+
     def __init__(self, message: str, elapsed_ms: float, layer: Optional[str] = None):
         super().__init__(message)
         self.elapsed_ms = elapsed_ms
         self.layer = layer
 
 
-async def with_timeout(
-    coro,
-    timeout_ms: float,
-    layer: Optional[str] = None
-) -> Any:
+async def with_timeout(coro, timeout_ms: float, layer: Optional[str] = None) -> Any:
     """
     Execute coroutine with timeout.
 
@@ -336,7 +336,7 @@ async def with_timeout(
         raise TimeoutError(
             f"Operation timed out after {elapsed_ms:.0f}ms (limit: {timeout_ms}ms)",
             elapsed_ms=elapsed_ms,
-            layer=layer
+            layer=layer,
         )
 
 
@@ -345,7 +345,7 @@ def with_timeout_sync(
     timeout_ms: float,
     *args,
     layer: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> T:
     """
     Execute sync function with timeout using threading.
@@ -377,7 +377,7 @@ def with_timeout_sync(
             raise TimeoutError(
                 f"Operation timed out after {elapsed_ms:.0f}ms (limit: {timeout_ms}ms)",
                 elapsed_ms=elapsed_ms,
-                layer=layer
+                layer=layer,
             )
 
 
@@ -385,19 +385,22 @@ def with_timeout_sync(
 # Circuit Breaker Pattern
 # =============================================================================
 
+
 class CircuitState(Enum):
     """Circuit breaker states."""
-    CLOSED = "closed"       # Normal operation
-    OPEN = "open"           # Failing, reject calls
-    HALF_OPEN = "half_open" # Testing recovery
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, reject calls
+    HALF_OPEN = "half_open"  # Testing recovery
 
 
 @dataclass
 class CircuitBreakerConfig:
     """Circuit breaker configuration."""
-    failure_threshold: int = 5      # Failures before opening
+
+    failure_threshold: int = 5  # Failures before opening
     recovery_timeout_ms: int = 30000  # Time before half-open
-    success_threshold: int = 2      # Successes to close
+    success_threshold: int = 2  # Successes to close
 
 
 class CircuitBreaker:
@@ -475,10 +478,11 @@ class CircuitBreaker:
 # Decorator for Error Handling
 # =============================================================================
 
+
 def with_recovery(
     config: RetryConfig = DEFAULT_RETRY_CONFIG,
     fallback_value: Any = None,
-    fallback_func: Optional[Callable] = None
+    fallback_func: Optional[Callable] = None,
 ):
     """
     Decorator for automatic error recovery.
@@ -488,6 +492,7 @@ def with_recovery(
         async def my_function():
             ...
     """
+
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs) -> T:
@@ -523,6 +528,7 @@ def with_recovery(
 # Recovery Manager (Orchestrates all recovery mechanisms)
 # =============================================================================
 
+
 class RecoveryManager:
     """
     Centralized manager for error recovery in the voice pipeline.
@@ -535,9 +541,7 @@ class RecoveryManager:
     """
 
     def __init__(
-        self,
-        retry_config: RetryConfig = None,
-        timeout_config: TimeoutConfig = None
+        self, retry_config: RetryConfig = None, timeout_config: TimeoutConfig = None
     ):
         self.retry_config = retry_config or DEFAULT_RETRY_CONFIG
         self.timeout_config = timeout_config or DEFAULT_TIMEOUT_CONFIG
@@ -562,7 +566,7 @@ class RecoveryManager:
         service: Optional[str] = None,
         timeout_ms: Optional[float] = None,
         intent: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> RecoveryResult:
         """
         Execute function with full recovery support.
@@ -588,7 +592,7 @@ class RecoveryManager:
                     attempts=0,
                     total_time_ms=0,
                     error="Circuit breaker open",
-                    recovery_action=RecoveryAction.FALLBACK
+                    recovery_action=RecoveryAction.FALLBACK,
                 )
 
         # Execute with retry
@@ -596,9 +600,7 @@ class RecoveryManager:
 
         try:
             result = await retry_with_backoff(
-                func, *args,
-                config=self.retry_config,
-                **kwargs
+                func, *args, config=self.retry_config, **kwargs
             )
 
             # Update circuit breaker
@@ -621,7 +623,7 @@ class RecoveryManager:
                 attempts=1,
                 total_time_ms=elapsed_ms,
                 error=str(e),
-                recovery_action=RecoveryAction.FALLBACK
+                recovery_action=RecoveryAction.FALLBACK,
             )
 
         except Exception as e:
@@ -635,7 +637,7 @@ class RecoveryManager:
                 attempts=1,
                 total_time_ms=elapsed_ms,
                 error=str(e),
-                recovery_action=RecoveryAction.FALLBACK
+                recovery_action=RecoveryAction.FALLBACK,
             )
 
     def get_layer_timeout(self, layer: str) -> float:

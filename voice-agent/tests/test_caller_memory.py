@@ -10,15 +10,13 @@ C4: Preferred slot suggestion
 import os
 import sys
 import pytest
-import tempfile
 import sqlite3
 from datetime import datetime
-from unittest.mock import MagicMock, AsyncMock, patch
 
 # Add voice-agent/src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from caller_memory import CallerMemory, CallerProfile, get_caller_memory
+from caller_memory import CallerMemory, CallerProfile
 
 
 # =============================================================================
@@ -31,22 +29,26 @@ class TestCallerMemoryInit:
 
     def test_creates_db_file(self, tmp_path):
         db_path = str(tmp_path / "test_caller.db")
-        mem = CallerMemory(db_path=db_path)
+        CallerMemory(db_path=db_path)
         assert os.path.exists(db_path)
 
     def test_schema_has_caller_profiles(self, tmp_path):
         db_path = str(tmp_path / "test_caller.db")
-        mem = CallerMemory(db_path=db_path)
+        CallerMemory(db_path=db_path)
         conn = sqlite3.connect(db_path)
-        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='caller_profiles'")
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='caller_profiles'"
+        )
         assert cursor.fetchone() is not None
         conn.close()
 
     def test_schema_has_caller_bookings(self, tmp_path):
         db_path = str(tmp_path / "test_caller.db")
-        mem = CallerMemory(db_path=db_path)
+        CallerMemory(db_path=db_path)
         conn = sqlite3.connect(db_path)
-        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='caller_bookings'")
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='caller_bookings'"
+        )
         assert cursor.fetchone() is not None
         conn.close()
 
@@ -146,7 +148,9 @@ class TestCallerMemoryRecord:
 
     def test_records_booking_history(self, tmp_path):
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+        )
         history = mem.get_booking_history("+39333")
         assert len(history) == 1
         assert history[0]["service"] == "Taglio"
@@ -160,18 +164,32 @@ class TestCallerMemoryPreferences:
     def test_preferred_day_from_history(self, tmp_path):
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
         # 3 bookings on martedi, 1 on giovedi
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="11:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="giovedi", time_slot="10:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="11:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="giovedi", time_slot="10:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+        )
         profile = mem.lookup("+39333")
         assert profile.preferred_day == "martedi"
 
     def test_preferred_time_from_history(self, tmp_path):
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="giovedi", time_slot="15:00")
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="giovedi", time_slot="15:00"
+        )
         profile = mem.lookup("+39333")
         assert profile.preferred_time == "10:00"
 
@@ -192,8 +210,12 @@ class TestBookingHistory:
 
     def test_multiple_bookings(self, tmp_path):
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
-        mem.record_call("+39333", service="Taglio", day_of_week="lunedi", time_slot="09:00")
-        mem.record_call("+39333", service="Barba", day_of_week="martedi", time_slot="10:00")
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="lunedi", time_slot="09:00"
+        )
+        mem.record_call(
+            "+39333", service="Barba", day_of_week="martedi", time_slot="10:00"
+        )
         history = mem.get_booking_history("+39333")
         assert len(history) == 2
         # Most recent first
@@ -202,7 +224,9 @@ class TestBookingHistory:
     def test_limit_parameter(self, tmp_path):
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
         for i in range(5):
-            mem.record_call("+39333", service=f"Service{i}", day_of_week="lunedi", time_slot="10:00")
+            mem.record_call(
+                "+39333", service=f"Service{i}", day_of_week="lunedi", time_slot="10:00"
+            )
         history = mem.get_booking_history("+39333", limit=3)
         assert len(history) == 3
 
@@ -253,17 +277,22 @@ class TestPhoneNormalization:
 
 try:
     from voip_pjsua2 import VoIPManager as _VoIPManager
+
     _HAS_VOIP = True
 except (ImportError, OSError):
     _HAS_VOIP = False
 
 
-@pytest.mark.skipif(not _HAS_VOIP, reason="voip_pjsua2 not available (missing audioop or pjsua2 libs)")
+@pytest.mark.skipif(
+    not _HAS_VOIP, reason="voip_pjsua2 not available (missing audioop or pjsua2 libs)"
+)
 class TestVoIPPhoneExtraction:
     """Test _extract_phone_from_uri on VoIPManager."""
 
     def test_extract_basic_sip_uri(self):
-        result = _VoIPManager._extract_phone_from_uri("sip:+390972536918@sip.vivavox.it")
+        result = _VoIPManager._extract_phone_from_uri(
+            "sip:+390972536918@sip.vivavox.it"
+        )
         assert result == "+390972536918"
 
     def test_extract_with_brackets(self):
@@ -288,11 +317,12 @@ class TestPersonalizedGreeting:
 
     def test_default_greeting_no_caller(self):
         from session_manager import SessionManager, SessionChannel
+
         mgr = SessionManager()
         session = mgr.create_session(
             verticale_id="salone_test",
             business_name="Salone Bella Vita",
-            channel=SessionChannel.VOICE
+            channel=SessionChannel.VOICE,
         )
         greeting = mgr.get_greeting(session.session_id)
         assert "Salone Bella Vita" in greeting
@@ -301,11 +331,12 @@ class TestPersonalizedGreeting:
 
     def test_personalized_greeting_returning_caller(self):
         from session_manager import SessionManager, SessionChannel
+
         mgr = SessionManager()
         session = mgr.create_session(
             verticale_id="salone_test",
             business_name="Salone Bella Vita",
-            channel=SessionChannel.VOICE
+            channel=SessionChannel.VOICE,
         )
         greeting = mgr.get_greeting(session.session_id, caller_name="Mario")
         assert "Salone Bella Vita" in greeting
@@ -314,11 +345,12 @@ class TestPersonalizedGreeting:
 
     def test_personalized_greeting_contains_saluto(self):
         from session_manager import SessionManager, SessionChannel
+
         mgr = SessionManager()
         session = mgr.create_session(
             verticale_id="salone_test",
             business_name="Test",
-            channel=SessionChannel.VOICE
+            channel=SessionChannel.VOICE,
         )
         greeting = mgr.get_greeting(session.session_id, caller_name="Luca")
         # Should contain a time-based greeting
@@ -332,17 +364,19 @@ class TestPersonalizedGreeting:
 
     def test_empty_caller_name_gives_default(self):
         from session_manager import SessionManager, SessionChannel
+
         mgr = SessionManager()
         session = mgr.create_session(
             verticale_id="salone_test",
             business_name="Test",
-            channel=SessionChannel.VOICE
+            channel=SessionChannel.VOICE,
         )
         greeting = mgr.get_greeting(session.session_id, caller_name="")
         assert "Bentornato" not in greeting
 
     def test_unknown_session_fallback(self):
         from session_manager import SessionManager
+
         mgr = SessionManager()
         greeting = mgr.get_greeting("nonexistent")
         assert greeting == "Buongiorno! Come posso aiutarla?"
@@ -361,7 +395,9 @@ class TestSlotSuggestion:
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
         # Build up history
         for _ in range(3):
-            mem.record_call("+39333", service="Taglio", day_of_week="martedi", time_slot="10:00")
+            mem.record_call(
+                "+39333", service="Taglio", day_of_week="martedi", time_slot="10:00"
+            )
         profile = mem.lookup("+39333")
         assert profile.preferred_day == "martedi"
         assert profile.preferred_time == "10:00"
@@ -371,9 +407,15 @@ class TestSlotSuggestion:
     def test_caller_with_only_preferred_day(self, tmp_path):
         """Caller who books on same day but different times."""
         mem = CallerMemory(db_path=str(tmp_path / "test.db"))
-        mem.record_call("+39333", service="Taglio", day_of_week="venerdi", time_slot="09:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="venerdi", time_slot="11:00")
-        mem.record_call("+39333", service="Taglio", day_of_week="venerdi", time_slot="15:00")
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="venerdi", time_slot="09:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="venerdi", time_slot="11:00"
+        )
+        mem.record_call(
+            "+39333", service="Taglio", day_of_week="venerdi", time_slot="15:00"
+        )
         profile = mem.lookup("+39333")
         assert profile.preferred_day == "venerdi"
         # All different times, so most common is any one of them
@@ -398,6 +440,7 @@ class TestSingleton:
 
     def test_singleton_returns_same_instance(self, tmp_path):
         import caller_memory as cm
+
         # Reset singleton
         cm._memory = None
         db_path = str(tmp_path / "singleton.db")

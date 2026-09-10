@@ -9,10 +9,9 @@ and the existing orchestrator, enabling:
 - FAQ retrieval from vertical configs
 """
 
-import os
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from enum import Enum
 
@@ -29,12 +28,13 @@ try:
     from vertical_manager import (
         VerticalManager,
         VerticalConfig,
-        Intent,
-        Slot,
-        FAQ,
-        VerticalType,
-        get_vertical_manager
+        Intent,  # noqa: F401
+        Slot,  # noqa: F401
+        FAQ,  # noqa: F401
+        VerticalType,  # noqa: F401
+        get_vertical_manager,  # noqa: F401
     )
+
     HAS_VERTICAL_MANAGER = True
 except ImportError as e:
     print(f"[VERTICAL] VerticalManager not available: {e}")
@@ -43,14 +43,16 @@ except ImportError as e:
 
 class VerticalIntentMatch(Enum):
     """Result of intent matching against vertical config."""
-    EXACT = "exact"      # Exact match with examples
-    FUZZY = "fuzzy"      # Partial/fuzzy match
-    NONE = "none"        # No match found
+
+    EXACT = "exact"  # Exact match with examples
+    FUZZY = "fuzzy"  # Partial/fuzzy match
+    NONE = "none"  # No match found
 
 
 @dataclass
 class IntentMatchResult:
     """Result of intent matching."""
+
     intent_id: str
     confidence: float
     match_type: VerticalIntentMatch
@@ -61,6 +63,7 @@ class IntentMatchResult:
 @dataclass
 class FAQMatchResult:
     """Result of FAQ matching."""
+
     faq_id: str
     question: str
     answer: str
@@ -149,7 +152,6 @@ class VerticalIntegration:
             "salone": "salone",
             "beauty": "salone",
             "bellezza": "salone",
-
             # Medical
             "medico": "medical",
             "dottore": "medical",
@@ -158,7 +160,6 @@ class VerticalIntegration:
             "studio_medico": "medical",
             "dentista": "medical",
             "fisioterapista": "medical",
-
             # Palestra
             "palestra": "palestra",
             "fitness": "palestra",
@@ -166,7 +167,6 @@ class VerticalIntegration:
             "crossfit": "palestra",
             "yoga": "palestra",
             "pilates": "palestra",
-
             # Auto
             "officina": "auto",
             "carrozzeria": "auto",
@@ -196,16 +196,10 @@ class VerticalIntegration:
         if not self.config:
             return "Buongiorno, come posso aiutarla?"
 
-        return self.manager.render_response(
-            self.current_vertical,
-            "greeting",
-            context
-        )
+        return self.manager.render_response(self.current_vertical, "greeting", context)
 
     def get_response(
-        self,
-        response_key: str,
-        context: Optional[Dict[str, Any]] = None
+        self, response_key: str, context: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Get a response template rendered with context.
@@ -221,14 +215,14 @@ class VerticalIntegration:
             return ""
 
         return self.manager.render_response(
-            self.current_vertical,
-            response_key,
-            context
+            self.current_vertical, response_key, context
         )
 
     def get_fallback_response(self) -> str:
         """Get the fallback response for unrecognized input."""
-        return self.get_response("fallback") or "Mi scusi, non ho capito. Puo' ripetere?"
+        return (
+            self.get_response("fallback") or "Mi scusi, non ho capito. Puo' ripetere?"
+        )
 
     # =========================================================================
     # INTENT MATCHING
@@ -269,7 +263,7 @@ class VerticalIntegration:
                         confidence=1.0,
                         match_type=VerticalIntentMatch.EXACT,
                         required_slots=intent.required_slots,
-                        optional_slots=intent.optional_slots
+                        optional_slots=intent.optional_slots,
                     )
                     self._intent_cache[user_lower] = result
                     return result
@@ -283,7 +277,7 @@ class VerticalIntegration:
                         confidence=score,
                         match_type=VerticalIntentMatch.FUZZY,
                         required_slots=intent.required_slots,
-                        optional_slots=intent.optional_slots
+                        optional_slots=intent.optional_slots,
                     )
 
         if best_match:
@@ -325,10 +319,10 @@ class VerticalIntegration:
         if not self.config:
             return f"Mi puo' dire {slot_name}?"
 
-        return self.manager.get_slot_prompt(
-            self.current_vertical,
-            slot_name
-        ) or f"Mi puo' dire {slot_name}?"
+        return (
+            self.manager.get_slot_prompt(self.current_vertical, slot_name)
+            or f"Mi puo' dire {slot_name}?"
+        )
 
     def get_slot_values(self, slot_name: str) -> Optional[List[str]]:
         """
@@ -357,11 +351,7 @@ class VerticalIntegration:
         """
         if not self.config:
             return True
-        return self.manager.validate_slot_value(
-            self.current_vertical,
-            slot_name,
-            value
-        )
+        return self.manager.validate_slot_value(self.current_vertical, slot_name, value)
 
     def get_required_slots(self, intent_id: str) -> List[str]:
         """Get required slots for an intent."""
@@ -396,16 +386,15 @@ class VerticalIntegration:
 
         results = []
         for faq in matches:
-            rendered_answer = self.manager.render_faq_answer(
-                self.current_vertical,
-                faq
+            rendered_answer = self.manager.render_faq_answer(self.current_vertical, faq)
+            results.append(
+                FAQMatchResult(
+                    faq_id=faq.id,
+                    question=faq.question,
+                    answer=rendered_answer,
+                    confidence=0.8,  # Default confidence for keyword match
+                )
             )
-            results.append(FAQMatchResult(
-                faq_id=faq.id,
-                question=faq.question,
-                answer=rendered_answer,
-                confidence=0.8  # Default confidence for keyword match
-            ))
 
         return results
 
@@ -485,7 +474,9 @@ class VerticalIntegration:
 _integration_instance: Optional[VerticalIntegration] = None
 
 
-def get_vertical_integration(vertical_name: Optional[str] = None) -> VerticalIntegration:
+def get_vertical_integration(
+    vertical_name: Optional[str] = None,
+) -> VerticalIntegration:
     """
     Get the singleton VerticalIntegration instance.
 
@@ -519,9 +510,9 @@ if __name__ == "__main__":
 
     # Test each vertical
     for vertical in integration.get_available_verticals():
-        print(f"\n{'='*40}")
+        print(f"\n{'=' * 40}")
         print(f"TESTING: {vertical.upper()}")
-        print(f"{'='*40}")
+        print(f"{'=' * 40}")
 
         integration.set_vertical(vertical)
 
@@ -534,13 +525,15 @@ if __name__ == "__main__":
             "salone": "vorrei un taglio",
             "medical": "vorrei prenotare una visita",
             "palestra": "corso di yoga domani",
-            "auto": "devo fare il tagliando"
+            "auto": "devo fare il tagliando",
         }
 
         if vertical in test_inputs:
             result = integration.match_intent(test_inputs[vertical])
             if result:
-                print(f"Intent match: {result.intent_id} (conf: {result.confidence:.2f})")
+                print(
+                    f"Intent match: {result.intent_id} (conf: {result.confidence:.2f})"
+                )
                 print(f"Required slots: {result.required_slots}")
 
         # Test FAQ
@@ -548,7 +541,7 @@ if __name__ == "__main__":
             "salone": "orari",
             "medical": "specialita",
             "palestra": "abbonamento",
-            "auto": "tagliando"
+            "auto": "tagliando",
         }
 
         if vertical in faq_queries:

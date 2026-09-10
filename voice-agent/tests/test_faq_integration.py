@@ -14,8 +14,6 @@ import sys
 import json
 import time
 from pathlib import Path
-from typing import List, Dict
-from unittest.mock import Mock, patch, AsyncMock
 
 import pytest
 
@@ -25,11 +23,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from faq_manager import (
     FAQManager,
     FAQConfig,
-    FAQMatch,
     create_faq_manager,
     find_keyword_match,
     keyword_match_score,
-    KEYWORD_CATEGORIES,
 )
 
 
@@ -95,6 +91,7 @@ TEST_QUERIES = [
 # FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def faq_manager():
     """Create FAQ manager with sample FAQs."""
@@ -132,15 +129,14 @@ def config_no_semantic():
 # TEST: KEYWORD MATCHING
 # =============================================================================
 
+
 class TestKeywordMatching:
     """Test keyword matching functionality."""
 
     def test_exact_match_score(self):
         """Test exact match returns 1.0."""
         score, category = keyword_match_score(
-            "Quanto costa un taglio donna?",
-            "Quanto costa un taglio donna?",
-            "€35"
+            "Quanto costa un taglio donna?", "Quanto costa un taglio donna?", "€35"
         )
         assert score == 1.0
         assert category == "exact"
@@ -148,9 +144,7 @@ class TestKeywordMatching:
     def test_substring_match_score(self):
         """Test substring match returns 0.9."""
         score, category = keyword_match_score(
-            "taglio donna",
-            "Quanto costa un taglio donna?",
-            "€35"
+            "taglio donna", "Quanto costa un taglio donna?", "€35"
         )
         assert score >= 0.7
         assert category in ["substring", "contains", "prezzo"]
@@ -158,9 +152,7 @@ class TestKeywordMatching:
     def test_keyword_category_match(self):
         """Test keyword category matching."""
         score, category = keyword_match_score(
-            "quanto costa",
-            "Quanto costa un taglio?",
-            "€35"
+            "quanto costa", "Quanto costa un taglio?", "€35"
         )
         assert score >= 0.5
         # Should boost because of € in answer
@@ -169,9 +161,7 @@ class TestKeywordMatching:
     def test_find_keyword_match(self):
         """Test find_keyword_match function."""
         result = find_keyword_match(
-            "Quanto costa un taglio donna?",
-            SAMPLE_FAQS,
-            min_score=0.5
+            "Quanto costa un taglio donna?", SAMPLE_FAQS, min_score=0.5
         )
         assert result is not None
         assert result.confidence >= 0.5
@@ -180,9 +170,7 @@ class TestKeywordMatching:
     def test_find_keyword_match_no_match(self):
         """Test find_keyword_match with unrelated query."""
         result = find_keyword_match(
-            "xyz123 random gibberish",
-            SAMPLE_FAQS,
-            min_score=0.8
+            "xyz123 random gibberish", SAMPLE_FAQS, min_score=0.8
         )
         assert result is None
 
@@ -190,6 +178,7 @@ class TestKeywordMatching:
 # =============================================================================
 # TEST: FAQ MANAGER
 # =============================================================================
+
 
 class TestFAQManager:
     """Test FAQManager class."""
@@ -226,7 +215,7 @@ class TestFAQManager:
 
     def test_get_answer_text_no_match(self, faq_manager):
         """Test get_answer_text with no match."""
-        answer = faq_manager.get_answer_text("xyz random", category="unknown")
+        faq_manager.get_answer_text("xyz random", category="unknown")
         # May or may not match, depends on threshold
 
     def test_stats(self, faq_manager):
@@ -250,6 +239,7 @@ class TestFAQManager:
 # =============================================================================
 # TEST: FILE LOADING
 # =============================================================================
+
 
 class TestFileLoading:
     """Test loading FAQs from files."""
@@ -317,6 +307,7 @@ class TestFileLoading:
 # TEST: CONFIGURATION
 # =============================================================================
 
+
 class TestConfiguration:
     """Test configuration options."""
 
@@ -327,7 +318,7 @@ class TestConfiguration:
             manager.add_faq(faq["question"], faq["answer"], faq["category"])
 
         # With high threshold, only exact matches should pass
-        result = manager.find_answer("random query about prices")
+        manager.find_answer("random query about prices")
         # Might not match with high threshold
 
     def test_no_semantic_config(self, config_no_semantic):
@@ -345,6 +336,7 @@ class TestConfiguration:
 # =============================================================================
 # TEST: FACTORY FUNCTION
 # =============================================================================
+
 
 class TestFactory:
     """Test factory function."""
@@ -373,6 +365,7 @@ class TestFactory:
 # TEST: PERFORMANCE
 # =============================================================================
 
+
 class TestPerformance:
     """Test performance benchmarks."""
 
@@ -399,9 +392,7 @@ class TestPerformance:
         manager = FAQManager()
         for i in range(100):
             manager.add_faq(
-                f"Question number {i}?",
-                f"Answer number {i}.",
-                f"category_{i % 5}"
+                f"Question number {i}?", f"Answer number {i}.", f"category_{i % 5}"
             )
 
         # Measure query time
@@ -417,6 +408,7 @@ class TestPerformance:
 # =============================================================================
 # TEST: ACCURACY
 # =============================================================================
+
 
 class TestAccuracy:
     """Test retrieval accuracy."""
@@ -438,9 +430,9 @@ class TestAccuracy:
                 print(f"NO MATCH: '{query}'")
 
         accuracy = correct / total
-        print(f"\nAccuracy: {accuracy*100:.1f}% ({correct}/{total})")
+        print(f"\nAccuracy: {accuracy * 100:.1f}% ({correct}/{total})")
         # Target: >70% accuracy with keyword matching only
-        assert accuracy >= 0.5, f"Accuracy {accuracy*100:.1f}% < 50%"
+        assert accuracy >= 0.5, f"Accuracy {accuracy * 100:.1f}% < 50%"
 
 
 # =============================================================================

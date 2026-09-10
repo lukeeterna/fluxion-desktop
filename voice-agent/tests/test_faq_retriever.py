@@ -14,10 +14,8 @@ Skip with: pytest voice-agent/tests/test_faq_retriever.py -v -k "not slow"
 """
 
 import sys
-import json
 import time
 from pathlib import Path
-from typing import List, Dict
 
 import pytest
 
@@ -27,19 +25,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 # Check if dependencies are available
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
     np = None
 
 try:
-    from sentence_transformers import SentenceTransformer
+    from sentence_transformers import SentenceTransformer  # noqa: F401
+
     HAS_SENTENCE_TRANSFORMERS = True
 except ImportError:
     HAS_SENTENCE_TRANSFORMERS = False
 
 try:
-    import faiss
+    import faiss  # noqa: F401
+
     HAS_FAISS = True
 except ImportError:
     HAS_FAISS = False
@@ -48,11 +49,11 @@ except ImportError:
 # Skip all tests if dependencies not available
 pytestmark = pytest.mark.skipif(
     not (HAS_NUMPY and HAS_SENTENCE_TRANSFORMERS),
-    reason="sentence-transformers or numpy not installed"
+    reason="sentence-transformers or numpy not installed",
 )
 
 
-from faq_retriever import (
+from faq_retriever import (  # noqa: E402
     FAISSFAQRetriever,
     HybridFAQRetriever,
     FAQEntry,
@@ -71,56 +72,56 @@ SAMPLE_FAQS = [
         "question": "Quanto costa un taglio donna?",
         "answer": "Il taglio donna costa €35.",
         "category": "prezzi",
-        "keywords": ["prezzo", "costo", "taglio", "donna"]
+        "keywords": ["prezzo", "costo", "taglio", "donna"],
     },
     {
         "id": "faq_002",
         "question": "Quanto costa un taglio uomo?",
         "answer": "Il taglio uomo costa €18.",
         "category": "prezzi",
-        "keywords": ["prezzo", "costo", "taglio", "uomo"]
+        "keywords": ["prezzo", "costo", "taglio", "uomo"],
     },
     {
         "id": "faq_003",
         "question": "A che ora aprite?",
         "answer": "Apriamo alle 9:00.",
         "category": "orari",
-        "keywords": ["ora", "aprite", "apertura"]
+        "keywords": ["ora", "aprite", "apertura"],
     },
     {
         "id": "faq_004",
         "question": "Siete aperti il lunedì?",
         "answer": "No, il lunedì siamo chiusi.",
         "category": "orari",
-        "keywords": ["lunedì", "aperti", "chiusi"]
+        "keywords": ["lunedì", "aperti", "chiusi"],
     },
     {
         "id": "faq_005",
         "question": "Accettate Satispay?",
         "answer": "Sì, accettiamo Satispay.",
         "category": "pagamenti",
-        "keywords": ["satispay", "pagamento", "pagare"]
+        "keywords": ["satispay", "pagamento", "pagare"],
     },
     {
         "id": "faq_006",
         "question": "Quanto costa il colore?",
         "answer": "Il colore costa €55.",
         "category": "prezzi",
-        "keywords": ["prezzo", "costo", "colore", "tinta"]
+        "keywords": ["prezzo", "costo", "colore", "tinta"],
     },
     {
         "id": "faq_007",
         "question": "C'è parcheggio?",
         "answer": "Sì, parcheggio gratuito davanti al salone.",
         "category": "parcheggio",
-        "keywords": ["parcheggio", "auto", "parcheggiare"]
+        "keywords": ["parcheggio", "auto", "parcheggiare"],
     },
     {
         "id": "faq_008",
         "question": "Devo prenotare?",
         "answer": "Consigliamo la prenotazione.",
         "category": "prenotazioni",
-        "keywords": ["prenotare", "appuntamento"]
+        "keywords": ["prenotare", "appuntamento"],
     },
 ]
 
@@ -132,14 +133,15 @@ ACCURACY_TEST_CASES = [
     ("A che ora aprite?", "faq_003"),
     ("Siete aperti lunedì?", "faq_004"),
     ("Accettate Satispay?", "faq_005"),
-
     # Paraphrased queries
     ("Qual è il prezzo del taglio donna?", "faq_001"),
-    ("Quanto devo pagare per un taglio?", "faq_001"),  # Should match taglio donna or uomo
+    (
+        "Quanto devo pagare per un taglio?",
+        "faq_001",
+    ),  # Should match taglio donna or uomo
     ("Quando aprite la mattina?", "faq_003"),
     ("Il lunedì siete aperti?", "faq_004"),
     ("Posso pagare con Satispay?", "faq_005"),
-
     # Semantic variations
     ("Quanto costa farsi i capelli?", "faq_001"),  # Should match taglio
     ("Che orario fate?", "faq_003"),
@@ -151,6 +153,7 @@ ACCURACY_TEST_CASES = [
 # =============================================================================
 # FIXTURES
 # =============================================================================
+
 
 @pytest.fixture
 def retriever():
@@ -173,6 +176,7 @@ def hybrid_retriever():
 # =============================================================================
 # TEST: BASIC FUNCTIONALITY
 # =============================================================================
+
 
 class TestBasicFunctionality:
     """Test basic retriever functionality."""
@@ -212,6 +216,7 @@ class TestBasicFunctionality:
 # =============================================================================
 # TEST: RETRIEVAL
 # =============================================================================
+
 
 class TestRetrieval:
     """Test retrieval functionality."""
@@ -260,7 +265,9 @@ class TestRetrieval:
 
     def test_category_filter(self, retriever):
         """Test category filtering."""
-        results = retriever.retrieve("quanto costa", top_k=5, threshold=0.3, category="prezzi")
+        results = retriever.retrieve(
+            "quanto costa", top_k=5, threshold=0.3, category="prezzi"
+        )
         for r in results:
             assert r.faq.category == "prezzi"
 
@@ -290,6 +297,7 @@ class TestRetrieval:
 # =============================================================================
 # TEST: HYBRID RETRIEVER
 # =============================================================================
+
 
 class TestHybridRetriever:
     """Test hybrid retriever with keyword boosting."""
@@ -325,6 +333,7 @@ class TestHybridRetriever:
 # TEST: ACCURACY
 # =============================================================================
 
+
 class TestAccuracy:
     """Test retrieval accuracy."""
 
@@ -339,11 +348,13 @@ class TestAccuracy:
             if results and results[0].faq.id == expected_id:
                 correct += 1
             else:
-                print(f"MISS: '{query}' -> expected {expected_id}, got {results[0].faq.id if results else 'None'}")
+                print(
+                    f"MISS: '{query}' -> expected {expected_id}, got {results[0].faq.id if results else 'None'}"
+                )
 
         accuracy = correct / total
-        print(f"\nExact query accuracy: {accuracy*100:.1f}% ({correct}/{total})")
-        assert accuracy >= 0.8, f"Accuracy {accuracy*100:.1f}% < 80%"
+        print(f"\nExact query accuracy: {accuracy * 100:.1f}% ({correct}/{total})")
+        assert accuracy >= 0.8, f"Accuracy {accuracy * 100:.1f}% < 80%"
 
     @pytest.mark.slow
     def test_accuracy_paraphrased(self, retriever):
@@ -356,13 +367,13 @@ class TestAccuracy:
             if results and results[0].faq.id == expected_id:
                 correct += 1
             else:
-                actual = results[0].faq.id if results else 'None'
+                actual = results[0].faq.id if results else "None"
                 print(f"MISS: '{query}' -> expected {expected_id}, got {actual}")
 
         accuracy = correct / total
-        print(f"\nParaphrased accuracy: {accuracy*100:.1f}% ({correct}/{total})")
+        print(f"\nParaphrased accuracy: {accuracy * 100:.1f}% ({correct}/{total})")
         # Paraphrased queries are harder, so lower threshold
-        assert accuracy >= 0.6, f"Accuracy {accuracy*100:.1f}% < 60%"
+        assert accuracy >= 0.6, f"Accuracy {accuracy * 100:.1f}% < 60%"
 
     @pytest.mark.slow
     def test_overall_accuracy(self, retriever):
@@ -376,14 +387,15 @@ class TestAccuracy:
                 correct += 1
 
         accuracy = correct / total
-        print(f"\nOverall accuracy: {accuracy*100:.1f}% ({correct}/{total})")
+        print(f"\nOverall accuracy: {accuracy * 100:.1f}% ({correct}/{total})")
         # Target: >70% overall accuracy
-        assert accuracy >= 0.7, f"Accuracy {accuracy*100:.1f}% < 70%"
+        assert accuracy >= 0.7, f"Accuracy {accuracy * 100:.1f}% < 70%"
 
 
 # =============================================================================
 # TEST: PERFORMANCE
 # =============================================================================
+
 
 class TestPerformance:
     """Test retrieval performance."""
@@ -423,6 +435,7 @@ class TestPerformance:
 # TEST: PERSISTENCE
 # =============================================================================
 
+
 class TestPersistence:
     """Test saving and loading index."""
 
@@ -450,6 +463,7 @@ class TestPersistence:
 # =============================================================================
 # TEST: FACTORY FUNCTION
 # =============================================================================
+
 
 class TestFactory:
     """Test factory function."""

@@ -14,29 +14,39 @@ Zero coupling with BookingStateMachine — completely independent module.
 
 import logging
 from enum import Enum
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Dict, Any
 
 logger = logging.getLogger("fluxion.sales.fsm")
 
 try:
     from .sales_kb_loader import (
-        get_pitch, get_objection_response, get_qualification_question,
-        get_qualification_count, get_closing_message, get_pain_points,
-        get_competitive_response, resolve_vertical, sanitize_sales_text,
-        get_personality_rules,
+        get_pitch,
+        get_objection_response,
+        get_qualification_question,
+        get_qualification_count,  # noqa: F401
+        get_closing_message,
+        get_pain_points,  # noqa: F401
+        get_competitive_response,
+        resolve_vertical,
+        sanitize_sales_text,
+        get_personality_rules,  # noqa: F401
     )
 except ImportError:
     from sales_kb_loader import (
-        get_pitch, get_objection_response, get_qualification_question,
-        get_qualification_count, get_closing_message, get_pain_points,
-        get_competitive_response, resolve_vertical, sanitize_sales_text,
-        get_personality_rules,
+        get_pitch,
+        get_objection_response,
+        get_qualification_question,
+        get_closing_message,
+        get_competitive_response,
+        resolve_vertical,
+        sanitize_sales_text,
     )
 
 
 class SalesState(Enum):
     """Sales conversation states."""
+
     IDLE = "idle"
     QUALIFYING_VERTICAL = "qualifying_vertical"
     QUALIFYING_EMPLOYEES = "qualifying_employees"
@@ -54,16 +64,17 @@ class SalesState(Enum):
 @dataclass
 class SalesContext:
     """Sales conversation context — collected during qualification."""
+
     lead_name: Optional[str] = None
     lead_phone: Optional[str] = None
-    vertical: Optional[str] = None           # KB vertical key
+    vertical: Optional[str] = None  # KB vertical key
     employees: Optional[int] = None
     daily_appointments: Optional[int] = None
-    current_tool: Optional[str] = None       # "carta", "fresha", "google calendar", etc.
+    current_tool: Optional[str] = None  # "carta", "fresha", "google calendar", etc.
     missed_calls: Optional[int] = None
-    recommended_tier: Optional[str] = None   # "tier_base", "tier_pro", "tier_clinic"
+    recommended_tier: Optional[str] = None  # "tier_base", "tier_pro", "tier_clinic"
     objection_count: int = 0
-    qualification_step: int = 0              # 0-5 index into qualification_questions
+    qualification_step: int = 0  # 0-5 index into qualification_questions
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -83,12 +94,13 @@ class SalesContext:
 @dataclass
 class SalesResult:
     """Result from processing a sales message."""
+
     response: str
     state: SalesState
     context: Dict[str, Any]
-    checkout_url: Optional[str] = None       # Set during CLOSING
-    followup_wa: Optional[str] = None        # WhatsApp message to send later
-    is_terminal: bool = False                # True if COMPLETED or DECLINED
+    checkout_url: Optional[str] = None  # Set during CLOSING
+    followup_wa: Optional[str] = None  # WhatsApp message to send later
+    is_terminal: bool = False  # True if COMPLETED or DECLINED
 
 
 class SalesStateMachine:
@@ -161,9 +173,13 @@ class SalesStateMachine:
         }.get(self.state, self._handle_idle)
 
         result = handler(text_stripped, nlu_result)
-        logger.info("[Sales FSM] %s → %s | vertical=%s tier=%s",
-                    self.state.value, result.state.value,
-                    self.ctx.vertical, self.ctx.recommended_tier)
+        logger.info(
+            "[Sales FSM] %s → %s | vertical=%s tier=%s",
+            self.state.value,
+            result.state.value,
+            self.ctx.vertical,
+            self.ctx.recommended_tier,
+        )
         self.state = result.state
         return result
 
@@ -202,13 +218,15 @@ class SalesStateMachine:
             context=self.ctx.to_dict(),
         )
 
-    def _handle_qualifying_vertical(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_qualifying_vertical(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """Qualify: what type of business."""
         vertical = resolve_vertical(text)
         if not vertical:
             return SalesResult(
                 response="Scusa, non ho capito bene. Che tipo di attività hai? "
-                         "Parrucchiere, estetista, meccanico, palestra, clinica...?",
+                "Parrucchiere, estetista, meccanico, palestra, clinica...?",
                 state=SalesState.QUALIFYING_VERTICAL,
                 context=self.ctx.to_dict(),
             )
@@ -228,7 +246,9 @@ class SalesStateMachine:
             context=self.ctx.to_dict(),
         )
 
-    def _handle_qualifying_employees(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_qualifying_employees(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """Qualify: how many employees."""
         num = self._extract_number(text)
         if num is not None:
@@ -247,7 +267,9 @@ class SalesStateMachine:
             context=self.ctx.to_dict(),
         )
 
-    def _handle_qualifying_volume(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_qualifying_volume(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """Qualify: daily appointment volume."""
         num = self._extract_number(text)
         if num is not None:
@@ -263,13 +285,17 @@ class SalesStateMachine:
             context=self.ctx.to_dict(),
         )
 
-    def _handle_qualifying_tool(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_qualifying_tool(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """Qualify: current booking tool."""
         self.ctx.current_tool = text.strip()
         self.ctx.qualification_step = 4
 
         q = get_qualification_question(4)
-        follow = q["follow_up"] if q else "Quante chiamate perdi al giorno mentre lavori?"
+        follow = (
+            q["follow_up"] if q else "Quante chiamate perdi al giorno mentre lavori?"
+        )
 
         return SalesResult(
             response=follow,
@@ -277,7 +303,9 @@ class SalesStateMachine:
             context=self.ctx.to_dict(),
         )
 
-    def _handle_qualifying_pain(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_qualifying_pain(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """Qualify: missed calls (pain point). Then deliver pitch."""
         num = self._extract_number(text)
         if num is not None:
@@ -292,9 +320,11 @@ class SalesStateMachine:
         if pitch:
             response = f"{pitch['pitch']} {pitch['key_number']}"
         else:
-            response = ("Ogni chiamata persa è un cliente perso. FLUXION risolve questo problema: "
-                        "Sara risponde al telefono 24 ore su 24, prende gli appuntamenti e manda "
-                        "la conferma su WhatsApp. Paghi una volta sola, zero commissioni.")
+            response = (
+                "Ogni chiamata persa è un cliente perso. FLUXION risolve questo problema: "
+                "Sara risponde al telefono 24 ore su 24, prende gli appuntamenti e manda "
+                "la conferma su WhatsApp. Paghi una volta sola, zero commissioni."
+            )
 
         response += "\n\nVuoi sapere come funziona nel dettaglio?"
 
@@ -309,9 +339,21 @@ class SalesStateMachine:
         text_lower = text.lower()
 
         # Positive signal → go to closing
-        if any(w in text_lower for w in ["sì", "si", "certo", "dimmi", "spiegami",
-                                          "come funziona", "interessante", "ok",
-                                          "quanto costa", "prezzo"]):
+        if any(
+            w in text_lower
+            for w in [
+                "sì",
+                "si",
+                "certo",
+                "dimmi",
+                "spiegami",
+                "come funziona",
+                "interessante",
+                "ok",
+                "quanto costa",
+                "prezzo",
+            ]
+        ):
             return self._go_to_closing()
 
         # Negative signal
@@ -321,7 +363,7 @@ class SalesStateMachine:
                 return self._decline_gracefully()
             return SalesResult(
                 response="Capisco. Solo una curiosità: quante chiamate perdi al giorno "
-                         "mentre lavori? Anche solo 2-3 al giorno fanno una differenza enorme a fine mese.",
+                "mentre lavori? Anche solo 2-3 al giorno fanno una differenza enorme a fine mese.",
                 state=SalesState.PITCHING,
                 context=self.ctx.to_dict(),
             )
@@ -329,7 +371,9 @@ class SalesStateMachine:
         # Ambiguous → assume interest, go to closing
         return self._go_to_closing()
 
-    def _handle_after_objection(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
+    def _handle_after_objection(
+        self, text: str, nlu: Optional[Dict] = None
+    ) -> SalesResult:
         """After handling an objection — return to pre-objection state or closing."""
         text_lower = text.lower()
 
@@ -339,8 +383,18 @@ class SalesStateMachine:
             return self._handle_objection(objection_resp)
 
         # Positive → closing
-        if any(w in text_lower for w in ["sì", "si", "ok", "dimmi", "va bene",
-                                          "quanto costa", "come faccio"]):
+        if any(
+            w in text_lower
+            for w in [
+                "sì",
+                "si",
+                "ok",
+                "dimmi",
+                "va bene",
+                "quanto costa",
+                "come faccio",
+            ]
+        ):
             return self._go_to_closing()
 
         # Still negative
@@ -362,8 +416,20 @@ class SalesStateMachine:
         text_lower = text.lower()
 
         # Accept
-        if any(w in text_lower for w in ["sì", "si", "procediamo", "va bene", "ok",
-                                          "compro", "voglio", "prendo", "acquisto"]):
+        if any(
+            w in text_lower
+            for w in [
+                "sì",
+                "si",
+                "procediamo",
+                "va bene",
+                "ok",
+                "compro",
+                "voglio",
+                "prendo",
+                "acquisto",
+            ]
+        ):
             tier = self.ctx.recommended_tier or "tier_pro"
             closing = get_closing_message(tier)
             if closing:
@@ -382,18 +448,28 @@ class SalesStateMachine:
             )
 
         # Wants to think
-        if any(w in text_lower for w in ["ci penso", "ci devo pensare", "vediamo",
-                                          "devo valutare", "ne parlo"]):
+        if any(
+            w in text_lower
+            for w in [
+                "ci penso",
+                "ci devo pensare",
+                "vediamo",
+                "devo valutare",
+                "ne parlo",
+            ]
+        ):
             return SalesResult(
                 response="Certo, prenditi il tempo che ti serve. Ti mando un riepilogo "
-                         "su WhatsApp così ce l'hai sotto mano. Se hai domande mi trovi qui.",
+                "su WhatsApp così ce l'hai sotto mano. Se hai domande mi trovi qui.",
                 state=SalesState.FOLLOWUP_SCHEDULED,
                 context=self.ctx.to_dict(),
                 followup_wa="24h",
             )
 
         # Decline
-        if any(w in text_lower for w in ["no", "non mi interessa", "lascia stare", "basta"]):
+        if any(
+            w in text_lower for w in ["no", "non mi interessa", "lascia stare", "basta"]
+        ):
             return self._decline_gracefully()
 
         # Question about price
@@ -412,7 +488,10 @@ class SalesStateMachine:
     def _handle_followup(self, text: str, nlu: Optional[Dict] = None) -> SalesResult:
         """Lead came back after followup was scheduled."""
         text_lower = text.lower()
-        if any(w in text_lower for w in ["sì", "si", "ok", "procediamo", "compro", "voglio"]):
+        if any(
+            w in text_lower
+            for w in ["sì", "si", "ok", "procediamo", "compro", "voglio"]
+        ):
             return self._go_to_closing()
 
         return SalesResult(
@@ -477,7 +556,7 @@ class SalesStateMachine:
             )
         return SalesResult(
             response="FLUXION ha tre opzioni, tutte con pagamento unico. "
-                     "Quale ti interessa sapere di più?",
+            "Quale ti interessa sapere di più?",
             state=SalesState.CLOSING,
             context=self.ctx.to_dict(),
         )
@@ -486,7 +565,7 @@ class SalesStateMachine:
         """Lead declined — exit with class."""
         return SalesResult(
             response="Nessun problema, capisco. Se cambi idea mi trovi qui. "
-                     "In bocca al lupo col lavoro!",
+            "In bocca al lupo col lavoro!",
             state=SalesState.DECLINED,
             context=self.ctx.to_dict(),
             is_terminal=True,
@@ -510,12 +589,25 @@ class SalesStateMachine:
     def _extract_number(self, text: str) -> Optional[int]:
         """Extract first number from text."""
         import re
+
         # Handle Italian number words
         word_to_num = {
-            "uno": 1, "una": 1, "due": 2, "tre": 3, "quattro": 4,
-            "cinque": 5, "sei": 6, "sette": 7, "otto": 8, "nove": 9,
-            "dieci": 10, "quindici": 15, "venti": 20, "trenta": 30,
-            "cinquanta": 50, "cento": 100,
+            "uno": 1,
+            "una": 1,
+            "due": 2,
+            "tre": 3,
+            "quattro": 4,
+            "cinque": 5,
+            "sei": 6,
+            "sette": 7,
+            "otto": 8,
+            "nove": 9,
+            "dieci": 10,
+            "quindici": 15,
+            "venti": 20,
+            "trenta": 30,
+            "cinquanta": 50,
+            "cento": 100,
         }
         text_lower = text.lower()
         for word, num in word_to_num.items():
@@ -523,7 +615,7 @@ class SalesStateMachine:
                 return num
 
         # Digit extraction
-        match = re.search(r'\d+', text)
+        match = re.search(r"\d+", text)
         if match:
             return int(match.group())
         return None
@@ -534,8 +626,11 @@ class SalesStateMachine:
             return nlu["entities"]["nome"]
 
         import re
+
         # "Sono Marco" / "Mi chiamo Luca"
-        m = re.search(r'(?:sono|mi chiamo|io sono)\s+([A-Z][a-zàèéìòù]+)', text, re.IGNORECASE)
+        m = re.search(
+            r"(?:sono|mi chiamo|io sono)\s+([A-Z][a-zàèéìòù]+)", text, re.IGNORECASE
+        )
         if m:
             return m.group(1).capitalize()
         return None
