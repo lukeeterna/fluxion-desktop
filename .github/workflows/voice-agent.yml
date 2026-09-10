@@ -298,8 +298,12 @@ jobs:
       - name: Run Bandit security gate (MEDIUM/HIGH)
         working-directory: voice-agent
         run: |
+          set +e
           bandit -r src/ -f json -ll -o bandit-report.json
+          bandit_status=$?
+          set -e
           cat bandit-report.json
+          exit "$bandit_status"
       - name: Check for hardcoded secret literals
         working-directory: voice-agent
         run: |
