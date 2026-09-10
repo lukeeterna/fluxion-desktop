@@ -79,6 +79,7 @@ jobs:
         run: |
           pytest tests/ -v \
             --ignore=tests/test_booking_e2e_complete.py \
+            --ignore=tests/e2e \
             --cov=src \
             --cov-report=xml \
             --cov-report=term-missing \
@@ -111,7 +112,29 @@ jobs:
         working-directory: voice-agent
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: pytest tests/test_booking_e2e_complete.py -v --tb=short || true
+        run: |
+          touch "$RUNNER_TEMP/fluxion-ci.env"
+          python tests/e2e/cert_server.py \
+            --env-file "$RUNNER_TEMP/fluxion-ci.env" \
+            --sha "$GITHUB_SHA" \
+            --port 3002 > "$RUNNER_TEMP/voice-cert-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3002/health >/dev/null; then
+              break
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/voice-cert-server.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:3002/health >/dev/null || {
+            cat "$RUNNER_TEMP/voice-cert-server.log"
+            exit 1
+          }
+          pytest tests/e2e tests/test_booking_e2e_complete.py -v --tb=short
 
   complete-tests:
     name: Complete Test Suite (CoVe)
