@@ -1027,21 +1027,7 @@ def _add_whatsapp_logging_to_analytics():
             # Ensure table exists
             conn.executescript(WHATSAPP_SCHEMA)
 
-            # Build date filter
-            date_filter = ""
-            params = []
-            if start_date:
-                date_filter = " WHERE timestamp >= ?"
-                params.append(start_date.isoformat())
-            if end_date:
-                if date_filter:
-                    date_filter += " AND timestamp <= ?"
-                else:
-                    date_filter = " WHERE timestamp <= ?"
-                params.append(end_date.isoformat())
-
-            row = conn.execute(
-                f"""
+            query = """
                 SELECT
                     COUNT(*) as total_messages,
                     SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_messages,
@@ -1050,10 +1036,19 @@ def _add_whatsapp_logging_to_analytics():
                     AVG(confidence) as avg_confidence,
                     COUNT(DISTINCT phone) as unique_contacts
                 FROM whatsapp_messages
-                {date_filter}
-            """,  # nosec B608 - fixed date clause; values parameterized
-                params,
-            ).fetchone()
+            """
+            params = []
+            if start_date and end_date:
+                query += " WHERE timestamp >= ? AND timestamp <= ?"
+                params.extend((start_date.isoformat(), end_date.isoformat()))
+            elif start_date:
+                query += " WHERE timestamp >= ?"
+                params.append(start_date.isoformat())
+            elif end_date:
+                query += " WHERE timestamp <= ?"
+                params.append(end_date.isoformat())
+
+            row = conn.execute(query, params).fetchone()
 
             return {
                 "total_messages": row["total_messages"] or 0,
