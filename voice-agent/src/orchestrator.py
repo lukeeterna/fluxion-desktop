@@ -4669,7 +4669,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         else:
             where_clause = name_clause
 
-        query = f"""
+        query = f"""  # nosec B608 - fixed LIKE clauses; values parameterized
             SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
             FROM clienti
             WHERE deleted_at IS NULL AND ({where_clause})
