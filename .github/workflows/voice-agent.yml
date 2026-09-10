@@ -136,7 +136,7 @@ jobs:
             cat "$RUNNER_TEMP/voice-cert-server.log"
             exit 1
           }
-          pytest tests/e2e tests/test_booking_e2e_complete.py -v --tb=short
+          pytest tests/e2e -v --tb=short
 
   complete-tests:
     name: Complete Test Suite (CoVe)
@@ -161,7 +161,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           pytest tests/test_voice_agent_complete.py -v --tb=short \
-            -k "TestClientMatchingSecurity or TestPhoneticMatching or TestIntentClassification or TestStateMachineTransitions" || true
+            -k "TestClientMatchingSecurity or TestPhoneticMatching or TestIntentClassification or TestStateMachineTransitions"
 
   smoke-tests:
     name: Smoke Tests (${{ matrix.os }})
@@ -202,7 +202,7 @@ jobs:
           python -c "from src.turn_tracker import FluxionTurnTracker; print('FluxionTurnTracker OK')"
           python -c "from src.groq_client import GroqClient; print('GroqClient OK')"
           python -c "from src.stt import get_stt_engine; print('STT OK')"
-          python -c "from src.tts import get_tts_engine; print('TTS OK')"
+          python -c "from src.tts import get_tts; print('TTS OK')"
           python -c "from src.analytics import ConversationLogger; print('Analytics OK')"
       - name: Smoke Test - State Machine
         working-directory: voice-agent
