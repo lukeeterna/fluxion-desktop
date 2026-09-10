@@ -74,8 +74,8 @@ class SaraVoIPBridge:
             logger.info(f"Local IP detected: {ip}")
             return ip
         except OSError:
-            logger.warning("Could not detect local IP, using 0.0.0.0")
-            return "0.0.0.0"
+            logger.warning("Could not detect local IP, using loopback")
+            return "127.0.0.1"
 
     def set_pipeline(self, pipeline):
         """Set Sara voice pipeline for processing."""
