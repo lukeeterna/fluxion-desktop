@@ -24,6 +24,7 @@ import sys
 import tempfile
 import time
 import wave
+from collections import OrderedDict
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
@@ -397,6 +398,10 @@ class PiperTTSEngine:
         self.model_name = _PIPER_MODEL
         self.sample_rate = 22050
         self._py_voice: Optional[Any] = None  # PiperVoice instance (lazy-loaded)
+        # Repeated greetings and fillers are common in a voice session. Keep a
+        # small bounded cache here as callers may use the engine without TTSCache.
+        self._wav_cache: "OrderedDict[str, bytes]" = OrderedDict()
+        self._wav_cache_size = 32
 
         if piper_binary:
             self.piper_binary: Optional[Path] = Path(piper_binary)
@@ -556,9 +561,21 @@ class PiperTTSEngine:
                 len(text),
                 text[:50],
             )
+        cached = self._wav_cache.get(text)
+        if cached is not None:
+            self._wav_cache.move_to_end(text)
+            return cached
+
         if self._py_voice is not None:
-            return await asyncio.to_thread(self._synthesize_python, text)
-        return await self._synthesize_subprocess(text)
+            wav = await asyncio.to_thread(self._synthesize_python, text)
+        else:
+            wav = await self._synthesize_subprocess(text)
+
+        self._wav_cache[text] = wav
+        self._wav_cache.move_to_end(text)
+        while len(self._wav_cache) > self._wav_cache_size:
+            self._wav_cache.popitem(last=False)
+        return wav
 
     def _synthesize_python(self, text: str) -> bytes:
         """Run PiperVoice.synthesize_wav in a worker thread → WAV bytes."""
