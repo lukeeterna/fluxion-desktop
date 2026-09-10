@@ -407,8 +407,9 @@ class SIPClient:
         self._socket.settimeout(0.5)
 
         # Bind on 0.0.0.0 to receive from any interface (NAT traversal)
-        self._socket.bind(  # nosec B104 - required for NAT-facing SIP UDP
-            ("0.0.0.0", self.config.local_port)
+        # B104: the SIP UDP listener must receive traffic on every host interface.
+        self._socket.bind(
+            ("0.0.0.0", self.config.local_port)  # nosec B104
         )
         logger.info(f"SIP socket bound to 0.0.0.0:{self.config.local_port}")
 
