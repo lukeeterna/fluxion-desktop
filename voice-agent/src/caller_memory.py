@@ -202,7 +202,7 @@ class CallerMemory:
                     set_clause = ", ".join(f"{k} = ?" for k in updates)
                     values = list(updates.values()) + [phone]
                     conn.execute(
-                        f"UPDATE caller_profiles SET {set_clause} WHERE phone_number = ?",
+                        f"UPDATE caller_profiles SET {set_clause} WHERE phone_number = ?",  # nosec B608 - allowlisted keys
                         values,
                     )
                 else:
