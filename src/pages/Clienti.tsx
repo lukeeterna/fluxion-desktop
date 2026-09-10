@@ -92,6 +92,9 @@ export const Clienti: FC = () => {
         // Create
         await createMutation.mutateAsync(data as CreateClienteInput);
       }
+      toast.success('Cliente salvato', {
+        description: 'I dati del cliente sono stati aggiornati correttamente.',
+      });
       setDialogOpen(false);
     } catch (error) {
       console.error('Failed to save cliente:', error);
@@ -106,6 +109,7 @@ export const Clienti: FC = () => {
       await deleteMutation.mutateAsync(clienteToDelete.id);
       setDeleteDialogOpen(false);
       setClienteToDelete(undefined);
+      toast.success('Cliente eliminato');
     } catch (error) {
       console.error('Failed to delete cliente:', error);
       toast.error('Errore eliminazione cliente', { description: String(error) });

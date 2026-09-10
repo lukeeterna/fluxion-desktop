@@ -168,7 +168,7 @@ test.describe('Screen Reader Compatibility @a11y @screen-reader', () => {
     await clientiPage.navigate();
     await clientiPage.openNewClienteForm();
 
-    const inputs = page.locator('input:not([type="hidden"])');
+    const inputs = page.getByRole('dialog').locator('input:not([type="hidden"])');
     const count = await inputs.count();
 
     for (let i = 0; i < count; i++) {

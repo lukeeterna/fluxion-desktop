@@ -132,7 +132,8 @@ export abstract class BasePage {
   }
 
   async submitForm(): Promise<void> {
-    await this.page.getByRole('button', { name: /salva|conferma|invia|submit/i }).click();
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByRole('button', { name: /crea cliente|aggiorna cliente|salva|conferma|invia|submit/i }).click();
   }
 
   // =============================================================================
