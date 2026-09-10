@@ -182,14 +182,15 @@ class TestPiperTTSEngineLatency:
         warmup = 2
         latencies = []
 
-        loop = asyncio.get_event_loop()
+        async def measure_latency():
+            for i in range(N + warmup):
+                t0 = time.perf_counter()
+                await engine.synthesize(text)
+                elapsed_ms = (time.perf_counter() - t0) * 1000
+                if i >= warmup:
+                    latencies.append(elapsed_ms)
 
-        for i in range(N + warmup):
-            t0 = time.perf_counter()
-            loop.run_until_complete(engine.synthesize(text))
-            elapsed_ms = (time.perf_counter() - t0) * 1000
-            if i >= warmup:
-                latencies.append(elapsed_ms)
+        asyncio.run(measure_latency())
 
         latencies.sort()
         p95_idx = int(0.95 * len(latencies)) - 1
@@ -213,9 +214,7 @@ class TestEdgeTTSEngineLatency:
     def test_edge_tts_synthesis_produces_wav_bytes(self):
         """EdgeTTSEngine.synthesize() returns non-empty WAV bytes."""
         engine = EdgeTTSEngine()
-        wav = asyncio.get_event_loop().run_until_complete(
-            engine.synthesize("Ciao, come posso aiutarti?")
-        )
+        wav = asyncio.run(engine.synthesize("Ciao, come posso aiutarti?"))
         assert isinstance(wav, bytes)
         assert len(wav) > 100
         assert wav[:4] == b"RIFF", f"Expected RIFF WAV header, got {wav[:4]!r}"
