@@ -14,6 +14,10 @@ on:
   schedule:
     - cron: '0 6 * * *'
 
+concurrency:
+  group: voice-agent-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 env:
   PYTHON_VERSION: '3.11'
   GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -22,6 +26,7 @@ jobs:
   lint:
     name: Lint & Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -55,6 +60,7 @@ jobs:
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     needs: lint
     steps:
       - name: Checkout code
@@ -96,6 +102,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: unit-tests
     steps:
       - name: Checkout code
@@ -141,6 +148,7 @@ jobs:
   complete-tests:
     name: Complete Test Suite (CoVe)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: unit-tests
     steps:
       - name: Checkout code
@@ -166,6 +174,7 @@ jobs:
   smoke-tests:
     name: Smoke Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     needs: [lint, unit-tests]
     strategy:
       fail-fast: false
@@ -232,6 +241,7 @@ jobs:
   performance:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: smoke-tests
     steps:
       - name: Checkout code
@@ -275,6 +285,7 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -350,6 +361,7 @@ jobs:
   build:
     name: Build & Package
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     needs: [smoke-tests, performance]
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     steps:
@@ -371,7 +383,7 @@ jobs:
           mkdir -p dist/fluxion-voice-agent
           cp -r src/ dist/fluxion-voice-agent/
           cp main.py requirements.txt dist/fluxion-voice-agent/
-          cp requirements-windows.txt dist/fluxion-voice-agent/ || true
+          cp requirements-windows.txt dist/fluxion-voice-agent/
           cd dist
           tar -czf fluxion-voice-agent.tar.gz fluxion-voice-agent/
       - name: Upload artifact
@@ -384,6 +396,7 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: [lint, unit-tests, e2e-tests, complete-tests, smoke-tests, performance, security]
     if: always()
     steps:
