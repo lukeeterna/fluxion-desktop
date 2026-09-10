@@ -1041,7 +1041,7 @@ def _add_whatsapp_logging_to_analytics():
                 params.append(end_date.isoformat())
 
             row = conn.execute(
-                f"""
+                f"""  # nosec B608 - fixed date clause; values parameterized
                 SELECT
                     COUNT(*) as total_messages,
                     SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_messages,
