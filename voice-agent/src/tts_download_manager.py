@@ -9,6 +9,7 @@ import logging
 import os
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -24,6 +25,7 @@ _WRITABLE_ROOT = get_writable_root()
 _MODEL_DIR = _WRITABLE_ROOT / "models" / "qwen3-tts"
 _MODE_FILE = _WRITABLE_ROOT / ".tts_mode"
 _QWEN_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+_QWEN_MODEL_REVISION = "85e237c12c027371202489a0ec509ded67b5e4b5"
 _REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
 
 # ── Piper voice model auto-download (S211 P4) ───────────────────────────────
@@ -33,7 +35,8 @@ _REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
 # i.e. first sidecar launch with internet. Falls back to SystemTTS if offline.
 _PIPER_VOICE_NAME = "it_IT-paola-medium"
 _PIPER_HF_BASE = (
-    "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium"
+    "https://huggingface.co/rhasspy/piper-voices/resolve/"
+    "1162a9173d0ce503555aed757976b7a9912eae4c/it/it_IT/paola/medium"
 )
 _PIPER_ONNX_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx"
 _PIPER_JSON_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx.json"
@@ -102,6 +105,7 @@ class TTSDownloadManager:
                 None,
                 lambda: snapshot_download(
                     repo_id=_QWEN_MODEL_ID,
+                    revision=_QWEN_MODEL_REVISION,
                     local_dir=str(_MODEL_DIR),
                     ignore_patterns=["*.msgpack", "flax_model*"],
                 ),
@@ -184,11 +188,15 @@ class TTSDownloadManager:
         for idx, (url, dest) in enumerate(targets):
             tmp = dest.with_suffix(dest.suffix + ".part")
             try:
+                parsed = urlparse(url)
+                if parsed.scheme != "https" or parsed.hostname != "huggingface.co":
+                    raise ValueError(f"Refusing untrusted Piper download URL: {url}")
                 req = urllib.request.Request(
                     url,
                     headers={"User-Agent": "FLUXION-VoiceAgent/1.0"},
                 )
-                with urllib.request.urlopen(
+                # URL is constrained above to HTTPS on the pinned Hugging Face host.
+                with urllib.request.urlopen(  # nosec B310
                     req, timeout=_PIPER_DOWNLOAD_TIMEOUT_S
                 ) as resp:
                     total = int(resp.headers.get("Content-Length") or 0)
