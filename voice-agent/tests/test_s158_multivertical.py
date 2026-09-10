@@ -38,7 +38,7 @@ FAQ_QUESTIONS = {
 results = []
 
 
-def test_vertical(vert, booking_q, name):
+def check_vertical(vert, booking_q, name):
     """Test a single vertical: set_vertical, booking flow, FAQ."""
     tag = f"[{vert:15s}]"
     sub_results = []
@@ -137,34 +137,37 @@ def test_vertical(vert, booking_q, name):
     return sub_results
 
 
-# Run all tests
-print("=" * 100)
-print("SARA S158 MULTI-VERTICAL TEST")
-print("=" * 100)
+def main() -> int:
+    """Run the live certification explicitly, never during pytest collection."""
+    print("=" * 100)
+    print("SARA S158 MULTI-VERTICAL TEST")
+    print("=" * 100)
 
-ok_count = 0
-warn_count = 0
-fail_count = 0
+    ok_count = 0
+    warn_count = 0
+    fail_count = 0
 
-for vert, (booking_q, name) in VERTICALS.items():
-    print(f"\n--- {vert.upper()} ---")
-    sub = test_vertical(vert, booking_q, name)
-    for line in sub:
-        print(line)
-        if line.startswith("OK"):
-            ok_count += 1
-        elif line.startswith("WARN"):
-            warn_count += 1
-        elif line.startswith("FAIL"):
-            fail_count += 1
-    results.extend(sub)
+    for vert, (booking_q, name) in VERTICALS.items():
+        print(f"\n--- {vert.upper()} ---")
+        sub = check_vertical(vert, booking_q, name)
+        for line in sub:
+            print(line)
+            if line.startswith("OK"):
+                ok_count += 1
+            elif line.startswith("WARN"):
+                warn_count += 1
+            elif line.startswith("FAIL"):
+                fail_count += 1
+        results.extend(sub)
 
-print("\n" + "=" * 100)
-print(
-    f"TOTALE: {ok_count + warn_count + fail_count} | OK: {ok_count} | WARN: {warn_count} | FAIL: {fail_count}"
-)
-print("=" * 100)
+    print("\n" + "=" * 100)
+    print(
+        f"TOTALE: {ok_count + warn_count + fail_count} | OK: {ok_count} | "
+        f"WARN: {warn_count} | FAIL: {fail_count}"
+    )
+    print("=" * 100)
+    return 1 if fail_count > 0 else 0
 
-# Exit with error if any FAIL
-if fail_count > 0:
-    sys.exit(1)
+
+if __name__ == "__main__":
+    sys.exit(main())
