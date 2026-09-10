@@ -25,7 +25,7 @@ test.describe('Critical User Journeys @journey @critical', () => {
     await clientiPage.createCliente(cliente);
 
     // Verify cliente was created
-    await clientiPage.expectClienteInList(cliente.nome);
+    await clientiPage.expectClienteInList(`${cliente.nome} ${cliente.cognome}`);
 
     // Search for the created cliente
     await clientiPage.searchCliente(cliente.nome);
@@ -43,7 +43,7 @@ test.describe('Critical User Journeys @journey @critical', () => {
       nome: `Updated${Date.now()}`,
       telefono: TestDataFactory.phoneNumber(),
     };
-    await clientiPage.editCliente(cliente.nome, updatedData);
+    await clientiPage.editCliente(`${cliente.nome} ${cliente.cognome}`, updatedData);
 
     // Verify updates
     await clientiPage.expectClienteInList(updatedData.nome);
@@ -54,13 +54,13 @@ test.describe('Critical User Journeys @journey @critical', () => {
     await clientiPage.navigate();
     const cliente = TestDataFactory.cliente();
     await clientiPage.createCliente(cliente);
-    await clientiPage.expectClienteInList(cliente.nome);
+    await clientiPage.expectClienteInList(`${cliente.nome} ${cliente.cognome}`);
 
     // Delete cliente
-    await clientiPage.deleteCliente(cliente.nome);
+    await clientiPage.deleteCliente(`${cliente.nome} ${cliente.cognome}`);
 
     // Verify deletion
-    await clientiPage.expectClienteNotInList(cliente.nome);
+    await clientiPage.expectClienteNotInList(`${cliente.nome} ${cliente.cognome}`);
   });
 
   test('navigation round trip', async ({ dashboardPage, page }) => {
@@ -122,7 +122,7 @@ test.describe('Error Recovery Journeys @journey @error-recovery', () => {
     await clientiPage.submitForm();
 
     // Should show validation errors
-    const validationError = page.getByText(/campo obbligatorio|required/i);
+    const validationError = page.getByText(/richiest|campo obbligatorio|required/i);
     await expect(validationError.first()).toBeVisible();
 
     // Fill form correctly
@@ -165,18 +165,13 @@ test.describe('Error Recovery Journeys @journey @error-recovery', () => {
     const cliente = TestDataFactory.cliente();
     await clientiPage.fillClienteForm(cliente);
 
-    // Attempt to save (should fail gracefully)
-    await clientiPage.submitForm();
-
-    // Should show error message - app should handle gracefully
-    // Note: In offline mode, Tauri desktop apps may handle this differently
+    // Core CRM data is local-first and must remain writable without internet.
+    await clientiPage.saveCliente();
+    await clientiPage.expectClienteInList(cliente.nome);
 
     // Restore online
     await context.setOffline(false);
 
-    // If error was shown, it's handled correctly
-    // If not, the app might have offline support
-    expect(true).toBe(true); // Test passes either way
   });
 });
 

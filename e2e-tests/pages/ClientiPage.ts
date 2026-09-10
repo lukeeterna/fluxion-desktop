@@ -29,7 +29,7 @@ export class ClientiPage extends BasePage {
   constructor(page: Page) {
     super(page);
 
-    this.searchInput = page.getByRole('searchbox', { name: /cerca/i });
+    this.searchInput = page.getByRole('textbox', { name: 'Cerca clienti' });
     this.addButton = page.getByRole('button', { name: /nuovo cliente|aggiungi/i });
     this.clientiTable = page.getByRole('table');
     this.clienteForm = page.getByRole('form', { name: /cliente/i });
@@ -127,11 +127,11 @@ export class ClientiPage extends BasePage {
   // =============================================================================
 
   async expectClienteInList(nome: string): Promise<void> {
-    await expect(this.clientiTable.getByRole('cell', { name: nome })).toBeVisible();
+    await expect(this.clientiTable.locator('tbody tr').filter({ hasText: nome }).first()).toBeVisible();
   }
 
   async expectClienteNotInList(nome: string): Promise<void> {
-    await expect(this.clientiTable.getByRole('cell', { name: nome })).toBeHidden();
+    await expect(this.clientiTable.locator('tbody tr').filter({ hasText: nome })).toHaveCount(0);
   }
 
   async expectClientiCount(count: number): Promise<void> {

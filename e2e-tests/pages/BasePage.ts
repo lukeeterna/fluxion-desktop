@@ -95,7 +95,7 @@ export abstract class BasePage {
   }
 
   async closeModal(): Promise<void> {
-    const closeButton = this.modal.getByRole('button', { name: /close|chiudi|annulla|×/i });
+    const closeButton = this.modal.getByRole('button', { name: /^annulla$/i });
     await closeButton.click();
     await expect(this.modal).toBeHidden();
   }
@@ -165,8 +165,8 @@ export abstract class BasePage {
   }
 
   async clickTableRowAction(rowText: string, actionName: string): Promise<void> {
-    const row = this.page.getByRole('row').filter({ hasText: rowText });
-    await row.getByRole('button', { name: actionName }).click();
+    const row = this.page.getByRole('table').locator('tbody tr').filter({ hasText: rowText });
+    await row.getByRole('button', { name: actionName }).first().click();
   }
 
   async expectTableContains(text: string): Promise<void> {

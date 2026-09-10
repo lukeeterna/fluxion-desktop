@@ -87,15 +87,6 @@ const FATTURE = [
   { id: 7, numero: '2026/007', numero_fattura: '2026/007', numero_completo: 'RC-2026/007', cliente_id: 4, cliente_nome: 'Luca Ferrari', cliente_denominazione: 'Luca Ferrari', data_emissione: '2026-03-17T11:00:00', data: '2026-03-17T11:00:00', importo_totale: 32.00, importo: 32.00, totale_documento: 32.00, stato: 'da_pagare', tipo: 'ricevuta', tipo_documento: 'TD04', sdi_esito: null, xml_filename: null, xml_content: null, note: '' },
 ];
 
-const INCASSI_OGGI = {
-  totale: 182.00,
-  contanti: 97.00,
-  carta: 85.00,
-  bonifico: 0,
-  altro: 0,
-  numero_transazioni: 3,
-};
-
 // ── Mock invoke() handler ────────────────────────────────────────────
 
 const MOCK_HANDLERS: Record<string, (args?: any) => any> = {
