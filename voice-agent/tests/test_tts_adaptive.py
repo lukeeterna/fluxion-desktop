@@ -165,9 +165,7 @@ class TestPiperTTSEngineLatency:
     def test_piper_synthesis_produces_wav_bytes(self):
         """PiperTTSEngine.synthesize() returns non-empty bytes starting with RIFF header."""
         engine = PiperTTSEngine()
-        wav = asyncio.get_event_loop().run_until_complete(
-            engine.synthesize("Ciao, come posso aiutarti?")
-        )
+        wav = asyncio.run(engine.synthesize("Ciao, come posso aiutarti?"))
         assert isinstance(wav, bytes)
         assert len(wav) > 100
         assert wav[:4] == b"RIFF", f"Expected RIFF WAV header, got {wav[:4]!r}"
