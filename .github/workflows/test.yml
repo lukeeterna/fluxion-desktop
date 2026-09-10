@@ -7,6 +7,10 @@ on:
     branches: [master]
   workflow_dispatch:
 
+concurrency:
+  group: test-suite-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,6 +24,7 @@ jobs:
   test-backend:
     name: Backend Tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -59,7 +64,6 @@ jobs:
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - name: Install SQLx CLI
         run: cargo install sqlx-cli --no-default-features --features sqlite
-        continue-on-error: true
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -98,19 +102,18 @@ jobs:
       - name: Run Integration Tests
         working-directory: ./src-tauri
         shell: bash
-        continue-on-error: true
         run: cargo test --test '*' --verbose
         env:
           DATABASE_URL: "sqlite::memory:"
       - name: Run Documentation Tests
         working-directory: ./src-tauri
         shell: bash
-        continue-on-error: true
         run: cargo test --doc --all-features --verbose
 
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -127,7 +130,6 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Run Clippy
         working-directory: ./src-tauri
-        continue-on-error: true
         run: |
           cargo clippy --all-targets --all-features --verbose -- \
             -W warnings \
@@ -138,6 +140,7 @@ jobs:
   test-frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -152,11 +155,11 @@ jobs:
         run: npx tsc --noEmit
       - name: Run ESLint
         run: npm run lint
-        continue-on-error: true
 
   build-tauri:
     name: Build Tauri App (${{ matrix.platform }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -207,9 +210,9 @@ jobs:
         run: |
           mkdir -p voice-agent/models/tts
           curl -L --fail --retry 3 -o voice-agent/models/tts/it_IT-paola-medium.onnx \
-            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx"
+            "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/it/it_IT/paola/medium/it_IT-paola-medium.onnx"
           curl -L --fail --retry 3 -o voice-agent/models/tts/it_IT-paola-medium.onnx.json \
-            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx.json"
+            "https://huggingface.co/rhasspy/piper-voices/resolve/1162a9173d0ce503555aed757976b7a9912eae4c/it/it_IT/paola/medium/it_IT-paola-medium.onnx.json"
       - name: Set PyInstaller path separator
         shell: bash
         run: |
@@ -264,6 +267,7 @@ jobs:
   status-check:
     name: Status Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs:
       - test-backend
       - quality
@@ -275,12 +279,10 @@ jobs:
         shell: bash
         run: |
           if [ "${{ needs.test-backend.result }}" != "success" ] || \
+             [ "${{ needs.quality.result }}" != "success" ] || \
              [ "${{ needs.test-frontend.result }}" != "success" ] || \
              [ "${{ needs.build-tauri.result }}" != "success" ]; then
             echo "One or more critical jobs failed"
             exit 1
-          fi
-          if [ "${{ needs.quality.result }}" != "success" ]; then
-            echo "Quality check failed (currently non-blocking)"
           fi
           echo "All critical jobs passed"
