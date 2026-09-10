@@ -33,7 +33,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        timeout-minutes: 5
+        timeout-minutes: 15
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
