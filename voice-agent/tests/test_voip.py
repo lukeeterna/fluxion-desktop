@@ -73,7 +73,7 @@ class TestSIPConfig:
     def test_default_values(self):
         """Test default configuration values."""
         config = SIPConfig()
-        assert config.server == "sip.ehiweb.it"
+        assert config.server == "sip.vivavox.it"
         assert config.port == 5060
         assert config.transport == "udp"
         assert "PCMU" in config.codecs
@@ -96,7 +96,7 @@ class TestSIPConfig:
                 "VOIP_SIP_SERVER": "env.server",
                 "VOIP_SIP_PORT": "5070",
                 "VOIP_SIP_USER": "envuser",
-                "VOIP_SIP_PASSWORD": "envpass",
+                "VOIP_SIP_PASS": "envpass",
             },
         ):
             config = SIPConfig.from_env()
