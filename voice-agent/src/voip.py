@@ -381,7 +381,9 @@ class SIPClient:
             import urllib.request
 
             self._cached_public_ip = (
-                urllib.request.urlopen(  # nosec B310 - fixed HTTPS endpoint\n                    "https://api.ipify.org", timeout=5\n                )
+                urllib.request.urlopen(  # nosec B310 - fixed HTTPS endpoint
+                    "https://api.ipify.org", timeout=5
+                )
                 .read()
                 .decode("utf-8")
                 .strip()
@@ -405,7 +407,9 @@ class SIPClient:
         self._socket.settimeout(0.5)
 
         # Bind on 0.0.0.0 to receive from any interface (NAT traversal)
-        self._socket.bind(  # nosec B104 - required for NAT-facing SIP UDP\n            ("0.0.0.0", self.config.local_port)\n        )
+        self._socket.bind(  # nosec B104 - required for NAT-facing SIP UDP
+            ("0.0.0.0", self.config.local_port)
+        )
         logger.info(f"SIP socket bound to 0.0.0.0:{self.config.local_port}")
 
     def _build_via_header(self) -> str:
