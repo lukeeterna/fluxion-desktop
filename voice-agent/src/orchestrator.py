@@ -4669,13 +4669,21 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         else:
             where_clause = name_clause
 
-        query = f"""  # nosec B608 - fixed LIKE clauses; values parameterized
+        # B608: where_clause contains only repeated constant LIKE fragments;
+        # every client-derived value remains bound through SQLite parameters.
+        query = (  # nosec B608
+            """
             SELECT id, nome, cognome, telefono, email, soprannome, data_nascita
             FROM clienti
-            WHERE deleted_at IS NULL AND ({where_clause})
+            WHERE deleted_at IS NULL AND (
+            """
+            + where_clause
+            + """
+            )
             ORDER BY cognome ASC, nome ASC
             LIMIT 10
-        """
+            """
+        )
 
         try:
             with sqlite3.connect(db_path) as conn:
