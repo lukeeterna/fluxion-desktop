@@ -86,7 +86,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     await clientiPage.submitForm();
 
     // Check for email validation error
-    const emailError = page.getByText(/email.*valida|invalid.*email/i);
+    const emailError = page.getByTestId('client-form').getByText(/email.*valida|invalid.*email/i);
     await expect(emailError).toBeVisible();
   });
 
@@ -103,7 +103,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     await clientiPage.submitForm();
 
     // Check for phone validation error
-    const phoneError = page.getByText(/telefono.*valido|invalid.*phone/i);
+    const phoneError = page.getByTestId('client-form').getByText(/telefono.*valido|invalid.*phone/i);
     await expect(phoneError).toBeVisible();
   });
 });
@@ -132,7 +132,7 @@ test.describe('Clienti Search & Filter @clienti', () => {
     await clientiPage.searchCliente('NonExistentCliente12345XYZ');
 
     // Should show empty state or no results message
-    const noResults = page.getByText(/nessun risultato|non trovato|no results/i);
+    const noResults = page.getByText(/nessun cliente trovato|nessun risultato|non trovato|no results/i);
     await expect(noResults).toBeVisible();
   });
 });

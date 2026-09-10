@@ -115,9 +115,9 @@ export class ClientiPage extends BasePage {
   async deleteCliente(nome: string): Promise<void> {
     await this.clickTableRowAction(nome, 'Elimina');
 
-    // Confirm deletion
-    const confirmButton = this.modal.getByRole('button', { name: /conferma|elimina/i });
-    await confirmButton.click();
+    const deleteDialog = this.page.getByRole('alertdialog');
+    await expect(deleteDialog).toBeVisible();
+    await deleteDialog.getByRole('button', { name: /^elimina$/i }).click();
 
     await this.expectToast(/cliente.*eliminato/i);
   }
