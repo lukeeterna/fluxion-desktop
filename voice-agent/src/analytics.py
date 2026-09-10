@@ -644,7 +644,7 @@ class ConversationLogger:
 
             # Main conversation metrics
             cursor = conn.execute(
-                f"""  # nosec B608 - fixed WHERE fragments; values parameterized
+                f"""
                 SELECT
                     COUNT(*) as total_conversations,
                     SUM(c.total_turns) as total_turns,
@@ -656,7 +656,7 @@ class ConversationLogger:
                     AVG(c.user_satisfaction) as avg_satisfaction
                 FROM conversations c
                 {where_clause}
-            """,
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
                 params,
             )
 
@@ -675,14 +675,14 @@ class ConversationLogger:
 
             # Intent distribution
             cursor = conn.execute(
-                f"""  # nosec B608 - fixed WHERE fragments; values parameterized
+                f"""
                 SELECT t.intent, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY t.intent
                 ORDER BY count DESC
-            """,
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
                 params,
             )
 
@@ -692,14 +692,14 @@ class ConversationLogger:
 
             # Layer usage
             cursor = conn.execute(
-                f"""  # nosec B608 - fixed WHERE fragments; values parameterized
+                f"""
                 SELECT t.layer_used, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY t.layer_used
                 ORDER BY count DESC
-            """,
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
                 params,
             )
 
@@ -709,14 +709,14 @@ class ConversationLogger:
 
             # Peak hours
             cursor = conn.execute(
-                f"""  # nosec B608 - fixed WHERE fragments; values parameterized
+                f"""
                 SELECT strftime('%H', t.timestamp) as hour, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY hour
                 ORDER BY hour
-            """,
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
                 params,
             )
 
@@ -837,19 +837,19 @@ class ConversationLogger:
 
                 # Delete turns first (foreign key constraint)
                 conn.execute(
-                    f"""  # nosec B608 - generated ? placeholders only
+                    f"""
                     DELETE FROM conversation_turns
                     WHERE conversation_id IN ({placeholders})
-                """,
+                """,  # nosec B608 - generated ? placeholders only
                     old_ids,
                 )
 
                 # Delete conversations
                 conn.execute(
-                    f"""  # nosec B608 - generated ? placeholders only
+                    f"""
                     DELETE FROM conversations
                     WHERE id IN ({placeholders})
-                """,
+                """,  # nosec B608 - generated ? placeholders only
                     old_ids,
                 )
 
@@ -1059,7 +1059,7 @@ class ConversationLogger:
 
             # Total calls
             row = conn.execute(
-                f"""  # nosec B608 - fixed date clause; values parameterized
+                f"""
                 SELECT
                     COUNT(*) as total_calls,
                     SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_calls,
@@ -1071,7 +1071,7 @@ class ConversationLogger:
                     SUM(duration_seconds) as total_duration
                 FROM voip_calls
                 {date_filter}
-            """,
+            """,  # nosec B608 - fixed date clause; values parameterized
                 params,
             ).fetchone()
 
