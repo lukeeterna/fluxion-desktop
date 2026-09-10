@@ -425,14 +425,19 @@ class SIPClient:
         """Compute MD5 digest for authentication."""
         # HA1 = MD5(username:realm:password)
         ha1 = hashlib.md5(
-            f"{self.config.username}:{self._realm}:{self.config.password}".encode()
+            f"{self.config.username}:{self._realm}:{self.config.password}".encode(),
+            usedforsecurity=False,
         ).hexdigest()
 
         # HA2 = MD5(method:uri)
-        ha2 = hashlib.md5(f"{method}:{uri}".encode()).hexdigest()
+        ha2 = hashlib.md5(
+            f"{method}:{uri}".encode(), usedforsecurity=False
+        ).hexdigest()
 
         # Response = MD5(HA1:nonce:HA2)
-        response = hashlib.md5(f"{ha1}:{self._nonce}:{ha2}".encode()).hexdigest()
+        response = hashlib.md5(
+            f"{ha1}:{self._nonce}:{ha2}".encode(), usedforsecurity=False
+        ).hexdigest()
 
         return response
 
