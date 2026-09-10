@@ -434,9 +434,7 @@ class SIPClient:
         ).hexdigest()
 
         # HA2 = MD5(method:uri)
-        ha2 = hashlib.md5(
-            f"{method}:{uri}".encode(), usedforsecurity=False
-        ).hexdigest()
+        ha2 = hashlib.md5(f"{method}:{uri}".encode(), usedforsecurity=False).hexdigest()
 
         # Response = MD5(HA1:nonce:HA2)
         response = hashlib.md5(
