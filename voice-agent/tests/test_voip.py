@@ -37,6 +37,7 @@ def sip_config():
         username="testuser",
         password="testpass",
         local_ip="127.0.0.1",
+        public_ip="127.0.0.1",
         local_port=15060,
     )
 
