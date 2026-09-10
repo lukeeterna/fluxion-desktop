@@ -448,15 +448,12 @@ class TestVoIPManager:
         # 4 samples at 8kHz
         samples_8k = struct.pack("<4h", 0, 1000, 2000, 1000)
 
-        # Should become 8 samples at 16kHz
         samples_16k = manager._upsample_audio(samples_8k)
-        assert len(samples_16k) == 16  # 8 samples * 2 bytes
 
-        # Check interpolation
-        result = struct.unpack("<8h", samples_16k)
-        assert result[0] == 0
-        assert result[2] == 1000
-        assert result[4] == 2000
+        # A stateless 2x rate conversion has no trailing interval to
+        # interpolate, so N input samples produce 2N - 1 output samples.
+        result = struct.unpack("<7h", samples_16k)
+        assert result == (0, 500, 1000, 1500, 2000, 1500, 1000)
 
     def test_downsample_audio(self):
         """Test downsampling from 16kHz to 8kHz."""
