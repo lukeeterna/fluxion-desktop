@@ -13,23 +13,36 @@ permissions:
 
 concurrency:
   group: vos-fabric-g3-kernel-runtime
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   certify:
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - name: Certify exact kernel on real self-hosted machine
         shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
         run: |
           set -euo pipefail
           SRC="$RUNNER_TEMP/vos-g3-runtime-${GITHUB_RUN_ID}"
           rm -rf "$SRC"
-          git init -q "$SRC"
-          git -C "$SRC" remote add origin https://github.com/lukeeterna/fluxion-desktop.git
-          git -C "$SRC" fetch -q --depth=1 origin "$GITHUB_SHA"
-          git -C "$SRC" checkout -q --detach FETCH_HEAD
+          export SRC
+
+          python3 - "$GITHUB_SHA" <<'PY'
+          import os, subprocess, sys
+          src=os.environ['SRC']; sha=sys.argv[1]
+          phases=[
+              (["git","init","-q",src],20),
+              (["git","-C",src,"remote","add","origin","https://github.com/lukeeterna/fluxion-desktop.git"],10),
+              (["git","-C",src,"fetch","-q","--depth=1","origin",sha],90),
+              (["git","-C",src,"checkout","-q","--detach","FETCH_HEAD"],20),
+          ]
+          for cmd, seconds in phases:
+              subprocess.run(cmd, check=True, timeout=seconds, env=dict(os.environ, GIT_TERMINAL_PROMPT="0"))
+          PY
+
           cd "$SRC"
           EXACT_SHA="$(git rev-parse HEAD)"
           [ "$EXACT_SHA" = "$GITHUB_SHA" ]
@@ -41,7 +54,8 @@ jobs:
           trap cleanup EXIT INT TERM
 
           production_green() {
-            ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+            local remote_file="$RUNNER_TEMP/vos-g3-prod-${GITHUB_RUN_ID}.sh"
+            cat > "$remote_file" <<'REMOTE'
           set -euo pipefail
           uid="$(id -u)"
           launch_running() {
@@ -60,6 +74,13 @@ jobs:
           mount | grep -q ' on /Volumes/NAS_LOCAL '
           echo 'IMAC_PRODUCTION=GREEN'
           REMOTE
+            python3 - "$remote_file" <<'PY'
+          import subprocess, sys
+          script=open(sys.argv[1],encoding='utf-8').read()
+          p=subprocess.run(["ssh","-o","BatchMode=yes","-o","ConnectTimeout=8","imac","bash -s"],input=script,text=True,timeout=25)
+          raise SystemExit(p.returncode)
+          PY
+            rm -f "$remote_file"
           }
 
           production_green
@@ -74,10 +95,11 @@ jobs:
           bash -n bin/vos_apply.sh bin/vos_check.sh
           python3 bin/vos_machine.py validate --registry docs/judge/MACHINES.json
 
-          # Real kernel semantics: temporary git repos, real subprocess workers,
-          # result commits, STOP/timeout/failure checkpoints and content hashes.
-          python3 -m unittest tests.test_vos_apply -v
-          python3 -m unittest tests.test_vos_kernel_cert -v
+          python3 - <<'PY'
+          import subprocess
+          for module in ("tests.test_vos_apply", "tests.test_vos_kernel_cert"):
+              subprocess.run(["python3","-m","unittest",module,"-v"],check=True,timeout=120)
+          PY
 
           production_green
           echo 'G3_POST_PRODUCTION_REGRESSION=GREEN'
