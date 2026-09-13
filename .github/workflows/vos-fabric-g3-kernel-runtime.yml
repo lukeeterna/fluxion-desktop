@@ -20,16 +20,25 @@ jobs:
     runs-on: [self-hosted, macbook, fluxion]
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v5
-
       - name: Certify exact kernel on real self-hosted machine
         shell: bash
         run: |
           set -euo pipefail
+          SRC="$RUNNER_TEMP/vos-g3-runtime-${GITHUB_RUN_ID}"
+          rm -rf "$SRC"
+          git init -q "$SRC"
+          git -C "$SRC" remote add origin https://github.com/lukeeterna/fluxion-desktop.git
+          git -C "$SRC" fetch -q --depth=1 origin "$GITHUB_SHA"
+          git -C "$SRC" checkout -q --detach FETCH_HEAD
+          cd "$SRC"
           EXACT_SHA="$(git rev-parse HEAD)"
+          [ "$EXACT_SHA" = "$GITHUB_SHA" ]
           echo "G3_EXACT_SHA=$EXACT_SHA"
           echo "G3_RUNNER_HOST=$(hostname)"
           echo "G3_RUNNER_OS=$(uname -srm)"
+
+          cleanup() { rm -rf "$SRC"; }
+          trap cleanup EXIT INT TERM
 
           production_green() {
             ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
@@ -65,9 +74,8 @@ jobs:
           bash -n bin/vos_apply.sh bin/vos_check.sh
           python3 bin/vos_machine.py validate --registry docs/judge/MACHINES.json
 
-          # These are not mocks: the certification fixture creates real temporary git
-          # repositories, invokes the real VOS kernel, executes real subprocess workers,
-          # commits result envelopes, and verifies fail-closed checkpoints/hashes.
+          # Real kernel semantics: temporary git repos, real subprocess workers,
+          # result commits, STOP/timeout/failure checkpoints and content hashes.
           python3 -m unittest tests.test_vos_apply -v
           python3 -m unittest tests.test_vos_kernel_cert -v
 
