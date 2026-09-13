@@ -13,6 +13,8 @@ Architecture:
 - Graceful: WA unavailable → logs warning, does not crash pipeline
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import json

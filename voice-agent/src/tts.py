@@ -11,6 +11,8 @@ TTS Engines (priority order):
 3. System TTS - macOS say command (last resort)
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import os

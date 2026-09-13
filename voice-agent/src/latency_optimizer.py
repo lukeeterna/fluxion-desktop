@@ -14,6 +14,8 @@ Autore: Fluxion AI Architect
 Data: 2026-02-11
 """
 
+from __future__ import annotations
+
 import asyncio
 import time
 import aiohttp

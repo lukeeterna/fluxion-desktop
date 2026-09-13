@@ -5,6 +5,8 @@ Week 3 Day 3-4: VOICE-AGENT-RAG.md implementation
 Provides retry with exponential backoff, fallback responses, and timeout handling.
 """
 
+from __future__ import annotations
+
 import asyncio
 import functools
 import time

@@ -10,6 +10,8 @@ Performance: ~10ms per classification
 Dependencies: numpy only (no torch, no sklearn)
 """
 
+from __future__ import annotations
+
 import re
 import math
 import unicodedata

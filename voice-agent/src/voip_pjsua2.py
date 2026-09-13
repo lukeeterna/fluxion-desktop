@@ -10,6 +10,8 @@ Architecture:
   Sara Pipeline → SaraAudioPort → pjsua2 RTP → EHIWEB → Phone
 """
 
+from __future__ import annotations
+
 import asyncio
 import audioop
 import concurrent.futures
