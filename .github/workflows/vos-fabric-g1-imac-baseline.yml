@@ -76,10 +76,23 @@ jobs:
           launch_label_running com.go2rtc && pass GO2RTC "running" || red GO2RTC "not running/visible"
           launch_label_running com.mosquitto.broker && pass MQTT "running" || red MQTT "not running/visible"
 
-          # Keep process identity gates strict; emit diagnostics before changing any runtime assumption.
-          pgrep -f 'voice-agent/backend/main.py.*--port[ =]3002' >/dev/null 2>&1 && pass FLUXION_BACKEND_PROCESS "present" || red FLUXION_BACKEND_PROCESS "missing"
+          # Bind backend identity to the process that actually owns the production listener.
+          # The documented runbook starts Python `main.py --port 3002` from voice-agent root,
+          # so a hard-coded `voice-agent/backend/main.py` path is not a valid identity check.
+          backend_pid="$(lsof -nP -iTCP:3002 -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+          if [ -n "$backend_pid" ]; then
+            backend_cmd="$(ps -p "$backend_pid" -o command= 2>/dev/null || true)"
+            if printf '%s\n' "$backend_cmd" | grep -Eq 'Python.*main\.py.*--port[ =]3002'; then
+              pass FLUXION_BACKEND_PROCESS "pid=$backend_pid"
+            else
+              red FLUXION_BACKEND_PROCESS "listener pid=$backend_pid unexpected command"
+            fi
+          else
+            red FLUXION_BACKEND_PROCESS "no TCP:3002 listener pid"
+          fi
           pgrep -f 'voice-agent/engine/engine_darwin_amd64.*-port[ =]5080' >/dev/null 2>&1 && pass FLUXION_ENGINE_PROCESS "present" || red FLUXION_ENGINE_PROCESS "missing"
           lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && pass FLUXION_3002_LISTENER "listening" || red FLUXION_3002_LISTENER "missing"
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1 && pass FLUXION_HEALTH "green" || red FLUXION_HEALTH "health endpoint failed"
           if lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080'; then
             pass FLUXION_5080_LISTENER "udp"
           elif lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
@@ -88,7 +101,7 @@ jobs:
             red FLUXION_5080_LISTENER "missing"
           fi
           printf '%s\n' '--- RUNTIME DIAGNOSTIC (read-only) ---'
-          ps -axo pid=,command= | grep -E 'voice-agent|engine_darwin|goengine|go2rtc|mosquitto|fall-detector' | grep -v grep || true
+          ps -axo pid=,command= | grep -E 'voice-agent|engine_darwin|goengine|go2rtc|mosquitto|fall-detector|main.py' | grep -v grep || true
           lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null || true
           lsof -nP -iUDP:5080 2>/dev/null || true
           lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null || true
