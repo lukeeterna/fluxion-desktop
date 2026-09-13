@@ -20,6 +20,9 @@ export interface Operatore {
   avatar_url: string | null;
   attivo: number;
   genere: string | null;
+  voice_transfer_enabled: number;
+  voice_transfer_reachable: number;
+  voice_transfer_priority: number;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +41,9 @@ export const createOperatoreSchema = z.object({
   avatar_url: z.string().url('URL non valido').optional().or(z.literal('')),
   attivo: z.number().min(0).max(1).optional(),
   genere: z.enum(['M', 'F']).nullable().optional(),
+  voice_transfer_enabled: z.number().int().min(0).max(1).optional(),
+  voice_transfer_reachable: z.number().int().min(0).max(1).optional(),
+  voice_transfer_priority: z.number().int().min(0).max(9999).optional(),
 });
 
 export const updateOperatoreSchema = z.object({
@@ -50,6 +56,9 @@ export const updateOperatoreSchema = z.object({
   avatar_url: z.string().url('URL non valido').optional().or(z.literal('')),
   attivo: z.number().min(0).max(1).optional(),
   genere: z.enum(['M', 'F']).nullable().optional(),
+  voice_transfer_enabled: z.number().int().min(0).max(1).optional(),
+  voice_transfer_reachable: z.number().int().min(0).max(1).optional(),
+  voice_transfer_priority: z.number().int().min(0).max(9999).optional(),
 });
 
 // ───────────────────────────────────────────────────────────────────

@@ -79,6 +79,9 @@ pub struct Operatore {
     pub avatar_url: Option<String>,
     pub attivo: i64,
     pub genere: Option<String>,
+    pub voice_transfer_enabled: i64,
+    pub voice_transfer_reachable: i64,
+    pub voice_transfer_priority: i64,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -94,6 +97,9 @@ pub struct CreateOperatoreInput {
     pub avatar_url: Option<String>,
     pub attivo: Option<i64>,
     pub genere: Option<String>,
+    pub voice_transfer_enabled: Option<i64>,
+    pub voice_transfer_reachable: Option<i64>,
+    pub voice_transfer_priority: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -107,6 +113,9 @@ pub struct UpdateOperatoreInput {
     pub avatar_url: Option<String>,
     pub attivo: Option<i64>,
     pub genere: Option<String>,
+    pub voice_transfer_enabled: Option<i64>,
+    pub voice_transfer_reachable: Option<i64>,
+    pub voice_transfer_priority: Option<i64>,
 }
 
 // ───────────────────────────────────────────────────────────────────
@@ -180,8 +189,9 @@ pub async fn internal_create_operatore(
         r#"
         INSERT INTO operatori (
             id, nome, cognome, email, telefono, ruolo, colore, avatar_url, attivo, genere,
+            voice_transfer_enabled, voice_transfer_reachable, voice_transfer_priority,
             created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         "#,
     )
     .bind(&id)
@@ -194,6 +204,9 @@ pub async fn internal_create_operatore(
     .bind(&input.avatar_url)
     .bind(input.attivo.unwrap_or(1))
     .bind(&input.genere)
+    .bind(input.voice_transfer_enabled.unwrap_or(0))
+    .bind(input.voice_transfer_reachable.unwrap_or(1))
+    .bind(input.voice_transfer_priority.unwrap_or(100))
     .bind(&now)
     .bind(&now)
     .execute(pool)
@@ -239,7 +252,9 @@ pub async fn internal_update_operatore(
         r#"
         UPDATE operatori SET
             nome = ?, cognome = ?, email = ?, telefono = ?, ruolo = ?,
-            colore = ?, avatar_url = ?, attivo = ?, genere = ?, updated_at = ?
+            colore = ?, avatar_url = ?, attivo = ?, genere = ?,
+            voice_transfer_enabled = ?, voice_transfer_reachable = ?, voice_transfer_priority = ?,
+            updated_at = ?
         WHERE id = ?
         "#,
     )
@@ -252,6 +267,21 @@ pub async fn internal_update_operatore(
     .bind(input.avatar_url.or(current.avatar_url))
     .bind(input.attivo.unwrap_or(current.attivo))
     .bind(input.genere.or(current.genere))
+    .bind(
+        input
+            .voice_transfer_enabled
+            .unwrap_or(current.voice_transfer_enabled),
+    )
+    .bind(
+        input
+            .voice_transfer_reachable
+            .unwrap_or(current.voice_transfer_reachable),
+    )
+    .bind(
+        input
+            .voice_transfer_priority
+            .unwrap_or(current.voice_transfer_priority),
+    )
     .bind(&now)
     .bind(id)
     .execute(pool)

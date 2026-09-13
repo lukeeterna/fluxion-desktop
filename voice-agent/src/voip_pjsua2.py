@@ -387,6 +387,7 @@ class SaraCall(pj.Call):
         self.connected = False
         self.on_connected = None   # Callback: call connected
         self.on_disconnected = None  # Callback: call ended
+        self.on_transfer_status = None  # Callback: outgoing REFER progress/final status
 
     def onCallState(self, prm):
         ci = self.getInfo()
@@ -507,6 +508,21 @@ class SaraCall(pj.Call):
                     f"S243 T1: bridge wiring enqueued (media_idx={i}, "
                     f"queue_depth={len(self.account._pending_bridges)})"
                 )
+
+
+    def onCallTransferStatus(self, prm):
+        """pjsua2 callback for a REFER previously sent by Call.xfer()."""
+        code = int(getattr(prm, "statusCode", 0) or 0)
+        reason = str(getattr(prm, "reason", "") or "")
+        final = bool(getattr(prm, "finalNotify", False))
+        logger.info("TRANSFER PJSUA2 status=%s final=%s reason=%s", code, final, reason)
+        if self.on_transfer_status:
+            self.on_transfer_status(self, code, reason, final)
+        if final:
+            try:
+                prm.cont = False
+            except Exception:
+                pass
 
 
 # =============================================================================
@@ -689,6 +705,15 @@ class VoIPManager:
         self._hangup_pending = False  # L5: Prevent multiple hangup threads
         self._current_call: Optional[SaraCall] = None
 
+        # P0 live-transfer state. Audio workers enqueue commands; all pjsua2
+        # Call.xfer()/transfer hangups execute on _pjsua2_thread.
+        self._pending_transfers: "queue.Queue[tuple]" = queue.Queue()
+        self._pending_transfer_hangups: "queue.Queue[SaraCall]" = queue.Queue()
+        self._transfer_lock = threading.Lock()
+        self._transfer_event = threading.Event()
+        self._transfer_status = "idle"
+        self._transfer_code = 0
+
         # Simple energy-based VAD for caller speech detection
         # S140: Tuned for Italian telephony turn-taking (research: vad-barge-in-research.md)
         self._vad_speech_frames = 0
@@ -770,6 +795,165 @@ class VoIPManager:
                 return False
         return False
 
+    @staticmethod
+    def _normalize_transfer_destination(raw: str) -> str:
+        raw = (raw or "").strip()
+        if not raw:
+            return ""
+        allowed_formatting = set("+ -()./")
+        if any(not (ch.isdigit() or ch in allowed_formatting) for ch in raw):
+            return ""
+        digits = "".join(ch for ch in raw if ch.isdigit())
+        return digits if 6 <= len(digits) <= 15 else ""
+
+    @staticmethod
+    def _map_transfer_status(code: int) -> str:
+        if 200 <= code < 300:
+            return "success"
+        if code == 486:
+            return "busy"
+        if code in (408, 480):
+            return "no_answer"
+        if code in (404, 484):
+            return "no_route"
+        if 100 <= code < 200:
+            return "progress"
+        return "failed"
+
+    def _set_transfer_status(self, status: str, code: int = 0, terminal: bool = False) -> None:
+        with self._transfer_lock:
+            self._transfer_status = status
+            self._transfer_code = code
+            if terminal:
+                self._transfer_event.set()
+
+    async def transfer(self, destination: str, timeout_s: float = 27.0) -> str:
+        """Blind-transfer the active call to a trusted configured phone number."""
+        return await asyncio.to_thread(self._request_transfer, destination, timeout_s)
+
+    def _request_transfer(self, destination: str, timeout_s: float = 27.0) -> str:
+        digits = self._normalize_transfer_destination(destination)
+        if not digits:
+            return "invalid"
+        call = self._current_call
+        if call is None or not call.connected or self._account is None:
+            return "no_route"
+        with self._transfer_lock:
+            self._transfer_status = "trying"
+            self._transfer_code = 0
+            self._transfer_event.clear()
+        self._pending_transfers.put((call, digits))
+        if not self._transfer_event.wait(timeout_s):
+            self._set_transfer_status("no_answer", 408, terminal=True)
+            return "no_answer"
+        with self._transfer_lock:
+            return self._transfer_status
+
+    def _drain_pending_transfers(self) -> None:
+        """Run queued REFER/hangup commands only on the pjsua2 event thread."""
+        while True:
+            try:
+                call, digits = self._pending_transfers.get_nowait()
+            except queue.Empty:
+                break
+            if self._current_call is not call or not call.connected:
+                self._set_transfer_status("no_route", 0, terminal=True)
+                continue
+            try:
+                prm = pj.CallOpParam()
+                call.xfer(f"sip:{digits}@{self.config.server}", prm)
+                logger.info("TRANSFER PJSUA2 REFER inviato (destination_digits=%d)", len(digits))
+            except pj.Error as exc:
+                logger.warning("TRANSFER PJSUA2 REFER fallito: %s", _pj_error_info(exc))
+                self._set_transfer_status("failed", 0, terminal=True)
+            except Exception as exc:
+                logger.warning("TRANSFER PJSUA2 REFER fallito: %s", exc)
+                self._set_transfer_status("failed", 0, terminal=True)
+
+        while True:
+            try:
+                call = self._pending_transfer_hangups.get_nowait()
+            except queue.Empty:
+                break
+            if self._current_call is not call or not call.connected:
+                continue
+            try:
+                call.hangup(pj.CallOpParam())
+            except Exception as exc:
+                logger.warning("TRANSFER fallback hangup fallito: %s", exc)
+
+    def _on_call_transfer_status(self, call: SaraCall, code: int, reason: str, final: bool) -> None:
+        if not final:
+            self._set_transfer_status("progress", code, terminal=False)
+            return
+        status = self._map_transfer_status(code)
+        self._set_transfer_status(status, code, terminal=True)
+        if status == "success" and self._current_call is call and call.connected:
+            try:
+                call.hangup(pj.CallOpParam())
+                logger.info("TRANSFER PJSUA2 completato; gamba Sara chiusa")
+            except Exception as exc:
+                logger.warning("TRANSFER PJSUA2 success ma hangup locale fallito: %s", exc)
+
+    def _notify_transfer_failure(self, status: str) -> None:
+        callback = getattr(self.pipeline, "_trigger_wa_escalation_call", None) if self.pipeline else None
+        if callback is None or self._main_loop is None:
+            return
+        try:
+            fut = asyncio.run_coroutine_threadsafe(
+                callback(f"live_transfer_{status}", force_notify=True), self._main_loop
+            )
+            fut.result(timeout=6)
+        except Exception as exc:
+            logger.warning("WA fallback dopo transfer PJSUA2 fallito non riuscito: %s", exc)
+
+    def _transfer_after_tts(self, call: SaraCall, destinations) -> None:
+        routes = list(destinations) if isinstance(destinations, (list, tuple)) else [destinations]
+        routes = [route for route in routes if route]
+        while call.connected and not call.audio_port.tx_queue.empty():
+            time.sleep(0.1)
+        if not call.connected or self._current_call is not call:
+            self._hangup_pending = False
+            return
+        time.sleep(0.35)
+
+        last_status = "no_route"
+        for index, destination in enumerate(routes, start=1):
+            if not call.connected or self._current_call is not call:
+                self._hangup_pending = False
+                return
+            last_status = self._request_transfer(destination)
+            if last_status == "success":
+                logger.info("LIVE TRANSFER PJSUA2 completed on route %d/%d", index, len(routes))
+                self._hangup_pending = False
+                return
+            logger.info(
+                "LIVE TRANSFER PJSUA2 route %d/%d failed: %s; trying next",
+                index, len(routes), last_status,
+            )
+
+        logger.warning("LIVE TRANSFER PJSUA2 exhausted %d route(s): %s — fallback", len(routes), last_status)
+        self._notify_transfer_failure(last_status)
+        if last_status == "busy":
+            text = "Gli operatori sono occupati in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        elif last_status == "no_answer":
+            text = "Gli operatori non rispondono in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        else:
+            text = "Non riesco a completare il trasferimento in questo momento. Mi dispiace, la prego di richiamare tra poco."
+        try:
+            fut = asyncio.run_coroutine_threadsafe(self.pipeline.tts.synthesize(text), self._main_loop)
+            audio = fut.result(timeout=10)
+            if audio:
+                call.audio_port.queue_tts_audio(audio)
+                while call.connected and not call.audio_port.tx_queue.empty():
+                    time.sleep(0.1)
+                time.sleep(0.35)
+        except Exception as exc:
+            logger.warning("TTS fallback transfer PJSUA2 fallito: %s", exc)
+        if call.connected and self._current_call is call:
+            self._pending_transfer_hangups.put(call)
+        self._hangup_pending = False
+
     def get_status(self) -> Dict[str, Any]:
         """Get VoIP status."""
         return {
@@ -781,6 +965,7 @@ class VoIPManager:
                 "server": self.config.server,
             },
             "rtp_active": self._current_call is not None and self._current_call.connected,
+            "transfer_status": self._transfer_status,
             "engine": "pjsua2",
         }
 
@@ -814,6 +999,7 @@ class VoIPManager:
                 if self._account is not None:
                     self._account.drain_pending_bridges()
                     self._account.drain_call_releases()
+                self._drain_pending_transfers()
 
             # Cleanup
             self._cleanup_pjsua2()
@@ -1047,6 +1233,7 @@ class VoIPManager:
         self._current_call = call
         call.on_connected = self._on_call_connected
         call.on_disconnected = self._on_call_disconnected
+        call.on_transfer_status = self._on_call_transfer_status
 
         # S153: Answer directly with 200 OK — no 180 Ringing needed
         # mainThreadOnly=True ensures this runs on pjsua2 event loop thread
@@ -1086,6 +1273,10 @@ class VoIPManager:
         self._caller_phone = ""
         self._vad_speech_frames = 0
         self._vad_silence_frames = 0
+        with self._transfer_lock:
+            self._transfer_status = "idle"
+            self._transfer_code = 0
+            self._transfer_event.set()
 
     @staticmethod
     def _extract_phone_from_uri(sip_uri: str) -> str:
@@ -1259,6 +1450,21 @@ class VoIPManager:
                     logger.info("TTS audio queued for playback")
                 else:
                     logger.warning("No audio_response from pipeline")
+
+                # P0 live transfer: explicit escalation does not need should_exit.
+                # Defer REFER until Sara's transfer-intro TTS has drained.
+                transfer_routes = list(result.get("transfer_routes") or [])
+                if not transfer_routes and result.get("transfer_phone"):
+                    transfer_routes = [result.get("transfer_phone")]
+                if result.get("should_escalate") and transfer_routes and not self._hangup_pending:
+                    self._hangup_pending = True
+                    threading.Thread(
+                        target=self._transfer_after_tts,
+                        args=(call, transfer_routes),
+                        daemon=True,
+                        name="pjsua2-live-transfer",
+                    ).start()
+                    return
 
                 # S142: Hangup after goodbye TTS finishes
                 if result.get("should_exit") and not self._hangup_pending:

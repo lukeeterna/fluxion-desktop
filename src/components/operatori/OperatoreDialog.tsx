@@ -31,14 +31,14 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
 
   const form = useForm<CreateOperatoreInput>({
     resolver: zodResolver(createOperatoreSchema),
-    defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null },
+    defaultValues: { nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null, voice_transfer_enabled: 0, voice_transfer_reachable: 1, voice_transfer_priority: 100 },
   });
 
   useEffect(() => {
     if (operatore) {
-      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo, genere: (operatore.genere as 'M' | 'F' | null) ?? null });
+      form.reset({ nome: operatore.nome, cognome: operatore.cognome, email: operatore.email || '', telefono: operatore.telefono || '', ruolo: operatore.ruolo as RuoloOperatore, colore: operatore.colore, avatar_url: operatore.avatar_url || '', attivo: operatore.attivo, genere: (operatore.genere as 'M' | 'F' | null) ?? null, voice_transfer_enabled: operatore.voice_transfer_enabled ?? 0, voice_transfer_reachable: operatore.voice_transfer_reachable ?? 1, voice_transfer_priority: operatore.voice_transfer_priority ?? 100 });
     } else {
-      form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null });
+      form.reset({ nome: '', cognome: '', email: '', telefono: '', ruolo: 'operatore', colore: '#C084FC', avatar_url: '', attivo: 1, genere: null, voice_transfer_enabled: 0, voice_transfer_reachable: 1, voice_transfer_priority: 100 });
     }
   }, [operatore, form]);
 
@@ -154,6 +154,29 @@ export const OperatoreDialog: FC<OperatoreDialogProps> = ({ open, onOpenChange, 
                   </FormItem>
                 )} />
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-slate-800 pb-2">TRASFERIMENTO SARA</h3>
+              <p className="text-sm text-slate-400">Il numero dell'operatore resta privato e cifrato. Sara può usarlo per il trasferimento in linea solo con abilitazione esplicita.</p>
+              <div className="grid grid-cols-3 gap-4">
+                <FormField control={form.control} name="voice_transfer_enabled" render={({ field }) => (
+                  <FormItem><FormLabel className="text-slate-300">Ricevi trasferimenti</FormLabel><Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value ?? 0)}>
+                    <FormControl><SelectTrigger className="bg-slate-900 border-slate-700 text-white"><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent className="bg-slate-900 border-slate-700"><SelectItem value="1">Sì</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
+                  </Select><FormMessage className="text-red-400" /></FormItem>
+                )} />
+                <FormField control={form.control} name="voice_transfer_reachable" render={({ field }) => (
+                  <FormItem><FormLabel className="text-slate-300">Reperibile ora</FormLabel><Select onValueChange={(v) => field.onChange(Number(v))} value={String(field.value ?? 1)}>
+                    <FormControl><SelectTrigger className="bg-slate-900 border-slate-700 text-white"><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent className="bg-slate-900 border-slate-700"><SelectItem value="1">Sì</SelectItem><SelectItem value="0">No</SelectItem></SelectContent>
+                  </Select><FormMessage className="text-red-400" /></FormItem>
+                )} />
+                <FormField control={form.control} name="voice_transfer_priority" render={({ field }) => (
+                  <FormItem><FormLabel className="text-slate-300">Priorità</FormLabel><FormControl><Input type="number" min={0} max={9999} {...field} onChange={(e) => field.onChange(Number(e.target.value))} className="bg-slate-900 border-slate-700 text-white" /></FormControl><FormMessage className="text-red-400" /></FormItem>
+                )} />
+              </div>
+              <p className="text-xs text-slate-500">Numero più basso = tentativo precedente. Orari, pause e assenze continuano ad avere precedenza sulla reperibilità manuale.</p>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">

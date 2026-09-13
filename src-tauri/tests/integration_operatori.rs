@@ -46,7 +46,65 @@ fn make_input(
         avatar_url: None,
         attivo: None,
         genere: None,
+        voice_transfer_enabled: None,
+        voice_transfer_reachable: None,
+        voice_transfer_priority: None,
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// P0 Sara live-transfer policy — dedicated fields roundtrip through encrypted
+// operator CRUD without changing encrypted personal-phone semantics.
+// ═══════════════════════════════════════════════════════════════════
+
+#[tokio::test]
+async fn test_voice_transfer_policy_roundtrip() {
+    setup_test_encryption();
+    let (pool, db_file) = create_test_database().await;
+
+    let mut input = make_input(
+        "Luca",
+        "Transfer",
+        Some("luca@example.com"),
+        Some("3332221111"),
+    );
+    input.voice_transfer_enabled = Some(1);
+    input.voice_transfer_reachable = Some(1);
+    input.voice_transfer_priority = Some(7);
+
+    let created = internal_create_operatore(&pool, input)
+        .await
+        .expect("create operator with transfer policy");
+    assert_eq!(created.voice_transfer_enabled, 1);
+    assert_eq!(created.voice_transfer_reachable, 1);
+    assert_eq!(created.voice_transfer_priority, 7);
+
+    let updated = internal_update_operatore(
+        &pool,
+        &created.id,
+        UpdateOperatoreInput {
+            nome: None,
+            cognome: None,
+            email: None,
+            telefono: None,
+            ruolo: None,
+            colore: None,
+            avatar_url: None,
+            attivo: None,
+            genere: None,
+            voice_transfer_enabled: Some(1),
+            voice_transfer_reachable: Some(0),
+            voice_transfer_priority: Some(22),
+        },
+    )
+    .await
+    .expect("update transfer policy");
+
+    assert_eq!(updated.voice_transfer_enabled, 1);
+    assert_eq!(updated.voice_transfer_reachable, 0);
+    assert_eq!(updated.voice_transfer_priority, 22);
+
+    cleanup_test_database(pool, db_file).await;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -186,6 +244,9 @@ async fn test_update_operatore_re_encrypts_changed_fields() {
         avatar_url: None,
         attivo: None,
         genere: None,
+        voice_transfer_enabled: None,
+        voice_transfer_reachable: None,
+        voice_transfer_priority: None,
     };
 
     let updated = internal_update_operatore(&pool, &created.id, update_input)
@@ -311,6 +372,9 @@ async fn test_update_operatore_partial_input_preserves_unchanged_fields() {
         avatar_url: None,
         attivo: None,
         genere: None,
+        voice_transfer_enabled: None,
+        voice_transfer_reachable: None,
+        voice_transfer_priority: None,
     };
 
     let updated = internal_update_operatore(&pool, &created.id, update_input)

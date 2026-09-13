@@ -27,6 +27,7 @@ faiss-cpu>=1.7.4
 numpy>=1.24.0
 
 # Audio processing
+audioop-lts>=0.2.2; python_version >= "3.13"
 sounddevice>=0.4.6
 soundfile>=0.12.1
 
