@@ -27,15 +27,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          PROXY_PORT=$((20000 + GITHUB_RUN_ID % 20000))
 
           PROXY="$RUNNER_TEMP/vos-g2-qualify-proxy-${GITHUB_RUN_ID}.py"
           cat > "$PROXY" <<'PY'
           #!/usr/bin/env python3
+          import os
           import select
           import socket
           import socketserver
 
-          BIND = ("192.168.64.1", 18080)
+          BIND = ("192.168.64.1", int(os.environ["VOS_PROXY_PORT"]))
           ALLOWED_SOURCE = "192.168.64.3"
 
           class Handler(socketserver.StreamRequestHandler):
@@ -96,7 +98,7 @@ jobs:
               daemon_threads = True
 
           with Server(BIND, Handler) as server:
-              print("READY", flush=True)
+              print(f"READY={BIND[0]}:{BIND[1]}", flush=True)
               server.serve_forever()
           PY
           chmod 700 "$PROXY"
@@ -107,6 +109,7 @@ jobs:
           #!/usr/bin/env bash
           set -euo pipefail
           export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}"
           fail() { printf 'G2_QUALIFY_BLOCKED=%s\n' "$*"; exit 2; }
           pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
 
@@ -148,28 +151,49 @@ jobs:
             rm -f /tmp/vos-g2-qualify-proxy.py /tmp/vos-g2-qualify-proxy.log /tmp/vos-g2-guest-qualify.sh
           }
           trap cleanup EXIT INT TERM
-          /usr/bin/python3 /tmp/vos-g2-qualify-proxy.py > /tmp/vos-g2-qualify-proxy.log 2>&1 &
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-g2-qualify-proxy.py > /tmp/vos-g2-qualify-proxy.log 2>&1 &
           proxy_pid=$!
           for _ in 1 2 3 4 5; do
-            grep -q '^READY$' /tmp/vos-g2-qualify-proxy.log 2>/dev/null && break
+            grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-qualify-proxy.log 2>/dev/null && break
             sleep 1
           done
-          grep -q '^READY$' /tmp/vos-g2-qualify-proxy.log || fail PROXY_NOT_READY
-          pass EPHEMERAL_PROXY "source=192.168.64.3 CONNECT:443 only"
+          if ! grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-qualify-proxy.log; then
+            cat /tmp/vos-g2-qualify-proxy.log 2>/dev/null || true
+            fail PROXY_NOT_READY
+          fi
+          pass EPHEMERAL_PROXY "port=$VOS_PROXY_PORT source=192.168.64.3 CONNECT:443 only"
 
           cat > /tmp/vos-g2-guest-qualify.sh <<'GUEST'
           #!/usr/bin/env bash
           set -euo pipefail
           export LC_ALL=C LANG=C
           export CODEX_HOME=/home/ubuntu/.codex-vos-fabric
-          export HTTPS_PROXY=http://192.168.64.1:18080
-          export HTTP_PROXY=http://192.168.64.1:18080
-          export https_proxy=http://192.168.64.1:18080
-          export http_proxy=http://192.168.64.1:18080
+          : "${VOS_PROXY_PORT:?}"
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export HTTP_PROXY="$HTTPS_PROXY"
+          export https_proxy="$HTTPS_PROXY"
+          export http_proxy="$HTTPS_PROXY"
           model="${VOS_CODEX_MODEL:?}"
           gate=/usr/local/lib/vos-fabric/codex_worker_gate.sh
           [ -x "$gate" ]
-          codex login status >/dev/null 2>&1 || { echo 'G2_GUEST_BLOCKED=AUTH_NOT_PERSISTED'; exit 20; }
+
+          auth_rc=0
+          timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
+          if [ "$auth_rc" -eq 124 ]; then
+            echo 'CODEX_AUTH_STATUS=TIMEOUT_STALE_DEVICE_AUTH_CHECK'
+            mapfile -t stale < <(pgrep -f 'codex login --device-auth' || true)
+            for pid in "${stale[@]:-}"; do
+              [ -n "$pid" ] || continue
+              cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+              case "$cmd" in
+                *"codex login --device-auth"*) kill "$pid" 2>/dev/null || true ;;
+              esac
+            done
+            sleep 1
+            auth_rc=0
+            timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
+          fi
+          [ "$auth_rc" -eq 0 ] || { echo "G2_GUEST_BLOCKED=AUTH_NOT_PERSISTED_RC_$auth_rc"; exit 20; }
           echo 'CODEX_CHATGPT_AUTH=GREEN'
 
           VOS_CODEX_MODEL="$model" "$gate" qualify
@@ -226,11 +250,10 @@ jobs:
           chmod 700 /tmp/vos-g2-guest-qualify.sh
           "$MP" transfer /tmp/vos-g2-guest-qualify.sh vos-worker:/tmp/vos-g2-guest-qualify.sh
           "$MP" exec vos-worker -- chmod 700 /tmp/vos-g2-guest-qualify.sh
-          "$MP" exec vos-worker -- env VOS_CODEX_MODEL="$VOS_CODEX_MODEL" /tmp/vos-g2-guest-qualify.sh
+          "$MP" exec vos-worker -- env VOS_CODEX_MODEL="$VOS_CODEX_MODEL" VOS_PROXY_PORT="$VOS_PROXY_PORT" /tmp/vos-g2-guest-qualify.sh
           "$MP" exec vos-worker -- rm -f /tmp/vos-g2-guest-qualify.sh
           pass CODEX_RUNTIME "exec/resume/fork/tool all verified"
 
-          # Prove the worker is truly on-demand and can stop/start without touching production.
           "$MP" stop vos-worker
           "$MP" info vos-worker | grep -q 'State:[[:space:]]*Stopped' || fail VM_STOP
           production_green || fail PRODUCTION_AFTER_VM_STOP
@@ -242,11 +265,10 @@ jobs:
             sleep 2
           done
           [ "$started" -eq 1 ] || fail VM_RESTART
-          "$MP" exec vos-worker -- env VOS_CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || fail AUTH_AFTER_RESTART
+          "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || fail AUTH_AFTER_RESTART
           production_green || fail POST_PRODUCTION_REGRESSION
           pass CLEAN_RESTART "auth persisted; production unchanged"
 
-          # Safe rollback boundary: only this owned VM is eligible for destructive rollback.
           [ "$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner')" = 'VOS_FABRIC_G2' ] || fail ROLLBACK_OWNER
           mounts="$($MP info vos-worker | awk '/Mounts:/ {print $2}')"
           [ -z "$mounts" ] || [ "$mounts" = '--' ] || fail "UNEXPECTED_VM_MOUNTS=$mounts"
@@ -260,4 +282,4 @@ jobs:
           chmod 700 "$HOST"
           scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g2-qualify.sh
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
-            "VOS_CODEX_MODEL='$VOS_CODEX_MODEL' CODEX_VERSION='$CODEX_VERSION' bash /tmp/vos-g2-qualify.sh; rc=\$?; rm -f /tmp/vos-g2-qualify.sh; exit \$rc"
+            "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' CODEX_VERSION='$CODEX_VERSION' bash /tmp/vos-g2-qualify.sh; rc=\$?; rm -f /tmp/vos-g2-qualify.sh; exit \$rc"
