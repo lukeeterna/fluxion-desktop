@@ -112,8 +112,7 @@ pub async fn cleanup_test_database(pool: SqlitePool, db_file: PathBuf) {
                     if attempt < MAX_REMOVE_ATTEMPTS
                         && matches!(
                             error.kind(),
-                            std::io::ErrorKind::PermissionDenied
-                                | std::io::ErrorKind::WouldBlock
+                            std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::WouldBlock
                         ) =>
                 {
                     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
