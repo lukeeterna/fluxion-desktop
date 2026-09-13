@@ -218,3 +218,28 @@ pub async fn insert_test_orario_lavoro(
     .bind(ora_inizio)
     .bind(ora_fine)
     .execute(pool)
+    .await
+    .expect("Failed to insert test orario lavoro");
+}
+
+/// Helper: insert festività di test
+pub async fn insert_test_festivita(
+    pool: &SqlitePool,
+    data: &str,
+    descrizione: &str,
+    ricorrente: bool,
+) {
+    sqlx::query(
+        r#"
+        INSERT INTO festività (id, data, descrizione, ricorrente, created_at, updated_at)
+        VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))
+        "#,
+    )
+    .bind(uuid::Uuid::new_v4().to_string())
+    .bind(data)
+    .bind(descrizione)
+    .bind(if ricorrente { 1 } else { 0 })
+    .execute(pool)
+    .await
+    .expect("Failed to insert test festività");
+}
