@@ -104,7 +104,28 @@ pub async fn cleanup_test_database(pool: SqlitePool, db_file: PathBuf) {
     pool.close().await;
 
     if db_file.exists() {
-        fs::remove_file(&db_file).expect("Failed to remove test database file");
+        const MAX_REMOVE_ATTEMPTS: usize = 10;
+        for attempt in 1..=MAX_REMOVE_ATTEMPTS {
+            match fs::remove_file(&db_file) {
+                Ok(()) => break,
+                Err(error)
+                    if attempt < MAX_REMOVE_ATTEMPTS
+                        && matches!(
+                            error.kind(),
+                            std::io::ErrorKind::PermissionDenied
+                                | std::io::ErrorKind::WouldBlock
+                        ) =>
+                {
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                }
+                Err(error) => panic!(
+                    "Failed to remove test database file {} after {} attempts: {}",
+                    db_file.display(),
+                    attempt,
+                    error
+                ),
+            }
+        }
     }
 }
 
