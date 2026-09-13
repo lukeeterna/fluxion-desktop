@@ -22,7 +22,7 @@ jobs:
     env:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
-      FABRIC_SHA: 9af1269db34990f0347e0c958f563a31a1653b20
+      FABRIC_SHA: 17fd193ad969eae201bf0233a77be782db5247fe
     steps:
       - name: Qualify exact ChatGPT Codex worker end to end
         shell: bash
@@ -136,8 +136,6 @@ jobs:
           [ "$($MP exec vos-worker -- uname -m)" = "x86_64" ] || fail GUEST_ARCH
           [ "$($MP exec vos-worker -- /usr/local/bin/codex --version | head -1)" = "codex-cli ${CODEX_VERSION}" ] || fail CODEX_VERSION
 
-          # Install the exact gate fetched and hashed by this same run. This mutates only
-          # the isolated, ownership-marked vos-worker VM and removes all cross-run state ambiguity.
           [ -f /tmp/vos-g2-expected-gate.sh ] || fail EXPECTED_GATE_MISSING_ON_HOST
           "$MP" transfer /tmp/vos-g2-expected-gate.sh vos-worker:/tmp/vos-g2-expected-gate.sh
           "$MP" exec vos-worker -- sudo install -m 0755 /tmp/vos-g2-expected-gate.sh /usr/local/lib/vos-fabric/codex_worker_gate.sh
@@ -231,12 +229,13 @@ jobs:
           json="$work/tool.jsonl"
           msg="$work/tool.txt"
           tm="$work/tool.time"
+          prompt="$work/tool.prompt"
+          printf '%s\n' 'Use the shell tool to run exactly: cat ./probe.txt . Do not infer or skip the command. After the command succeeds, reply exactly: VOS_FABRIC_TOOL_EXECUTION=OK' > "$prompt"
           /usr/bin/time -v -o "$tm" \
             codex exec --json --sandbox read-only --model "$model" \
               --skip-git-repo-check --cd "$work" \
-              --output-last-message "$msg" \
-              'Use the shell tool to run exactly: cat ./probe.txt . Do not infer or skip the command. After the command succeeds, reply exactly: VOS_FABRIC_TOOL_EXECUTION=OK' \
-              < /dev/null > "$json"
+              --output-last-message "$msg" - \
+              < "$prompt" > "$json"
           [ "$(cat "$msg")" = 'VOS_FABRIC_TOOL_EXECUTION=OK' ] || { echo 'G2_GUEST_BLOCKED=TOOL_LAST_MESSAGE'; exit 2; }
           python3 - "$json" "$nonce" <<'PY'
           import json, sys
