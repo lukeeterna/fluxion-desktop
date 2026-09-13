@@ -1,0 +1,54 @@
+name: VOS Fabric G2 Refresh Worker Gate
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-refresh-gate.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    env:
+      FABRIC_SHA: 9af1269db34990f0347e0c958f563a31a1653b20
+    steps:
+      - name: Install exact Fabric gate into owned vos-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$RUNNER_TEMP/codex_worker_gate-${FABRIC_SHA}.sh"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}/tools/fabric/codex_worker_gate.sh" \
+            -o "$tmp"
+          bash -n "$tmp"
+          gate_sha="$(shasum -a 256 "$tmp" | awk '{print $1}')"
+          chmod 755 "$tmp"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$tmp" imac:/tmp/vos-g2-codex-worker-gate.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "FABRIC_SHA='$FABRIC_SHA' GATE_SHA='$gate_sha' bash -s" <<'REMOTE'
+          set -euo pipefail
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ]
+          "$MP" info vos-worker >/dev/null
+          [ "$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')" = 'VOS_FABRIC_G2' ]
+          "$MP" transfer /tmp/vos-g2-codex-worker-gate.sh vos-worker:/tmp/codex_worker_gate.sh
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/codex_worker_gate.sh /usr/local/lib/vos-fabric/codex_worker_gate.sh
+          "$MP" exec vos-worker -- rm -f /tmp/codex_worker_gate.sh
+          rm -f /tmp/vos-g2-codex-worker-gate.sh
+          installed_sha="$($MP exec vos-worker -- sha256sum /usr/local/lib/vos-fabric/codex_worker_gate.sh | awk '{print $1}')"
+          [ "$installed_sha" = "$GATE_SHA" ]
+          "$MP" exec vos-worker -- /usr/local/lib/vos-fabric/codex_worker_gate.sh preflight
+          "$MP" exec vos-worker -- env VOS_CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/lib/vos-fabric/codex_worker_gate.sh auth-status
+          printf 'G2_GATE_REFRESH=GREEN\n'
+          printf 'FABRIC_SHA=%s\n' "$FABRIC_SHA"
+          printf 'GATE_SHA256=%s\n' "$installed_sha"
+          REMOTE
