@@ -146,6 +146,7 @@ class ConversationContext:
             "needs_disambiguation": response.get("needs_disambiguation", False),
             "layer": response.get("layer"),
             "latency_ms": response.get("_latency_ms", 0),
+            "_latency_ms": response.get("_latency_ms", 0),
             "success": response.get("success", False),
             "error": response.get("error"),
         }
@@ -369,7 +370,7 @@ class TestGoodbye:
         goodbye_variants = [
             "Arrivederci",
             "Grazie, arrivederci",
-            "Ciao",
+            "Ciao, arrivederci",
             "Grazie mille, ciao",
             "Buonasera, grazie",
         ]
@@ -399,9 +400,12 @@ class TestNameCorruption:
             f"'barba' was corrupted to surname 'Barbieri': {t1['response']}"
         )
 
-        # Should recognize service intent
-        assert t1["intent"] in ("booking", "prenotazione", "servizio", None), (
-            f"Expected booking intent, got {t1['intent']}"
+        # Service is retained while the FSM asks for the missing client name.
+        assert t1["fsm_state"] == "waiting_name", (
+            f"Expected waiting_name after a service-first request, got {t1['fsm_state']}"
+        )
+        assert assert_response_contains(t1["response"], "nome", "chi", "cortesia"), (
+            f"Expected name prompt after service recognition, got: {t1['response']}"
         )
 
 

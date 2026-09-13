@@ -699,7 +699,7 @@ TEMPLATES = {
     "date_not_understood": "Per quale giorno ti andrebbe?",
     "time_not_understood": "A che ora vorresti venire?",
     # ── Interruzioni ──
-    "reset_ack": "Certo, ricominciamo! Dimmi.",
+    "reset_ack": "Va bene, annullo e ricominciamo. Dimmi.",
     "change_ack": "Certo! Dimmi.",
     "operator_escalate": "Ti passo un collega, un attimino...",
     # ── Orari approssimativi ──

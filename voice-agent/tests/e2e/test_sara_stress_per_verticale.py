@@ -20,6 +20,7 @@ import json
 import os
 import sys
 import time
+import pytest
 import urllib.request
 
 URL = os.environ.get("PIPELINE_URL", "http://127.0.0.1:3002")
@@ -1405,9 +1406,11 @@ def run_latency_test(vert):
 # ============================================================================
 
 
+@pytest.mark.parametrize("vert", sorted(VERTICALS))
 def test_single_vertical(vert):
     # type: (str,) -> None
     """Esegue tutti gli scenari per un verticale."""
+    failures_before = R.fail
     vdata = VERTICALS[vert]
     label = vdata["label"]
 
@@ -1447,6 +1450,11 @@ def test_single_vertical(vert):
     reset()
     set_vertical(vert)
     run_latency_test(vert)
+
+    assert R.fail == failures_before, "%s produced %d mandatory stress failure(s)" % (
+        vert,
+        R.fail - failures_before,
+    )
 
 
 # ============================================================================

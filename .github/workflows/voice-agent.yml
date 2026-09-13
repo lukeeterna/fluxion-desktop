@@ -123,6 +123,9 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           touch "$RUNNER_TEMP/fluxion-ci.env"
+          python scripts/create_vertical_dbs.py --output-dir "$RUNNER_TEMP/vertical-dbs"
+          export FLUXION_DB_PATH="$RUNNER_TEMP/vertical-dbs/salone.db"
+          python tests/e2e/seed_stress_fixtures.py
           python tests/e2e/cert_server.py \
             --env-file "$RUNNER_TEMP/fluxion-ci.env" \
             --sha "$GITHUB_SHA" \
@@ -221,7 +224,14 @@ jobs:
           from src.booking_state_machine import BookingStateMachine, BookingState
           sm = BookingStateMachine()
           assert sm.context.state == BookingState.IDLE
-          assert len(list(BookingState)) == 23
+          expected_states = {
+              "idle", "waiting_name", "waiting_service", "waiting_date",
+              "waiting_time", "confirming", "completed", "cancelled",
+              "waiting_surname", "confirming_phone", "propose_registration",
+              "registering_surname", "registering_phone", "disambiguating_name",
+              "confirming_name",
+          }
+          assert {state.value for state in BookingState} == expected_states
           print('State machine smoke PASS')
           PY
       - name: Smoke Test - Intent Classification
