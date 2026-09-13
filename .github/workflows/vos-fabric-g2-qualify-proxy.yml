@@ -22,12 +22,20 @@ jobs:
     env:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
+      FABRIC_SHA: 9af1269db34990f0347e0c958f563a31a1653b20
     steps:
       - name: Qualify exact ChatGPT Codex worker end to end
         shell: bash
         run: |
           set -euo pipefail
           PROXY_PORT=$((20000 + GITHUB_RUN_ID % 20000))
+
+          EXPECTED_GATE="$RUNNER_TEMP/codex-worker-gate-${FABRIC_SHA}.sh"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}/tools/fabric/codex_worker_gate.sh" \
+            -o "$EXPECTED_GATE"
+          bash -n "$EXPECTED_GATE"
+          GATE_SHA="$(shasum -a 256 "$EXPECTED_GATE" | awk '{print $1}')"
 
           PROXY="$RUNNER_TEMP/vos-g2-qualify-proxy-${GITHUB_RUN_ID}.py"
           cat > "$PROXY" <<'PY'
@@ -110,6 +118,8 @@ jobs:
           set -euo pipefail
           export LC_ALL=C LANG=C
           : "${VOS_PROXY_PORT:?}"
+          : "${FABRIC_SHA:?}"
+          : "${GATE_SHA:?}"
           fail() { printf 'G2_QUALIFY_BLOCKED=%s\n' "$*"; exit 2; }
           pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
 
@@ -123,6 +133,9 @@ jobs:
           [ "$owner" = "VOS_FABRIC_G2" ] || fail VOS_WORKER_OWNER
           [ "$($MP exec vos-worker -- uname -m)" = "x86_64" ] || fail GUEST_ARCH
           [ "$($MP exec vos-worker -- /usr/local/bin/codex --version | head -1)" = "codex-cli ${CODEX_VERSION}" ] || fail CODEX_VERSION
+          installed_gate_sha="$($MP exec vos-worker -- sha256sum /usr/local/lib/vos-fabric/codex_worker_gate.sh | awk '{print $1}')"
+          [ "$installed_gate_sha" = "$GATE_SHA" ] || fail "FABRIC_GATE_SHA_MISMATCH=$installed_gate_sha"
+          pass FABRIC_GATE "fabric_sha=$FABRIC_SHA gate_sha256=$installed_gate_sha"
           ifconfig bridge100 | grep -q 'inet 192\.168\.64\.1 ' || fail BRIDGE100
 
           production_green() {
@@ -214,7 +227,7 @@ jobs:
               --skip-git-repo-check --cd "$work" \
               --output-last-message "$msg" \
               'Use the shell tool to run exactly: cat ./probe.txt . Do not infer or skip the command. After the command succeeds, reply exactly: VOS_FABRIC_TOOL_EXECUTION=OK' \
-              > "$json"
+              < /dev/null > "$json"
           [ "$(cat "$msg")" = 'VOS_FABRIC_TOOL_EXECUTION=OK' ] || { echo 'G2_GUEST_BLOCKED=TOOL_LAST_MESSAGE'; exit 2; }
           python3 - "$json" "$nonce" <<'PY'
           import json, sys
@@ -274,6 +287,8 @@ jobs:
           [ -z "$mounts" ] || [ "$mounts" = '--' ] || fail "UNEXPECTED_VM_MOUNTS=$mounts"
           pass ROLLBACK_BOUNDARY "owned vos-worker; no host mounts"
 
+          printf 'FABRIC_SHA=%s\n' "$FABRIC_SHA"
+          printf 'FABRIC_GATE_SHA256=%s\n' "$installed_gate_sha"
           printf 'LINUX_CODEX_WORKER=GREEN\n'
           printf 'G2=GREEN\n'
           printf 'G2_PAID_API_FALLBACK=0\n'
@@ -282,4 +297,4 @@ jobs:
           chmod 700 "$HOST"
           scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g2-qualify.sh
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
-            "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' CODEX_VERSION='$CODEX_VERSION' bash /tmp/vos-g2-qualify.sh; rc=\$?; rm -f /tmp/vos-g2-qualify.sh; exit \$rc"
+            "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' CODEX_VERSION='$CODEX_VERSION' FABRIC_SHA='$FABRIC_SHA' GATE_SHA='$GATE_SHA' bash /tmp/vos-g2-qualify.sh; rc=\$?; rm -f /tmp/vos-g2-qualify.sh; exit \$rc"
