@@ -263,19 +263,14 @@ class TestBareName:
         t1 = ctx.turn("Marco Rossi")
         assert t1["success"], f"Turn 1 failed: {t1['error']}"
 
-        # Should NOT stay in idle — should transition to waiting_service or waiting_surname
-        assert t1["fsm_state"] not in ("idle",), (
-            f"Bare name should NOT stay in idle, got {t1['fsm_state']}"
+        # A bare unknown identity must be confirmed before any booking data is accepted.
+        assert t1["fsm_state"] == "confirming_name", (
+            f"Expected confirming_name for a bare unknown identity, got {t1['fsm_state']}"
         )
-
-        # Should ask for service or surname, not greeting again
         response_lower = t1["response"].lower()
-        assert (
-            "servizio" in response_lower
-            or "quale" in response_lower
-            or "cognome" in response_lower
-            or "nome" in response_lower
-        ), f"Expected service/surname prompt, got: {t1['response']}"
+        assert "registro" in response_lower and "marco rossi" in response_lower, (
+            f"Expected explicit identity confirmation, got: {t1['response']}"
+        )
 
 
 class TestAmbiguousName:
@@ -510,13 +505,15 @@ class TestOperatorEscalation:
         t3 = ctx.turn("Operatore")
 
         assert t3["success"], f"Turn 3 failed: {t3['error']}"
-        # Should acknowledge escalation request
+        assert t3["should_escalate"] is True, (
+            "Explicit operator request must set should_escalate=True"
+        )
+        # During closed hours the response must provide a concrete callback/contact path.
         response_lower = t3["response"].lower()
         assert (
             "operatore" in response_lower
-            or "mettere" in response_lower
-            or "connettere" in response_lower
-            or "ok" in response_lower
+            or "ricontatteranno" in response_lower
+            or "chiamare" in response_lower
         ), f"Expected escalation response mid-booking, got: {t3['response']}"
 
 

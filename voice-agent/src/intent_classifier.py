@@ -369,6 +369,11 @@ CORTESIA_EXACT: Dict[str, Tuple[str, IntentCategory, str]] = {
         IntentCategory.CORTESIA,
         "Di nulla! Arrivederci, buona giornata!",
     ),
+    "grazie mille ciao": (
+        "thanks_big_goodbye_informal",
+        IntentCategory.CORTESIA,
+        "Di nulla! Ciao, a presto!",
+    ),
     "grazie a presto": (
         "thanks_goodbye_soon",
         IntentCategory.CORTESIA,
