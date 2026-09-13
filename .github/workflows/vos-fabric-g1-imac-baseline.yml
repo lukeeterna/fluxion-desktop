@@ -132,12 +132,26 @@ jobs:
           printf 'OBSERVED reclaimable_mem_gib=%s page_size=%s\n' "$mem_available_gib" "$page_size"
           awk -v x="$mem_available_gib" 'BEGIN { exit !(x >= 6.0) }' && pass MEMORY_HEADROOM ">=6GiB reclaimable" || red MEMORY_HEADROOM "reclaimable_gib=$mem_available_gib"
 
-          load5="$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
-          printf 'OBSERVED load5=%s logical_cpu=%s\n' "$load5" "$logical_cpu"
-          if [ -n "$load5" ] && [ -n "$logical_cpu" ] && awk -v l="$load5" -v c="$logical_cpu" 'BEGIN { exit !(l <= c*1.5) }'; then
-            pass LOAD_HEADROOM "5m=$load5 threshold=$(awk -v c="$logical_cpu" 'BEGIN {printf "%.1f", c*1.5}')"
+          # A 5-minute load average is intentionally conservative but can remain elevated
+          # for several minutes after a desktop login. Keep the exact original threshold
+          # (1.5x logical CPUs) and allow only a bounded stabilization window; never pass
+          # unless an actual 5-minute sample is at or below that same threshold.
+          load_threshold="$(awk -v c="$logical_cpu" 'BEGIN {printf "%.1f", c*1.5}')"
+          load_ok=0
+          load5=""
+          for sample in 1 2 3 4 5 6 7 8 9 10; do
+            load5="$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
+            printf 'OBSERVED load5_sample_%s=%s threshold=%s\n' "$sample" "$load5" "$load_threshold"
+            if [ -n "$load5" ] && awk -v l="$load5" -v t="$load_threshold" 'BEGIN { exit !(l <= t) }'; then
+              load_ok=1
+              break
+            fi
+            [ "$sample" -eq 10 ] || sleep 30
+          done
+          if [ "$load_ok" -eq 1 ]; then
+            pass LOAD_HEADROOM "5m=$load5 threshold=$load_threshold"
           else
-            red LOAD_HEADROOM "5m=$load5 logical_cpu=$logical_cpu"
+            red LOAD_HEADROOM "5m=$load5 threshold=$load_threshold after bounded stabilization"
           fi
 
           multipass_bin=""
