@@ -1,0 +1,138 @@
+name: VOS Fabric G2 Ephemeral Proxy Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-proxy-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Prove bridge-local HTTPS egress without NAT mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROXY="$RUNNER_TEMP/vos-g2-connect-proxy-${GITHUB_RUN_ID}.py"
+          cat > "$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import select
+          import socket
+          import socketserver
+
+          BIND = ("192.168.64.1", 18080)
+          SOURCE_PREFIX = "192.168.64."
+
+          class Handler(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if not self.client_address[0].startswith(SOURCE_PREFIX):
+                      return
+                  self.connection.settimeout(15)
+                  line = self.rfile.readline(8192).decode("ascii", "replace").strip()
+                  parts = line.split()
+                  if len(parts) != 3 or parts[0].upper() != "CONNECT":
+                      self.wfile.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n")
+                      return
+                  target = parts[1]
+                  if ":" not in target:
+                      self.wfile.write(b"HTTP/1.1 400 Bad Request\r\n\r\n")
+                      return
+                  host, port_s = target.rsplit(":", 1)
+                  try:
+                      port = int(port_s)
+                  except ValueError:
+                      return
+                  if port != 443:
+                      self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
+                      return
+                  while True:
+                      header = self.rfile.readline(8192)
+                      if header in (b"\r\n", b"\n", b""):
+                          break
+                  try:
+                      upstream = socket.create_connection((host, port), timeout=10)
+                  except OSError:
+                      self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n")
+                      return
+                  with upstream:
+                      upstream.setblocking(False)
+                      self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      sockets = [self.connection, upstream]
+                      while True:
+                          readable, _, exceptional = select.select(sockets, [], sockets, 30)
+                          if exceptional or not readable:
+                              return
+                          for src in readable:
+                              dst = upstream if src is self.connection else self.connection
+                              try:
+                                  data = src.recv(65536)
+                              except OSError:
+                                  return
+                              if not data:
+                                  return
+                              try:
+                                  dst.sendall(data)
+                              except OSError:
+                                  return
+
+          class Server(socketserver.ThreadingTCPServer):
+              allow_reuse_address = True
+              daemon_threads = True
+
+          with Server(BIND, Handler) as server:
+              print("VOS_PROXY_READY=192.168.64.1:18080", flush=True)
+              server.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-g2-connect-proxy.py
+
+          HOST_SCRIPT="$RUNNER_TEMP/vos-g2-proxy-run-${GITHUB_RUN_ID}.sh"
+          cat > "$HOST_SCRIPT" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          cleanup() {
+            if [ -n "${proxy_pid:-}" ]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
+            rm -f /tmp/vos-g2-connect-proxy.py /tmp/vos-g2-connect-proxy.log
+          }
+          trap cleanup EXIT INT TERM
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ]
+          "$MP" info vos-worker >/dev/null
+          owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')"
+          [ "$owner" = "VOS_FABRIC_G2" ]
+          ifconfig bridge100 | grep -q 'inet 192\.168\.64\.1 '
+
+          /usr/bin/python3 /tmp/vos-g2-connect-proxy.py > /tmp/vos-g2-connect-proxy.log 2>&1 &
+          proxy_pid=$!
+          ready=0
+          for _ in 1 2 3 4 5; do
+            if grep -q 'VOS_PROXY_READY=' /tmp/vos-g2-connect-proxy.log 2>/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          [ "$ready" -eq 1 ] || { cat /tmp/vos-g2-connect-proxy.log; exit 2; }
+          cat /tmp/vos-g2-connect-proxy.log
+
+          "$MP" exec vos-worker -- env \
+            HTTPS_PROXY=http://192.168.64.1:18080 \
+            HTTP_PROXY=http://192.168.64.1:18080 \
+            https_proxy=http://192.168.64.1:18080 \
+            http_proxy=http://192.168.64.1:18080 \
+            curl -4 -fsSI --connect-timeout 5 --max-time 15 https://github.com/ | head -5
+          echo 'VOS_EPHEMERAL_HTTPS_PROXY=GREEN'
+          REMOTE
+          chmod 700 "$HOST_SCRIPT"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST_SCRIPT" imac:/tmp/vos-g2-proxy-run.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-proxy-run.sh; rc=$?; rm -f /tmp/vos-g2-proxy-run.sh; exit $rc'
