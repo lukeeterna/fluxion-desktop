@@ -1,0 +1,76 @@
+name: VOS Fabric Recovery Preflight
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-recovery-preflight.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Inspect iMac recovery prerequisites without secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -u
+          export LC_ALL=C LANG=C
+          echo 'RECOVERY_PREFLIGHT=BEGIN'
+          echo "UID=$(id -u)"
+          echo "HOME=$HOME"
+
+          echo '--- launchd candidate files ---'
+          for root in "$HOME/Library/LaunchAgents" /Library/LaunchAgents /Library/LaunchDaemons; do
+            if [ -d "$root" ]; then
+              find "$root" -maxdepth 1 -type f \( -iname '*zeroclaw*' -o -iname '*fall*detector*' -o -iname '*go2rtc*' -o -iname '*mosquitto*' \) -print 2>/dev/null || true
+            fi
+          done
+
+          echo '--- launchd labels visible anywhere ---'
+          for label in com.zeroclaw.fall-detector com.go2rtc com.mosquitto.broker; do
+            found=0
+            for domain in "gui/$(id -u)" "user/$(id -u)" system; do
+              if launchctl print "$domain/$label" >/dev/null 2>&1; then
+                echo "LABEL=$label DOMAIN=$domain PRESENT=1"
+                found=1
+              fi
+            done
+            [ "$found" -eq 1 ] || echo "LABEL=$label PRESENT=0"
+          done
+
+          echo '--- FLUXION prerequisites (existence only) ---'
+          FLUXION_DIR='/Volumes/MacSSD - Dati/fluxion/voice-agent'
+          PY='/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python'
+          [ -d "$FLUXION_DIR" ] && echo 'FLUXION_DIR=1' || echo 'FLUXION_DIR=0'
+          [ -f "$FLUXION_DIR/main.py" ] && echo 'FLUXION_MAIN=1' || echo 'FLUXION_MAIN=0'
+          [ -f "$FLUXION_DIR/.env" ] && echo 'FLUXION_ENV=1' || echo 'FLUXION_ENV=0'
+          [ -x "$PY" ] && echo 'FLUXION_PYTHON=1' || echo 'FLUXION_PYTHON=0'
+          [ -f "$FLUXION_DIR/src/voip_goengine.py" ] && echo 'FLUXION_GOENGINE_MODULE=1' || echo 'FLUXION_GOENGINE_MODULE=0'
+
+          echo '--- current relevant processes/listeners ---'
+          ps -axo pid=,command= | grep -E 'voice-agent|goengine|engine_darwin|go2rtc|mosquitto|fall-detector' | grep -v grep || true
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null || true
+          lsof -nP -iUDP:5080 2>/dev/null || true
+          lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null || true
+
+          echo '--- NAS_LOCAL physical-volume discovery ---'
+          diskutil list 2>/dev/null | grep -B3 -A3 -F 'NAS_LOCAL' || echo 'NAS_LOCAL_DISKUTIL=NOT_FOUND'
+          [ -d /Volumes/NAS_LOCAL ] && echo 'NAS_LOCAL_MOUNTPOINT_DIR=1' || echo 'NAS_LOCAL_MOUNTPOINT_DIR=0'
+
+          echo '--- Multipass ---'
+          if [ -x /usr/local/bin/multipass ]; then
+            /usr/local/bin/multipass version | head -2 || true
+            /usr/local/bin/multipass list || true
+          else
+            echo 'MULTIPASS_BIN=0'
+          fi
+          echo 'RECOVERY_PREFLIGHT=END'
+          REMOTE
