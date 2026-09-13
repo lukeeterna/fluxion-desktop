@@ -1,0 +1,38 @@
+name: VOS Fabric G2 Auth Status
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-auth-status.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  auth-status:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Verify persisted ChatGPT login only
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac '
+            set -euo pipefail
+            MP=""
+            for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+              if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+            done
+            [ -n "$MP" ]
+            "$MP" info vos-worker >/dev/null
+            [ "$($MP exec vos-worker -- sh -c "cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true")" = "VOS_FABRIC_G2" ]
+            if "$MP" exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1; then
+              echo CODEX_CHATGPT_AUTH=GREEN
+            else
+              echo CODEX_CHATGPT_AUTH=REQUIRED
+              exit 20
+            fi
+          '
