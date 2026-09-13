@@ -1,0 +1,53 @@
+name: VOS Fabric iMac Load Diagnostic
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-load-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-imac-load-diagnostic
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Read-only iMac load diagnosis
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          echo "CONSOLE_USER=$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+          echo "LOGICAL_CPU=$(sysctl -n hw.logicalcpu 2>/dev/null || true)"
+          echo "UPTIME=$(uptime 2>/dev/null || true)"
+          echo "LOAD_RAW=$(sysctl -n vm.loadavg 2>/dev/null || true)"
+
+          echo '--- TOP CPU SNAPSHOT ---'
+          ps -axo pid=,%cpu=,%mem=,etime=,command= | sort -nr -k2 | head -25 || true
+
+          echo '--- TOP MEMORY SNAPSHOT ---'
+          ps -axo pid=,%mem=,%cpu=,etime=,command= | sort -nr -k2 | head -15 || true
+
+          echo '--- SPOTLIGHT STATUS ---'
+          mdutil -s / 2>/dev/null || true
+          mdutil -s '/Volumes/MacSSD - Dati' 2>/dev/null || true
+          mdutil -s /Volumes/NAS_LOCAL 2>/dev/null || true
+
+          echo '--- LOAD TREND ---'
+          for n in 1 2 3; do
+            load="$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
+            printf 'LOAD5_SAMPLE_%s=%s\n' "$n" "$load"
+            if [ "$n" -lt 3 ]; then sleep 20; fi
+          done
+          REMOTE
