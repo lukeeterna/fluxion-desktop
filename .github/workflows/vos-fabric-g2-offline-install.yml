@@ -1,0 +1,113 @@
+name: VOS Fabric G2 Offline Codex Install
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-offline-install.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-offline-install
+  cancel-in-progress: false
+
+jobs:
+  install:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    steps:
+      - name: Install pinned Codex without guest internet dependency
+        shell: bash
+        env:
+          FABRIC_SHA: 79cb3e56bfbdc3dfbe3dc04eec31d3cf2a54ff34
+          CODEX_VERSION: 0.154.0
+          CODEX_ARCHIVE_SHA256: d7e18b2597ae8f242f5f31ee9e90deef48dbc9edd634d9868fb6435d08c07f02
+          CODEX_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-x86_64-unknown-linux-musl.tar.gz
+        run: |
+          set -euo pipefail
+          SCRIPT="$RUNNER_TEMP/vos-g2-offline-${GITHUB_RUN_ID}.sh"
+          cat > "$SCRIPT" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail() { printf 'G2_OFFLINE_INSTALL_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-32s %s\n' "$1" "${2:-}"; }
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')"
+          [ "$owner" = "VOS_FABRIC_G2" ] || fail VOS_WORKER_OWNER
+          [ "$($MP exec vos-worker -- uname -m)" = "x86_64" ] || fail GUEST_ARCH
+
+          # Host-side fetch: the VM NAT is not trusted/required for installation.
+          tmp="$(mktemp -d -t vos-g2-offline.XXXXXX)"
+          trap 'rm -rf "$tmp"' EXIT
+          curl -fsSL --retry 3 --retry-delay 2 "$CODEX_ARCHIVE_URL" -o "$tmp/codex.tar.gz"
+          actual_sha="$(shasum -a 256 "$tmp/codex.tar.gz" | awk '{print $1}')"
+          [ "$actual_sha" = "$CODEX_ARCHIVE_SHA256" ] || fail "CODEX_ARCHIVE_SHA256=$actual_sha"
+          mkdir "$tmp/out"
+          tar -xzf "$tmp/codex.tar.gz" -C "$tmp/out"
+          codex_bin="$(find "$tmp/out" -type f -name 'codex*' | head -1)"
+          [ -n "$codex_bin" ] || fail CODEX_BINARY_NOT_FOUND
+          chmod 755 "$codex_bin"
+          "$MP" transfer "$codex_bin" vos-worker:/tmp/vos-codex
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/vos-codex /usr/local/bin/codex
+          "$MP" exec vos-worker -- rm -f /tmp/vos-codex
+          version="$($MP exec vos-worker -- /usr/local/bin/codex --version | head -1)"
+          printf '%s\n' "$version" | grep -F "$CODEX_VERSION" >/dev/null || fail "CODEX_VERSION=$version"
+          binary_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/codex | awk '{print $1}')"
+          pass CODEX_BINARY "version=$version sha256=$binary_sha"
+
+          gate_url="https://raw.githubusercontent.com/lukeeterna/venture-os/$FABRIC_SHA/tools/fabric/codex_worker_gate.sh"
+          curl -fsSL --retry 3 --retry-delay 2 "$gate_url" -o "$tmp/codex_worker_gate.sh"
+          gate_sha="$(shasum -a 256 "$tmp/codex_worker_gate.sh" | awk '{print $1}')"
+          chmod 755 "$tmp/codex_worker_gate.sh"
+          "$MP" transfer "$tmp/codex_worker_gate.sh" vos-worker:/tmp/codex_worker_gate.sh
+          "$MP" exec vos-worker -- sudo mkdir -p /usr/local/lib/vos-fabric
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/codex_worker_gate.sh /usr/local/lib/vos-fabric/codex_worker_gate.sh
+          "$MP" exec vos-worker -- rm -f /tmp/codex_worker_gate.sh
+          "$MP" exec vos-worker -- /usr/local/lib/vos-fabric/codex_worker_gate.sh preflight
+          pass CODEX_GATE "fabric_sha=$FABRIC_SHA gate_sha256=$gate_sha"
+
+          auth_rc=0
+          auth_out="$($MP exec vos-worker -- env VOS_CODEX_HOME=/home/ubuntu/.codex-vos-fabric bash -lc '/usr/local/lib/vos-fabric/codex_worker_gate.sh auth-status' 2>&1)" || auth_rc=$?
+          printf '%s\n' "$auth_out"
+          case "$auth_rc" in
+            0) auth_state=GREEN ;;
+            20) auth_state=REQUIRED ;;
+            *) fail "CODEX_AUTH_STATUS_RC=$auth_rc" ;;
+          esac
+
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          launch_running com.zeroclaw.fall-detector || fail POST_GUARDIAN
+          launch_running com.go2rtc || fail POST_GO2RTC
+          launch_running com.mosquitto.broker || fail POST_MQTT
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || fail POST_FLUXION_HEALTH
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || fail POST_FLUXION_3002
+          if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then fail POST_FLUXION_5080; fi
+          mount | grep -q ' on /Volumes/NAS_LOCAL ' || fail POST_NAS_LOCAL
+          pass PRODUCTION_REGRESSION_CHECK "Guardian/FLUXION/NAS unchanged"
+
+          printf 'G2_OFFLINE_INSTALL=GREEN\n'
+          printf 'CODEX_CHATGPT_AUTH=%s\n' "$auth_state"
+          printf 'G2_NETWORK_QUALIFICATION=PENDING\n'
+          REMOTE
+          chmod 700 "$SCRIPT"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SCRIPT" imac:/tmp/vos-g2-offline.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' bash /tmp/vos-g2-offline.sh; rc=\$?; rm -f /tmp/vos-g2-offline.sh; exit \$rc"
