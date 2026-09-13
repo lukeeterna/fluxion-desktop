@@ -33,16 +33,19 @@ jobs:
           OUT="$RUNNER_TEMP/vos-fabric-imac-baseline-${GITHUB_RUN_ID}.txt"
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE' | tee "$OUT"
           set -u
+          export LC_ALL=C LANG=C
           fail=0
 
           pass() { printf 'PASS %-28s %s\n' "$1" "${2:-}"; }
           red()  { printf 'FAIL %-28s %s\n' "$1" "${2:-}"; fail=1; }
 
+          uid="$(id -u)"
           model="$(sysctl -n hw.model 2>/dev/null || true)"
           os_version="$(sw_vers -productVersion 2>/dev/null || true)"
           logical_cpu="$(sysctl -n hw.logicalcpu 2>/dev/null || true)"
           mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || true)"
-          printf 'OBSERVED model=%s os=%s logical_cpu=%s mem_bytes=%s\n' "$model" "$os_version" "$logical_cpu" "$mem_bytes"
+          printf 'OBSERVED model=%s os=%s logical_cpu=%s mem_bytes=%s uid=%s\n' "$model" "$os_version" "$logical_cpu" "$mem_bytes" "$uid"
+          printf 'OBSERVED remote_path=%s\n' "$PATH"
 
           [ "$model" = "iMac13,1" ] && pass MODEL "$model" || red MODEL "unexpected:$model"
           case "$os_version" in
@@ -55,24 +58,25 @@ jobs:
             red RAM "expected >=16GiB"
           fi
 
-          # Guardian V1 and its two observed support services must remain live.
-          if launchctl list 2>/dev/null | awk '$3=="com.zeroclaw.fall-detector" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
-            pass GUARDIAN_LAUNCHAGENT "com.zeroclaw.fall-detector"
-          else
-            red GUARDIAN_LAUNCHAGENT "not running"
-          fi
-          if launchctl list 2>/dev/null | awk '$3=="com.go2rtc" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
-            pass GO2RTC "running"
-          else
-            red GO2RTC "not running"
-          fi
-          if launchctl list 2>/dev/null | awk '$3=="com.mosquitto.broker" && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
-            pass MQTT "running"
-          else
-            red MQTT "not running"
-          fi
+          launch_label_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" >/tmp/vos-launchctl-probe.$$ 2>/dev/null; then
+                if grep -Eq 'state = running|pid = [0-9]+' /tmp/vos-launchctl-probe.$$; then
+                  rm -f /tmp/vos-launchctl-probe.$$
+                  return 0
+                fi
+              fi
+            done
+            rm -f /tmp/vos-launchctl-probe.$$
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
 
-          # FLUXION production: require both known runtime processes and listeners.
+          launch_label_running com.zeroclaw.fall-detector && pass GUARDIAN_LAUNCHAGENT "running" || red GUARDIAN_LAUNCHAGENT "not running/visible"
+          launch_label_running com.go2rtc && pass GO2RTC "running" || red GO2RTC "not running/visible"
+          launch_label_running com.mosquitto.broker && pass MQTT "running" || red MQTT "not running/visible"
+
+          # Keep process identity gates strict; emit diagnostics before changing any runtime assumption.
           pgrep -f 'voice-agent/backend/main.py.*--port[ =]3002' >/dev/null 2>&1 && pass FLUXION_BACKEND_PROCESS "present" || red FLUXION_BACKEND_PROCESS "missing"
           pgrep -f 'voice-agent/engine/engine_darwin_amd64.*-port[ =]5080' >/dev/null 2>&1 && pass FLUXION_ENGINE_PROCESS "present" || red FLUXION_ENGINE_PROCESS "missing"
           lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && pass FLUXION_3002_LISTENER "listening" || red FLUXION_3002_LISTENER "missing"
@@ -83,6 +87,11 @@ jobs:
           else
             red FLUXION_5080_LISTENER "missing"
           fi
+          printf '%s\n' '--- RUNTIME DIAGNOSTIC (read-only) ---'
+          ps -axo pid=,command= | grep -E 'voice-agent|engine_darwin|goengine|go2rtc|mosquitto|fall-detector' | grep -v grep || true
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null || true
+          lsof -nP -iUDP:5080 2>/dev/null || true
+          lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null || true
 
           if mount | grep -q ' on /Volumes/NAS_LOCAL '; then
             nas_free_gib="$(df -Pk /Volumes/NAS_LOCAL | awk 'NR==2 {printf "%.1f", $4/1048576}')"
@@ -90,13 +99,13 @@ jobs:
             awk -v x="$nas_free_gib" 'BEGIN { exit !(x >= 100) }' && pass NAS_LOCAL_HEADROOM ">=100GiB" || red NAS_LOCAL_HEADROOM "free_gib=$nas_free_gib"
           else
             red NAS_LOCAL_MOUNT "not mounted"
+            printf 'OBSERVED volumes='; ls -1 /Volumes 2>/dev/null | tr '\n' ',' || true; printf '\n'
           fi
 
           root_free_gib="$(df -Pk / | awk 'NR==2 {printf "%.1f", $4/1048576}')"
           printf 'OBSERVED root_free_gib=%s\n' "$root_free_gib"
           awk -v x="$root_free_gib" 'BEGIN { exit !(x >= 60) }' && pass ROOT_DISK_HEADROOM ">=60GiB" || red ROOT_DISK_HEADROOM "free_gib=$root_free_gib"
 
-          # Reclaimable memory estimate: free + inactive + speculative + purgeable pages.
           vm="$(vm_stat 2>/dev/null || true)"
           page_size="$(printf '%s\n' "$vm" | awk 'NR==1 {gsub(/[^0-9]/,"",$8); print $8}')"
           [ -n "$page_size" ] || page_size=4096
@@ -118,15 +127,19 @@ jobs:
             red LOAD_HEADROOM "5m=$load5 logical_cpu=$logical_cpu"
           fi
 
-          if command -v multipass >/dev/null 2>&1; then
-            mp_ver="$(multipass version 2>/dev/null | head -1 || true)"
-            pass MULTIPASS_PRESENT "$mp_ver"
-            if multipass list >/dev/null 2>&1; then
+          multipass_bin=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then multipass_bin="$candidate"; break; fi
+          done
+          if [ -n "$multipass_bin" ]; then
+            mp_ver="$($multipass_bin version 2>/dev/null | head -1 || true)"
+            pass MULTIPASS_PRESENT "$mp_ver path=$multipass_bin"
+            if "$multipass_bin" list >/dev/null 2>&1; then
               pass MULTIPASS_LIST "query ok"
             else
               red MULTIPASS_LIST "query failed"
             fi
-            if multipass info vos-worker >/dev/null 2>&1; then
+            if "$multipass_bin" info vos-worker >/dev/null 2>&1; then
               red VOS_WORKER_FRESHNESS "pre-existing vos-worker requires explicit inspection"
             else
               pass VOS_WORKER_FRESHNESS "absent"
