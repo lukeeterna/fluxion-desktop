@@ -328,19 +328,6 @@ class AvailabilityChecker:
         else:
             min_time = None
 
-        # Check working day
-        weekday = check_date.isoweekday()  # Mon=1..Sun=7
-        if weekday not in self.config.working_days:
-            return AvailabilityResult(
-                date=date_str,
-                available_slots=[],
-                unavailable_reason=UnavailabilityReason.CLOSED,
-                message=TEMPLATES["closed"].format(
-                    date=self._format_date_italian(check_date)
-                ),
-                suggestions=self._suggest_alternative_dates(check_date, 3),
-            )
-
         # Check holidays (GAP-P0-4)
         if date_str in self.config.holidays:
             alternatives = self._suggest_alternative_dates(check_date, 3)
@@ -362,6 +349,19 @@ class AvailabilityChecker:
                     date=self._format_date_italian(check_date), alternatives=alt_str
                 ),
                 suggestions=alternatives,
+            )
+
+        # Check working day
+        weekday = check_date.isoweekday()  # Mon=1..Sun=7
+        if weekday not in self.config.working_days:
+            return AvailabilityResult(
+                date=date_str,
+                available_slots=[],
+                unavailable_reason=UnavailabilityReason.CLOSED,
+                message=TEMPLATES["closed"].format(
+                    date=self._format_date_italian(check_date)
+                ),
+                suggestions=self._suggest_alternative_dates(check_date, 3),
             )
 
         # Generate time slots
