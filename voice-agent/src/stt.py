@@ -16,7 +16,6 @@ Usage:
 """
 
 import os
-import json
 import subprocess
 import tempfile
 import asyncio
@@ -28,6 +27,7 @@ from pathlib import Path
 # =============================================================================
 # STT INTERFACE
 # =============================================================================
+
 
 class STTEngine(ABC):
     """Abstract base class for Speech-to-Text engines."""
@@ -62,6 +62,7 @@ class STTEngine(ABC):
 # WHISPER.CPP OFFLINE ENGINE
 # =============================================================================
 
+
 class WhisperOfflineSTT(STTEngine):
     """
     Offline STT using whisper.cpp.
@@ -79,7 +80,7 @@ class WhisperOfflineSTT(STTEngine):
         self,
         whisper_exe: Optional[str] = None,
         model_path: Optional[str] = None,
-        language: str = "it"
+        language: str = "it",
     ):
         """
         Initialize whisper.cpp STT.
@@ -158,9 +159,7 @@ class WhisperOfflineSTT(STTEngine):
         return None
 
     async def transcribe(
-        self,
-        audio_data: bytes,
-        language: str = None
+        self, audio_data: bytes, language: str = None
     ) -> Dict[str, Any]:
         """
         Transcribe audio using whisper.cpp.
@@ -168,6 +167,7 @@ class WhisperOfflineSTT(STTEngine):
         Uses subprocess to run whisper.cpp main executable.
         """
         import time
+
         start_time = time.time()
         lang = language or self.language
 
@@ -183,17 +183,20 @@ class WhisperOfflineSTT(STTEngine):
                 lambda: subprocess.run(
                     [
                         self.whisper_exe,
-                        "-m", self.model_path,
-                        "-l", lang,
-                        "-f", audio_path,
+                        "-m",
+                        self.model_path,
+                        "-l",
+                        lang,
+                        "-f",
+                        audio_path,
                         "--output-json",
                         "--no-prints",
                         "-otxt",  # Output plain text
                     ],
                     capture_output=True,
                     text=True,
-                    timeout=120  # 120 second timeout (ggml-small ~30s on Intel CPU)
-                )
+                    timeout=120,  # 120 second timeout (ggml-small ~30s on Intel CPU)
+                ),
             )
 
             latency_ms = (time.time() - start_time) * 1000
@@ -213,7 +216,7 @@ class WhisperOfflineSTT(STTEngine):
                     "confidence": 0.92,  # whisper.cpp doesn't output confidence
                     "language": lang,
                     "engine": "whisper_cpp",
-                    "latency_ms": latency_ms
+                    "latency_ms": latency_ms,
                 }
             else:
                 print(f"[STT] whisper.cpp error: {result.stderr}")
@@ -223,7 +226,7 @@ class WhisperOfflineSTT(STTEngine):
                     "language": lang,
                     "engine": "whisper_cpp",
                     "error": result.stderr,
-                    "latency_ms": latency_ms
+                    "latency_ms": latency_ms,
                 }
 
         finally:
@@ -237,6 +240,7 @@ class WhisperOfflineSTT(STTEngine):
 # =============================================================================
 # FASTER-WHISPER ENGINE (CTranslate2 int8 — 4-6x faster on CPU)
 # =============================================================================
+
 
 class FasterWhisperSTT(STTEngine):
     """
@@ -262,7 +266,9 @@ class FasterWhisperSTT(STTEngine):
         # Validate
         valid = {"tiny", "base", "small", "medium", "large-v2", "large-v3"}
         if self.model_size not in valid:
-            raise ValueError(f"Invalid WHISPER_MODEL '{self.model_size}'. Choose: {valid}")
+            raise ValueError(
+                f"Invalid WHISPER_MODEL '{self.model_size}'. Choose: {valid}"
+            )
 
         print(f"[STT] FasterWhisperSTT ready (model={self.model_size}, compute=int8)")
 
@@ -270,6 +276,7 @@ class FasterWhisperSTT(STTEngine):
         """Lazy-load model on first use (downloads from HuggingFace if needed)."""
         if self._model is None:
             from faster_whisper import WhisperModel
+
             print(f"[STT] Loading faster-whisper/{self.model_size} (int8)...")
             self._model = WhisperModel(
                 self.model_size,
@@ -287,6 +294,7 @@ class FasterWhisperSTT(STTEngine):
     ) -> Dict[str, Any]:
         """Transcribe audio using faster-whisper in a thread executor."""
         import time
+
         start_time = time.time()
 
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -294,12 +302,13 @@ class FasterWhisperSTT(STTEngine):
             audio_path = f.name
 
         try:
+
             def _run():
                 model = self._get_model()
                 kwargs = dict(
                     language=language,
-                    beam_size=1,         # faster decode
-                    vad_filter=True,     # skip silence
+                    beam_size=1,  # faster decode
+                    vad_filter=True,  # skip silence
                     vad_parameters={"min_silence_duration_ms": 500},
                 )
                 if stt_prompt:
@@ -342,6 +351,7 @@ class FasterWhisperSTT(STTEngine):
 # GROQ STT ENGINE (FALLBACK)
 # =============================================================================
 
+
 class GroqSTT(STTEngine):
     """
     Cloud STT using Groq Whisper API.
@@ -356,6 +366,7 @@ class GroqSTT(STTEngine):
             raise ValueError("GROQ_API_KEY not set")
 
         from groq import AsyncGroq
+
         self.client = AsyncGroq(api_key=self.api_key)
         print("[STT] Groq STT initialized (cloud fallback)")
 
@@ -367,11 +378,13 @@ class GroqSTT(STTEngine):
     ) -> Dict[str, Any]:
         """Transcribe audio using Groq Whisper API."""
         import time
+
         start_time = time.time()
 
         try:
             # Create file-like object for Groq API
             import io
+
             audio_file = io.BytesIO(audio_data)
             audio_file.name = "audio.wav"
 
@@ -383,16 +396,20 @@ class GroqSTT(STTEngine):
             )
             if stt_prompt:
                 create_kwargs["prompt"] = stt_prompt
-            transcription = await self.client.audio.transcriptions.create(**create_kwargs)
+            transcription = await self.client.audio.transcriptions.create(
+                **create_kwargs
+            )
 
             latency_ms = (time.time() - start_time) * 1000
 
             return {
-                "text": transcription.strip() if isinstance(transcription, str) else transcription.text.strip(),
+                "text": transcription.strip()
+                if isinstance(transcription, str)
+                else transcription.text.strip(),
                 "confidence": 0.85,  # Lower confidence due to compression
                 "language": language,
                 "engine": "groq",
-                "latency_ms": latency_ms
+                "latency_ms": latency_ms,
             }
 
         except Exception as e:
@@ -403,13 +420,14 @@ class GroqSTT(STTEngine):
                 "language": language,
                 "engine": "groq",
                 "error": str(e),
-                "latency_ms": latency_ms
+                "latency_ms": latency_ms,
             }
 
 
 # =============================================================================
 # HYBRID STT (OFFLINE + FALLBACK)
 # =============================================================================
+
 
 class HybridSTT(STTEngine):
     """
@@ -474,13 +492,14 @@ class HybridSTT(STTEngine):
             "confidence": 0.0,
             "language": language,
             "engine": "none",
-            "error": "No STT engine available"
+            "error": "No STT engine available",
         }
 
 
 # =============================================================================
 # GROQ-PRIMARY HYBRID (ottimizzato per hardware datato)
 # =============================================================================
+
 
 class GroqPrimaryHybridSTT(STTEngine):
     """
@@ -537,9 +556,9 @@ class GroqPrimaryHybridSTT(STTEngine):
         if fallback:
             try:
                 import asyncio
+
                 result = await asyncio.wait_for(
-                    fallback.transcribe(audio_data, language, stt_prompt),
-                    timeout=5.0
+                    fallback.transcribe(audio_data, language, stt_prompt), timeout=5.0
                 )
                 return result
             except asyncio.TimeoutError:
@@ -550,7 +569,7 @@ class GroqPrimaryHybridSTT(STTEngine):
             "confidence": 0.0,
             "language": language,
             "engine": "none",
-            "error": "Nessun motore STT disponibile"
+            "error": "Nessun motore STT disponibile",
         }
 
 
@@ -587,6 +606,7 @@ def get_stt_engine(prefer_offline: bool = True) -> STTEngine:
 # POST-PROCESSING CORRECTOR
 # =============================================================================
 
+
 class WhisperCorrector:
     """
     Post-processing correction for common STT errors.
@@ -606,12 +626,10 @@ class WhisperCorrector:
             "balay": "balayage",
             "piega è": "piega",
             "la piega": "piega",
-
             # Date/time
             "domenica prossima": "domenica prossimo",
             "il lunedì": "lunedì",
             "oggi è": "oggi",
-
             # Common STT artifacts
             " .": ".",
             " ,": ",",

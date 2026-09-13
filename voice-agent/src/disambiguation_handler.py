@@ -15,13 +15,14 @@ Features:
 import re
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, date
+from datetime import date
 from enum import Enum
 
 
 # =============================================================================
 # PHONETIC / FUZZY MATCHING UTILITIES
 # =============================================================================
+
 
 def levenshtein_distance(s1: str, s2: str) -> int:
     """Calculate Levenshtein distance between two strings."""
@@ -91,23 +92,23 @@ def is_phonetically_similar(name1: str, name2: str, threshold: float = 0.75) -> 
     """
     n1 = name1.lower().strip()
     n2 = name2.lower().strip()
-    
+
     # Exact match
     if n1 == n2:
         return True
-    
+
     # Check PHONETIC_VARIANTS dictionary (CoVe 2026 enhancement)
     # If both names are variants of the same base name, they're phonetically similar
     for base_name, variants in PHONETIC_VARIANTS.items():
         all_variants = set(variants + [base_name])
         if n1 in all_variants and n2 in all_variants:
             return True
-    
+
     # Check if one is a base name and other is its variant
     for base_name, variants in PHONETIC_VARIANTS.items():
         if (n1 == base_name and n2 in variants) or (n2 == base_name and n1 in variants):
             return True
-    
+
     # Fall back to Levenshtein similarity
     similarity = name_similarity(name1, name2)
     return similarity >= threshold
@@ -169,6 +170,7 @@ def check_name_ambiguity(input_name: str, matched_name: str) -> Tuple[bool, floa
 
 class DisambiguationState(Enum):
     """Disambiguation flow states."""
+
     NOT_NEEDED = "not_needed"
     WAITING_NICKNAME = "waiting_nickname"  # Ask "Mario o Marione?"
     WAITING_BIRTH_DATE = "waiting_birth_date"
@@ -180,6 +182,7 @@ class DisambiguationState(Enum):
 @dataclass
 class DisambiguationContext:
     """Context for client disambiguation."""
+
     state: DisambiguationState = DisambiguationState.NOT_NEEDED
     search_name: str = ""
     potential_clients: List[Dict[str, Any]] = field(default_factory=list)
@@ -194,13 +197,14 @@ class DisambiguationContext:
             "search_name": self.search_name,
             "potential_count": len(self.potential_clients),
             "resolved": self.resolved_client is not None,
-            "attempts": self.attempts
+            "attempts": self.attempts,
         }
 
 
 @dataclass
 class DisambiguationResult:
     """Result of disambiguation attempt."""
+
     success: bool
     state: DisambiguationState
     client: Optional[Dict[str, Any]] = None
@@ -211,20 +215,37 @@ class DisambiguationResult:
 
 # Italian months mapping
 MESI_IT = {
-    "gennaio": 1, "febbraio": 2, "marzo": 3, "aprile": 4,
-    "maggio": 5, "giugno": 6, "luglio": 7, "agosto": 8,
-    "settembre": 9, "ottobre": 10, "novembre": 11, "dicembre": 12,
+    "gennaio": 1,
+    "febbraio": 2,
+    "marzo": 3,
+    "aprile": 4,
+    "maggio": 5,
+    "giugno": 6,
+    "luglio": 7,
+    "agosto": 8,
+    "settembre": 9,
+    "ottobre": 10,
+    "novembre": 11,
+    "dicembre": 12,
     # Short forms
-    "gen": 1, "feb": 2, "mar": 3, "apr": 4, "mag": 5, "giu": 6,
-    "lug": 7, "ago": 8, "set": 9, "ott": 10, "nov": 11, "dic": 12
+    "gen": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "mag": 5,
+    "giu": 6,
+    "lug": 7,
+    "ago": 8,
+    "set": 9,
+    "ott": 10,
+    "nov": 11,
+    "dic": 12,
 }
 
 
 # Response templates
 TEMPLATES = {
-    "ask_nickname": (
-        "Ho trovato più clienti. {options}?"
-    ),
+    "ask_nickname": ("Ho trovato più clienti. {options}?"),
     "ask_birth_date": (
         "Ho trovato {count} clienti con il nome {name}. "
         "Per identificarla correttamente, mi può dire la sua data di nascita?"
@@ -274,9 +295,7 @@ class DisambiguationHandler:
         return self.context
 
     def start_disambiguation(
-        self,
-        name: str,
-        clients: List[Dict[str, Any]]
+        self, name: str, clients: List[Dict[str, Any]]
     ) -> DisambiguationResult:
         """
         Start disambiguation flow when multiple clients match.
@@ -303,7 +322,7 @@ class DisambiguationHandler:
                 success=False,
                 state=DisambiguationState.PROPOSE_REGISTRATION,
                 response_text=TEMPLATES["new_client"],
-                propose_registration=True
+                propose_registration=True,
             )
 
         if len(clients) == 1:
@@ -323,7 +342,7 @@ class DisambiguationHandler:
                     success=False,
                     state=DisambiguationState.WAITING_BIRTH_DATE,
                     response_text=f"Ho trovato '{full_name}'. {suggestion} Mi può confermare la sua data di nascita per sicurezza?",
-                    needs_user_input=True
+                    needs_user_input=True,
                 )
 
             # Exact or clear match - proceed normally
@@ -333,7 +352,7 @@ class DisambiguationHandler:
                 success=True,
                 state=DisambiguationState.RESOLVED,
                 client=client,
-                response_text=TEMPLATES["single_client"].format(full_name=full_name)
+                response_text=TEMPLATES["single_client"].format(full_name=full_name),
             )
 
         # Multiple matches - first ask birth date, nickname as fallback
@@ -342,16 +361,13 @@ class DisambiguationHandler:
             success=False,
             state=DisambiguationState.WAITING_BIRTH_DATE,
             response_text=TEMPLATES["ask_birth_date"].format(
-                count=len(clients),
-                name=name
+                count=len(clients), name=name
             ),
-            needs_user_input=True
+            needs_user_input=True,
         )
 
     def process_birth_date(
-        self,
-        user_input: str,
-        clients: Optional[List[Dict[str, Any]]] = None
+        self, user_input: str, clients: Optional[List[Dict[str, Any]]] = None
     ) -> DisambiguationResult:
         """
         Process user input containing birth date.
@@ -374,7 +390,7 @@ class DisambiguationHandler:
             return DisambiguationResult(
                 success=False,
                 state=DisambiguationState.FAILED,
-                response_text=TEMPLATES["max_attempts"]
+                response_text=TEMPLATES["max_attempts"],
             )
 
         # Extract birth date from input
@@ -386,7 +402,7 @@ class DisambiguationHandler:
                 success=False,
                 state=DisambiguationState.WAITING_BIRTH_DATE,
                 response_text=TEMPLATES["ask_birth_date_retry"],
-                needs_user_input=True
+                needs_user_input=True,
             )
 
         # Format date for comparison (YYYY-MM-DD)
@@ -409,7 +425,7 @@ class DisambiguationHandler:
                 success=True,
                 state=DisambiguationState.RESOLVED,
                 client=matching_client,
-                response_text=TEMPLATES["resolved"].format(full_name=full_name)
+                response_text=TEMPLATES["resolved"].format(full_name=full_name),
             )
 
         # No match with birth date - try nickname fallback
@@ -422,7 +438,7 @@ class DisambiguationHandler:
                 success=False,
                 state=DisambiguationState.WAITING_NICKNAME,
                 response_text=f"Non ho trovato questa data. {options}?",
-                needs_user_input=True
+                needs_user_input=True,
             )
 
         # No nickname fallback - propose registration
@@ -432,10 +448,9 @@ class DisambiguationHandler:
             success=False,
             state=DisambiguationState.PROPOSE_REGISTRATION,
             response_text=TEMPLATES["no_match_with_date"].format(
-                name=self.context.search_name,
-                date=formatted_date
+                name=self.context.search_name, date=formatted_date
             ),
-            propose_registration=True
+            propose_registration=True,
         )
 
     def extract_birth_date(self, text: str) -> Optional[date]:
@@ -459,29 +474,56 @@ class DisambiguationHandler:
             date object or None
         """
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         text_lower = text.lower().strip()
         logger.info(f"[extract_birth_date] Processing: '{text_lower}'")
 
         # Italian written numbers for days (1-31)
         giorni_scritti = {
-            'primo': 1, 'uno': 1, 'due': 2, 'tre': 3, 'quattro': 4, 'cinque': 5,
-            'sei': 6, 'sette': 7, 'otto': 8, 'nove': 9, 'dieci': 10,
-            'undici': 11, 'dodici': 12, 'tredici': 13, 'quattordici': 14, 'quindici': 15,
-            'sedici': 16, 'diciassette': 17, 'diciotto': 18, 'diciannove': 19, 'venti': 20,
-            'ventuno': 21, 'ventidue': 22, 'ventitré': 23, 'ventitre': 23, 'ventiquattro': 24,
-            'venticinque': 25, 'ventisei': 26, 'ventisette': 27, 'ventotto': 28, 'ventinove': 29,
-            'trenta': 30, 'trentuno': 31
+            "primo": 1,
+            "uno": 1,
+            "due": 2,
+            "tre": 3,
+            "quattro": 4,
+            "cinque": 5,
+            "sei": 6,
+            "sette": 7,
+            "otto": 8,
+            "nove": 9,
+            "dieci": 10,
+            "undici": 11,
+            "dodici": 12,
+            "tredici": 13,
+            "quattordici": 14,
+            "quindici": 15,
+            "sedici": 16,
+            "diciassette": 17,
+            "diciotto": 18,
+            "diciannove": 19,
+            "venti": 20,
+            "ventuno": 21,
+            "ventidue": 22,
+            "ventitré": 23,
+            "ventitre": 23,
+            "ventiquattro": 24,
+            "venticinque": 25,
+            "ventisei": 26,
+            "ventisette": 27,
+            "ventotto": 28,
+            "ventinove": 29,
+            "trenta": 30,
+            "trentuno": 31,
         }
 
         # Pattern 1: Italian format "15 marzo 1985" or "nato il 15 marzo 1985"
         # CoVe: Migliorato regex per catturare più contesti
-        pattern_it = r'(?:nato|nata|nascita|del|di|il)?\s*(\d{1,2})\s+([a-zèéàùìò]+)\s+(\d{2,4})\b'
+        pattern_it = r"(?:nato|nata|nascita|del|di|il)?\s*(\d{1,2})\s+([a-zèéàùìò]+)\s+(\d{2,4})\b"
         match = re.search(pattern_it, text_lower)
         if match:
             day = int(match.group(1))
-            month_name = match.group(2).lower().rstrip('èéàùìò')
+            month_name = match.group(2).lower().rstrip("èéàùìò")
             year = int(match.group(3))
 
             # Convert 2-digit year to 4-digit (cutoff 1930-2029)
@@ -496,13 +538,15 @@ class DisambiguationHandler:
                     logger.info(f"[extract_birth_date] Pattern IT matched: {result}")
                     return result
                 except ValueError as e:
-                    logger.warning(f"[extract_birth_date] Invalid date: {day}/{month}/{year} - {e}")
+                    logger.warning(
+                        f"[extract_birth_date] Invalid date: {day}/{month}/{year} - {e}"
+                    )
 
         # Pattern 1b: Written day + month + year (e.g., "quindici marzo 1985")
         # Find written number followed by month
         for giorno_str, giorno_num in giorni_scritti.items():
             for mese_str, mese_num in MESI_IT.items():
-                pattern_written = rf'\b{giorno_str}\s+{mese_str}\s+(\d{{2,4}})\b'
+                pattern_written = rf"\b{giorno_str}\s+{mese_str}\s+(\d{{2,4}})\b"
                 match = re.search(pattern_written, text_lower)
                 if match:
                     year = int(match.group(1))
@@ -510,14 +554,16 @@ class DisambiguationHandler:
                         year = 1900 + year if year >= 30 else 2000 + year
                     try:
                         result = date(year, mese_num, giorno_num)
-                        logger.info(f"[extract_birth_date] Pattern written matched: {result}")
+                        logger.info(
+                            f"[extract_birth_date] Pattern written matched: {result}"
+                        )
                         return result
                     except ValueError:
                         pass
 
         # Pattern 2: Numeric format "15/03/1985" or "15-03-1985"
         # CoVe: Supporta anche formati senza leading zero
-        pattern_numeric = r'\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b'
+        pattern_numeric = r"\b(\d{1,2})[/\-\.](\d{1,2})[/\-\.](\d{2,4})\b"
         match = re.search(pattern_numeric, text_lower)
         if match:
             day = int(match.group(1))
@@ -533,10 +579,12 @@ class DisambiguationHandler:
                 logger.info(f"[extract_birth_date] Pattern numeric matched: {result}")
                 return result
             except ValueError as e:
-                logger.warning(f"[extract_birth_date] Invalid numeric date: {day}/{month}/{year} - {e}")
+                logger.warning(
+                    f"[extract_birth_date] Invalid numeric date: {day}/{month}/{year} - {e}"
+                )
 
         # Pattern 3: ISO format "1985-03-15"
-        pattern_iso = r'\b(\d{4})-(\d{2})-(\d{2})\b'
+        pattern_iso = r"\b(\d{4})-(\d{2})-(\d{2})\b"
         match = re.search(pattern_iso, text_lower)
         if match:
             year = int(match.group(1))
@@ -550,11 +598,13 @@ class DisambiguationHandler:
                 logger.warning(f"[extract_birth_date] Invalid ISO date: {e}")
 
         # Pattern 4: Day + "di" + month + year (e.g., "15 di marzo 1985")
-        pattern_di = r'(?:nato|nata|il)?\s*(\d{1,2})\s+di\s+([a-zèéàùìò]+)\s+(\d{2,4})\b'
+        pattern_di = (
+            r"(?:nato|nata|il)?\s*(\d{1,2})\s+di\s+([a-zèéàùìò]+)\s+(\d{2,4})\b"
+        )
         match = re.search(pattern_di, text_lower)
         if match:
             day = int(match.group(1))
-            month_name = match.group(2).lower().rstrip('èéàùìò')
+            month_name = match.group(2).lower().rstrip("èéàùìò")
             year = int(match.group(3))
             if year < 100:
                 year = 1900 + year if year >= 30 else 2000 + year
@@ -570,7 +620,9 @@ class DisambiguationHandler:
         logger.info(f"[extract_birth_date] No pattern matched for: '{text}'")
         return None
 
-    def _get_unique_identifiers(self, clients: List[Dict[str, Any]]) -> Optional[List[str]]:
+    def _get_unique_identifiers(
+        self, clients: List[Dict[str, Any]]
+    ) -> Optional[List[str]]:
         """
         Get unique identifiers for each client.
 
@@ -622,7 +674,7 @@ class DisambiguationHandler:
             return DisambiguationResult(
                 success=False,
                 state=DisambiguationState.FAILED,
-                response_text=TEMPLATES["max_attempts"]
+                response_text=TEMPLATES["max_attempts"],
             )
 
         user_lower = user_input.lower().strip()
@@ -647,7 +699,7 @@ class DisambiguationHandler:
                         success=True,
                         state=DisambiguationState.RESOLVED,
                         client=client,
-                        response_text=TEMPLATES["resolved"].format(full_name=full_name)
+                        response_text=TEMPLATES["resolved"].format(full_name=full_name),
                     )
 
         # No match - ask again with options
@@ -658,7 +710,7 @@ class DisambiguationHandler:
                 success=False,
                 state=DisambiguationState.WAITING_NICKNAME,
                 response_text=f"Non ho capito. {options}?",
-                needs_user_input=True
+                needs_user_input=True,
             )
 
         # Fall back to birth date
@@ -667,7 +719,7 @@ class DisambiguationHandler:
             success=False,
             state=DisambiguationState.WAITING_BIRTH_DATE,
             response_text=TEMPLATES["ask_birth_date_retry"],
-            needs_user_input=True
+            needs_user_input=True,
         )
 
     def _get_full_name(self, client: Dict[str, Any]) -> str:
@@ -679,8 +731,18 @@ class DisambiguationHandler:
     def _format_date_italian(self, d: date) -> str:
         """Format date in Italian."""
         months = [
-            "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+            "gennaio",
+            "febbraio",
+            "marzo",
+            "aprile",
+            "maggio",
+            "giugno",
+            "luglio",
+            "agosto",
+            "settembre",
+            "ottobre",
+            "novembre",
+            "dicembre",
         ]
         return f"{d.day} {months[d.month - 1]} {d.year}"
 
@@ -689,7 +751,7 @@ class DisambiguationHandler:
         """Check if waiting for user input."""
         return self.context.state in (
             DisambiguationState.WAITING_NICKNAME,
-            DisambiguationState.WAITING_BIRTH_DATE
+            DisambiguationState.WAITING_BIRTH_DATE,
         )
 
     @property
@@ -702,26 +764,28 @@ class DisambiguationHandler:
         """Get resolved client if available."""
         return self.context.resolved_client
 
-    def check_nickname_match(self, nickname: str, surname: str) -> Optional[Dict[str, Any]]:
+    def check_nickname_match(
+        self, nickname: str, surname: str
+    ) -> Optional[Dict[str, Any]]:
         """
         Check if a nickname matches known client names or nicknames.
-        
+
         CoVe 2026: Advanced nickname resolution using PHONETIC_VARIANTS
         and fuzzy matching. Handles cases like:
-        - "Gigi" → "Gigio" 
+        - "Gigi" → "Gigio"
         - "Giovi" → "Giovanna"
         - "Peppe" → "Giuseppe"
-        
+
         Args:
             nickname: The nickname or short name to check
             surname: Client surname for additional matching
-            
+
         Returns:
             Client dict if match found, None otherwise
         """
         nickname_lower = nickname.lower().strip()
         surname_lower = surname.lower().strip()
-        
+
         # CoVe 2026: First check if nickname is a VARIANT of a base name
         # This handles cases like "Gigi" → "Gigio" (gigi is variant of gigio)
         for base_name, variants in PHONETIC_VARIANTS.items():
@@ -733,9 +797,9 @@ class DisambiguationHandler:
                     "cognome": surname.capitalize(),
                     "soprannome": nickname,
                     "matched_via": "nickname",
-                    "confidence": 0.95
+                    "confidence": 0.95,
                 }
-        
+
         # Check if nickname is a base name itself
         if nickname_lower in PHONETIC_VARIANTS:
             base_name = nickname_lower
@@ -745,9 +809,9 @@ class DisambiguationHandler:
                 "cognome": surname.capitalize(),
                 "soprannome": None,
                 "matched_via": "nickname",
-                "confidence": 0.95
+                "confidence": 0.95,
             }
-        
+
         # Check if nickname is similar to any base name using fuzzy matching
         for base_name in PHONETIC_VARIANTS.keys():
             if name_similarity(nickname_lower, base_name) >= 0.75:
@@ -757,9 +821,9 @@ class DisambiguationHandler:
                     "cognome": surname.capitalize(),
                     "soprannome": nickname,
                     "matched_via": "fuzzy",
-                    "confidence": 0.85
+                    "confidence": 0.85,
                 }
-        
+
         return None
 
 
@@ -786,8 +850,20 @@ if __name__ == "__main__":
     print("Test 1: Birth date match - risolve subito")
     print("-" * 40)
     clients = [
-        {"id": "1", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1985-03-15", "soprannome": None},
-        {"id": "2", "nome": "Mario", "cognome": "Rossi", "data_nascita": "1990-07-22", "soprannome": "Marione"},
+        {
+            "id": "1",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1985-03-15",
+            "soprannome": None,
+        },
+        {
+            "id": "2",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1990-07-22",
+            "soprannome": "Marione",
+        },
     ]
 
     result = handler.start_disambiguation("Mario", clients)

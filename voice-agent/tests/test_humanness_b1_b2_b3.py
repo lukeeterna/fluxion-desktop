@@ -8,20 +8,15 @@ B3: Goodbye variants by context
 
 import sys
 import asyncio
-import random
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from booking_state_machine import (
     BookingStateMachine,
-    BookingState,
-    BookingContext,
-    TEMPLATES,
     GOODBYE_VARIANTS,
     get_goodbye,
 )
@@ -32,6 +27,7 @@ from tts import TTSCache
 # B1: Filler phrases
 # =============================================================================
 
+
 def _read_orchestrator_source():
     """Read orchestrator.py source without importing it (avoids groq dependency)."""
     orch_path = Path(__file__).parent.parent / "src" / "orchestrator.py"
@@ -41,6 +37,7 @@ def _read_orchestrator_source():
 def _extract_filler_phrases(source: str):
     """Extract FILLER_PHRASES list from source text."""
     import ast
+
     # Find the FILLER_PHRASES = [...] assignment
     for node in ast.parse(source).body:
         if isinstance(node, ast.Assign):
@@ -74,9 +71,7 @@ class TestB1FillerPhrases:
         phrases = _extract_filler_phrases(source)
         assert phrases is not None
 
-        asyncio.get_event_loop().run_until_complete(
-            cache.warm_cache(list(phrases))
-        )
+        asyncio.run(cache.warm_cache(list(phrases)))
         for phrase in phrases:
             assert phrase.strip() in cache._cache, f"'{phrase}' not pre-warmed"
 
@@ -84,15 +79,23 @@ class TestB1FillerPhrases:
         """Orchestrator._is_voip_call must be False by default (text API mode)."""
         source = _read_orchestrator_source()
         # Verify flag exists and defaults to False
-        assert "self._is_voip_call" in source, "_is_voip_call flag missing from orchestrator.py"
-        assert "self._is_voip_call: bool = False" in source or "self._is_voip_call = False" in source
+        assert "self._is_voip_call" in source, (
+            "_is_voip_call flag missing from orchestrator.py"
+        )
+        assert (
+            "self._is_voip_call: bool = False" in source
+            or "self._is_voip_call = False" in source
+        )
         # Verify greet() sets it to True (VoIP entry point)
-        assert "self._is_voip_call = True" in source, "greet() must set _is_voip_call = True"
+        assert "self._is_voip_call = True" in source, (
+            "greet() must set _is_voip_call = True"
+        )
 
 
 # =============================================================================
 # B2: Mirror in confirmation
 # =============================================================================
+
 
 class TestB2MirrorConfirmation:
     """B2: Confirmation template includes client name."""
@@ -149,8 +152,10 @@ class TestB2MirrorConfirmation:
         texts = [bsm._format_confirm_booking() for _ in range(10)]
         # The micro "confirmed" reactions: Fantastico, Grande, Ecco fatto, Perfetto
         has_micro = any(
-            t.startswith("Fantastico") or t.startswith("Grande") or
-            t.startswith("Ecco fatto") or t.startswith("Perfetto")
+            t.startswith("Fantastico")
+            or t.startswith("Grande")
+            or t.startswith("Ecco fatto")
+            or t.startswith("Perfetto")
             for t in texts
         )
         assert has_micro, f"No micro-reaction found in: {texts[0][:60]}"
@@ -159,6 +164,7 @@ class TestB2MirrorConfirmation:
 # =============================================================================
 # B3: Goodbye variants
 # =============================================================================
+
 
 class TestB3GoodbyeVariants:
     """B3: Context-aware goodbye variants."""
@@ -203,8 +209,9 @@ class TestB3GoodbyeVariants:
             if context_key == "escalated":
                 continue  # Escalated doesn't need business_name
             for v in variants:
-                assert "{business_name}" in v, \
+                assert "{business_name}" in v, (
                     f"GOODBYE_VARIANTS['{context_key}'] variant missing {{business_name}}: {v}"
+                )
 
     def test_unknown_context_falls_back_to_generic(self):
         """Unknown context key falls back to generic."""

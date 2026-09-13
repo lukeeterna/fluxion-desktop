@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # DB PATH (same resolution as _load_business_name_from_sqlite)
 # ═══════════════════════════════════════════════════════════════════
 
+
 def _get_db_path() -> Optional[Path]:
     """Resolve Fluxion SQLite DB path (same logic as main.py)."""
     home = Path.home()
@@ -45,7 +46,11 @@ def _get_db_path() -> Optional[Path]:
         ]
     else:
         candidates = [
-            home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
+            home
+            / "Library"
+            / "Application Support"
+            / "com.fluxion.desktop"
+            / "fluxion.db",
             home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
         ]
 
@@ -103,6 +108,7 @@ def _already_sent(appointment_id: str, reminder_type: str) -> bool:
 # DB QUERIES
 # ═══════════════════════════════════════════════════════════════════
 
+
 def _get_appointments_in_window(
     from_dt: datetime, to_dt: datetime
 ) -> List[Dict[str, Any]]:
@@ -133,7 +139,10 @@ def _get_appointments_in_window(
                   AND (a.deleted_at IS NULL OR a.deleted_at = '')
                   AND a.data_ora_inizio BETWEEN ? AND ?
                 """,
-                (from_dt.strftime("%Y-%m-%dT%H:%M:%S"), to_dt.strftime("%Y-%m-%dT%H:%M:%S")),
+                (
+                    from_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+                    to_dt.strftime("%Y-%m-%dT%H:%M:%S"),
+                ),
             ).fetchall()
         return [dict(r) for r in rows]
     except sqlite3.Error as e:
@@ -145,7 +154,10 @@ def _get_appointments_in_window(
 # CORE SCHEDULER JOB
 # ═══════════════════════════════════════════════════════════════════
 
-async def check_and_send_reminders(wa_client: Any, callback_handler: Any = None) -> None:
+
+async def check_and_send_reminders(
+    wa_client: Any, callback_handler: Any = None
+) -> None:
     """
     Main scheduler job. Runs every 15 min.
     Checks -24h and -1h windows and sends WA reminders if not already sent.
@@ -187,13 +199,20 @@ async def check_and_send_reminders(wa_client: Any, callback_handler: Any = None)
             total_sent += 1
 
     if total_sent:
-        logger.info("[Reminder] Sent %d reminders (run at %s)", total_sent, now.strftime("%H:%M"))
+        logger.info(
+            "[Reminder] Sent %d reminders (run at %s)",
+            total_sent,
+            now.strftime("%H:%M"),
+        )
     else:
         logger.debug("[Reminder] No reminders due at %s", now.strftime("%H:%M"))
 
 
 async def _send_reminder(
-    wa_client: Any, appt: Dict[str, Any], reminder_type: str, callback_handler: Any = None
+    wa_client: Any,
+    appt: Dict[str, Any],
+    reminder_type: str,
+    callback_handler: Any = None,
 ) -> bool:
     """
     Send a single WA reminder. Returns True on success.
@@ -240,7 +259,11 @@ async def _send_reminder(
         if success:
             logger.info(
                 "[Reminder] ✅ %s → %s (%s %s %s)",
-                reminder_type, nome, servizio, data_str, ora_str,
+                reminder_type,
+                nome,
+                servizio,
+                data_str,
+                ora_str,
             )
             # Gap #4: register pending so client reply is correctly attributed
             if callback_handler is not None and apt_id:
@@ -248,19 +271,26 @@ async def _send_reminder(
                     callback_handler.register_pending_appointment(phone, apt_id, nome)
                 except Exception as reg_err:
                     logger.warning(
-                        "[Reminder] Could not register pending appointment %s: %s", apt_id, reg_err
+                        "[Reminder] Could not register pending appointment %s: %s",
+                        apt_id,
+                        reg_err,
                     )
         else:
-            logger.warning("[Reminder] ❌ %s failed for %s: %s", reminder_type, nome, result)
+            logger.warning(
+                "[Reminder] ❌ %s failed for %s: %s", reminder_type, nome, result
+            )
         return success
     except Exception as e:
-        logger.error("[Reminder] Exception sending %s to %s: %s", reminder_type, nome, e)
+        logger.error(
+            "[Reminder] Exception sending %s to %s: %s", reminder_type, nome, e
+        )
         return False
 
 
 # ═══════════════════════════════════════════════════════════════════
 # GAP #3 — WAITLIST NOTIFY: check every 5min for freed slots
 # ═══════════════════════════════════════════════════════════════════
+
 
 def _get_waitlist_pending() -> List[Dict[str, Any]]:
     """
@@ -385,7 +415,9 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
 
         try:
             if wa_client is None or not wa_client.is_connected():
-                logger.warning("[Waitlist] WA not connected — skipping notify for %s", nome)
+                logger.warning(
+                    "[Waitlist] WA not connected — skipping notify for %s", nome
+                )
                 continue
 
             try:
@@ -410,7 +442,10 @@ async def check_and_notify_waitlist(wa_client: Any) -> None:
                 notified += 1
                 logger.info(
                     "[Waitlist] ✅ Notified %s → slot %s %s %s",
-                    nome, servizio, data_str, ora_pref,
+                    nome,
+                    servizio,
+                    data_str,
+                    ora_pref,
                 )
             else:
                 logger.warning("[Waitlist] ❌ WA send failed for %s: %s", nome, result)
@@ -483,7 +518,7 @@ def _get_clienti_compleanno_oggi() -> List[Dict[str, Any]]:
                   AND consenso_whatsapp = 1
                 ORDER BY cognome, nome
                 """,
-                (today_mmdd,)
+                (today_mmdd,),
             ).fetchall()
         return [dict(r) for r in rows]
     except sqlite3.Error as e:
@@ -538,7 +573,7 @@ async def check_and_send_birthdays(wa_client: Any) -> None:
 # ═══════════════════════════════════════════════════════════════════
 
 DORMANT_DAYS_THRESHOLD = 60  # configurable: days without booking to trigger recall
-DORMANT_MAX_PER_DAY = 10     # max recall messages per day (avoid WA spam)
+DORMANT_MAX_PER_DAY = 10  # max recall messages per day (avoid WA spam)
 
 _RECALL_LOG_PATH = get_writable_root() / ".whatsapp-session" / "recall_sent.json"
 
@@ -580,7 +615,9 @@ def _recall_recently_sent(cliente_id: str, min_days: int = 30) -> bool:
         return False
 
 
-def _get_dormant_clients(days_threshold: int = DORMANT_DAYS_THRESHOLD) -> List[Dict[str, Any]]:
+def _get_dormant_clients(
+    days_threshold: int = DORMANT_DAYS_THRESHOLD,
+) -> List[Dict[str, Any]]:
     """
     Return clients who haven't had a confirmed appointment in >days_threshold days,
     have WA consent, and have a phone number.
@@ -647,7 +684,10 @@ async def check_and_recall_dormant(wa_client: Any) -> None:
     sent = 0
     for cliente in dormant:
         if sent >= DORMANT_MAX_PER_DAY:
-            logger.info("[Recall] Daily limit reached (%d), remaining for tomorrow", DORMANT_MAX_PER_DAY)
+            logger.info(
+                "[Recall] Daily limit reached (%d), remaining for tomorrow",
+                DORMANT_MAX_PER_DAY,
+            )
             break
 
         cid = str(cliente["id"])
@@ -674,7 +714,9 @@ async def check_and_recall_dormant(wa_client: Any) -> None:
                 sent += 1
                 logger.info(
                     "[Recall] ✅ Sent recall to %s (dormant %d days, phone: %s)",
-                    nome, giorni, phone,
+                    nome,
+                    giorni,
+                    phone,
                 )
             else:
                 logger.warning("[Recall] ❌ Failed to send to %s: %s", nome, result)
@@ -690,6 +732,7 @@ async def check_and_recall_dormant(wa_client: Any) -> None:
 # ═══════════════════════════════════════════════════════════════════
 # SCHEDULER LIFECYCLE
 # ═══════════════════════════════════════════════════════════════════
+
 
 def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> Any:
     """
@@ -743,6 +786,7 @@ def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> An
     # Job 3: Gap #6 — Birthday WA (daily at 9:00am)
     # Revenue: +8% return rate. Clienti si sentono ricordati → tornano.
     from apscheduler.triggers.cron import CronTrigger
+
     scheduler.add_job(
         check_and_send_birthdays,
         trigger=CronTrigger(hour=9, minute=0),
@@ -767,6 +811,7 @@ def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> An
     # Compounding: each week Sara identifies and improves weak spots.
     try:
         from weekly_learning import run_weekly_learning
+
         scheduler.add_job(
             run_weekly_learning,
             trigger=CronTrigger(day_of_week="sun", hour=6, minute=0),

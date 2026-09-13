@@ -19,6 +19,7 @@ HAS_FULL_DEPS = False
 try:
     import aiohttp  # noqa: F401
     import groq  # noqa: F401 — only available in iMac venv
+
     HAS_FULL_DEPS = True
 except ImportError:
     pass
@@ -28,6 +29,7 @@ except ImportError:
 # Integration: _cancel_booking triggers waitlist on success
 # Requires full venv (iMac only)
 # ─────────────────────────────────────────────────────────────
+
 
 @pytest.mark.skipif(not HAS_FULL_DEPS, reason="requires full voice-agent venv (iMac)")
 @pytest.mark.asyncio
@@ -63,6 +65,7 @@ async def test_cancel_booking_triggers_waitlist_on_success():
 
     with patch("src.orchestrator.shared_session", return_value=mock_session):
         import src.reminder_scheduler as rs_mod
+
         original = getattr(rs_mod, "check_and_notify_waitlist", None)
         rs_mod.check_and_notify_waitlist = fake_waitlist
         try:
@@ -93,7 +96,9 @@ async def test_cancel_booking_no_waitlist_trigger_on_failure():
 
     mock_response = AsyncMock()
     mock_response.status = 200
-    mock_response.json = AsyncMock(return_value={"success": False, "error": "Not found"})
+    mock_response.json = AsyncMock(
+        return_value={"success": False, "error": "Not found"}
+    )
     mock_response.__aenter__ = AsyncMock(return_value=mock_response)
     mock_response.__aexit__ = AsyncMock(return_value=False)
 
@@ -109,16 +114,19 @@ async def test_cancel_booking_no_waitlist_trigger_on_failure():
 
     with patch("src.orchestrator.shared_session", return_value=mock_session):
         import src.reminder_scheduler as rs_mod
+
         original = getattr(rs_mod, "check_and_notify_waitlist", None)
         rs_mod.check_and_notify_waitlist = fake_waitlist
         try:
-            result = await orch._cancel_booking("appt-404")
+            await orch._cancel_booking("appt-404")
         finally:
             if original:
                 rs_mod.check_and_notify_waitlist = original
 
     await _asyncio.sleep(0.05)
-    assert len(triggered) == 0, "Waitlist check should NOT be triggered on failed cancel"
+    assert len(triggered) == 0, (
+        "Waitlist check should NOT be triggered on failed cancel"
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -126,10 +134,12 @@ async def test_cancel_booking_no_waitlist_trigger_on_failure():
 # MacBook-safe (no heavy deps)
 # ─────────────────────────────────────────────────────────────
 
+
 def test_check_and_notify_waitlist_is_async():
     """check_and_notify_waitlist must be an async function."""
     import asyncio
     from reminder_scheduler import check_and_notify_waitlist
+
     assert asyncio.iscoroutinefunction(check_and_notify_waitlist), (
         "check_and_notify_waitlist must be async for create_task to work"
     )
@@ -139,6 +149,7 @@ def test_check_and_notify_waitlist_accepts_none_wa_client():
     """check_and_notify_waitlist must handle wa_client=None gracefully."""
     import asyncio
     from reminder_scheduler import check_and_notify_waitlist
+
     # Should not raise — just logs warning and skips
     loop = asyncio.new_event_loop()
     try:

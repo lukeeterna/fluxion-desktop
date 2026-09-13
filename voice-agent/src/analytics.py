@@ -6,30 +6,30 @@ Structured logging in SQLite for improvement loop and analytics.
 """
 
 import json
-import os
 import sqlite3
-import time
 import uuid
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 class ConversationOutcome(Enum):
     """Outcome of a conversation."""
-    COMPLETED = "completed"         # User goal achieved
-    ESCALATED = "escalated"         # Transferred to operator
-    ABANDONED = "abandoned"         # User left mid-conversation
-    ERROR = "error"                 # Technical failure
-    UNKNOWN = "unknown"             # Incomplete data
+
+    COMPLETED = "completed"  # User goal achieved
+    ESCALATED = "escalated"  # Transferred to operator
+    ABANDONED = "abandoned"  # User left mid-conversation
+    ERROR = "error"  # Technical failure
+    UNKNOWN = "unknown"  # Incomplete data
 
 
 @dataclass
 class ConversationTurn:
     """Single turn in a conversation."""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     conversation_id: str = ""
     turn_number: int = 0
@@ -39,7 +39,7 @@ class ConversationTurn:
     intent_confidence: float = 0.0
     response: str = ""
     latency_ms: float = 0.0
-    layer_used: str = ""            # L1_exact, L2_intent, L3_faq, L4_groq
+    layer_used: str = ""  # L1_exact, L2_intent, L3_faq, L4_groq
     sentiment: str = "neutral"
     frustration_level: int = 0
     used_groq: bool = False
@@ -51,6 +51,7 @@ class ConversationTurn:
 @dataclass
 class ConversationSession:
     """Complete conversation session."""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     verticale_id: str = ""
     started_at: datetime = field(default_factory=datetime.now)
@@ -78,6 +79,7 @@ class ConversationSession:
 @dataclass
 class AnalyticsMetrics:
     """Aggregated analytics metrics."""
+
     total_conversations: int = 0
     total_turns: int = 0
     avg_turns_per_conversation: float = 0.0
@@ -205,7 +207,7 @@ class ConversationLogger:
         self,
         db_path: Optional[str] = None,
         anonymize: bool = False,
-        retention_days: int = 90
+        retention_days: int = 90,
     ):
         """
         Initialize ConversationLogger.
@@ -226,7 +228,7 @@ class ConversationLogger:
 
         # Current active sessions
         self._active_sessions: Dict[str, ConversationSession] = {}
-        
+
         # CoVe 2026: Keep connection open for in-memory databases
         self._conn: Optional[sqlite3.Connection] = None
 
@@ -243,7 +245,9 @@ class ConversationLogger:
             conn.executescript(self.SCHEMA)
             # S143 GAP-D3: Add fsm_state column to existing DBs
             try:
-                conn.execute("ALTER TABLE conversation_turns ADD COLUMN fsm_state TEXT DEFAULT ''")
+                conn.execute(
+                    "ALTER TABLE conversation_turns ADD COLUMN fsm_state TEXT DEFAULT ''"
+                )
             except sqlite3.OperationalError:
                 pass  # Column already exists
             conn.commit()
@@ -273,7 +277,7 @@ class ConversationLogger:
         self,
         verticale_id: str,
         client_id: Optional[str] = None,
-        client_name: Optional[str] = None
+        client_name: Optional[str] = None,
     ) -> str:
         """
         Start a new conversation session.
@@ -289,25 +293,28 @@ class ConversationLogger:
         session = ConversationSession(
             verticale_id=verticale_id,
             client_id=client_id,
-            client_name=self._anonymize_if_needed(client_name) if client_name else None
+            client_name=self._anonymize_if_needed(client_name) if client_name else None,
         )
 
         self._active_sessions[session.id] = session
 
         # Persist to database
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO conversations (
                     id, verticale_id, started_at, client_id, client_name, outcome
                 ) VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                session.id,
-                session.verticale_id,
-                session.started_at.isoformat(),
-                session.client_id,
-                session.client_name,
-                session.outcome.value
-            ))
+            """,
+                (
+                    session.id,
+                    session.verticale_id,
+                    session.started_at.isoformat(),
+                    session.client_id,
+                    session.client_name,
+                    session.outcome.value,
+                ),
+            )
             conn.commit()
 
         return session.id
@@ -318,7 +325,7 @@ class ConversationLogger:
         outcome: ConversationOutcome = ConversationOutcome.UNKNOWN,
         escalation_reason: Optional[str] = None,
         booking_id: Optional[str] = None,
-        user_satisfaction: Optional[int] = None
+        user_satisfaction: Optional[int] = None,
     ):
         """End a conversation session."""
         session = self._active_sessions.get(session_id)
@@ -332,7 +339,8 @@ class ConversationLogger:
 
             # Update database
             with self._get_connection() as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     UPDATE conversations SET
                         ended_at = ?,
                         outcome = ?,
@@ -345,28 +353,27 @@ class ConversationLogger:
                         user_satisfaction = ?,
                         summary = ?
                     WHERE id = ?
-                """, (
-                    session.ended_at.isoformat(),
-                    session.outcome.value,
-                    session.total_turns,
-                    session.total_latency_ms,
-                    session.groq_usage_count,
-                    session.escalation_reason,
-                    session.booking_created,
-                    session.booking_id,
-                    session.user_satisfaction,
-                    session.summary,
-                    session_id
-                ))
+                """,
+                    (
+                        session.ended_at.isoformat(),
+                        session.outcome.value,
+                        session.total_turns,
+                        session.total_latency_ms,
+                        session.groq_usage_count,
+                        session.escalation_reason,
+                        session.booking_created,
+                        session.booking_id,
+                        session.user_satisfaction,
+                        session.summary,
+                        session_id,
+                    ),
+                )
                 conn.commit()
 
             del self._active_sessions[session_id]
 
     def update_session_client(
-        self,
-        session_id: str,
-        client_id: Optional[str],
-        client_name: Optional[str]
+        self, session_id: str, client_id: Optional[str], client_name: Optional[str]
     ):
         """Update session with identified client information."""
         session = self._active_sessions.get(session_id)
@@ -376,12 +383,15 @@ class ConversationLogger:
 
             # Update database
             with self._get_connection() as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     UPDATE conversations SET
                         client_id = ?,
                         client_name = ?
                     WHERE id = ?
-                """, (client_id, client_name, session_id))
+                """,
+                    (client_id, client_name, session_id),
+                )
                 conn.commit()
 
     # =========================================================================
@@ -407,7 +417,7 @@ class ConversationLogger:
     ) -> str:
         """
         Log a conversation turn.
-        
+
         CoVe 2026: Supports both old API (params) and new API (ConversationTurn object).
 
         Args:
@@ -442,7 +452,7 @@ class ConversationLogger:
             turn.turn_number = session.total_turns + 1
             session.add_turn(turn)
             return turn.id
-        
+
         # Original API with separate params
         session_id = session_id_or_turn
         session = self._active_sessions.get(session_id)
@@ -465,7 +475,7 @@ class ConversationLogger:
             used_groq=used_groq,
             escalated=escalated,
             entities_extracted=entities or {},
-            fsm_state=fsm_state
+            fsm_state=fsm_state,
         )
 
         # Update session stats
@@ -476,40 +486,46 @@ class ConversationLogger:
 
         # Persist to database
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO conversation_turns (
                     id, conversation_id, turn_number, timestamp,
                     user_input, intent, intent_confidence, response,
                     latency_ms, layer_used, sentiment, frustration_level,
                     used_groq, escalated, entities_extracted, fsm_state
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                turn.id,
-                turn.conversation_id,
-                turn.turn_number,
-                turn.timestamp.isoformat(),
-                turn.user_input,
-                turn.intent,
-                turn.intent_confidence,
-                turn.response,
-                turn.latency_ms,
-                turn.layer_used,
-                turn.sentiment,
-                turn.frustration_level,
-                turn.used_groq,
-                turn.escalated,
-                json.dumps(turn.entities_extracted),
-                turn.fsm_state
-            ))
+            """,
+                (
+                    turn.id,
+                    turn.conversation_id,
+                    turn.turn_number,
+                    turn.timestamp.isoformat(),
+                    turn.user_input,
+                    turn.intent,
+                    turn.intent_confidence,
+                    turn.response,
+                    turn.latency_ms,
+                    turn.layer_used,
+                    turn.sentiment,
+                    turn.frustration_level,
+                    turn.used_groq,
+                    turn.escalated,
+                    json.dumps(turn.entities_extracted),
+                    turn.fsm_state,
+                ),
+            )
 
             # Update conversation totals
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE conversations SET
                     total_turns = total_turns + 1,
                     total_latency_ms = total_latency_ms + ?,
                     groq_usage_count = groq_usage_count + ?
                 WHERE id = ?
-            """, (latency_ms, 1 if used_groq else 0, session_id))
+            """,
+                (latency_ms, 1 if used_groq else 0, session_id),
+            )
 
             conn.commit()
 
@@ -518,19 +534,20 @@ class ConversationLogger:
     def get_latency_stats(self, hours: int = 24) -> Dict[str, Any]:
         """
         Get latency statistics for recent turns.
-        
+
         CoVe 2026: Returns latency statistics for monitoring.
-        
+
         Args:
             hours: Number of hours to look back
-            
+
         Returns:
             Dict with latency statistics
         """
         since = datetime.now() - timedelta(hours=hours)
-        
+
         with self._get_connection() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT 
                     AVG(latency_ms) as avg_latency,
                     MIN(latency_ms) as min_latency,
@@ -538,23 +555,25 @@ class ConversationLogger:
                     COUNT(*) as total_turns
                 FROM conversation_turns
                 WHERE timestamp > ?
-            """, (since.isoformat(),))
-            
+            """,
+                (since.isoformat(),),
+            )
+
             row = cursor.fetchone()
-            
+
             if row and row[0]:
                 return {
                     "avg_latency_ms": row[0],
                     "min_latency_ms": row[1],
                     "max_latency_ms": row[2],
-                    "total_turns": row[3]
+                    "total_turns": row[3],
                 }
-            
+
             return {
                 "avg_latency_ms": 0,
                 "min_latency_ms": 0,
                 "max_latency_ms": 0,
-                "total_turns": 0
+                "total_turns": 0,
             }
 
     def get_percentile_stats(self, hours: int = 24) -> dict:
@@ -574,7 +593,7 @@ class ConversationLogger:
             rows = conn.execute(
                 "SELECT latency_ms FROM conversation_turns "
                 "WHERE timestamp > ? AND latency_ms IS NOT NULL ORDER BY latency_ms",
-                (since,)
+                (since,),
             ).fetchall()
 
         if not rows:
@@ -592,7 +611,7 @@ class ConversationLogger:
             "p95_ms": _pct(latencies, 95),
             "p99_ms": _pct(latencies, 99),
             "count": n,
-            "hours": hours
+            "hours": hours,
         }
 
     # =========================================================================
@@ -600,9 +619,7 @@ class ConversationLogger:
     # =========================================================================
 
     def get_metrics(
-        self,
-        verticale_id: Optional[str] = None,
-        days: int = 7
+        self, verticale_id: Optional[str] = None, days: int = 7
     ) -> AnalyticsMetrics:
         """
         Get aggregated analytics metrics.
@@ -626,7 +643,8 @@ class ConversationLogger:
                 params.append(verticale_id)
 
             # Main conversation metrics
-            cursor = conn.execute(f"""
+            cursor = conn.execute(
+                f"""
                 SELECT
                     COUNT(*) as total_conversations,
                     SUM(c.total_turns) as total_turns,
@@ -638,7 +656,9 @@ class ConversationLogger:
                     AVG(c.user_satisfaction) as avg_satisfaction
                 FROM conversations c
                 {where_clause}
-            """, params)
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
+                params,
+            )
 
             row = cursor.fetchone()
 
@@ -650,61 +670,64 @@ class ConversationLogger:
                 groq_usage_percent=row["groq_percent"] or 0.0,
                 escalation_rate=row["escalation_rate"] or 0.0,
                 completion_rate=row["completion_rate"] or 0.0,
-                avg_satisfaction=row["avg_satisfaction"] or 0.0
+                avg_satisfaction=row["avg_satisfaction"] or 0.0,
             )
 
             # Intent distribution
-            cursor = conn.execute(f"""
+            cursor = conn.execute(
+                f"""
                 SELECT t.intent, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY t.intent
                 ORDER BY count DESC
-            """, params)
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
+                params,
+            )
 
             metrics.intent_distribution = {
-                row["intent"]: row["count"]
-                for row in cursor.fetchall()
+                row["intent"]: row["count"] for row in cursor.fetchall()
             }
 
             # Layer usage
-            cursor = conn.execute(f"""
+            cursor = conn.execute(
+                f"""
                 SELECT t.layer_used, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY t.layer_used
                 ORDER BY count DESC
-            """, params)
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
+                params,
+            )
 
             metrics.layer_usage = {
-                row["layer_used"]: row["count"]
-                for row in cursor.fetchall()
+                row["layer_used"]: row["count"] for row in cursor.fetchall()
             }
 
             # Peak hours
-            cursor = conn.execute(f"""
+            cursor = conn.execute(
+                f"""
                 SELECT strftime('%H', t.timestamp) as hour, COUNT(*) as count
                 FROM conversation_turns t
                 JOIN conversations c ON t.conversation_id = c.id
                 {where_clause}
                 GROUP BY hour
                 ORDER BY hour
-            """, params)
+            """,  # nosec B608 - fixed WHERE fragments; values parameterized
+                params,
+            )
 
             metrics.peak_hours = {
-                int(row["hour"]): row["count"]
-                for row in cursor.fetchall()
+                int(row["hour"]): row["count"] for row in cursor.fetchall()
             }
 
         return metrics
 
     def get_failed_queries(
-        self,
-        verticale_id: Optional[str] = None,
-        days: int = 7,
-        limit: int = 50
+        self, verticale_id: Optional[str] = None, days: int = 7, limit: int = 50
     ) -> List[Dict[str, Any]]:
         """
         Get queries where the system failed to provide a good response.
@@ -721,7 +744,8 @@ class ConversationLogger:
         since = datetime.now() - timedelta(days=days)
 
         with self._get_connection() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT
                     t.user_input,
                     t.intent,
@@ -744,35 +768,36 @@ class ConversationLogger:
                 GROUP BY t.user_input
                 ORDER BY occurrence_count DESC, t.frustration_level DESC
                 LIMIT ?
-            """, (since.isoformat(), verticale_id, verticale_id, limit))
+            """,
+                (since.isoformat(), verticale_id, verticale_id, limit),
+            )
 
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_conversation_history(
-        self,
-        session_id: str
-    ) -> List[Dict[str, Any]]:
+    def get_conversation_history(self, session_id: str) -> List[Dict[str, Any]]:
         """Get full conversation history for a session."""
         with self._get_connection() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT *
                 FROM conversation_turns
                 WHERE conversation_id = ?
                 ORDER BY turn_number
-            """, (session_id,))
+            """,
+                (session_id,),
+            )
 
             return [dict(row) for row in cursor.fetchall()]
 
     def get_escalation_reasons(
-        self,
-        verticale_id: Optional[str] = None,
-        days: int = 30
+        self, verticale_id: Optional[str] = None, days: int = 30
     ) -> Dict[str, int]:
         """Get distribution of escalation reasons."""
         since = datetime.now() - timedelta(days=days)
 
         with self._get_connection() as conn:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT
                     COALESCE(escalation_reason, 'unknown') as reason,
                     COUNT(*) as count
@@ -782,7 +807,9 @@ class ConversationLogger:
                     AND (? IS NULL OR verticale_id = ?)
                 GROUP BY reason
                 ORDER BY count DESC
-            """, (since.isoformat(), verticale_id, verticale_id))
+            """,
+                (since.isoformat(), verticale_id, verticale_id),
+            )
 
             return {row["reason"]: row["count"] for row in cursor.fetchall()}
 
@@ -796,9 +823,12 @@ class ConversationLogger:
 
         with self._get_connection() as conn:
             # Get conversation IDs to delete
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT id FROM conversations WHERE started_at < ?
-            """, (cutoff.isoformat(),))
+            """,
+                (cutoff.isoformat(),),
+            )
 
             old_ids = [row["id"] for row in cursor.fetchall()]
 
@@ -806,16 +836,22 @@ class ConversationLogger:
                 placeholders = ",".join(["?"] * len(old_ids))
 
                 # Delete turns first (foreign key constraint)
-                conn.execute(f"""
+                conn.execute(
+                    f"""
                     DELETE FROM conversation_turns
                     WHERE conversation_id IN ({placeholders})
-                """, old_ids)
+                """,  # nosec B608 - generated ? placeholders only
+                    old_ids,
+                )
 
                 # Delete conversations
-                conn.execute(f"""
+                conn.execute(
+                    f"""
                     DELETE FROM conversations
                     WHERE id IN ({placeholders})
-                """, old_ids)
+                """,  # nosec B608 - generated ? placeholders only
+                    old_ids,
+                )
 
                 conn.commit()
 
@@ -831,11 +867,11 @@ class ConversationLogger:
         import re
 
         # Anonymize phone numbers
-        text = re.sub(r'\b\d{10,11}\b', '[PHONE]', text)
-        text = re.sub(r'\+\d{2}\s*\d{3}\s*\d{3}\s*\d{4}', '[PHONE]', text)
+        text = re.sub(r"\b\d{10,11}\b", "[PHONE]", text)
+        text = re.sub(r"\+\d{2}\s*\d{3}\s*\d{3}\s*\d{4}", "[PHONE]", text)
 
         # Anonymize email
-        text = re.sub(r'\b[\w.-]+@[\w.-]+\.\w+\b', '[EMAIL]', text)
+        text = re.sub(r"\b[\w.-]+@[\w.-]+\.\w+\b", "[EMAIL]", text)
 
         return text
 
@@ -845,24 +881,27 @@ class ConversationLogger:
         metrics = self.get_metrics(verticale_id, days=1)
 
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT OR REPLACE INTO daily_metrics (
                     date, verticale_id, total_conversations, total_turns,
                     avg_latency_ms, groq_usage_percent, escalation_rate,
                     completion_rate, avg_satisfaction, updated_at
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                today,
-                verticale_id,
-                metrics.total_conversations,
-                metrics.total_turns,
-                metrics.avg_latency_ms,
-                metrics.groq_usage_percent,
-                metrics.escalation_rate,
-                metrics.completion_rate,
-                metrics.avg_satisfaction,
-                datetime.now().isoformat()
-            ))
+            """,
+                (
+                    today,
+                    verticale_id,
+                    metrics.total_conversations,
+                    metrics.total_turns,
+                    metrics.avg_latency_ms,
+                    metrics.groq_usage_percent,
+                    metrics.escalation_rate,
+                    metrics.completion_rate,
+                    metrics.avg_satisfaction,
+                    datetime.now().isoformat(),
+                ),
+            )
             conn.commit()
 
     def log_faq_effectiveness(
@@ -871,23 +910,26 @@ class ConversationLogger:
         question_asked: str,
         answer_given: str,
         was_helpful: bool,
-        follow_up_needed: bool
+        follow_up_needed: bool,
     ):
         """Log FAQ effectiveness for improvement tracking."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO faq_effectiveness (
                     id, faq_id, question_asked, answer_given,
                     was_helpful, follow_up_needed
                 ) VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                str(uuid.uuid4()),
-                faq_id,
-                question_asked,
-                answer_given,
-                was_helpful,
-                follow_up_needed
-            ))
+            """,
+                (
+                    str(uuid.uuid4()),
+                    faq_id,
+                    question_asked,
+                    answer_given,
+                    was_helpful,
+                    follow_up_needed,
+                ),
+            )
             conn.commit()
 
     # =========================================================================
@@ -899,7 +941,7 @@ class ConversationLogger:
         call_id: str,
         direction: str,
         remote_number: str,
-        conversation_id: Optional[str] = None
+        conversation_id: Optional[str] = None,
     ) -> str:
         """
         Log start of VoIP call.
@@ -914,26 +956,34 @@ class ConversationLogger:
             Call ID
         """
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 INSERT INTO voip_calls (
                     id, conversation_id, direction, remote_number, start_time
                 ) VALUES (?, ?, ?, ?, ?)
-            """, (
-                call_id,
-                conversation_id,
-                direction,
-                self._anonymize_if_needed(remote_number) if self.anonymize else remote_number,
-                datetime.now().isoformat()
-            ))
+            """,
+                (
+                    call_id,
+                    conversation_id,
+                    direction,
+                    self._anonymize_if_needed(remote_number)
+                    if self.anonymize
+                    else remote_number,
+                    datetime.now().isoformat(),
+                ),
+            )
             conn.commit()
         return call_id
 
     def log_call_connected(self, call_id: str):
         """Log call connection time."""
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE voip_calls SET connect_time = ? WHERE id = ?
-            """, (datetime.now().isoformat(), call_id))
+            """,
+                (datetime.now().isoformat(), call_id),
+            )
             conn.commit()
 
     def log_call_end(
@@ -944,7 +994,7 @@ class ConversationLogger:
         sip_status_code: Optional[int] = None,
         rtp_packets_sent: int = 0,
         rtp_packets_received: int = 0,
-        audio_quality_score: Optional[float] = None
+        audio_quality_score: Optional[float] = None,
     ):
         """
         Log end of VoIP call.
@@ -959,7 +1009,8 @@ class ConversationLogger:
             audio_quality_score: Optional MOS score (1-5)
         """
         with self._get_connection() as conn:
-            conn.execute("""
+            conn.execute(
+                """
                 UPDATE voip_calls SET
                     end_time = ?,
                     duration_seconds = ?,
@@ -969,22 +1020,22 @@ class ConversationLogger:
                     rtp_packets_received = ?,
                     audio_quality_score = ?
                 WHERE id = ?
-            """, (
-                datetime.now().isoformat(),
-                duration_seconds,
-                outcome,
-                sip_status_code,
-                rtp_packets_sent,
-                rtp_packets_received,
-                audio_quality_score,
-                call_id
-            ))
+            """,
+                (
+                    datetime.now().isoformat(),
+                    duration_seconds,
+                    outcome,
+                    sip_status_code,
+                    rtp_packets_sent,
+                    rtp_packets_received,
+                    audio_quality_score,
+                    call_id,
+                ),
+            )
             conn.commit()
 
     def get_call_metrics(
-        self,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
+        self, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None
     ) -> Dict[str, Any]:
         """
         Get VoIP call metrics.
@@ -1007,7 +1058,8 @@ class ConversationLogger:
                 params.append(end_date.isoformat())
 
             # Total calls
-            row = conn.execute(f"""
+            row = conn.execute(
+                f"""
                 SELECT
                     COUNT(*) as total_calls,
                     SUM(CASE WHEN direction = 'inbound' THEN 1 ELSE 0 END) as inbound_calls,
@@ -1019,7 +1071,9 @@ class ConversationLogger:
                     SUM(duration_seconds) as total_duration
                 FROM voip_calls
                 {date_filter}
-            """, params).fetchone()
+            """,  # nosec B608 - fixed date clause; values parameterized
+                params,
+            ).fetchone()
 
             return {
                 "total_calls": row["total_calls"] or 0,
@@ -1032,8 +1086,9 @@ class ConversationLogger:
                 "total_duration_seconds": row["total_duration"] or 0,
                 "answer_rate": (
                     (row["completed_calls"] or 0) / row["total_calls"]
-                    if row["total_calls"] else 0
-                )
+                    if row["total_calls"]
+                    else 0
+                ),
             }
 
 

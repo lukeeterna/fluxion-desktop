@@ -19,6 +19,7 @@ from intent_classifier import classify_intent, IntentCategory
 # INTENT CLASSIFICATION TESTS
 # =============================================================================
 
+
 class TestCancelIntent:
     """Test CANCELLAZIONE intent detection."""
 
@@ -86,6 +87,7 @@ class TestRescheduleIntent:
 # ORCHESTRATOR CANCEL/RESCHEDULE FLOW TESTS (MOCK)
 # =============================================================================
 
+
 class TestCancelFlowMock:
     """Test cancel flow logic with mocked HTTP."""
 
@@ -94,9 +96,10 @@ class TestCancelFlowMock:
         # Import orchestrator to check it has the required attributes
         try:
             from orchestrator import VoiceOrchestrator
-            orch = VoiceOrchestrator.__new__(VoiceOrchestrator)
+
+            VoiceOrchestrator.__new__(VoiceOrchestrator)
             # Check attributes exist (set in __init__)
-            assert hasattr(VoiceOrchestrator, '_handle_cancellazione') or True
+            assert hasattr(VoiceOrchestrator, "_handle_cancellazione") or True
         except ImportError:
             pytest.skip("Orchestrator not importable")
 
@@ -105,7 +108,9 @@ class TestCancelFlowMock:
         cancel_keywords = ["cancellare", "disdire", "annullare", "eliminare"]
         for keyword in cancel_keywords:
             result = classify_intent(f"Vorrei {keyword} l'appuntamento")
-            assert result.category == IntentCategory.CANCELLAZIONE, f"Failed for: {keyword}"
+            assert result.category == IntentCategory.CANCELLAZIONE, (
+                f"Failed for: {keyword}"
+            )
 
 
 class TestRescheduleFlowMock:
@@ -115,22 +120,32 @@ class TestRescheduleFlowMock:
         """Verify reschedule state variables exist in orchestrator."""
         try:
             from orchestrator import VoiceOrchestrator
-            orch = VoiceOrchestrator.__new__(VoiceOrchestrator)
-            assert hasattr(VoiceOrchestrator, '_handle_spostamento') or True
+
+            VoiceOrchestrator.__new__(VoiceOrchestrator)
+            assert hasattr(VoiceOrchestrator, "_handle_spostamento") or True
         except ImportError:
             pytest.skip("Orchestrator not importable")
 
     def test_reschedule_keywords_recognized(self):
         """Verify reschedule keywords are recognized."""
-        reschedule_keywords = ["spostare", "cambiare", "modificare", "anticipare", "posticipare"]
+        reschedule_keywords = [
+            "spostare",
+            "cambiare",
+            "modificare",
+            "anticipare",
+            "posticipare",
+        ]
         for keyword in reschedule_keywords:
             result = classify_intent(f"Vorrei {keyword} l'appuntamento")
-            assert result.category == IntentCategory.SPOSTAMENTO, f"Failed for: {keyword}"
+            assert result.category == IntentCategory.SPOSTAMENTO, (
+                f"Failed for: {keyword}"
+            )
 
 
 # =============================================================================
 # EDGE CASES
 # =============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases for cancel/reschedule."""
@@ -164,24 +179,22 @@ class TestEdgeCases:
 # HTTP ENDPOINT TESTS (MOCK)
 # =============================================================================
 
+
 class TestHTTPEndpoints:
     """Test that HTTP endpoints exist for cancel/reschedule."""
 
     def test_cancel_endpoint_path(self):
         """Verify cancel endpoint path is correct."""
         # The endpoint should be: POST /api/appuntamenti/cancel
-        expected_path = "/api/appuntamenti/cancel"
         # This is a documentation test - actual endpoint tested in integration
 
     def test_reschedule_endpoint_path(self):
         """Verify reschedule endpoint path is correct."""
         # The endpoint should be: POST /api/appuntamenti/reschedule
-        expected_path = "/api/appuntamenti/reschedule"
 
     def test_client_appointments_endpoint_path(self):
         """Verify client appointments endpoint path is correct."""
         # The endpoint should be: GET /api/appuntamenti/cliente/:client_id
-        expected_path = "/api/appuntamenti/cliente/{client_id}"
 
 
 if __name__ == "__main__":

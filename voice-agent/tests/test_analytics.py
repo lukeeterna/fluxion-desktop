@@ -29,6 +29,7 @@ from analytics import (
 # Test Fixtures
 # ==============================================================================
 
+
 @pytest.fixture
 def temp_db():
     """Create temporary database file."""
@@ -52,8 +53,7 @@ def logger_with_data(logger):
     # Create some sessions and turns
     for i in range(5):
         session_id = logger.start_session(
-            verticale_id="salone_test",
-            client_name=f"Client {i}"
+            verticale_id="salone_test", client_name=f"Client {i}"
         )
 
         # Add turns
@@ -66,15 +66,17 @@ def logger_with_data(logger):
                 latency_ms=50.0 + j * 10,
                 layer_used="L2_intent",
                 used_groq=(j == 2),  # Last turn uses Groq
-                frustration_level=j
+                frustration_level=j,
             )
 
         # End session
-        outcome = ConversationOutcome.COMPLETED if i < 3 else ConversationOutcome.ESCALATED
+        outcome = (
+            ConversationOutcome.COMPLETED if i < 3 else ConversationOutcome.ESCALATED
+        )
         logger.end_session(
             session_id=session_id,
             outcome=outcome,
-            user_satisfaction=4 if outcome == ConversationOutcome.COMPLETED else 2
+            user_satisfaction=4 if outcome == ConversationOutcome.COMPLETED else 2,
         )
 
     return logger
@@ -84,12 +86,13 @@ def logger_with_data(logger):
 # Test: Database Initialization
 # ==============================================================================
 
+
 class TestDatabaseInit:
     """Test database schema and initialization."""
 
     def test_creates_database_file(self, temp_db):
         """Test database file is created."""
-        logger = ConversationLogger(db_path=temp_db)
+        ConversationLogger(db_path=temp_db)
         assert os.path.exists(temp_db)
 
     def test_creates_conversations_table(self, logger, temp_db):
@@ -113,9 +116,7 @@ class TestDatabaseInit:
     def test_creates_indexes(self, logger, temp_db):
         """Test indexes are created."""
         conn = sqlite3.connect(temp_db)
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='index'"
-        )
+        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='index'")
         indexes = [row[0] for row in cursor.fetchall()]
         assert "idx_conversations_verticale" in indexes
         assert "idx_turns_conversation" in indexes
@@ -126,6 +127,7 @@ class TestDatabaseInit:
 # Test: Session Management
 # ==============================================================================
 
+
 class TestSessionManagement:
     """Test conversation session lifecycle."""
 
@@ -134,7 +136,7 @@ class TestSessionManagement:
         session_id = logger.start_session(
             verticale_id="salone_test",
             client_id="client_001",
-            client_name="Mario Rossi"
+            client_name="Mario Rossi",
         )
 
         assert session_id is not None
@@ -148,7 +150,7 @@ class TestSessionManagement:
         logger.end_session(
             session_id=session_id,
             outcome=ConversationOutcome.COMPLETED,
-            user_satisfaction=5
+            user_satisfaction=5,
         )
 
         assert session_id not in logger._active_sessions
@@ -159,10 +161,7 @@ class TestSessionManagement:
         logger.end_session(session_id, ConversationOutcome.COMPLETED)
 
         conn = sqlite3.connect(temp_db)
-        cursor = conn.execute(
-            "SELECT * FROM conversations WHERE id = ?",
-            (session_id,)
-        )
+        cursor = conn.execute("SELECT * FROM conversations WHERE id = ?", (session_id,))
         row = cursor.fetchone()
         conn.close()
 
@@ -175,14 +174,14 @@ class TestSessionManagement:
         logger.end_session(
             session_id=session_id,
             outcome=ConversationOutcome.COMPLETED,
-            booking_id="booking_123"
+            booking_id="booking_123",
         )
 
         # Verify in DB
         with logger._get_connection() as conn:
             cursor = conn.execute(
                 "SELECT booking_created, booking_id FROM conversations WHERE id = ?",
-                (session_id,)
+                (session_id,),
             )
             row = cursor.fetchone()
 
@@ -193,6 +192,7 @@ class TestSessionManagement:
 # ==============================================================================
 # Test: Turn Logging
 # ==============================================================================
+
 
 class TestTurnLogging:
     """Test conversation turn logging."""
@@ -207,7 +207,7 @@ class TestTurnLogging:
             intent="prenotazione",
             response="Perfetto! Per quando?",
             latency_ms=45.5,
-            layer_used="L2_intent"
+            layer_used="L2_intent",
         )
 
         assert turn_id is not None
@@ -221,7 +221,7 @@ class TestTurnLogging:
             user_input="Test",
             intent="test",
             response="Response",
-            latency_ms=50.0
+            latency_ms=50.0,
         )
 
         session = logger._active_sessions[session_id]
@@ -238,7 +238,7 @@ class TestTurnLogging:
             intent="test",
             response="Response",
             latency_ms=500.0,
-            used_groq=True
+            used_groq=True,
         )
 
         session = logger._active_sessions[session_id]
@@ -252,14 +252,13 @@ class TestTurnLogging:
             user_input="Test input",
             intent="prenotazione",
             response="Test response",
-            latency_ms=30.0
+            latency_ms=30.0,
         )
 
         conn = sqlite3.connect(temp_db)
         conn.row_factory = sqlite3.Row
         cursor = conn.execute(
-            "SELECT * FROM conversation_turns WHERE id = ?",
-            (turn_id,)
+            "SELECT * FROM conversation_turns WHERE id = ?", (turn_id,)
         )
         row = cursor.fetchone()
         conn.close()
@@ -277,18 +276,19 @@ class TestTurnLogging:
             intent="prenotazione",
             response="Confermo",
             latency_ms=20.0,
-            entities={"date": "2024-01-15", "time": "15:00"}
+            entities={"date": "2024-01-15", "time": "15:00"},
         )
 
         conn = sqlite3.connect(temp_db)
         cursor = conn.execute(
             "SELECT entities_extracted FROM conversation_turns WHERE conversation_id = ?",
-            (session_id,)
+            (session_id,),
         )
         row = cursor.fetchone()
         conn.close()
 
         import json
+
         entities = json.loads(row[0])
         assert entities["date"] == "2024-01-15"
         assert entities["time"] == "15:00"
@@ -297,6 +297,7 @@ class TestTurnLogging:
 # ==============================================================================
 # Test: Analytics Metrics
 # ==============================================================================
+
 
 class TestAnalyticsMetrics:
     """Test analytics and metrics queries."""
@@ -368,6 +369,7 @@ class TestAnalyticsMetrics:
 # Test: Failed Queries Analysis
 # ==============================================================================
 
+
 class TestFailedQueries:
     """Test identification of failed/problematic queries."""
 
@@ -380,7 +382,7 @@ class TestFailedQueries:
             intent="unknown",
             response="Non ho capito",
             latency_ms=100.0,
-            intent_confidence=0.3  # Low confidence
+            intent_confidence=0.3,  # Low confidence
         )
         logger.end_session(session_id, ConversationOutcome.ABANDONED)
 
@@ -398,7 +400,7 @@ class TestFailedQueries:
             intent="operatore",
             response="La passo a un operatore",
             latency_ms=20.0,
-            escalated=True
+            escalated=True,
         )
         logger.end_session(session_id, ConversationOutcome.ESCALATED)
 
@@ -410,6 +412,7 @@ class TestFailedQueries:
 # ==============================================================================
 # Test: Data Retention & Privacy
 # ==============================================================================
+
 
 class TestDataRetention:
     """Test GDPR compliance features."""
@@ -425,7 +428,7 @@ class TestDataRetention:
         old_date = (datetime.now() - timedelta(days=100)).isoformat()
         conn.execute(
             "UPDATE conversations SET started_at = ? WHERE id = ?",
-            (old_date, session_id)
+            (old_date, session_id),
         )
         conn.commit()
         conn.close()
@@ -441,8 +444,7 @@ class TestDataRetention:
         # Verify deleted
         conn = sqlite3.connect(temp_db)
         cursor = conn.execute(
-            "SELECT COUNT(*) FROM conversations WHERE id = ?",
-            (session_id,)
+            "SELECT COUNT(*) FROM conversations WHERE id = ?", (session_id,)
         )
         assert cursor.fetchone()[0] == 0
         conn.close()
@@ -478,6 +480,7 @@ class TestDataRetention:
 # Test: Conversation History
 # ==============================================================================
 
+
 class TestConversationHistory:
     """Test conversation history retrieval."""
 
@@ -491,7 +494,7 @@ class TestConversationHistory:
                 user_input=f"Message {i}",
                 intent="test",
                 response=f"Response {i}",
-                latency_ms=10.0
+                latency_ms=10.0,
             )
 
         logger.end_session(session_id, ConversationOutcome.COMPLETED)
@@ -507,6 +510,7 @@ class TestConversationHistory:
 # Test: Escalation Reasons
 # ==============================================================================
 
+
 class TestEscalationReasons:
     """Test escalation reason analysis."""
 
@@ -517,9 +521,7 @@ class TestEscalationReasons:
             session_id = logger.start_session(verticale_id="salone_test")
             logger.log_turn(session_id, "test", "test", "resp", 10.0)
             logger.end_session(
-                session_id,
-                ConversationOutcome.ESCALATED,
-                escalation_reason=reason
+                session_id, ConversationOutcome.ESCALATED, escalation_reason=reason
             )
 
         reasons = logger.get_escalation_reasons(days=7)
@@ -533,6 +535,7 @@ class TestEscalationReasons:
 # Test: FAQ Effectiveness
 # ==============================================================================
 
+
 class TestFAQEffectiveness:
     """Test FAQ effectiveness tracking."""
 
@@ -543,7 +546,7 @@ class TestFAQEffectiveness:
             question_asked="Quanto costa?",
             answer_given="35 euro",
             was_helpful=True,
-            follow_up_needed=False
+            follow_up_needed=False,
         )
 
         conn = sqlite3.connect(temp_db)
@@ -557,6 +560,7 @@ class TestFAQEffectiveness:
 # ==============================================================================
 # Test: Daily Metrics
 # ==============================================================================
+
 
 class TestDailyMetrics:
     """Test pre-computed daily metrics."""
@@ -579,6 +583,7 @@ class TestDailyMetrics:
 # Test: Global Instance
 # ==============================================================================
 
+
 class TestGlobalInstance:
     """Test global logger instance."""
 
@@ -594,6 +599,7 @@ class TestGlobalInstance:
 # Test: Dataclasses
 # ==============================================================================
 
+
 class TestDataclasses:
     """Test dataclass structures."""
 
@@ -603,7 +609,7 @@ class TestDataclasses:
             conversation_id="test",
             user_input="Hello",
             intent="cortesia",
-            response="Buongiorno!"
+            response="Buongiorno!",
         )
 
         assert turn.id is not None
@@ -612,10 +618,7 @@ class TestDataclasses:
 
     def test_conversation_session(self):
         """Test ConversationSession dataclass."""
-        session = ConversationSession(
-            verticale_id="salone",
-            client_name="Mario"
-        )
+        session = ConversationSession(verticale_id="salone", client_name="Mario")
 
         assert session.id is not None
         assert session.outcome == ConversationOutcome.UNKNOWN
@@ -623,10 +626,7 @@ class TestDataclasses:
 
     def test_analytics_metrics(self):
         """Test AnalyticsMetrics dataclass."""
-        metrics = AnalyticsMetrics(
-            total_conversations=100,
-            escalation_rate=5.5
-        )
+        metrics = AnalyticsMetrics(total_conversations=100, escalation_rate=5.5)
 
         assert metrics.total_conversations == 100
         assert metrics.avg_latency_ms == 0.0  # Default

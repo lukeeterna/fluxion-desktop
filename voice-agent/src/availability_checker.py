@@ -15,13 +15,14 @@ Features:
 
 import asyncio
 import aiohttp
+
 try:
     from .http_client import shared_session
 except ImportError:
     from http_client import shared_session
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, date, time, timedelta
+from datetime import datetime, date, timedelta
 from enum import Enum
 
 
@@ -31,13 +32,14 @@ HTTP_BRIDGE_URL = "http://127.0.0.1:3001"
 
 class UnavailabilityReason(Enum):
     """Reasons for slot unavailability."""
+
     AVAILABLE = "available"
     CLOSED = "closed"
     LUNCH_BREAK = "lunch_break"
     HOLIDAY = "holiday"
     ALREADY_BOOKED = "already_booked"
-    TOO_SOON = "too_soon"          # Less than min_advance_hours
-    TOO_FAR = "too_far"            # More than max_advance_days
+    TOO_SOON = "too_soon"  # Less than min_advance_hours
+    TOO_FAR = "too_far"  # More than max_advance_days
     OPERATOR_UNAVAILABLE = "operator_unavailable"
     OUTSIDE_HOURS = "outside_hours"
 
@@ -45,6 +47,7 @@ class UnavailabilityReason(Enum):
 @dataclass
 class TimeSlot:
     """A time slot with availability info."""
+
     time: str  # HH:MM format
     available: bool = True
     reason: UnavailabilityReason = UnavailabilityReason.AVAILABLE
@@ -55,6 +58,7 @@ class TimeSlot:
 @dataclass
 class AvailabilityConfig:
     """Configuration for availability checking."""
+
     opening_time: str = "09:00"
     closing_time: str = "19:00"
     lunch_start: str = "13:00"
@@ -62,82 +66,164 @@ class AvailabilityConfig:
     slot_duration_minutes: int = 30
     min_advance_hours: int = 2
     max_advance_days: int = 60
-    working_days: List[int] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6])  # Mon=1..Sat=6
+    working_days: List[int] = field(
+        default_factory=lambda: [1, 2, 3, 4, 5, 6]
+    )  # Mon=1..Sat=6
     holidays: List[str] = field(default_factory=list)  # YYYY-MM-DD format
 
     # Service-specific durations (minutes)
-    service_durations: Dict[str, int] = field(default_factory=lambda: {
-        "taglio": 30,
-        "piega": 45,
-        "colore": 90,
-        "barba": 20,
-        "trattamento": 60,
-    })
+    service_durations: Dict[str, int] = field(
+        default_factory=lambda: {
+            "taglio": 30,
+            "piega": 45,
+            "colore": 90,
+            "barba": 20,
+            "trattamento": 60,
+        }
+    )
 
     @staticmethod
     def for_vertical(vertical: str) -> "AvailabilityConfig":
         """Create config with vertical-specific business hours and services."""
         configs = {
             "salone": AvailabilityConfig(
-                opening_time="09:00", closing_time="19:00",
-                lunch_start="13:00", lunch_end="14:00",
+                opening_time="09:00",
+                closing_time="19:00",
+                lunch_start="13:00",
+                lunch_end="14:00",
                 working_days=[2, 3, 4, 5, 6],  # Tue-Sat (Mon chiuso)
-                service_durations={"taglio": 45, "colore": 90, "piega": 30, "barba": 20, "meches": 120},
+                service_durations={
+                    "taglio": 45,
+                    "colore": 90,
+                    "piega": 30,
+                    "barba": 20,
+                    "meches": 120,
+                },
             ),
             "barbiere": AvailabilityConfig(
-                opening_time="09:00", closing_time="19:00",
-                lunch_start="13:00", lunch_end="14:00",
+                opening_time="09:00",
+                closing_time="19:00",
+                lunch_start="13:00",
+                lunch_end="14:00",
                 working_days=[2, 3, 4, 5, 6],
-                service_durations={"taglio": 30, "barba": 20, "taglio_barba": 45, "fade": 35, "colorazione": 60},
+                service_durations={
+                    "taglio": 30,
+                    "barba": 20,
+                    "taglio_barba": 45,
+                    "fade": 35,
+                    "colorazione": 60,
+                },
             ),
             "beauty": AvailabilityConfig(
-                opening_time="09:00", closing_time="19:00",
-                lunch_start="13:00", lunch_end="14:00",
+                opening_time="09:00",
+                closing_time="19:00",
+                lunch_start="13:00",
+                lunch_end="14:00",
                 working_days=[2, 3, 4, 5, 6],
-                service_durations={"pulizia_viso": 60, "ceretta": 30, "manicure": 45, "massaggio": 60, "epilazione_laser": 30},
+                service_durations={
+                    "pulizia_viso": 60,
+                    "ceretta": 30,
+                    "manicure": 45,
+                    "massaggio": 60,
+                    "epilazione_laser": 30,
+                },
             ),
             "medical": AvailabilityConfig(
-                opening_time="08:30", closing_time="19:00",
-                lunch_start="13:00", lunch_end="15:00",
+                opening_time="08:30",
+                closing_time="19:00",
+                lunch_start="13:00",
+                lunch_end="15:00",
                 working_days=[1, 2, 3, 4, 5],  # Mon-Fri
                 slot_duration_minutes=30,
-                service_durations={"visita": 30, "controllo": 20, "trattamento": 60, "fisioterapia": 45},
+                service_durations={
+                    "visita": 30,
+                    "controllo": 20,
+                    "trattamento": 60,
+                    "fisioterapia": 45,
+                },
             ),
             "odontoiatra": AvailabilityConfig(
-                opening_time="09:00", closing_time="19:00",
-                lunch_start="13:00", lunch_end="14:30",
+                opening_time="09:00",
+                closing_time="19:00",
+                lunch_start="13:00",
+                lunch_end="14:30",
                 working_days=[1, 2, 3, 4, 5, 6],  # Mon-Sat (Sat mattina)
-                service_durations={"visita": 30, "igiene": 45, "sbiancamento": 60, "otturazione": 45, "devitalizzazione": 90, "impianto": 120},
+                service_durations={
+                    "visita": 30,
+                    "igiene": 45,
+                    "sbiancamento": 60,
+                    "otturazione": 45,
+                    "devitalizzazione": 90,
+                    "impianto": 120,
+                },
             ),
             "fisioterapia": AvailabilityConfig(
-                opening_time="08:30", closing_time="19:00",
-                lunch_start="12:30", lunch_end="14:30",
+                opening_time="08:30",
+                closing_time="19:00",
+                lunch_start="12:30",
+                lunch_end="14:30",
                 working_days=[1, 2, 3, 4, 5, 6],
-                service_durations={"fisioterapia": 45, "tecarterapia": 30, "ultrasuoni": 20, "laser": 20, "riabilitazione": 60, "massoterapia": 45},
+                service_durations={
+                    "fisioterapia": 45,
+                    "tecarterapia": 30,
+                    "ultrasuoni": 20,
+                    "laser": 20,
+                    "riabilitazione": 60,
+                    "massoterapia": 45,
+                },
             ),
             "palestra": AvailabilityConfig(
-                opening_time="06:00", closing_time="22:00",
-                lunch_start="", lunch_end="",  # No lunch break
+                opening_time="06:00",
+                closing_time="22:00",
+                lunch_start="",
+                lunch_end="",  # No lunch break
                 working_days=[1, 2, 3, 4, 5, 6],
-                service_durations={"lezione": 60, "personal_trainer": 60, "spinning": 45, "yoga": 60},
+                service_durations={
+                    "lezione": 60,
+                    "personal_trainer": 60,
+                    "spinning": 45,
+                    "yoga": 60,
+                },
             ),
             "auto": AvailabilityConfig(
-                opening_time="08:00", closing_time="18:30",
-                lunch_start="12:30", lunch_end="14:30",
+                opening_time="08:00",
+                closing_time="18:30",
+                lunch_start="12:30",
+                lunch_end="14:30",
                 working_days=[1, 2, 3, 4, 5, 6],
-                service_durations={"tagliando": 120, "revisione": 60, "cambio_olio": 30, "freni": 90, "gomme": 45},
+                service_durations={
+                    "tagliando": 120,
+                    "revisione": 60,
+                    "cambio_olio": 30,
+                    "freni": 90,
+                    "gomme": 45,
+                },
             ),
             "gommista": AvailabilityConfig(
-                opening_time="08:00", closing_time="18:30",
-                lunch_start="12:30", lunch_end="14:00",
+                opening_time="08:00",
+                closing_time="18:30",
+                lunch_start="12:30",
+                lunch_end="14:00",
                 working_days=[1, 2, 3, 4, 5, 6],
-                service_durations={"cambio_gomme": 45, "equilibratura": 30, "convergenza": 30, "foratura": 30},
+                service_durations={
+                    "cambio_gomme": 45,
+                    "equilibratura": 30,
+                    "convergenza": 30,
+                    "foratura": 30,
+                },
             ),
             "toelettatura": AvailabilityConfig(
-                opening_time="09:00", closing_time="18:30",
-                lunch_start="13:00", lunch_end="14:30",
+                opening_time="09:00",
+                closing_time="18:30",
+                lunch_start="13:00",
+                lunch_end="14:30",
                 working_days=[1, 2, 3, 4, 5, 6],
-                service_durations={"bagno": 45, "tosatura": 60, "stripping": 90, "completo": 90},
+                service_durations={
+                    "bagno": 45,
+                    "tosatura": 60,
+                    "stripping": 90,
+                    "completo": 90,
+                },
             ),
         }
         return configs.get(vertical, AvailabilityConfig())
@@ -146,6 +232,7 @@ class AvailabilityConfig:
 @dataclass
 class AvailabilityResult:
     """Result of availability check."""
+
     date: str  # YYYY-MM-DD
     available_slots: List[TimeSlot]
     unavailable_reason: Optional[UnavailabilityReason] = None
@@ -191,7 +278,7 @@ class AvailabilityChecker:
     def __init__(
         self,
         config: Optional[AvailabilityConfig] = None,
-        http_bridge_url: str = HTTP_BRIDGE_URL
+        http_bridge_url: str = HTTP_BRIDGE_URL,
     ):
         self.config = config or AvailabilityConfig()
         self.http_bridge_url = http_bridge_url
@@ -200,7 +287,7 @@ class AvailabilityChecker:
         self,
         date_str: str,
         service: Optional[str] = None,
-        operator_id: Optional[str] = None
+        operator_id: Optional[str] = None,
     ) -> AvailabilityResult:
         """
         Check availability for a specific date.
@@ -220,7 +307,7 @@ class AvailabilityChecker:
                 date=date_str,
                 available_slots=[],
                 unavailable_reason=UnavailabilityReason.CLOSED,
-                message="Data non valida"
+                message="Data non valida",
             )
 
         # Check if date is too far in advance
@@ -230,7 +317,7 @@ class AvailabilityChecker:
                 date=date_str,
                 available_slots=[],
                 unavailable_reason=UnavailabilityReason.TOO_FAR,
-                message=TEMPLATES["too_far"].format(days=self.config.max_advance_days)
+                message=TEMPLATES["too_far"].format(days=self.config.max_advance_days),
             )
 
         # Check if too soon (only for today)
@@ -241,22 +328,13 @@ class AvailabilityChecker:
         else:
             min_time = None
 
-        # Check working day
-        weekday = check_date.isoweekday()  # Mon=1..Sun=7
-        if weekday not in self.config.working_days:
-            return AvailabilityResult(
-                date=date_str,
-                available_slots=[],
-                unavailable_reason=UnavailabilityReason.CLOSED,
-                message=TEMPLATES["closed"].format(date=self._format_date_italian(check_date)),
-                suggestions=self._suggest_alternative_dates(check_date, 3)
-            )
-
         # Check holidays (GAP-P0-4)
         if date_str in self.config.holidays:
             alternatives = self._suggest_alternative_dates(check_date, 3)
             if len(alternatives) >= 3:
-                alt_str = alternatives[0] + ", " + alternatives[1] + " o " + alternatives[2]
+                alt_str = (
+                    alternatives[0] + ", " + alternatives[1] + " o " + alternatives[2]
+                )
             elif len(alternatives) == 2:
                 alt_str = alternatives[0] + " o " + alternatives[1]
             elif len(alternatives) == 1:
@@ -268,22 +346,37 @@ class AvailabilityChecker:
                 available_slots=[],
                 unavailable_reason=UnavailabilityReason.HOLIDAY,
                 message=TEMPLATES["holiday"].format(
-                    date=self._format_date_italian(check_date),
-                    alternatives=alt_str
+                    date=self._format_date_italian(check_date), alternatives=alt_str
                 ),
-                suggestions=alternatives
+                suggestions=alternatives,
+            )
+
+        # Check working day
+        weekday = check_date.isoweekday()  # Mon=1..Sun=7
+        if weekday not in self.config.working_days:
+            return AvailabilityResult(
+                date=date_str,
+                available_slots=[],
+                unavailable_reason=UnavailabilityReason.CLOSED,
+                message=TEMPLATES["closed"].format(
+                    date=self._format_date_italian(check_date)
+                ),
+                suggestions=self._suggest_alternative_dates(check_date, 3),
             )
 
         # Generate time slots
         service_duration = self.config.service_durations.get(
-            service or "taglio",
-            self.config.slot_duration_minutes
+            service or "taglio", self.config.slot_duration_minutes
         )
         slots = self._generate_slots(check_date, service_duration)
 
         # Filter by min advance time
         if min_time:
-            slots = [s for s in slots if self._time_to_datetime(check_date, s.time) >= min_time]
+            slots = [
+                s
+                for s in slots
+                if self._time_to_datetime(check_date, s.time) >= min_time
+            ]
 
         # Get booked slots from database
         booked_slots = await self._get_booked_slots(date_str, operator_id)
@@ -303,21 +396,23 @@ class AvailabilityChecker:
                 date=date_str,
                 available_slots=[],
                 unavailable_reason=UnavailabilityReason.ALREADY_BOOKED,
-                message=TEMPLATES["no_slots"].format(date=self._format_date_italian(check_date)),
-                suggestions=suggestions
+                message=TEMPLATES["no_slots"].format(
+                    date=self._format_date_italian(check_date)
+                ),
+                suggestions=suggestions,
             )
 
         # Format response
         slot_times = [s.time for s in available[:6]]  # Max 6 slots in message
         message = TEMPLATES["slots_available"].format(
             date=self._format_date_italian(check_date),
-            slots=", ".join(slot_times[:-1]) + " e " + slot_times[-1] if len(slot_times) > 1 else slot_times[0]
+            slots=", ".join(slot_times[:-1]) + " e " + slot_times[-1]
+            if len(slot_times) > 1
+            else slot_times[0],
         )
 
         return AvailabilityResult(
-            date=date_str,
-            available_slots=available,
-            message=message
+            date=date_str, available_slots=available, message=message
         )
 
     async def check_slot(
@@ -325,7 +420,7 @@ class AvailabilityChecker:
         date_str: str,
         time_str: str,
         service: Optional[str] = None,
-        operator_id: Optional[str] = None
+        operator_id: Optional[str] = None,
     ) -> Tuple[bool, UnavailabilityReason, str]:
         """
         Check if a specific slot is available.
@@ -334,7 +429,7 @@ class AvailabilityChecker:
             Tuple of (is_available, reason, message)
         """
         try:
-            check_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            datetime.strptime(date_str, "%Y-%m-%d").date()
             slot_time = datetime.strptime(time_str, "%H:%M").time()
         except ValueError:
             return False, UnavailabilityReason.CLOSED, "Data o ora non valida"
@@ -344,7 +439,11 @@ class AvailabilityChecker:
         closing = datetime.strptime(self.config.closing_time, "%H:%M").time()
 
         if slot_time < opening or slot_time >= closing:
-            return False, UnavailabilityReason.OUTSIDE_HOURS, f"Siamo aperti dalle {self.config.opening_time} alle {self.config.closing_time}"
+            return (
+                False,
+                UnavailabilityReason.OUTSIDE_HOURS,
+                f"Siamo aperti dalle {self.config.opening_time} alle {self.config.closing_time}",
+            )
 
         # Check lunch break
         lunch_start = datetime.strptime(self.config.lunch_start, "%H:%M").time()
@@ -356,7 +455,9 @@ class AvailabilityChecker:
             alternative_slots = [s.time for s in result.available_slots[:3]]
             message = TEMPLATES["lunch_break"].format(
                 time=time_str,
-                slots=", ".join(alternative_slots) if alternative_slots else "altri orari"
+                slots=", ".join(alternative_slots)
+                if alternative_slots
+                else "altri orari",
             )
             return False, UnavailabilityReason.LUNCH_BREAK, message
 
@@ -365,16 +466,17 @@ class AvailabilityChecker:
         if time_str in booked:
             result = await self.check_date(date_str, service, operator_id)
             alternatives = [s.time for s in result.available_slots[:3]]
-            message = f"Le {time_str} sono gia occupate. Le propongo {', '.join(alternatives)}?" if alternatives else f"Le {time_str} sono gia occupate."
+            message = (
+                f"Le {time_str} sono gia occupate. Le propongo {', '.join(alternatives)}?"
+                if alternatives
+                else f"Le {time_str} sono gia occupate."
+            )
             return False, UnavailabilityReason.ALREADY_BOOKED, message
 
         return True, UnavailabilityReason.AVAILABLE, "Disponibile!"
 
     async def check_operator_availability(
-        self,
-        operator_id: str,
-        date_str: str,
-        time_str: Optional[str] = None
+        self, operator_id: str, date_str: str, time_str: Optional[str] = None
     ) -> Tuple[bool, List[str], List[Dict]]:
         """
         Check operator availability for a date/time.
@@ -385,21 +487,21 @@ class AvailabilityChecker:
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/operatori/disponibilita"
-                data = {
-                    "operatore_id": operator_id,
-                    "data": date_str,
-                    "ora": time_str
-                }
-                async with session.post(url, json=data, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                data = {"operatore_id": operator_id, "data": date_str, "ora": time_str}
+                async with session.post(
+                    url, json=data, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
                     if resp.status == 200:
                         result = await resp.json()
                         return (
                             result.get("disponibile", False),
                             result.get("slots", []),
-                            result.get("alternative_operators", [])
+                            result.get("alternative_operators", []),
                         )
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
-            print(f"[AvailabilityChecker] Bridge offline checking operator availability: {e}")
+            print(
+                f"[AvailabilityChecker] Bridge offline checking operator availability: {e}"
+            )
 
         return False, [], []
 
@@ -408,7 +510,7 @@ class AvailabilityChecker:
         week_offset: int = 1,
         service: Optional[str] = None,
         operator_id: Optional[str] = None,
-        reference_date: Optional[date] = None
+        reference_date: Optional[date] = None,
     ) -> Dict[str, Any]:
         """Check availability for an entire week.
 
@@ -443,18 +545,22 @@ class AvailabilityChecker:
             d_str = d.strftime("%Y-%m-%d")
             result = await self.check_date(d_str, service, operator_id)
             if result.has_slots:
-                available_days.append({
-                    "date": d_str,
-                    "day_name": day_names[i],
-                    "slot_count": len(result.available_slots)
-                })
+                available_days.append(
+                    {
+                        "date": d_str,
+                        "day_name": day_names[i],
+                        "slot_count": len(result.available_slots),
+                    }
+                )
 
         return {
             "available_days": available_days,
-            "week_start": monday.strftime("%Y-%m-%d")
+            "week_start": monday.strftime("%Y-%m-%d"),
         }
 
-    def _generate_slots(self, check_date: date, duration_minutes: int) -> List[TimeSlot]:
+    def _generate_slots(
+        self, check_date: date, duration_minutes: int
+    ) -> List[TimeSlot]:
         """Generate time slots for a day, excluding lunch break.
 
         S201: tolerate verticals without a lunch break (e.g. palestra,
@@ -481,11 +587,13 @@ class AvailabilityChecker:
 
             # Check if in lunch break (only if vertical has one configured)
             if has_lunch_break and lunch_start <= current < lunch_end:
-                slots.append(TimeSlot(
-                    time=time_str,
-                    available=False,
-                    reason=UnavailabilityReason.LUNCH_BREAK
-                ))
+                slots.append(
+                    TimeSlot(
+                        time=time_str,
+                        available=False,
+                        reason=UnavailabilityReason.LUNCH_BREAK,
+                    )
+                )
             else:
                 slots.append(TimeSlot(time=time_str))
 
@@ -494,9 +602,7 @@ class AvailabilityChecker:
         return slots
 
     async def _get_booked_slots(
-        self,
-        date_str: str,
-        operator_id: Optional[str] = None
+        self, date_str: str, operator_id: Optional[str] = None
     ) -> List[str]:
         """Get list of booked time slots for a date."""
         try:
@@ -506,7 +612,9 @@ class AvailabilityChecker:
                 if operator_id:
                     params["operatore_id"] = operator_id
 
-                async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                async with session.get(
+                    url, params=params, timeout=aiohttp.ClientTimeout(total=5)
+                ) as resp:
                     if resp.status == 200:
                         result = await resp.json()
                         return result.get("slots", [])
@@ -519,7 +627,7 @@ class AvailabilityChecker:
         self,
         service: Optional[str] = None,
         days_ahead: int = 7,
-        exclude_days: Optional[List[str]] = None
+        exclude_days: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Find the first available slot in the next ``days_ahead`` days.
@@ -583,7 +691,10 @@ class AvailabilityChecker:
             weekday = check.isoweekday()
             date_str = check.strftime("%Y-%m-%d")
 
-            if weekday in self.config.working_days and date_str not in self.config.holidays:
+            if (
+                weekday in self.config.working_days
+                and date_str not in self.config.holidays
+            ):
                 alternatives.append(self._format_date_italian(check))
 
             check += timedelta(days=1)
@@ -593,10 +704,28 @@ class AvailabilityChecker:
 
     def _format_date_italian(self, d: date) -> str:
         """Format date in Italian."""
-        days = ["lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato", "domenica"]
+        days = [
+            "lunedi",
+            "martedi",
+            "mercoledi",
+            "giovedi",
+            "venerdi",
+            "sabato",
+            "domenica",
+        ]
         months = [
-            "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+            "gennaio",
+            "febbraio",
+            "marzo",
+            "aprile",
+            "maggio",
+            "giugno",
+            "luglio",
+            "agosto",
+            "settembre",
+            "ottobre",
+            "novembre",
+            "dicembre",
         ]
         return f"{days[d.weekday()]} {d.day} {months[d.month - 1]}"
 
@@ -610,7 +739,9 @@ class AvailabilityChecker:
 _checker: Optional[AvailabilityChecker] = None
 
 
-def get_availability_checker(config: Optional[AvailabilityConfig] = None) -> AvailabilityChecker:
+def get_availability_checker(
+    config: Optional[AvailabilityConfig] = None,
+) -> AvailabilityChecker:
     """Get singleton availability checker."""
     global _checker
     if _checker is None or config is not None:

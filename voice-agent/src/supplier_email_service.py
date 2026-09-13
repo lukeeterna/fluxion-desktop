@@ -34,11 +34,12 @@ class SupplierEmailService:
             return
 
         import aiohttp
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
                     "http://127.0.0.1:3001/api/settings/smtp",
-                    timeout=aiohttp.ClientTimeout(total=5)
+                    timeout=aiohttp.ClientTimeout(total=5),
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -62,7 +63,9 @@ class SupplierEmailService:
         await self._load_settings_from_db()
 
         if not self.email_from or not self.email_password:
-            logger.error("SMTP credentials not configured. Configure in Impostazioni > Email.")
+            logger.error(
+                "SMTP credentials not configured. Configure in Impostazioni > Email."
+            )
             return False
 
         order_template = """
@@ -192,29 +195,34 @@ class SupplierEmailService:
             template = Template(order_template)
 
             # Parse items if string
-            items = order_data.get('items', [])
+            items = order_data.get("items", [])
             if isinstance(items, str):
                 import json
+
                 items = json.loads(items)
 
             html_content = template.render(
                 business_name=self.business_name,
-                order_numero=order_data['ordine_numero'],
-                data_ordine=order_data.get('data_ordine', datetime.now().strftime('%d/%m/%Y')),
+                order_numero=order_data["ordine_numero"],
+                data_ordine=order_data.get(
+                    "data_ordine", datetime.now().strftime("%d/%m/%Y")
+                ),
                 items=items,
-                total=order_data['importo_totale'],
-                data_consegna=order_data.get('data_consegna_prevista', 'Da definire'),
-                notes=order_data.get('notes', ''),
-                email_from=self.email_from
+                total=order_data["importo_totale"],
+                data_consegna=order_data.get("data_consegna_prevista", "Da definire"),
+                notes=order_data.get("notes", ""),
+                email_from=self.email_from,
             )
 
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = f"Ordine {self.business_name} #{order_data['ordine_numero']}"
-            msg['From'] = self.email_from
-            msg['To'] = supplier_email
-            msg['X-Priority'] = '2'
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = (
+                f"Ordine {self.business_name} #{order_data['ordine_numero']}"
+            )
+            msg["From"] = self.email_from
+            msg["To"] = supplier_email
+            msg["X-Priority"] = "2"
 
-            msg.attach(MIMEText(html_content, 'html'))
+            msg.attach(MIMEText(html_content, "html"))
 
             loop = asyncio.get_event_loop()
 
@@ -227,7 +235,9 @@ class SupplierEmailService:
 
             await loop.run_in_executor(None, send_smtp)
 
-            logger.info(f"Ordine {order_data['ordine_numero']} inviato a {supplier_email}")
+            logger.info(
+                f"Ordine {order_data['ordine_numero']} inviato a {supplier_email}"
+            )
             return True
 
         except smtplib.SMTPException as e:
@@ -238,10 +248,7 @@ class SupplierEmailService:
             return False
 
     async def send_reminder_email(
-        self,
-        supplier_email: str,
-        order_numero: str,
-        giorni_scadenza: int
+        self, supplier_email: str, order_numero: str, giorni_scadenza: int
     ) -> bool:
         """Send delivery reminder to supplier"""
 
@@ -258,9 +265,9 @@ Cordiali saluti,
         """
 
         msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
-        msg['To'] = supplier_email
+        msg["Subject"] = subject
+        msg["From"] = self.email_from
+        msg["To"] = supplier_email
 
         try:
             loop = asyncio.get_event_loop()
@@ -281,10 +288,7 @@ Cordiali saluti,
             return False
 
     async def send_confirmation_request(
-        self,
-        supplier_email: str,
-        order_numero: str,
-        supplier_name: str
+        self, supplier_email: str, order_numero: str, supplier_name: str
     ) -> bool:
         """Request order confirmation from supplier"""
 
@@ -306,9 +310,9 @@ Cordiali saluti,
         """
 
         msg = MIMEText(body)
-        msg['Subject'] = subject
-        msg['From'] = self.email_from
-        msg['To'] = supplier_email
+        msg["Subject"] = subject
+        msg["From"] = self.email_from
+        msg["To"] = supplier_email
 
         try:
             loop = asyncio.get_event_loop()
@@ -332,6 +336,7 @@ Cordiali saluti,
 # Singleton instance
 _email_service: Optional[SupplierEmailService] = None
 
+
 def get_email_service() -> SupplierEmailService:
     """Get singleton email service instance"""
     global _email_service
@@ -343,6 +348,7 @@ def get_email_service() -> SupplierEmailService:
 # ═══════════════════════════════════════════════════════════════════
 # HTTP Bridge Integration (FastAPI routes)
 # ═══════════════════════════════════════════════════════════════════
+
 
 def setup_supplier_email_routes(app):
     """Setup email routes in HTTP Bridge"""
@@ -377,17 +383,16 @@ def setup_supplier_email_routes(app):
         """Send order via email to supplier"""
 
         order_data = {
-            'ordine_numero': request.ordine_numero,
-            'data_ordine': request.data_ordine or datetime.now().strftime('%d/%m/%Y'),
-            'data_consegna_prevista': request.data_consegna_prevista or 'Da definire',
-            'items': [item.dict() for item in request.items],
-            'importo_totale': request.importo_totale,
-            'notes': request.notes
+            "ordine_numero": request.ordine_numero,
+            "data_ordine": request.data_ordine or datetime.now().strftime("%d/%m/%Y"),
+            "data_consegna_prevista": request.data_consegna_prevista or "Da definire",
+            "items": [item.dict() for item in request.items],
+            "importo_totale": request.importo_totale,
+            "notes": request.notes,
         }
 
         success = await email_service.send_order_email(
-            supplier_email=request.email,
-            order_data=order_data
+            supplier_email=request.email, order_data=order_data
         )
 
         if success:
@@ -400,9 +405,7 @@ def setup_supplier_email_routes(app):
         """Send delivery reminder via email"""
 
         success = await email_service.send_reminder_email(
-            request.email,
-            request.order_numero,
-            request.giorni
+            request.email, request.order_numero, request.giorni
         )
 
         if success:
@@ -417,28 +420,39 @@ def setup_supplier_email_routes(app):
 # Test
 # ═══════════════════════════════════════════════════════════════════
 
+
 async def test_email_service():
     """Test email service"""
     print("=" * 60)
     print("FLUXION Supplier Email Service Test")
     print("=" * 60)
 
-    service = SupplierEmailService()
+    SupplierEmailService()
 
     # Test order email (will fail without SMTP config, but tests template)
     test_order = {
-        'ordine_numero': 'TEST-001',
-        'data_ordine': datetime.now().strftime('%d/%m/%Y'),
-        'data_consegna_prevista': '20/01/2026',
-        'items': [
-            {'sku': 'PROD-001', 'descrizione': 'Shampoo Professionale 1L', 'qty': 10, 'price': 15.00},
-            {'sku': 'PROD-002', 'descrizione': 'Balsamo Riparatore 500ml', 'qty': 5, 'price': 12.50},
+        "ordine_numero": "TEST-001",
+        "data_ordine": datetime.now().strftime("%d/%m/%Y"),
+        "data_consegna_prevista": "20/01/2026",
+        "items": [
+            {
+                "sku": "PROD-001",
+                "descrizione": "Shampoo Professionale 1L",
+                "qty": 10,
+                "price": 15.00,
+            },
+            {
+                "sku": "PROD-002",
+                "descrizione": "Balsamo Riparatore 500ml",
+                "qty": 5,
+                "price": 12.50,
+            },
         ],
-        'importo_totale': 212.50,
-        'notes': 'Consegna urgente'
+        "importo_totale": 212.50,
+        "notes": "Consegna urgente",
     }
 
-    print(f"\n1. Testing order email template...")
+    print("\n1. Testing order email template...")
     print(f"   Order: {test_order['ordine_numero']}")
     print(f"   Items: {len(test_order['items'])}")
     print(f"   Total: EUR {test_order['importo_totale']}")

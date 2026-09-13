@@ -21,7 +21,6 @@ import os
 import sys
 import time
 import urllib.request
-from typing import Dict, List, Optional, Tuple, Any
 
 URL = os.environ.get("PIPELINE_URL", "http://127.0.0.1:3002")
 # S201: per-vertical latency target aligned with release_gate.LATENCY_SLOW_SAMPLE_MS=5000.
@@ -37,11 +36,13 @@ VERBOSE = False
 # HTTP helpers (stesse di test_sara_massive.py)
 # ============================================================================
 
+
 def api(path, data=None, method="POST", timeout=30):
     # type: (str, Optional[dict], str, int) -> dict
     body = json.dumps(data or {}).encode("utf-8") if data is not None else b"{}"
-    req = urllib.request.Request(URL + path, data=body,
-        headers={"Content-Type": "application/json"})
+    req = urllib.request.Request(
+        URL + path, data=body, headers={"Content-Type": "application/json"}
+    )
     req.get_method = lambda: method
     try:
         resp = urllib.request.urlopen(req, timeout=timeout)
@@ -83,6 +84,7 @@ def health():
 # Result tracker con breakdown per verticale
 # ============================================================================
 
+
 class Results:
     def __init__(self):
         self.ok = 0
@@ -105,16 +107,18 @@ class Results:
 
     def _record(self, level, vert, scenario, msg, ms, layer, tag):
         # type: (str, str, str, str, float, Optional[str], Optional[str]) -> None
-        self.events.append({
-            "level": level,
-            "vertical": vert,
-            "scenario": scenario,
-            "tag": tag,
-            "message": msg,
-            "ms": round(ms, 1),
-            "layer": layer,
-            "ts": round(time.time() - self.start_ts, 3),
-        })
+        self.events.append(
+            {
+                "level": level,
+                "vertical": vert,
+                "scenario": scenario,
+                "tag": tag,
+                "message": msg,
+                "ms": round(ms, 1),
+                "layer": layer,
+                "ts": round(time.time() - self.start_ts, 3),
+            }
+        )
 
     def OK(self, vert, scenario, msg, ms=0.0, layer=None, tag=None):
         # type: (str, str, str, float, Optional[str], Optional[str]) -> None
@@ -216,8 +220,10 @@ class Results:
         # type: () -> bool
         total = self.ok + self.fail + self.warn
         print("\n" + "=" * 80)
-        print("STRESS TEST RESULTS: %d OK / %d WARN / %d FAIL (total %d)" % (
-            self.ok, self.warn, self.fail, total))
+        print(
+            "STRESS TEST RESULTS: %d OK / %d WARN / %d FAIL (total %d)"
+            % (self.ok, self.warn, self.fail, total)
+        )
         print("=" * 80)
 
         # Per-vertical breakdown
@@ -227,7 +233,10 @@ class Results:
         for vert in sorted(self.by_vertical.keys()):
             v = self.by_vertical[vert]
             t = v["ok"] + v["warn"] + v["fail"]
-            print("%-15s %6d %6d %6d %6d" % (vert.upper(), v["ok"], v["warn"], v["fail"], t))
+            print(
+                "%-15s %6d %6d %6d %6d"
+                % (vert.upper(), v["ok"], v["warn"], v["fail"], t)
+            )
 
         # Latency stats
         if self.latencies:
@@ -237,8 +246,10 @@ class Results:
             p99 = s_lat[int(len(s_lat) * 0.99)]
             avg = sum(s_lat) / len(s_lat)
             print("\nLatenza (%d campioni):" % len(s_lat))
-            print("  AVG: %.0fms | P50: %.0fms | P95: %.0fms | P99: %.0fms | MAX: %.0fms" % (
-                avg, p50, p95, p99, s_lat[-1]))
+            print(
+                "  AVG: %.0fms | P50: %.0fms | P95: %.0fms | P99: %.0fms | MAX: %.0fms"
+                % (avg, p50, p95, p99, s_lat[-1])
+            )
             if p95 > LATENCY_TARGET_MS:
                 print("  ** P95 %.0fms SOPRA target %dms **" % (p95, LATENCY_TARGET_MS))
 
@@ -252,8 +263,10 @@ class Results:
         json_path = self.write_json_report()
         if json_path:
             print("\nGate report JSON: %s" % json_path)
-            print("  (events: %d | filter es. jq '.events[] | select(.level==\"WARN\")' %s)" % (
-                len(self.events), json_path))
+            print(
+                "  (events: %d | filter es. jq '.events[] | select(.level==\"WARN\")' %s)"
+                % (len(self.events), json_path)
+            )
 
         return self.fail == 0
 
@@ -275,10 +288,36 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei prenotare un taglio uomo", ["nome", "chi", "cortesia"]),
-                    ("Marco Rossi", ["data", "quando", "giorno", "quale", "perfetto", "ottimo"]),
-                    ("Domani", ["ora", "orario", "che ora", "preferenza", "perfetto", "ottimo", "conferm", "riepilog"]),
+                    (
+                        "Marco Rossi",
+                        ["data", "quando", "giorno", "quale", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Domani",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "preferenza",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
                     ("Alle dieci", ["riepilog", "conferma", "taglio", "domani", "10"]),
-                    ("Si, confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "registrat", "primo slot", "non è disponibile"]),
+                    (
+                        "Si, confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "registrat",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -286,10 +325,37 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei colore e piega", ["nome", "chi", "cortesia"]),
-                    ("Sono Anna Bianchi", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Venerdi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle quattordici e trenta", ["riepilog", "conferma", "colore", "piega", "14"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Sono Anna Bianchi",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Venerdi prossimo",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle quattordici e trenta",
+                        ["riepilog", "conferma", "colore", "piega", "14"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -298,9 +364,30 @@ VERTICALS = {
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei fare la barba per favore", ["nome", "chi", "cortesia"]),
                     ("Luca Verdi", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Lunedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
+                    (
+                        "Lunedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
                     ("Alle nove", ["riepilog", "conferma", "barba", "luned", "9"]),
-                    ("Si va bene", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Si va bene",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
@@ -309,10 +396,16 @@ VERTICALS = {
             # S228-P1: aggiunti "apri"/"chiud" per coprire L4_groq verb forms
             # (apriamo/chiudiamo) — fix non-deterministico orari prefix matching.
             ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
-            ("Accettate la carta di credito?", ["carta", "pagamento", "contanti", "bancomat"]),
+            (
+                "Accettate la carta di credito?",
+                ["carta", "pagamento", "contanti", "bancomat"],
+            ),
         ],
         "guardrail_wrong_service": [
-            ("Vorrei il cambio olio", ["non", "occupo", "salone", "capelli", "parrucchier"]),
+            (
+                "Vorrei il cambio olio",
+                ["non", "occupo", "salone", "capelli", "parrucchier"],
+            ),
             ("Mi serve il tagliando auto", ["non", "occupo", "salone", "parrucchier"]),
             ("Vorrei una visita medica", ["non", "occupo", "salone"]),
         ],
@@ -327,10 +420,37 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Devo fare il tagliando", ["nome", "chi", "cortesia"]),
-                    ("Giuseppe Ferrari", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Mercoledi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle otto e trenta", ["riepilog", "conferma", "tagliando", "mercoled", "8"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Giuseppe Ferrari",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Mercoledi prossimo",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle otto e trenta",
+                        ["riepilog", "conferma", "tagliando", "mercoled", "8"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -339,9 +459,33 @@ VERTICALS = {
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Cambio gomme stagionale", ["nome", "chi", "cortesia"]),
                     ("Paolo Neri", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("La mattina presto, alle otto", ["riepilog", "conferma", "gomme", "gioved", "8"]),
-                    ("Si va bene", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Giovedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "La mattina presto, alle otto",
+                        ["riepilog", "conferma", "gomme", "gioved", "8"],
+                    ),
+                    (
+                        "Si va bene",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -349,10 +493,37 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Devo fare la revisione", ["nome", "chi", "cortesia"]),
-                    ("Roberto Colombo", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Sabato", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle undici", ["riepilog", "conferma", "revision", "sabato", "11"]),
-                    ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Roberto Colombo",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Sabato",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle undici",
+                        ["riepilog", "conferma", "revision", "sabato", "11"],
+                    ),
+                    (
+                        "Confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
@@ -363,7 +534,10 @@ VERTICALS = {
             ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
-            ("Vorrei un taglio di capelli", ["non", "occupo", "officina", "auto", "meccan"]),
+            (
+                "Vorrei un taglio di capelli",
+                ["non", "occupo", "officina", "auto", "meccan"],
+            ),
             ("Vorrei prenotare una visita medica", ["non", "occupo", "officina"]),
             ("Cerco un personal trainer", ["non", "occupo", "officina"]),
         ],
@@ -377,36 +551,105 @@ VERTICALS = {
                 "name": "Visita odontoiatrica",
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
-                    ("Vorrei prenotare una visita odontoiatrica", ["nome", "chi", "cortesia"]),
-                    ("Francesca Russo", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Martedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle quindici", ["riepilog", "conferma", "odontoiatr", "marted", "15"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Vorrei prenotare una visita odontoiatrica",
+                        ["nome", "chi", "cortesia"],
+                    ),
+                    (
+                        "Francesca Russo",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Martedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle quindici",
+                        ["riepilog", "conferma", "odontoiatr", "marted", "15"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
                 "name": "Seduta fisioterapia",
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
-                    ("Ho bisogno di una seduta di fisioterapia", ["nome", "chi", "cortesia"]),
-                    ("Davide Esposito", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Venerdi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle dieci e trenta", ["riepilog", "conferma", "fisioterapi", "venerd", "10"]),
-                    ("Si va bene confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Ho bisogno di una seduta di fisioterapia",
+                        ["nome", "chi", "cortesia"],
+                    ),
+                    (
+                        "Davide Esposito",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Venerdi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle dieci e trenta",
+                        ["riepilog", "conferma", "fisioterapi", "venerd", "10"],
+                    ),
+                    (
+                        "Si va bene confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
         "faq": [
-            ("Quanto costa una visita odontoiatrica?", ["prezzo", "euro", "costo", "visita", "odontoiatr"]),
+            (
+                "Quanto costa una visita odontoiatrica?",
+                ["prezzo", "euro", "costo", "visita", "odontoiatr"],
+            ),
             # S228-P1: estesi keyword per coprire L4_groq phrasing variability.
             # L4 risponde a "digiuno?" con "non e' necessario, ti consiglio di arrivare
             # prima... per il trattamento" (S228 live evidence) -> aggiunti necessar,
             # consigl, tratta, arriv per semantic equivalence senza scope product code.
-            ("Devo venire a digiuno?", ["digiuno", "preparazione", "necessar", "consigl", "tratta", "arriv"]),
+            (
+                "Devo venire a digiuno?",
+                ["digiuno", "preparazione", "necessar", "consigl", "tratta", "arriv"],
+            ),
             ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius", "luned"]),
         ],
         "guardrail_wrong_service": [
-            ("Vorrei un taglio di capelli", ["non", "occupo", "studio", "medic", "clinic"]),
+            (
+                "Vorrei un taglio di capelli",
+                ["non", "occupo", "studio", "medic", "clinic"],
+            ),
             ("Cambio gomme per favore", ["non", "occupo", "studio", "medic"]),
         ],
         "disambig_name": "Russo",
@@ -426,10 +669,37 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei una lezione di pilates", ["nome", "chi", "cortesia"]),
-                    ("Simone Conti", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Lunedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle diciotto", ["riepilog", "conferma", "pilates", "luned", "18"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Simone Conti",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Lunedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle diciotto",
+                        ["riepilog", "conferma", "pilates", "luned", "18"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -437,15 +707,52 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Cerco un personal trainer", ["nome", "chi", "cortesia"]),
-                    ("Chiara Mancini", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Mercoledi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle sette di sera, le diciannove", ["riepilog", "conferma", "personal", "trainer", "mercoled", "19"]),
-                    ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Chiara Mancini",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Mercoledi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle sette di sera, le diciannove",
+                        [
+                            "riepilog",
+                            "conferma",
+                            "personal",
+                            "trainer",
+                            "mercoled",
+                            "19",
+                        ],
+                    ),
+                    (
+                        "Confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
         "faq": [
-            ("Quanto costa l'abbonamento mensile?", ["prezzo", "euro", "costo", "abbonam"]),
+            (
+                "Quanto costa l'abbonamento mensile?",
+                ["prezzo", "euro", "costo", "abbonam"],
+            ),
             ("Avete la piscina?", ["piscina", "vasca", "nuoto"]),
             # S228-P1: aggiunti apri/chiud per L4_groq verb forms (apriamo/chiudiamo).
             ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius"]),
@@ -465,10 +772,37 @@ VERTICALS = {
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei una pulizia del viso", ["nome", "chi", "cortesia"]),
-                    ("Elena Moretti", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle sedici", ["riepilog", "conferma", "pulizia", "viso", "gioved", "16"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Elena Moretti",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Giovedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle sedici",
+                        ["riepilog", "conferma", "pulizia", "viso", "gioved", "16"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
@@ -477,14 +811,41 @@ VERTICALS = {
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
                     ("Vorrei fare epilazione laser", ["nome", "chi", "cortesia"]),
                     ("Sara Romano", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Sabato", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle dieci", ["riepilog", "conferma", "epilazione", "laser", "sabato", "10"]),
-                    ("Va bene confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Sabato",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle dieci",
+                        ["riepilog", "conferma", "epilazione", "laser", "sabato", "10"],
+                    ),
+                    (
+                        "Va bene confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
         "faq": [
-            ("Quanto costa la pulizia del viso?", ["prezzo", "euro", "costo", "pulizia", "viso"]),
+            (
+                "Quanto costa la pulizia del viso?",
+                ["prezzo", "euro", "costo", "pulizia", "viso"],
+            ),
             # S228-P1: aggiunti apri/chiud per L4_groq verb forms.
             ("Che orari avete?", ["orari", "apri", "apert", "chiud", "chius"]),
             ("Fate anche massaggi?", ["massagg", "trattament"]),
@@ -503,22 +864,89 @@ VERTICALS = {
                 "name": "Consulenza legale",
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
-                    ("Ho bisogno di una consulenza legale", ["nome", "chi", "cortesia"]),
-                    ("Alessandro Gentile", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Martedi prossimo", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle undici", ["riepilog", "conferma", "consulenza", "legal", "marted", "11"]),
-                    ("Si confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Ho bisogno di una consulenza legale",
+                        ["nome", "chi", "cortesia"],
+                    ),
+                    (
+                        "Alessandro Gentile",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Martedi prossimo",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle undici",
+                        ["riepilog", "conferma", "consulenza", "legal", "marted", "11"],
+                    ),
+                    (
+                        "Si confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
             {
                 "name": "Dichiarazione dei redditi",
                 "turns": [
                     ("Buongiorno", ["buongiorno", "sara", "posso"]),
-                    ("Devo fare la dichiarazione dei redditi", ["nome", "chi", "cortesia"]),
-                    ("Maria Fontana", ["data", "quando", "giorno", "perfetto", "ottimo"]),
-                    ("Giovedi", ["ora", "orario", "che ora", "perfetto", "ottimo", "conferm", "riepilog"]),
-                    ("Alle nove e trenta", ["riepilog", "conferma", "dichiarazion", "redditi", "gioved", "9"]),
-                    ("Confermo", ["prenotazione", "confermata", "confermat", "whatsapp", "primo slot", "non è disponibile"]),
+                    (
+                        "Devo fare la dichiarazione dei redditi",
+                        ["nome", "chi", "cortesia"],
+                    ),
+                    (
+                        "Maria Fontana",
+                        ["data", "quando", "giorno", "perfetto", "ottimo"],
+                    ),
+                    (
+                        "Giovedi",
+                        [
+                            "ora",
+                            "orario",
+                            "che ora",
+                            "perfetto",
+                            "ottimo",
+                            "conferm",
+                            "riepilog",
+                        ],
+                    ),
+                    (
+                        "Alle nove e trenta",
+                        [
+                            "riepilog",
+                            "conferma",
+                            "dichiarazion",
+                            "redditi",
+                            "gioved",
+                            "9",
+                        ],
+                    ),
+                    (
+                        "Confermo",
+                        [
+                            "prenotazione",
+                            "confermata",
+                            "confermat",
+                            "whatsapp",
+                            "primo slot",
+                            "non è disponibile",
+                        ],
+                    ),
                 ],
             },
         ],
@@ -540,6 +968,7 @@ VERTICALS = {
 # ============================================================================
 # Core: conversazione multi-turn booking
 # ============================================================================
+
 
 def run_booking_conversation(vert, conv):
     # type: (str, dict) -> None
@@ -563,7 +992,14 @@ def run_booking_conversation(vert, conv):
             print("           FSM: %s | layer=%s | %.0fms" % (fsm, layer, ms))
 
         if not success:
-            R.FAIL(tag, scenario, "Turn %d '%s' -> errore: %s" % (i + 1, text[:30], r.get("error", "")), ms, layer=layer, tag="booking_error")
+            R.FAIL(
+                tag,
+                scenario,
+                "Turn %d '%s' -> errore: %s" % (i + 1, text[:30], r.get("error", "")),
+                ms,
+                layer=layer,
+                tag="booking_error",
+            )
             return  # abort conversation
 
         # Controlla che almeno una keyword attesa sia nella risposta
@@ -571,43 +1007,96 @@ def run_booking_conversation(vert, conv):
 
         # Tolleranza: se siamo a meta' flusso e la FSM ha progredito, va bene
         fsm_progressed = fsm in (
-            "idle", "waiting_service", "waiting_name", "waiting_surname",
-            "waiting_date", "waiting_time", "waiting_operator",
-            "confirming", "completed",
-            "propose_registration", "registering_surname",
+            "idle",
+            "waiting_service",
+            "waiting_name",
+            "waiting_surname",
+            "waiting_date",
+            "waiting_time",
+            "waiting_operator",
+            "confirming",
+            "completed",
+            "propose_registration",
+            "registering_surname",
             "registering_phone",
             "disambiguating_name",
             "confirming_phone",
         )
 
         if matched:
-            R.OK(tag, scenario, "Turn %d '%s' -> OK (fsm=%s)" % (i + 1, text[:30], fsm), ms, layer=layer, tag="booking_match")
+            R.OK(
+                tag,
+                scenario,
+                "Turn %d '%s' -> OK (fsm=%s)" % (i + 1, text[:30], fsm),
+                ms,
+                layer=layer,
+                tag="booking_match",
+            )
         elif fsm_progressed and success:
             # FSM ha progredito ma keywords non matchano esattamente
-            R.WARN(tag, scenario, "Turn %d '%s' -> fsm=%s, keywords non trovate in: '%s'" % (
-                i + 1, text[:30], fsm, resp[:60]), ms, layer=layer, tag="booking_keyword_miss")
+            R.WARN(
+                tag,
+                scenario,
+                "Turn %d '%s' -> fsm=%s, keywords non trovate in: '%s'"
+                % (i + 1, text[:30], fsm, resp[:60]),
+                ms,
+                layer=layer,
+                tag="booking_keyword_miss",
+            )
         else:
-            R.FAIL(tag, scenario, "Turn %d '%s' -> fsm=%s, resp='%s'" % (
-                i + 1, text[:30], fsm, resp[:60]), ms, layer=layer, tag="booking_fail")
+            R.FAIL(
+                tag,
+                scenario,
+                "Turn %d '%s' -> fsm=%s, resp='%s'"
+                % (i + 1, text[:30], fsm, resp[:60]),
+                ms,
+                layer=layer,
+                tag="booking_fail",
+            )
 
         # Check latenza
         if ms > LATENCY_TARGET_MS:
-            R.WARN(tag, "LATENCY", "Turn %d: %.0fms > %dms target" % (i + 1, ms, LATENCY_TARGET_MS), ms, layer=layer, tag="latency_turn")
+            R.WARN(
+                tag,
+                "LATENCY",
+                "Turn %d: %.0fms > %dms target" % (i + 1, ms, LATENCY_TARGET_MS),
+                ms,
+                layer=layer,
+                tag="latency_turn",
+            )
 
     # Chiusura conversazione
     r = process("Grazie, arrivederci")
     resp = r.get("response", "").lower()
     layer = r.get("layer", "") or None
     ms = r.get("_ms", 0)
-    if any(kw in resp for kw in ["arrivederci", "buona giornata", "presto", "risentir", "ciao"]):
-        R.OK(tag, scenario, "Chiusura -> saluto OK", ms, layer=layer, tag="booking_close_ok")
+    if any(
+        kw in resp
+        for kw in ["arrivederci", "buona giornata", "presto", "risentir", "ciao"]
+    ):
+        R.OK(
+            tag,
+            scenario,
+            "Chiusura -> saluto OK",
+            ms,
+            layer=layer,
+            tag="booking_close_ok",
+        )
     else:
-        R.WARN(tag, scenario, "Chiusura -> resp='%s'" % resp[:60], ms, layer=layer, tag="booking_close_miss")
+        R.WARN(
+            tag,
+            scenario,
+            "Chiusura -> resp='%s'" % resp[:60],
+            ms,
+            layer=layer,
+            tag="booking_close_miss",
+        )
 
 
 # ============================================================================
 # Scenario: FAQ (non deve entrare in booking)
 # ============================================================================
+
 
 def run_faq_test(vert, faq_list):
     # type: (str, list) -> None
@@ -628,21 +1117,55 @@ def run_faq_test(vert, faq_list):
         matched = any(kw in resp for kw in expected_keywords)
 
         # FAQ non deve mettere la FSM in stati di booking
-        in_booking = fsm in ("waiting_name", "waiting_date", "waiting_time", "confirming")
+        in_booking = fsm in (
+            "waiting_name",
+            "waiting_date",
+            "waiting_time",
+            "confirming",
+        )
 
         if matched and not in_booking:
-            R.OK(tag, "FAQ", "'%s' -> risposta pertinente (layer=%s)" % (text[:40], layer), ms, layer=(layer or None), tag="faq_match")
+            R.OK(
+                tag,
+                "FAQ",
+                "'%s' -> risposta pertinente (layer=%s)" % (text[:40], layer),
+                ms,
+                layer=(layer or None),
+                tag="faq_match",
+            )
         elif matched and in_booking:
-            R.WARN(tag, "FAQ", "'%s' -> risposta OK ma FSM in booking (%s)" % (text[:40], fsm), ms, layer=(layer or None), tag="faq_in_booking")
+            R.WARN(
+                tag,
+                "FAQ",
+                "'%s' -> risposta OK ma FSM in booking (%s)" % (text[:40], fsm),
+                ms,
+                layer=(layer or None),
+                tag="faq_in_booking",
+            )
         elif not matched and not in_booking:
-            R.WARN(tag, "FAQ", "'%s' -> keywords non trovate in: '%s'" % (text[:35], resp[:60]), ms, layer=(layer or None), tag="faq_keyword_miss")
+            R.WARN(
+                tag,
+                "FAQ",
+                "'%s' -> keywords non trovate in: '%s'" % (text[:35], resp[:60]),
+                ms,
+                layer=(layer or None),
+                tag="faq_keyword_miss",
+            )
         else:
-            R.FAIL(tag, "FAQ", "'%s' -> entrato in booking (%s) senza rispondere" % (text[:40], fsm), ms, layer=(layer or None), tag="faq_to_booking")
+            R.FAIL(
+                tag,
+                "FAQ",
+                "'%s' -> entrato in booking (%s) senza rispondere" % (text[:40], fsm),
+                ms,
+                layer=(layer or None),
+                tag="faq_to_booking",
+            )
 
 
 # ============================================================================
 # Scenario: Guardrail servizio sbagliato
 # ============================================================================
+
 
 def run_guardrail_test(vert, guardrail_list):
     # type: (str, list) -> None
@@ -661,19 +1184,46 @@ def run_guardrail_test(vert, guardrail_list):
         blocked = any(kw in resp for kw in expected_keywords) or "non" in resp[:30]
 
         # Non deve entrare in booking con servizio sbagliato
-        entered_booking = fsm in ("waiting_name", "waiting_date", "waiting_time", "confirming")
+        entered_booking = fsm in (
+            "waiting_name",
+            "waiting_date",
+            "waiting_time",
+            "confirming",
+        )
 
         if blocked and not entered_booking:
-            R.OK(tag, "GUARDRAIL", "Bloccato: '%s'" % text[:40], ms, layer=layer, tag="guardrail_blocked")
+            R.OK(
+                tag,
+                "GUARDRAIL",
+                "Bloccato: '%s'" % text[:40],
+                ms,
+                layer=layer,
+                tag="guardrail_blocked",
+            )
         elif not blocked and not entered_booking:
-            R.WARN(tag, "GUARDRAIL", "Non bloccato esplicitamente: '%s' -> '%s'" % (text[:30], resp[:60]), ms, layer=layer, tag="guardrail_soft")
+            R.WARN(
+                tag,
+                "GUARDRAIL",
+                "Non bloccato esplicitamente: '%s' -> '%s'" % (text[:30], resp[:60]),
+                ms,
+                layer=layer,
+                tag="guardrail_soft",
+            )
         else:
-            R.FAIL(tag, "GUARDRAIL", "Accettato servizio sbagliato: '%s' -> fsm=%s" % (text[:35], fsm), ms, layer=layer, tag="guardrail_accepted")
+            R.FAIL(
+                tag,
+                "GUARDRAIL",
+                "Accettato servizio sbagliato: '%s' -> fsm=%s" % (text[:35], fsm),
+                ms,
+                layer=layer,
+                tag="guardrail_accepted",
+            )
 
 
 # ============================================================================
 # Scenario: Disambiguazione nome (cognome comune)
 # ============================================================================
+
 
 def run_disambig_test(vert, surname):
     # type: (str, str) -> None
@@ -700,23 +1250,49 @@ def run_disambig_test(vert, surname):
     # 3. Nessun match -> propone registrazione
     # 4. Match unico -> prosegue
     valid_fsm = (
-        "disambiguating_name", "disambiguating_birth_date",
-        "waiting_surname", "waiting_name",
-        "propose_registration", "registering_surname",
-        "waiting_date", "waiting_time",
+        "disambiguating_name",
+        "disambiguating_birth_date",
+        "waiting_surname",
+        "waiting_name",
+        "propose_registration",
+        "registering_surname",
+        "waiting_date",
+        "waiting_time",
     )
 
     if fsm in valid_fsm:
-        R.OK(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s (gestito)" % (surname, fsm), ms, layer=layer, tag="disambig_fsm_valid")
+        R.OK(
+            tag,
+            "DISAMBIG",
+            "Cognome '%s' -> fsm=%s (gestito)" % (surname, fsm),
+            ms,
+            layer=layer,
+            tag="disambig_fsm_valid",
+        )
     elif "quale" in resp or "cognome" in resp or "nome" in resp or "intend" in resp:
-        R.OK(tag, "DISAMBIG", "Cognome '%s' -> chiede chiarimento" % surname, ms, layer=layer, tag="disambig_clarify")
+        R.OK(
+            tag,
+            "DISAMBIG",
+            "Cognome '%s' -> chiede chiarimento" % surname,
+            ms,
+            layer=layer,
+            tag="disambig_clarify",
+        )
     else:
-        R.WARN(tag, "DISAMBIG", "Cognome '%s' -> fsm=%s, resp='%s'" % (surname, fsm, resp[:60]), ms, layer=layer, tag="disambig_unclear")
+        R.WARN(
+            tag,
+            "DISAMBIG",
+            "Cognome '%s' -> fsm=%s, resp='%s'" % (surname, fsm, resp[:60]),
+            ms,
+            layer=layer,
+            tag="disambig_unclear",
+        )
 
 
 # ============================================================================
 # Scenario: Cancel mid-flow
 # ============================================================================
+
 
 def run_cancel_test(vert, service):
     # type: (str, str) -> None
@@ -737,18 +1313,35 @@ def run_cancel_test(vert, service):
     layer = r.get("layer", "") or None
     ms = r.get("_ms", 0)
 
-    cancelled = any(kw in resp for kw in ["annull", "cancell", "altro", "ricominc", "aiutar"])
+    cancelled = any(
+        kw in resp for kw in ["annull", "cancell", "altro", "ricominc", "aiutar"]
+    )
     back_to_idle = fsm in ("idle", "cancelled", "completed")
 
     if cancelled or back_to_idle:
-        R.OK(tag, "CANCEL", "Annullamento mid-flow -> fsm=%s" % fsm, ms, layer=layer, tag="cancel_ok")
+        R.OK(
+            tag,
+            "CANCEL",
+            "Annullamento mid-flow -> fsm=%s" % fsm,
+            ms,
+            layer=layer,
+            tag="cancel_ok",
+        )
     else:
-        R.WARN(tag, "CANCEL", "Risposta non chiara: fsm=%s, resp='%s'" % (fsm, resp[:60]), ms, layer=layer, tag="cancel_unclear")
+        R.WARN(
+            tag,
+            "CANCEL",
+            "Risposta non chiara: fsm=%s, resp='%s'" % (fsm, resp[:60]),
+            ms,
+            layer=layer,
+            tag="cancel_unclear",
+        )
 
 
 # ============================================================================
 # Scenario: Latenza per step (ogni turn della prima conversazione)
 # ============================================================================
+
 
 def run_latency_test(vert):
     # type: (str,) -> None
@@ -764,26 +1357,53 @@ def run_latency_test(vert):
         success = r.get("success", False)
 
         if not success:
-            R.FAIL(tag, "LATENCY", "Turn %d errore: %s" % (i + 1, r.get("error", "")), ms, layer=layer, tag="latency_error")
+            R.FAIL(
+                tag,
+                "LATENCY",
+                "Turn %d errore: %s" % (i + 1, r.get("error", "")),
+                ms,
+                layer=layer,
+                tag="latency_error",
+            )
             return
 
         if ms > LATENCY_TARGET_MS:
             slow_turns += 1
-            R.WARN(tag, "LATENCY DETAIL", "Turn %d '%s': %.0fms > %dms" % (
-                i + 1, text[:25], ms, LATENCY_TARGET_MS), ms, layer=layer, tag="latency_slow_turn")
+            R.WARN(
+                tag,
+                "LATENCY DETAIL",
+                "Turn %d '%s': %.0fms > %dms"
+                % (i + 1, text[:25], ms, LATENCY_TARGET_MS),
+                ms,
+                layer=layer,
+                tag="latency_slow_turn",
+            )
 
     if slow_turns == 0:
-        R.OK(tag, "LATENCY", "Tutti i turn sotto %dms" % LATENCY_TARGET_MS, tag="latency_all_ok")
+        R.OK(
+            tag,
+            "LATENCY",
+            "Tutti i turn sotto %dms" % LATENCY_TARGET_MS,
+            tag="latency_all_ok",
+        )
     elif slow_turns <= 1:
-        R.WARN(tag, "LATENCY", "%d turn sopra target" % slow_turns, tag="latency_one_slow")
+        R.WARN(
+            tag, "LATENCY", "%d turn sopra target" % slow_turns, tag="latency_one_slow"
+        )
     else:
-        R.FAIL(tag, "LATENCY", "%d/%d turn sopra target %dms" % (
-            slow_turns, len(conv["turns"]), LATENCY_TARGET_MS), tag="latency_many_slow")
+        R.FAIL(
+            tag,
+            "LATENCY",
+            "%d/%d turn sopra target %dms"
+            % (slow_turns, len(conv["turns"]), LATENCY_TARGET_MS),
+            tag="latency_many_slow",
+        )
 
 
 # ============================================================================
 # Runner principale per un singolo verticale
 # ============================================================================
+
 
 def test_single_vertical(vert):
     # type: (str,) -> None
@@ -833,6 +1453,7 @@ def test_single_vertical(vert):
 # MAIN
 # ============================================================================
 
+
 def main():
     # Parse args
     target_vert = None
@@ -851,7 +1472,9 @@ def main():
             i += 2
         else:
             print("Opzione sconosciuta: %s" % sys.argv[i])
-            print("Uso: python test_sara_stress_per_verticale.py [--vertical NOME] [--verbose] [--latency-target MS]")
+            print(
+                "Uso: python test_sara_stress_per_verticale.py [--vertical NOME] [--verbose] [--latency-target MS]"
+            )
             sys.exit(1)
 
     print("=" * 80)
@@ -872,8 +1495,10 @@ def main():
             from seed_stress_fixtures import seed_stress_clienti  # type: ignore
         try:
             seed = seed_stress_clienti(verbose=VERBOSE)
-            print("Seed: %d inserted / %d skipped / %d total (DB: %s)" % (
-                seed["inserted"], seed["skipped"], seed["total"], seed["db"]))
+            print(
+                "Seed: %d inserted / %d skipped / %d total (DB: %s)"
+                % (seed["inserted"], seed["skipped"], seed["total"], seed["db"])
+            )
             if seed.get("errors"):
                 print("Seed WARN: %d errori" % len(seed["errors"]))
                 for e in seed["errors"][:3]:
@@ -888,22 +1513,28 @@ def main():
     if not h:
         print("FATAL: Pipeline non raggiungibile a %s" % URL)
         sys.exit(1)
-    print("Pipeline: %s | STT: %s" % (
-        h.get("status", "?"), h.get("features", {}).get("stt", "?")))
+    print(
+        "Pipeline: %s | STT: %s"
+        % (h.get("status", "?"), h.get("features", {}).get("stt", "?"))
+    )
 
     # Verticali da testare
     if target_vert:
         if target_vert not in VERTICALS:
-            print("Verticale sconosciuto: '%s'. Disponibili: %s" % (
-                target_vert, ", ".join(sorted(VERTICALS.keys()))))
+            print(
+                "Verticale sconosciuto: '%s'. Disponibili: %s"
+                % (target_vert, ", ".join(sorted(VERTICALS.keys())))
+            )
             sys.exit(1)
         verts_to_test = [target_vert]
     else:
         verts_to_test = list(VERTICALS.keys())
 
     print("Verticali: %s" % ", ".join(v.upper() for v in verts_to_test))
-    print("Scenari per verticale: booking(%d-3 conv) + FAQ + guardrail + disambig + cancel + latenza" % (
-        max(len(VERTICALS[v]["booking_conversations"]) for v in verts_to_test)))
+    print(
+        "Scenari per verticale: booking(%d-3 conv) + FAQ + guardrail + disambig + cancel + latenza"
+        % (max(len(VERTICALS[v]["booking_conversations"]) for v in verts_to_test))
+    )
 
     # Esecuzione
     for idx, vert in enumerate(verts_to_test):

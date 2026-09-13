@@ -9,10 +9,10 @@ import os
 import pytest
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from nlu.schemas import NLUResult, NLUEntities, SaraIntent, Sentiment
-from nlu.template_fallback import classify_template, check_profanity, INTENT_TEMPLATES
+from nlu.template_fallback import classify_template, check_profanity
 from nlu.llm_nlu import LLMNlu, _FAST_PATH
 from nlu.providers import ProviderConfig, ProviderRotation
 
@@ -20,6 +20,7 @@ from nlu.providers import ProviderConfig, ProviderRotation
 # ─────────────────────────────────────────────────────────────────
 # Schemas
 # ─────────────────────────────────────────────────────────────────
+
 
 class TestNLUSchemas:
     def test_sara_intent_values(self):
@@ -83,6 +84,7 @@ class TestNLUSchemas:
     def test_json_instruction_valid(self):
         """SARA_NLU_JSON_INSTRUCTION contains key fields."""
         from nlu.schemas import SARA_NLU_JSON_INSTRUCTION
+
         assert "intent" in SARA_NLU_JSON_INSTRUCTION
         assert "entities" in SARA_NLU_JSON_INSTRUCTION
         assert "sentiment" in SARA_NLU_JSON_INSTRUCTION
@@ -106,6 +108,7 @@ class TestNLUSchemas:
 # Profanity Filter
 # ─────────────────────────────────────────────────────────────────
 
+
 class TestProfanityFilter:
     def test_detects_profanity(self):
         assert check_profanity("vaffanculo")
@@ -125,6 +128,7 @@ class TestProfanityFilter:
 # ─────────────────────────────────────────────────────────────────
 # Template Fallback
 # ─────────────────────────────────────────────────────────────────
+
 
 class TestTemplateFallback:
     def test_exact_match(self):
@@ -192,6 +196,7 @@ class TestTemplateFallback:
 # Fast Path
 # ─────────────────────────────────────────────────────────────────
 
+
 class TestFastPath:
     def test_all_fast_path_entries_are_valid_intents(self):
         for word, intent in _FAST_PATH.items():
@@ -210,6 +215,7 @@ class TestFastPath:
 # Provider Config
 # ─────────────────────────────────────────────────────────────────
 
+
 class TestProviderConfig:
     def test_unconfigured_provider(self):
         p = ProviderConfig(
@@ -223,20 +229,23 @@ class TestProviderConfig:
 
     def test_provider_rotation_no_keys(self):
         """Rotation with no configured providers is safe."""
-        rotation = ProviderRotation(providers=[
-            ProviderConfig(
-                name="fake",
-                base_url="https://fake.com",
-                model="fake",
-                api_key_env="NONEXISTENT_KEY_99999",
-            ),
-        ])
+        rotation = ProviderRotation(
+            providers=[
+                ProviderConfig(
+                    name="fake",
+                    base_url="https://fake.com",
+                    model="fake",
+                    api_key_env="NONEXISTENT_KEY_99999",
+                ),
+            ]
+        )
         assert not rotation.has_providers
 
 
 # ─────────────────────────────────────────────────────────────────
 # LLMNlu Integration (offline — tests fast_path + template only)
 # ─────────────────────────────────────────────────────────────────
+
 
 class TestLLMNluOffline:
     """Test LLMNlu without any API keys (Layer 0 + Layer 2 only)."""
@@ -289,6 +298,7 @@ class TestLLMNluOffline:
 # ─────────────────────────────────────────────────────────────────
 # NLU Result serialization
 # ─────────────────────────────────────────────────────────────────
+
 
 class TestNLUResultSerialization:
     def test_to_dict(self):

@@ -20,12 +20,13 @@ logger = logging.getLogger("fluxion.nlu.providers")
 @dataclass
 class ProviderConfig:
     """Configuration for a single LLM provider."""
+
     name: str
     base_url: str
     model: str
-    api_key_env: str           # environment variable name for API key
+    api_key_env: str  # environment variable name for API key
     timeout_s: float = 2.0
-    priority: int = 0          # lower = higher priority
+    priority: int = 0  # lower = higher priority
 
     @property
     def api_key(self) -> Optional[str]:
@@ -79,11 +80,15 @@ class ProviderRotation:
         self._current_idx = 0
         # Track failures per provider (reset after success)
         self._failures: Dict[str, int] = {}
-        self._cooldowns: Dict[str, float] = {}  # provider_name -> cooldown_until timestamp
+        self._cooldowns: Dict[
+            str, float
+        ] = {}  # provider_name -> cooldown_until timestamp
         self._session: Optional[aiohttp.ClientSession] = None
 
         if not self._providers:
-            logger.warning("[NLU] No LLM providers configured! Set at least GROQ_API_KEY.")
+            logger.warning(
+                "[NLU] No LLM providers configured! Set at least GROQ_API_KEY."
+            )
         else:
             names = [p.name for p in self._providers]
             logger.info(f"[NLU] Providers configured: {names}")
@@ -123,7 +128,9 @@ class ProviderRotation:
         # Exponential cooldown: 5s, 15s, 30s
         cooldown = min(5 * (2 ** (count - 1)), 30)
         self._cooldowns[provider.name] = time.time() + cooldown
-        logger.warning(f"[NLU] Provider {provider.name} failed ({count}x), cooldown {cooldown}s")
+        logger.warning(
+            f"[NLU] Provider {provider.name} failed ({count}x), cooldown {cooldown}s"
+        )
 
     def _record_success(self, provider: ProviderConfig):
         """Reset failure counter on success."""
@@ -154,8 +161,11 @@ class ProviderRotation:
 
             try:
                 result = await self._call_single(
-                    session, provider, messages,
-                    temperature, max_tokens,
+                    session,
+                    provider,
+                    messages,
+                    temperature,
+                    max_tokens,
                 )
                 if result is not None:
                     self._record_success(provider)
@@ -201,7 +211,9 @@ class ProviderRotation:
         timeout = aiohttp.ClientTimeout(total=provider.timeout_s)
         t0 = time.perf_counter()
 
-        async with session.post(url, json=body, headers=headers, timeout=timeout) as resp:
+        async with session.post(
+            url, json=body, headers=headers, timeout=timeout
+        ) as resp:
             latency = (time.perf_counter() - t0) * 1000
 
             if resp.status == 429:
@@ -211,7 +223,9 @@ class ProviderRotation:
 
             if resp.status != 200:
                 err_text = await resp.text()
-                logger.warning(f"[NLU] {provider.name} HTTP {resp.status}: {err_text[:200]}")
+                logger.warning(
+                    f"[NLU] {provider.name} HTTP {resp.status}: {err_text[:200]}"
+                )
                 return None
 
             data = await resp.json()

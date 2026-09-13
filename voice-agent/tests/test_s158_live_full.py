@@ -3,8 +3,8 @@
 Per ogni verticale: reset → set_vertical → greeting → booking → name → FAQ → close.
 Output: log completo con timestamp, stato FSM, risposte Sara.
 """
+
 import requests
-import json
 import time
 import sys
 from datetime import datetime
@@ -24,7 +24,7 @@ TESTS = [
             ("Un taglio uomo per favore", "SERVICE"),
             ("Quanto costa un taglio donna?", "FAQ_AFTER_RESET"),
             ("Che orari fate?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "beauty",
@@ -34,7 +34,7 @@ TESTS = [
             ("Mi chiamo Laura Bianchi", "NAME"),
             ("Quanto costa una ceretta?", "FAQ_AFTER_RESET"),
             ("Fate anche manicure?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "palestra",
@@ -44,7 +44,7 @@ TESTS = [
             ("Paolo Verdi", "NAME"),
             ("Quanto costa una lezione di pilates?", "FAQ_AFTER_RESET"),
             ("Avete personal trainer?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "auto",
@@ -54,7 +54,7 @@ TESTS = [
             ("Giuseppe Neri", "NAME"),
             ("Quanto costa un tagliando?", "FAQ_AFTER_RESET"),
             ("Fate anche la revisione?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "gommista",
@@ -64,7 +64,7 @@ TESTS = [
             ("Antonio Russo", "NAME"),
             ("Quanto costa il cambio gomme?", "FAQ_AFTER_RESET"),
             ("Fate anche l'equilibratura?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "medical",
@@ -74,7 +74,7 @@ TESTS = [
             ("Maria Esposito", "NAME"),
             ("Quanto costa una visita generale?", "FAQ_AFTER_RESET"),
             ("Fate anche ecografie?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "odontoiatra",
@@ -84,7 +84,7 @@ TESTS = [
             ("Franco Colombo", "NAME"),
             ("Quanto costa l'igiene dentale?", "FAQ_AFTER_RESET"),
             ("Fate lo sbiancamento?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "fisioterapia",
@@ -94,7 +94,7 @@ TESTS = [
             ("Elena Ricci", "NAME"),
             ("Quanto costa una seduta?", "FAQ_AFTER_RESET"),
             ("Fate anche massoterapia?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "toelettatura",
@@ -104,7 +104,7 @@ TESTS = [
             ("Sergio Moretti", "NAME"),
             ("Quanto costa il bagno per un cane di taglia media?", "FAQ_AFTER_RESET"),
             ("Fate anche la tosatura?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "wellness",
@@ -114,17 +114,20 @@ TESTS = [
             ("Chiara Ferrari", "NAME"),
             ("Quanto costa un massaggio?", "FAQ_AFTER_RESET"),
             ("Avete la sauna?", "FAQ2"),
-        ]
+        ],
     },
     {
         "vertical": "professionale",
         "label": "STUDIO PROFESSIONALE",
         "steps": [
-            ("Buongiorno, vorrei fissare un appuntamento per una consulenza", "BOOKING"),
+            (
+                "Buongiorno, vorrei fissare un appuntamento per una consulenza",
+                "BOOKING",
+            ),
             ("Luca Gallo", "NAME"),
             ("Quanto costa una consulenza fiscale?", "FAQ_AFTER_RESET"),
             ("Fate anche consulenza legale?", "FAQ2"),
-        ]
+        ],
     },
 ]
 
@@ -137,7 +140,9 @@ def call_api(endpoint, payload=None, method="POST"):
             r = requests.post(url, json=payload, timeout=30)
         else:
             r = requests.get(url, timeout=10)
-        return r.status_code, r.json() if r.headers.get("content-type", "").startswith("application/json") else r.text
+        return r.status_code, r.json() if r.headers.get("content-type", "").startswith(
+            "application/json"
+        ) else r.text
     except Exception as e:
         return 0, str(e)
 
@@ -150,9 +155,9 @@ def run_vertical_test(test_config):
     results = []
 
     ts = datetime.now().strftime("%H:%M:%S")
-    results.append(f"\n{'='*90}")
+    results.append(f"\n{'=' * 90}")
     results.append(f"  {label} (vertical={vert}) — {ts}")
-    results.append(f"{'='*90}")
+    results.append(f"{'=' * 90}")
 
     # Reset + Set vertical
     call_api("/api/voice/reset")
@@ -195,7 +200,7 @@ def run_vertical_test(test_config):
         fsm = data.get("fsm_state", "?")
         resp = data.get("response", "")
         intent = data.get("intent", "?")
-        layer = data.get("layer", "?")
+        data.get("layer", "?")
 
         # Determine OK/WARN/FAIL
         status = "OK  "
@@ -215,7 +220,12 @@ def run_vertical_test(test_config):
             # Check for cross-contamination
             wrong_vertical_words = []
             if vert not in ("auto", "gommista"):
-                wrong_vertical_words = ["cambio gomme", "equilibratura", "convergenza", "foratura"]
+                wrong_vertical_words = [
+                    "cambio gomme",
+                    "equilibratura",
+                    "convergenza",
+                    "foratura",
+                ]
             if vert not in ("salone", "barbiere"):
                 wrong_vertical_words += ["taglio uomo", "taglio donna"]
             resp_lower = resp.lower()
@@ -249,7 +259,7 @@ if __name__ == "__main__":
     print(f"""
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
 ║  FLUXION — TEST LIVE SARA MULTI-VERTICALE                                              ║
-║  S158 — {start.strftime('%Y-%m-%d %H:%M:%S')}                                                              ║
+║  S158 — {start.strftime("%Y-%m-%d %H:%M:%S")}                                                              ║
 ║  11 verticali × 4-5 step = ~50 interazioni                                             ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝""")
 
@@ -270,13 +280,15 @@ if __name__ == "__main__":
 
     elapsed = (datetime.now() - start).total_seconds()
 
-    print(f"""
+    print("""
 ╔══════════════════════════════════════════════════════════════════════════════════════════╗
 ║  RIEPILOGO FINALE                                                                      ║
 ╠══════════════════════════════════════════════════════════════════════════════════════════╣""")
     for label, vert, ok, warn, fail, tag in vertical_results:
         indicator = "✅" if tag == "PASS" else ("⚠️ " if tag == "WARN" else "❌")
-        print(f"║  {indicator} {label:30s} ({vert:15s}) OK={ok} WARN={warn} FAIL={fail}")
+        print(
+            f"║  {indicator} {label:30s} ({vert:15s}) OK={ok} WARN={warn} FAIL={fail}"
+        )
     print(f"""╠══════════════════════════════════════════════════════════════════════════════════════════╣
 ║  TOTALE: {total_ok + total_warn + total_fail:3d} interazioni | OK: {total_ok:2d} | WARN: {total_warn:2d} | FAIL: {total_fail:2d} | Tempo: {elapsed:.0f}s          ║
 ╚══════════════════════════════════════════════════════════════════════════════════════════╝""")

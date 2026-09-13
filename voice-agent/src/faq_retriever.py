@@ -20,9 +20,7 @@ Performance targets:
 - Total retrieval: <100ms
 """
 
-import os
 import json
-import hashlib
 from pathlib import Path
 from typing import Optional, Dict, List, Any, Tuple
 from dataclasses import dataclass, field
@@ -40,11 +38,13 @@ def _lazy_import():
 
     if _np is None:
         import numpy as np
+
         _np = np
 
     if _faiss is None:
         try:
             import faiss
+
             _faiss = faiss
         except ImportError:
             print("[WARN] faiss not installed, using fallback similarity search")
@@ -53,6 +53,7 @@ def _lazy_import():
     if _sentence_transformer is None:
         try:
             from sentence_transformers import SentenceTransformer
+
             _sentence_transformer = SentenceTransformer
         except ImportError:
             print("[WARN] sentence-transformers not installed")
@@ -63,9 +64,11 @@ def _lazy_import():
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class FAQEntry:
     """Single FAQ entry."""
+
     id: str
     question: str
     answer: str
@@ -87,6 +90,7 @@ class FAQEntry:
 @dataclass
 class RetrievalResult:
     """Result of a retrieval query."""
+
     faq: FAQEntry
     similarity: float
     rank: int
@@ -106,6 +110,7 @@ class RetrievalResult:
 # =============================================================================
 # FAQ RETRIEVER
 # =============================================================================
+
 
 class FAISSFAQRetriever:
     """
@@ -133,7 +138,7 @@ class FAISSFAQRetriever:
         self,
         model_name: str = DEFAULT_MODEL,
         cache_dir: Optional[str] = None,
-        device: str = "cpu"
+        device: str = "cpu",
     ):
         """
         Initialize retriever.
@@ -164,7 +169,9 @@ class FAISSFAQRetriever:
         if self._model is None:
             _lazy_import()
             if _sentence_transformer is False:
-                raise ImportError("sentence-transformers not installed. Run: pip install sentence-transformers")
+                raise ImportError(
+                    "sentence-transformers not installed. Run: pip install sentence-transformers"
+                )
 
             start = time.time()
             self._model = _sentence_transformer(self.model_name, device=self.device)
@@ -201,7 +208,13 @@ class FAISSFAQRetriever:
         self._index_built = False
         return added
 
-    def add_faq(self, question: str, answer: str, category: str = "", faq_id: Optional[str] = None) -> str:
+    def add_faq(
+        self,
+        question: str,
+        answer: str,
+        category: str = "",
+        faq_id: Optional[str] = None,
+    ) -> str:
         """
         Add a single FAQ.
 
@@ -215,12 +228,14 @@ class FAISSFAQRetriever:
             FAQ ID
         """
         faq_id = faq_id or f"faq_{len(self._faqs):03d}"
-        self._faqs.append(FAQEntry(
-            id=faq_id,
-            question=question,
-            answer=answer,
-            category=category,
-        ))
+        self._faqs.append(
+            FAQEntry(
+                id=faq_id,
+                question=question,
+                answer=answer,
+                category=category,
+            )
+        )
         self._index_built = False
         return faq_id
 
@@ -245,9 +260,7 @@ class FAISSFAQRetriever:
 
         start = time.time()
         embeddings = self.model.encode(
-            questions,
-            convert_to_numpy=True,
-            show_progress_bar=False
+            questions, convert_to_numpy=True, show_progress_bar=False
         )
         encode_time = (time.time() - start) * 1000
 
@@ -257,7 +270,9 @@ class FAISSFAQRetriever:
         # Create FAISS index
         if _faiss and _faiss is not False:
             dimension = embeddings.shape[1]
-            self._index = _faiss.IndexFlatIP(dimension)  # Inner product (cosine similarity)
+            self._index = _faiss.IndexFlatIP(
+                dimension
+            )  # Inner product (cosine similarity)
 
             # Normalize embeddings for cosine similarity
             _faiss.normalize_L2(self._embeddings)
@@ -270,14 +285,16 @@ class FAISSFAQRetriever:
             self._embeddings = self._embeddings / norms
 
         self._index_built = True
-        print(f"   [EMBEDDINGS] Index built: {len(self._faqs)} FAQs in {encode_time:.0f}ms")
+        print(
+            f"   [EMBEDDINGS] Index built: {len(self._faqs)} FAQs in {encode_time:.0f}ms"
+        )
 
     def retrieve(
         self,
         query: str,
         top_k: int = 3,
         threshold: float = 0.5,
-        category: Optional[str] = None
+        category: Optional[str] = None,
     ) -> List[RetrievalResult]:
         """
         Retrieve relevant FAQs for a query.
@@ -304,9 +321,7 @@ class FAISSFAQRetriever:
 
         # Encode query
         query_embedding = self.model.encode(
-            [query],
-            convert_to_numpy=True,
-            show_progress_bar=False
+            [query], convert_to_numpy=True, show_progress_bar=False
         ).astype(_np.float32)
 
         # Normalize for cosine similarity
@@ -314,14 +329,16 @@ class FAISSFAQRetriever:
             _faiss.normalize_L2(query_embedding)
 
             # Search
-            scores, indices = self._index.search(query_embedding, min(top_k * 2, len(self._faqs)))
+            scores, indices = self._index.search(
+                query_embedding, min(top_k * 2, len(self._faqs))
+            )
             scores = scores[0]
             indices = indices[0]
         else:
             # Fallback: manual cosine similarity
             query_norm = query_embedding / _np.linalg.norm(query_embedding)
             scores = _np.dot(self._embeddings, query_norm.T).flatten()
-            indices = _np.argsort(scores)[::-1][:top_k * 2]
+            indices = _np.argsort(scores)[::-1][: top_k * 2]
             scores = scores[indices]
 
         self._last_query_time_ms = (time.time() - start) * 1000
@@ -343,11 +360,7 @@ class FAISSFAQRetriever:
             if category and faq.category != category:
                 continue
 
-            results.append(RetrievalResult(
-                faq=faq,
-                similarity=float(score),
-                rank=rank
-            ))
+            results.append(RetrievalResult(faq=faq, similarity=float(score), rank=rank))
             rank += 1
 
             if len(results) >= top_k:
@@ -356,9 +369,7 @@ class FAISSFAQRetriever:
         return results
 
     def retrieve_answer(
-        self,
-        query: str,
-        threshold: float = 0.6
+        self, query: str, threshold: float = 0.6
     ) -> Optional[Tuple[str, float]]:
         """
         Retrieve the best answer for a query.
@@ -477,6 +488,7 @@ class FAISSFAQRetriever:
 # KEYWORD-ENHANCED RETRIEVER
 # =============================================================================
 
+
 class HybridFAQRetriever(FAISSFAQRetriever):
     """
     Hybrid retriever combining semantic similarity with keyword matching.
@@ -500,7 +512,7 @@ class HybridFAQRetriever(FAISSFAQRetriever):
         query: str,
         top_k: int = 3,
         threshold: float = 0.5,
-        category: Optional[str] = None
+        category: Optional[str] = None,
     ) -> List[RetrievalResult]:
         """
         Retrieve with keyword boosting.
@@ -508,7 +520,9 @@ class HybridFAQRetriever(FAISSFAQRetriever):
         Keywords in FAQ entries boost similarity score.
         """
         # Get semantic results
-        results = super().retrieve(query, top_k=top_k * 2, threshold=threshold * 0.8, category=category)
+        results = super().retrieve(
+            query, top_k=top_k * 2, threshold=threshold * 0.8, category=category
+        )
 
         if not results:
             return results
@@ -534,11 +548,11 @@ class HybridFAQRetriever(FAISSFAQRetriever):
             # Apply boost (capped at 1.0)
             new_similarity = min(1.0, result.similarity + boost)
 
-            boosted_results.append(RetrievalResult(
-                faq=result.faq,
-                similarity=new_similarity,
-                rank=result.rank
-            ))
+            boosted_results.append(
+                RetrievalResult(
+                    faq=result.faq, similarity=new_similarity, rank=result.rank
+                )
+            )
 
         # Re-sort by boosted similarity
         boosted_results.sort(key=lambda x: x.similarity, reverse=True)
@@ -547,11 +561,11 @@ class HybridFAQRetriever(FAISSFAQRetriever):
         final_results = []
         for i, result in enumerate(boosted_results[:top_k]):
             if result.similarity >= threshold:
-                final_results.append(RetrievalResult(
-                    faq=result.faq,
-                    similarity=result.similarity,
-                    rank=i + 1
-                ))
+                final_results.append(
+                    RetrievalResult(
+                        faq=result.faq, similarity=result.similarity, rank=i + 1
+                    )
+                )
 
         return final_results
 
@@ -560,10 +574,9 @@ class HybridFAQRetriever(FAISSFAQRetriever):
 # FACTORY FUNCTION
 # =============================================================================
 
+
 def create_faq_retriever(
-    faqs: Optional[List[Dict]] = None,
-    hybrid: bool = True,
-    **kwargs
+    faqs: Optional[List[Dict]] = None, hybrid: bool = True, **kwargs
 ) -> FAISSFAQRetriever:
     """
     Factory function to create FAQ retriever.
@@ -599,35 +612,35 @@ if __name__ == "__main__":
             "question": "Quanto costa un taglio donna?",
             "answer": "Il taglio donna costa €35. Se lo abbini alla piega, è €55.",
             "category": "pricing",
-            "keywords": ["prezzo", "costo", "taglio"]
+            "keywords": ["prezzo", "costo", "taglio"],
         },
         {
             "id": "faq_002",
             "question": "Siete aperti il lunedì?",
             "answer": "Sì, siamo aperti dal lunedì al venerdì dalle 9 alle 18, sabato dalle 9 alle 17.",
             "category": "hours",
-            "keywords": ["orario", "aperti", "lunedì"]
+            "keywords": ["orario", "aperti", "lunedì"],
         },
         {
             "id": "faq_003",
             "question": "Quanto costa il colore?",
             "answer": "Il colore parte da €45. Per colorazioni particolari, contattaci per un preventivo.",
             "category": "pricing",
-            "keywords": ["prezzo", "costo", "colore", "tinta"]
+            "keywords": ["prezzo", "costo", "colore", "tinta"],
         },
         {
             "id": "faq_004",
             "question": "Accettate Satispay?",
             "answer": "Sì, accettiamo contanti, carta di credito, bancomat e Satispay.",
             "category": "payment",
-            "keywords": ["pagamento", "satispay", "carta", "contanti"]
+            "keywords": ["pagamento", "satispay", "carta", "contanti"],
         },
         {
             "id": "faq_005",
             "question": "Devo prenotare per un taglio?",
             "answer": "Consigliamo la prenotazione per garantire disponibilità, ma accettiamo anche clienti senza appuntamento.",
             "category": "booking",
-            "keywords": ["prenotare", "appuntamento", "taglio"]
+            "keywords": ["prenotare", "appuntamento", "taglio"],
         },
     ]
 

@@ -18,7 +18,7 @@ import uuid
 import wave
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +27,20 @@ logger = logging.getLogger(__name__)
 # Configuration
 # =============================================================================
 
+
 @dataclass
 class SIPConfig:
     """Ehiweb SIP configuration."""
+
     server: str = "sip.vivavox.it"
     port: int = 5060
     username: str = ""
     password: str = ""
     transport: str = "udp"
-    codecs: Tuple[str, ...] = ("PCMU", "PCMA")  # G.711 mu-law, A-law — G729.A preferred by EHIWEB
+    codecs: Tuple[str, ...] = (
+        "PCMU",
+        "PCMA",
+    )  # G.711 mu-law, A-law — G729.A preferred by EHIWEB
     local_ip: str = ""
     public_ip: str = ""  # NAT: public IP for Contact/SDP headers
     local_port: int = 5080  # Avoid conflict with other services on 5060
@@ -58,7 +63,9 @@ class SIPConfig:
         """
         # Accept both VOIP_SIP_* (main.py check) and EHIWEB_SIP_* (legacy) naming
         return cls(
-            server=os.getenv("VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")),
+            server=os.getenv(
+                "VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")
+            ),
             port=int(os.getenv("VOIP_SIP_PORT", os.getenv("EHIWEB_SIP_PORT", "5060"))),
             username=os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", "")),
             password=os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", "")),
@@ -71,8 +78,10 @@ class SIPConfig:
 # Call State Management
 # =============================================================================
 
+
 class CallState(Enum):
     """SIP call states."""
+
     IDLE = "idle"
     REGISTERING = "registering"
     REGISTERED = "registered"
@@ -87,6 +96,7 @@ class CallState(Enum):
 
 class CallDirection(Enum):
     """Call direction."""
+
     INBOUND = "inbound"
     OUTBOUND = "outbound"
 
@@ -94,6 +104,7 @@ class CallDirection(Enum):
 @dataclass
 class CallSession:
     """Active call session information."""
+
     call_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     direction: CallDirection = CallDirection.INBOUND
     remote_uri: str = ""
@@ -134,6 +145,7 @@ class CallSession:
 # SIP Protocol Implementation
 # =============================================================================
 
+
 class SIPMessage:
     """SIP message parser and builder."""
 
@@ -151,25 +163,25 @@ class SIPMessage:
     def parse(cls, data: bytes) -> "SIPMessage":
         """Parse SIP message from bytes."""
         msg = cls()
-        text = data.decode('utf-8', errors='replace')
-        lines = text.split('\r\n')
+        text = data.decode("utf-8", errors="replace")
+        lines = text.split("\r\n")
 
         if not lines:
             return msg
 
         # Parse first line (request-line or status-line)
         first_line = lines[0]
-        if first_line.startswith('SIP/'):
+        if first_line.startswith("SIP/"):
             # Response: SIP/2.0 200 OK
             msg.is_request = False
-            parts = first_line.split(' ', 2)
+            parts = first_line.split(" ", 2)
             msg.version = parts[0]
             msg.status_code = int(parts[1]) if len(parts) > 1 else 0
             msg.reason_phrase = parts[2] if len(parts) > 2 else ""
         else:
             # Request: INVITE sip:user@host SIP/2.0
             msg.is_request = True
-            parts = first_line.split(' ')
+            parts = first_line.split(" ")
             msg.method = parts[0]
             msg.uri = parts[1] if len(parts) > 1 else ""
             msg.version = parts[2] if len(parts) > 2 else "SIP/2.0"
@@ -177,16 +189,16 @@ class SIPMessage:
         # Parse headers
         body_start = -1
         for i, line in enumerate(lines[1:], 1):
-            if line == '':
+            if line == "":
                 body_start = i + 1
                 break
-            if ':' in line:
-                key, value = line.split(':', 1)
+            if ":" in line:
+                key, value = line.split(":", 1)
                 msg.headers[key.strip()] = value.strip()
 
         # Parse body
         if body_start > 0 and body_start < len(lines):
-            msg.body = '\r\n'.join(lines[body_start:])
+            msg.body = "\r\n".join(lines[body_start:])
 
         return msg
 
@@ -207,11 +219,11 @@ class SIPMessage:
         else:
             lines.append("Content-Length: 0")
 
-        lines.append('')
+        lines.append("")
         if self.body:
             lines.append(self.body)
 
-        return '\r\n'.join(lines).encode('utf-8')
+        return "\r\n".join(lines).encode("utf-8")
 
 
 class SIPClient:
@@ -278,7 +290,7 @@ class SIPClient:
             # STUN Binding Request (RFC 5389 minimal)
             # Header: type=0x0001 (Binding Request), length=0, magic=0x2112A442, txid=12 bytes
             txid = os.urandom(12)
-            stun_req = struct.pack('!HHI', 0x0001, 0, 0x2112A442) + txid
+            stun_req = struct.pack("!HHI", 0x0001, 0, 0x2112A442) + txid
 
             # Use the SIP socket for consistent NAT mapping
             sock = self._socket
@@ -286,7 +298,7 @@ class SIPClient:
                 # Create temp socket if SIP socket not yet created
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.settimeout(3)
-                sock.bind(('0.0.0.0', self.config.local_port))
+                sock.bind(("0.0.0.0", self.config.local_port))  # nosec B104 - SIP UDP listener
 
             sock.sendto(stun_req, (stun_server, stun_port))
 
@@ -300,7 +312,7 @@ class SIPClient:
             if len(data) < 20:
                 raise ValueError("STUN response too short")
 
-            msg_type = struct.unpack('!H', data[0:2])[0]
+            msg_type = struct.unpack("!H", data[0:2])[0]
             if msg_type != 0x0101:  # Binding Success Response
                 raise ValueError(f"Unexpected STUN response type: {msg_type:#06x}")
 
@@ -312,23 +324,23 @@ class SIPClient:
             while offset < len(data):
                 if offset + 4 > len(data):
                     break
-                attr_type = struct.unpack('!H', data[offset:offset+2])[0]
-                attr_len = struct.unpack('!H', data[offset+2:offset+4])[0]
-                attr_data = data[offset+4:offset+4+attr_len]
+                attr_type = struct.unpack("!H", data[offset : offset + 2])[0]
+                attr_len = struct.unpack("!H", data[offset + 2 : offset + 4])[0]
+                attr_data = data[offset + 4 : offset + 4 + attr_len]
 
                 if attr_type == 0x0020 and len(attr_data) >= 8:
                     # XOR-MAPPED-ADDRESS
                     family = attr_data[1]
-                    xport = struct.unpack('!H', attr_data[2:4])[0] ^ 0x2112
+                    xport = struct.unpack("!H", attr_data[2:4])[0] ^ 0x2112
                     if family == 0x01:  # IPv4
-                        xip = struct.unpack('!I', attr_data[4:8])[0] ^ 0x2112A442
-                        public_ip = socket.inet_ntoa(struct.pack('!I', xip))
+                        xip = struct.unpack("!I", attr_data[4:8])[0] ^ 0x2112A442
+                        public_ip = socket.inet_ntoa(struct.pack("!I", xip))
                         public_port = xport
                         break
                 elif attr_type == 0x0001 and len(attr_data) >= 8:
                     # MAPPED-ADDRESS (fallback)
                     family = attr_data[1]
-                    mport = struct.unpack('!H', attr_data[2:4])[0]
+                    mport = struct.unpack("!H", attr_data[2:4])[0]
                     if family == 0x01:
                         public_ip = socket.inet_ntoa(attr_data[4:8])
                         public_port = mport
@@ -350,7 +362,7 @@ class SIPClient:
 
         Priority: STUN discovery > VOIP_PUBLIC_IP env > HTTP detect > local IP.
         """
-        if hasattr(self, '_cached_public_ip'):
+        if hasattr(self, "_cached_public_ip"):
             return self._cached_public_ip
 
         if self.config.public_ip:
@@ -367,13 +379,21 @@ class SIPClient:
         # Fallback: HTTP detect
         try:
             import urllib.request
-            self._cached_public_ip = urllib.request.urlopen(
-                'https://api.ipify.org', timeout=5
-            ).read().decode('utf-8').strip()
+
+            self._cached_public_ip = (
+                urllib.request.urlopen(  # nosec B310 - fixed HTTPS endpoint
+                    "https://api.ipify.org", timeout=5
+                )
+                .read()
+                .decode("utf-8")
+                .strip()
+            )
             logger.info(f"Public IP (HTTP): {self._cached_public_ip}")
         except Exception:
-                self._cached_public_ip = self._get_local_ip()
-                logger.warning(f"Could not detect public IP, using local: {self._cached_public_ip}")
+            self._cached_public_ip = self._get_local_ip()
+            logger.warning(
+                f"Could not detect public IP, using local: {self._cached_public_ip}"
+            )
         return self._cached_public_ip
 
     def _create_socket(self):
@@ -387,34 +407,40 @@ class SIPClient:
         self._socket.settimeout(0.5)
 
         # Bind on 0.0.0.0 to receive from any interface (NAT traversal)
-        self._socket.bind(('0.0.0.0', self.config.local_port))
+        # B104: the SIP UDP listener must receive traffic on every host interface.
+        self._socket.bind(
+            ("0.0.0.0", self.config.local_port)  # nosec B104
+        )
         logger.info(f"SIP socket bound to 0.0.0.0:{self.config.local_port}")
 
     def _build_via_header(self) -> str:
         """Build Via header with STUN public IP."""
         public_ip = self._get_public_ip()
-        port = getattr(self, '_cached_public_port', self.config.local_port)
+        port = getattr(self, "_cached_public_port", self.config.local_port)
         branch = f"z9hG4bK{uuid.uuid4().hex[:16]}"
         return f"SIP/2.0/UDP {public_ip}:{port};branch={branch};rport"
 
     def _build_contact_header(self) -> str:
         """Build Contact header with STUN-discovered public IP for NAT traversal."""
         public_ip = self._get_public_ip()
-        port = getattr(self, '_cached_public_port', self.config.local_port)
+        port = getattr(self, "_cached_public_port", self.config.local_port)
         return f"<sip:{self.config.username}@{public_ip}:{port}>"
 
     def _compute_digest_response(self, method: str, uri: str) -> str:
         """Compute MD5 digest for authentication."""
         # HA1 = MD5(username:realm:password)
         ha1 = hashlib.md5(
-            f"{self.config.username}:{self._realm}:{self.config.password}".encode()
+            f"{self.config.username}:{self._realm}:{self.config.password}".encode(),
+            usedforsecurity=False,
         ).hexdigest()
 
         # HA2 = MD5(method:uri)
-        ha2 = hashlib.md5(f"{method}:{uri}".encode()).hexdigest()
+        ha2 = hashlib.md5(f"{method}:{uri}".encode(), usedforsecurity=False).hexdigest()
 
         # Response = MD5(HA1:nonce:HA2)
-        response = hashlib.md5(f"{ha1}:{self._nonce}:{ha2}".encode()).hexdigest()
+        response = hashlib.md5(
+            f"{ha1}:{self._nonce}:{ha2}".encode(), usedforsecurity=False
+        ).hexdigest()
 
         return response
 
@@ -427,7 +453,7 @@ class SIPClient:
             f'nonce="{self._nonce}", '
             f'uri="{uri}", '
             f'response="{response}", '
-            f'algorithm=MD5'
+            f"algorithm=MD5"
         )
 
     async def _send_message(self, msg: SIPMessage):
@@ -510,14 +536,18 @@ class SIPClient:
             via = msg.headers.get("Via", "")
             if "rport=" in via:
                 try:
-                    rport = int(via.split("rport=")[1].split(";")[0].split(",")[0].strip())
+                    rport = int(
+                        via.split("rport=")[1].split(";")[0].split(",")[0].strip()
+                    )
                     self._cached_public_port = rport
                     logger.info(f"NAT: server sees us on port {rport} (rport)")
                 except (ValueError, IndexError):
                     pass
             if "received=" in via:
                 try:
-                    received = via.split("received=")[1].split(";")[0].split(",")[0].strip()
+                    received = (
+                        via.split("received=")[1].split(";")[0].split(",")[0].strip()
+                    )
                     self._cached_public_ip = received
                     logger.info(f"NAT: server sees us at IP {received} (received)")
                 except IndexError:
@@ -604,7 +634,9 @@ class SIPClient:
         if self.on_incoming_call:
             self.on_incoming_call(self.active_call)
 
-    async def _send_response(self, request: SIPMessage, code: int, reason: str, sdp: str = ""):
+    async def _send_response(
+        self, request: SIPMessage, code: int, reason: str, sdp: str = ""
+    ):
         """Send SIP response."""
         msg = SIPMessage()
         msg.is_request = False
@@ -622,7 +654,7 @@ class SIPClient:
 
         # Add tag to To header if not present
         if self.active_call and ";tag=" not in msg.headers["To"]:
-            msg.headers["To"] = f'{msg.headers["To"]};tag={self.active_call.local_tag}'
+            msg.headers["To"] = f"{msg.headers['To']};tag={self.active_call.local_tag}"
 
         if sdp:
             msg.headers["Content-Type"] = "application/sdp"
@@ -653,14 +685,16 @@ class SIPClient:
         if not self.active_call:
             return
 
-        for line in sdp.split('\r\n'):
-            if line.startswith('c=IN IP4 '):
-                self.active_call.remote_rtp_ip = line.split(' ')[2]
-            elif line.startswith('m=audio '):
-                parts = line.split(' ')
+        for line in sdp.split("\r\n"):
+            if line.startswith("c=IN IP4 "):
+                self.active_call.remote_rtp_ip = line.split(" ")[2]
+            elif line.startswith("m=audio "):
+                parts = line.split(" ")
                 self.active_call.remote_rtp_port = int(parts[1])
 
-        logger.info(f"SDP parsed: remote RTP = {self.active_call.remote_rtp_ip}:{self.active_call.remote_rtp_port}")
+        logger.info(
+            f"SDP parsed: remote RTP = {self.active_call.remote_rtp_ip}:{self.active_call.remote_rtp_port}"
+        )
 
     async def answer_call(self):
         """Answer incoming call with 200 OK."""
@@ -703,7 +737,7 @@ class SIPClient:
         for port in range(self.config.rtp_port_start, self.config.rtp_port_end, 2):
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                s.bind(('', port))
+                s.bind(("", port))
                 s.close()
                 return port
             except OSError:
@@ -719,7 +753,9 @@ class SIPClient:
             self.active_call.state = CallState.ENDED
             self.active_call.end_time = time.time()
 
-            logger.info(f"Call ended by remote (duration: {self.active_call.duration_seconds}s)")
+            logger.info(
+                f"Call ended by remote (duration: {self.active_call.duration_seconds}s)"
+            )
 
             if self.on_call_ended:
                 self.on_call_ended(self.active_call)
@@ -854,7 +890,9 @@ class SIPClient:
 
         # Add auth if we have credentials
         if self._nonce:
-            msg.headers["Authorization"] = self._build_auth_header("INVITE", self.active_call.remote_uri)
+            msg.headers["Authorization"] = self._build_auth_header(
+                "INVITE", self.active_call.remote_uri
+            )
 
         msg.body = self.active_call.local_sdp
 
@@ -933,7 +971,9 @@ class SIPClient:
     async def _register_loop(self):
         """Periodic registration refresh."""
         while self._running:
-            await asyncio.sleep(self.config.register_interval - 30)  # Refresh 30s before expiry
+            await asyncio.sleep(
+                self.config.register_interval - 30
+            )  # Refresh 30s before expiry
             if self._running:
                 await self._send_register(with_auth=True)
 
@@ -948,8 +988,7 @@ class SIPClient:
             if self._running and self._socket:
                 try:
                     self._socket.sendto(
-                        b"\r\n\r\n",
-                        (self.config.server, self.config.port)
+                        b"\r\n\r\n", (self.config.server, self.config.port)
                     )
                 except OSError as e:
                     logger.warning(f"NAT keepalive failed: {e}")
@@ -983,7 +1022,9 @@ class SIPClient:
                 "Expires": "0",  # Unregister
             }
             if self._nonce:
-                msg.headers["Authorization"] = self._build_auth_header("REGISTER", msg.uri)
+                msg.headers["Authorization"] = self._build_auth_header(
+                    "REGISTER", msg.uri
+                )
             await self._send_message(msg)
 
         # Close socket
@@ -1012,13 +1053,16 @@ class SIPClient:
                 "remote_number": self.active_call.remote_number,
                 "state": self.active_call.state.value,
                 "duration": self.active_call.duration_seconds,
-            } if self.active_call else None
+            }
+            if self.active_call
+            else None,
         }
 
 
 # =============================================================================
 # RTP Audio Transport
 # =============================================================================
+
 
 class RTPTransport:
     """
@@ -1042,7 +1086,7 @@ class RTPTransport:
         self._receive_task: Optional[asyncio.Task] = None
 
         # RTP state
-        self._ssrc = int.from_bytes(os.urandom(4), 'big')
+        self._ssrc = int.from_bytes(os.urandom(4), "big")
         self._sequence = 0
         self._timestamp = 0
 
@@ -1058,7 +1102,7 @@ class RTPTransport:
         self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         # Use blocking with timeout for run_in_executor compat (Python 3.9)
         self._socket.settimeout(0.5)
-        self._socket.bind(('', self.local_port))
+        self._socket.bind(("", self.local_port))
 
         self._running = True
 
@@ -1066,9 +1110,11 @@ class RTPTransport:
         if self.remote_ip and self.remote_port:
             try:
                 # Minimal RTP packet (header only, no payload) opens NAT mapping
-                dummy_rtp = struct.pack('>BBHII', 0x80, 0, 0, 0, self._ssrc)
+                dummy_rtp = struct.pack(">BBHII", 0x80, 0, 0, 0, self._ssrc)
                 self._socket.sendto(dummy_rtp, (self.remote_ip, self.remote_port))
-                logger.info(f"RTP NAT pinhole opened: {self.remote_ip}:{self.remote_port}")
+                logger.info(
+                    f"RTP NAT pinhole opened: {self.remote_ip}:{self.remote_port}"
+                )
             except OSError as e:
                 logger.warning(f"RTP NAT pinhole failed: {e}")
 
@@ -1099,7 +1145,7 @@ class RTPTransport:
                 )
                 if len(data) > self.RTP_HEADER_SIZE:
                     # Extract audio payload (skip RTP header)
-                    payload = data[self.RTP_HEADER_SIZE:]
+                    payload = data[self.RTP_HEADER_SIZE :]
 
                     # Decode from G.711
                     pcm = self._decode_pcmu(payload)
@@ -1140,12 +1186,12 @@ class RTPTransport:
         # Build RTP header
         pt_byte = self.PCMU_PAYLOAD_TYPE | (0x80 if marker else 0)
         header = struct.pack(
-            '>BBHII',
+            ">BBHII",
             0x80,  # Version 2, no padding, no extension, no CSRC
             pt_byte,  # Payload type + marker bit
             self._sequence & 0xFFFF,
             self._timestamp & 0xFFFFFFFF,
-            self._ssrc
+            self._ssrc,
         )
 
         packet = header + payload
@@ -1164,6 +1210,7 @@ class RTPTransport:
 # Simple Energy-Based VAD for VoIP RTP Stream (Bug 5 fix)
 # =============================================================================
 
+
 class SimpleVoIPVAD:
     """
     Energy-based Voice Activity Detector for RTP audio streams.
@@ -1180,9 +1227,9 @@ class SimpleVoIPVAD:
         self.is_speaking: bool = False
         self.silence_frames: int = 0
         self.speech_frames: int = 0
-        self.speech_threshold: int = 500   # RMS amplitude threshold (0-32767)
+        self.speech_threshold: int = 500  # RMS amplitude threshold (0-32767)
         self.silence_timeout_frames: int = 35  # ~700ms at 20ms/frame
-        self.min_speech_frames: int = 5    # minimum 100ms speech before turn-complete
+        self.min_speech_frames: int = 5  # minimum 100ms speech before turn-complete
 
     def process_frame(self, pcm_data: bytes) -> tuple:
         """
@@ -1206,8 +1253,10 @@ class SimpleVoIPVAD:
         else:
             if self.is_speaking:
                 self.silence_frames += 1
-                if (self.silence_frames >= self.silence_timeout_frames
-                        and self.speech_frames >= self.min_speech_frames):
+                if (
+                    self.silence_frames >= self.silence_timeout_frames
+                    and self.speech_frames >= self.min_speech_frames
+                ):
                     # Turn complete: speech ended and silence exceeded timeout
                     self.is_speaking = False
                     self.speech_frames = 0
@@ -1227,6 +1276,7 @@ class SimpleVoIPVAD:
 # VoIP Manager (High-level integration)
 # =============================================================================
 
+
 class VoIPManager:
     """
     High-level VoIP manager for FLUXION Voice Agent.
@@ -1243,7 +1293,9 @@ class VoIPManager:
 
         # Audio buffer for accumulating speech samples (Bug 5: VAD-gated)
         self._audio_buffer = bytearray()
-        self._buffer_threshold = 8000  # kept as hard-cap fallback (~500ms at 8kHz 16-bit)
+        self._buffer_threshold = (
+            8000  # kept as hard-cap fallback (~500ms at 8kHz 16-bit)
+        )
 
         # Bug 5 fix: energy-based VAD replaces fixed threshold
         self._vad = SimpleVoIPVAD()
@@ -1313,7 +1365,7 @@ class VoIPManager:
         self.rtp = RTPTransport(
             local_port=call.local_rtp_port,
             remote_ip=call.remote_rtp_ip,
-            remote_port=call.remote_rtp_port
+            remote_port=call.remote_rtp_port,
         )
         self.rtp.on_audio_received = self._on_audio_received
         await self.rtp.start()
@@ -1329,7 +1381,9 @@ class VoIPManager:
 
     def _on_call_ended(self, call: CallSession):
         """Handle call ended."""
-        logger.info(f"Call ended: {call.remote_number} (duration: {call.duration_seconds}s)")
+        logger.info(
+            f"Call ended: {call.remote_number} (duration: {call.duration_seconds}s)"
+        )
 
         # Stop RTP
         if self.rtp:
@@ -1424,10 +1478,14 @@ class VoIPManager:
             logger.warning("_send_audio: RTP transport is None, skipping")
             return
         if not self.rtp.remote_ip or not self.rtp.remote_port:
-            logger.warning(f"_send_audio: RTP remote not set (ip={self.rtp.remote_ip}, port={self.rtp.remote_port})")
+            logger.warning(
+                f"_send_audio: RTP remote not set (ip={self.rtp.remote_ip}, port={self.rtp.remote_port})"
+            )
             return
 
-        logger.info(f"_send_audio: sending {len(audio_data)} bytes to {self.rtp.remote_ip}:{self.rtp.remote_port}")
+        logger.info(
+            f"_send_audio: sending {len(audio_data)} bytes to {self.rtp.remote_ip}:{self.rtp.remote_port}"
+        )
 
         src_rate = 16000  # default assumption for raw PCM path
         pcm_data = audio_data
@@ -1436,11 +1494,13 @@ class VoIPManager:
         if audio_data[:4] == b"RIFF":
             try:
                 wav_io = io.BytesIO(audio_data)
-                with wave.open(wav_io, 'rb') as wf:
+                with wave.open(wav_io, "rb") as wf:
                     src_rate = wf.getframerate()
                     pcm_data = wf.readframes(wf.getnframes())
             except Exception as exc:
-                logger.warning(f"WAV header parse failed: {exc} — using raw bytes at 16kHz")
+                logger.warning(
+                    f"WAV header parse failed: {exc} — using raw bytes at 16kHz"
+                )
                 pcm_data = audio_data
                 src_rate = 16000
 
@@ -1454,7 +1514,7 @@ class VoIPManager:
         chunk_size = 320  # 160 samples * 2 bytes = 20ms at 8kHz
         first_chunk = True
         for i in range(0, len(audio_8k), chunk_size):
-            chunk = audio_8k[i:i+chunk_size]
+            chunk = audio_8k[i : i + chunk_size]
             if len(chunk) == chunk_size:
                 await self.rtp.send_audio(chunk, marker=first_chunk)
                 first_chunk = False
@@ -1477,7 +1537,7 @@ class VoIPManager:
         return {
             "running": self._running,
             "sip": self.sip.get_status(),
-            "rtp_active": self.rtp is not None
+            "rtp_active": self.rtp is not None,
         }
 
 
@@ -1485,9 +1545,11 @@ class VoIPManager:
 # Test
 # =============================================================================
 
+
 async def test_voip():
     """Test VoIP manager."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
     logging.basicConfig(level=logging.DEBUG)

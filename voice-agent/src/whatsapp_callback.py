@@ -12,7 +12,6 @@ Python 3.9 compatible — no walrus operator, no match/case.
 """
 
 import asyncio
-import json
 import re
 import logging
 import sqlite3
@@ -50,9 +49,11 @@ RESCHEDULE_PATTERN = re.compile(
 # WAPhoneSession
 # =============================================================================
 
+
 @dataclass
 class WAPhoneSession:
     """Tracks state per phone number for WhatsApp callback sessions."""
+
     phone: str
     session_id: Optional[str] = None
     pending_appointment_id: Optional[str] = None
@@ -70,6 +71,7 @@ class WAPhoneSession:
 # =============================================================================
 # WhatsAppCallbackHandler
 # =============================================================================
+
 
 class WhatsAppCallbackHandler:
     """
@@ -90,7 +92,9 @@ class WhatsAppCallbackHandler:
         # In-memory state
         self._phone_sessions: Dict[str, WAPhoneSession] = {}
         self._processed_ids: Set[str] = set()
-        self._processed_id_times: List[tuple] = []  # (message_id, timestamp) per TTL cleanup
+        self._processed_id_times: List[
+            tuple
+        ] = []  # (message_id, timestamp) per TTL cleanup
 
         # Rate tracking per phone: phone -> list of timestamps (last 60s)
         self._rate_counts: Dict[str, List[datetime]] = {}
@@ -132,7 +136,10 @@ class WhatsAppCallbackHandler:
 
         # Rate limit check
         if not self._check_rate_limit(phone):
-            logger.warning("Rate limit exceeded for phone=***%s", phone[-3:] if len(phone) >= 3 else "***")
+            logger.warning(
+                "Rate limit exceeded for phone=***%s",
+                phone[-3:] if len(phone) >= 3 else "***",
+            )
             return web.json_response({"ok": True, "rate_limited": True})
 
         # Get or create session
@@ -147,9 +154,18 @@ class WhatsAppCallbackHandler:
             try:
                 await self.wa_client.send_message_async(phone, response_text)
             except (aiohttp.ClientError, asyncio.TimeoutError, OSError) as e:
-                logger.warning("Failed to send WA response to ***%s (network): %s", phone[-3:] if len(phone) >= 3 else "***", e)
+                logger.warning(
+                    "Failed to send WA response to ***%s (network): %s",
+                    phone[-3:] if len(phone) >= 3 else "***",
+                    e,
+                )
             except Exception as e:
-                logger.error("Failed to send WA response to ***%s (unexpected): %s", phone[-3:] if len(phone) >= 3 else "***", e, exc_info=True)
+                logger.error(
+                    "Failed to send WA response to ***%s (unexpected): %s",
+                    phone[-3:] if len(phone) >= 3 else "***",
+                    e,
+                    exc_info=True,
+                )
 
         return web.json_response({"ok": True, "phone": phone, "intent_routed": True})
 
@@ -207,14 +223,18 @@ class WhatsAppCallbackHandler:
     # Session management
     # =========================================================================
 
-    def _get_or_create_session(self, phone: str, name: str = "Cliente") -> WAPhoneSession:
+    def _get_or_create_session(
+        self, phone: str, name: str = "Cliente"
+    ) -> WAPhoneSession:
         session = self._phone_sessions.get(phone)
         if session is None or session.is_expired():
             session = WAPhoneSession(phone=phone, client_name=name)
             self._phone_sessions[phone] = session
         return session
 
-    def register_pending_appointment(self, phone: str, appointment_id: str, client_name: str = "Cliente"):
+    def register_pending_appointment(
+        self, phone: str, appointment_id: str, client_name: str = "Cliente"
+    ):
         """
         Registra un appuntamento in attesa di conferma per questo phone.
         Chiamato da orchestratore/booking flow quando invia reminder.
@@ -223,13 +243,19 @@ class WhatsAppCallbackHandler:
         session.pending_appointment_id = appointment_id
         session.client_name = client_name
         session.fsm_state = "waiting_confirmation"
-        logger.info("Registered pending appointment %s for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
+        logger.info(
+            "Registered pending appointment %s for phone ***%s",
+            appointment_id,
+            phone[-3:] if len(phone) >= 3 else "***",
+        )
 
     # =========================================================================
     # Intent routing
     # =========================================================================
 
-    async def _route_intent(self, phone: str, body: str, session: WAPhoneSession, name: str) -> Optional[str]:
+    async def _route_intent(
+        self, phone: str, body: str, session: WAPhoneSession, name: str
+    ) -> Optional[str]:
         """Routing: CONFIRM | CANCEL | RESCHEDULE | free text."""
         if CONFIRM_PATTERN.match(body):
             return await self._handle_confirm(phone, session)
@@ -292,12 +318,16 @@ class WhatsAppCallbackHandler:
                         with sqlite3.connect(str(db_path), timeout=3) as conn:
                             row = conn.execute(
                                 "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
-                                (appointment_id,)
+                                (appointment_id,),
                             ).fetchone()
                         if row and row[0]:
                             appt_dt_str = str(row[0]).replace("T", " ").split(".")[0]
-                            appt_dt = datetime.strptime(appt_dt_str, "%Y-%m-%d %H:%M:%S")
-                            hours_until = (appt_dt - datetime.now()).total_seconds() / 3600.0
+                            appt_dt = datetime.strptime(
+                                appt_dt_str, "%Y-%m-%d %H:%M:%S"
+                            )
+                            hours_until = (
+                                appt_dt - datetime.now()
+                            ).total_seconds() / 3600.0
                             in_window = hours_until < window_hours
                     except Exception:
                         pass
@@ -307,7 +337,9 @@ class WhatsAppCallbackHandler:
                         f"Disdetta ricevuta dopo la finestra di {window_hours} ore. "
                         f"Per assistenza, chiamaci direttamente."
                     )
-                return "Non riesco a cancellare l'appuntamento. Contattaci direttamente."
+                return (
+                    "Non riesco a cancellare l'appuntamento. Contattaci direttamente."
+                )
         else:
             return (
                 "Non ho trovato appuntamenti da cancellare per il tuo numero. "
@@ -334,32 +366,40 @@ class WhatsAppCallbackHandler:
                 "Scrivi il servizio e il giorno preferiti per prenotare un nuovo appuntamento!"
             )
 
-    async def _handle_free_text(self, phone: str, body: str, session: WAPhoneSession, name: str) -> Optional[str]:
+    async def _handle_free_text(
+        self, phone: str, body: str, session: WAPhoneSession, name: str
+    ) -> Optional[str]:
         """Testo libero: forward all'orchestratore."""
         if not self.orchestrator:
-            return "Ciao! Per prenotare chiama direttamente o scrivi al numero principale."
+            return (
+                "Ciao! Per prenotare chiama direttamente o scrivi al numero principale."
+            )
 
         try:
             session_id = session.session_id
             if not session_id or session.is_expired(timeout_minutes=30):
                 from session_manager import SessionChannel
+
                 result = await self.orchestrator.start_session(
-                    channel=SessionChannel.WHATSAPP,
-                    phone_number=phone
+                    channel=SessionChannel.WHATSAPP, phone_number=phone
                 )
                 session.session_id = result.session_id
                 session_id = result.session_id
 
             result = await self.orchestrator.process(
-                user_input=body,
-                session_id=session_id
+                user_input=body, session_id=session_id
             )
             session.fsm_state = "in_conversation"
             return result.response if result else None
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            logger.error("Orchestrator error for phone ***%s: %s", phone[-3:] if len(phone) >= 3 else "***", e, exc_info=True)
+            logger.error(
+                "Orchestrator error for phone ***%s: %s",
+                phone[-3:] if len(phone) >= 3 else "***",
+                e,
+                exc_info=True,
+            )
             return "Ciao! Come posso aiutarti? Per prenotare scrivi il servizio che ti interessa."
 
     # =========================================================================
@@ -389,12 +429,16 @@ class WhatsAppCallbackHandler:
                       AND (a.deleted_at IS NULL OR a.deleted_at = '')
                     ORDER BY a.created_at DESC LIMIT 1
                     """,
-                    (f"%{phone_suffix}",)
+                    (f"%{phone_suffix}",),
                 ).fetchone()
             if row:
                 return str(row[0])
         except sqlite3.Error as e:
-            logger.debug("DB lookup error for phone ***%s: %s", phone[-3:] if len(phone) >= 3 else "***", e)
+            logger.debug(
+                "DB lookup error for phone ***%s: %s",
+                phone[-3:] if len(phone) >= 3 else "***",
+                e,
+            )
         return None
 
     def _get_db_path(self):
@@ -402,6 +446,7 @@ class WhatsAppCallbackHandler:
         import os
         import sys
         from pathlib import Path
+
         home = Path.home()
         db_env = os.environ.get("FLUXION_DB_PATH")
         if db_env:
@@ -416,7 +461,11 @@ class WhatsAppCallbackHandler:
             ]
         else:
             candidates = [
-                home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db",
+                home
+                / "Library"
+                / "Application Support"
+                / "com.fluxion.desktop"
+                / "fluxion.db",
                 home / "Library" / "Application Support" / "fluxion" / "fluxion.db",
             ]
         for p in candidates:
@@ -433,10 +482,14 @@ class WhatsAppCallbackHandler:
             with sqlite3.connect(str(db_path), timeout=3) as conn:
                 conn.execute(
                     "UPDATE appuntamenti SET stato = 'Confermato', updated_at = datetime('now') WHERE id = ?",
-                    (appointment_id,)
+                    (appointment_id,),
                 )
                 conn.commit()
-            logger.info("Appointment %s confirmed via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
+            logger.info(
+                "Appointment %s confirmed via WhatsApp for phone ***%s",
+                appointment_id,
+                phone[-3:] if len(phone) >= 3 else "***",
+            )
             return True
         except sqlite3.Error as e:
             logger.error("Failed to confirm appointment %s: %s", appointment_id, e)
@@ -451,7 +504,7 @@ class WhatsAppCallbackHandler:
             with sqlite3.connect(str(db_path), timeout=3) as conn:
                 row = conn.execute(
                     "SELECT valore FROM faq_settings WHERE chiave = ? LIMIT 1",
-                    ("ore_disdetta",)
+                    ("ore_disdetta",),
                 ).fetchone()
             if row and row[0] is not None:
                 return int(row[0])
@@ -473,7 +526,7 @@ class WhatsAppCallbackHandler:
             with sqlite3.connect(str(db_path), timeout=3) as conn_check:
                 row = conn_check.execute(
                     "SELECT data_ora_inizio FROM appuntamenti WHERE id = ? LIMIT 1",
-                    (appointment_id,)
+                    (appointment_id,),
                 ).fetchone()
 
             if row and row[0]:
@@ -487,20 +540,28 @@ class WhatsAppCallbackHandler:
                     if hours_until < window_hours:
                         logger.warning(
                             "Cancellation blocked for appointment %s (%.1fh until appt, window=%dh)",
-                            appointment_id, hours_until, window_hours
+                            appointment_id,
+                            hours_until,
+                            window_hours,
                         )
                         return False
                 except (ValueError, TypeError) as e:
-                    logger.debug("Could not parse appointment datetime for window check: %s", e)
+                    logger.debug(
+                        "Could not parse appointment datetime for window check: %s", e
+                    )
 
             with sqlite3.connect(str(db_path), timeout=3) as conn:
                 conn.execute(
                     "UPDATE appuntamenti SET stato = 'Cancellato', deleted_at = datetime('now'), "
                     "updated_at = datetime('now') WHERE id = ?",
-                    (appointment_id,)
+                    (appointment_id,),
                 )
                 conn.commit()
-            logger.info("Appointment %s cancelled via WhatsApp for phone ***%s", appointment_id, phone[-3:] if len(phone) >= 3 else "***")
+            logger.info(
+                "Appointment %s cancelled via WhatsApp for phone ***%s",
+                appointment_id,
+                phone[-3:] if len(phone) >= 3 else "***",
+            )
             # Notify Tauri HTTP bridge (fire-and-forget, non-fatal)
             asyncio.create_task(self._notify_operator_cancel(appointment_id, phone))
             return True
@@ -519,7 +580,9 @@ class WhatsAppCallbackHandler:
                 ) as resp:
                     logger.info("[Cancel] Operator notified: status=%s", resp.status)
         except Exception as e:
-            logger.debug("[Cancel] Operator notify skipped (Tauri bridge offline): %s", e)
+            logger.debug(
+                "[Cancel] Operator notify skipped (Tauri bridge offline): %s", e
+            )
 
     # =========================================================================
     # Rate limiting
@@ -537,7 +600,12 @@ class WhatsAppCallbackHandler:
         self._rate_counts[phone] = timestamps
 
         if len(timestamps) > self.RATE_LIMIT:
-            logger.warning("Rate limit: phone=***%s sent %d msgs in %ds", phone[-3:] if len(phone) >= 3 else "***", len(timestamps), self.RATE_WINDOW_SECONDS)
+            logger.warning(
+                "Rate limit: phone=***%s sent %d msgs in %ds",
+                phone[-3:] if len(phone) >= 3 else "***",
+                len(timestamps),
+                self.RATE_WINDOW_SECONDS,
+            )
             return False
         return True
 
@@ -551,4 +619,6 @@ class WhatsAppCallbackHandler:
         expired = [mid for mid, ts in self._processed_id_times if ts < cutoff]
         for mid in expired:
             self._processed_ids.discard(mid)
-        self._processed_id_times = [(mid, ts) for mid, ts in self._processed_id_times if ts >= cutoff]
+        self._processed_id_times = [
+            (mid, ts) for mid, ts in self._processed_id_times if ts >= cutoff
+        ]

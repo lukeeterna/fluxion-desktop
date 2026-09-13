@@ -42,6 +42,7 @@ try:
         RetrievalResult,
         create_faq_retriever,
     )
+
     HAS_FAQ_RETRIEVER = True
 except ImportError:
     HAS_FAQ_RETRIEVER = False
@@ -55,6 +56,7 @@ try:
         create_faq_manager,
         find_keyword_match,
     )
+
     HAS_FAQ_MANAGER = True
 except ImportError:
     HAS_FAQ_MANAGER = False
@@ -109,6 +111,7 @@ try:
         CallState,
         CallDirection,
     )
+
     HAS_VOIP = True
 except ImportError:
     HAS_VOIP = False
@@ -126,6 +129,84 @@ try:
         MessageDirection,
         PendingQuestion,
     )
+
     HAS_WHATSAPP = True
 except ImportError:
     HAS_WHATSAPP = False
+
+__all__ = [
+    "classify_intent",
+    "exact_match_intent",
+    "pattern_based_intent",
+    "normalize_input",
+    "IntentResult",
+    "IntentCategory",
+    "extract_date",
+    "extract_time",
+    "extract_name",
+    "extract_service",
+    "extract_phone",
+    "extract_email",
+    "extract_all",
+    "ExtractedDate",
+    "ExtractedTime",
+    "ExtractedName",
+    "ExtractionResult",
+    "BookingStateMachine",
+    "BookingState",
+    "BookingContext",
+    "StateMachineResult",
+    "FAISSFAQRetriever",
+    "HybridFAQRetriever",
+    "FAQEntry",
+    "RetrievalResult",
+    "create_faq_retriever",
+    "FAQManager",
+    "FAQConfig",
+    "FAQMatch",
+    "create_faq_manager",
+    "find_keyword_match",
+    "SentimentAnalyzer",
+    "Sentiment",
+    "FrustrationLevel",
+    "SentimentResult",
+    "analyze_sentiment",
+    "detect_frustration",
+    "get_analyzer",
+    "RecoveryManager",
+    "RetryConfig",
+    "TimeoutConfig",
+    "RecoveryResult",
+    "CircuitBreaker",
+    "CircuitState",
+    "ErrorCategory",
+    "RecoveryAction",
+    "retry_with_backoff",
+    "retry_sync_with_backoff",
+    "with_timeout",
+    "with_recovery",
+    "get_fallback_response",
+    "get_recovery_manager",
+    "ConversationLogger",
+    "ConversationOutcome",
+    "ConversationTurn",
+    "ConversationSession",
+    "AnalyticsMetrics",
+    "get_logger",
+    "VoIPManager",
+    "SIPClient",
+    "SIPConfig",
+    "RTPTransport",
+    "CallSession",
+    "CallState",
+    "CallDirection",
+    "WhatsAppManager",
+    "WhatsAppClient",
+    "WhatsAppConfig",
+    "WhatsAppMessage",
+    "WhatsAppRateLimiter",
+    "WhatsAppTemplates",
+    "ConnectionStatus",
+    "MessageDirection",
+    "PendingQuestion",
+]

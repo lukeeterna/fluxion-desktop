@@ -1,0 +1,74 @@
+# FLUXION control-plane bootstrap v1
+name: FLUXION PR60 Cloud Continuation Bootstrap
+on:
+  push:
+    branches: [fix/sara-gate-shell-only]
+    paths:
+      - '.github/bootstrap/fluxion-cloud-continuation.py'
+      - '.github/workflows/fluxion-cloud-continuation.yml'
+      - 'tests/test_fluxion_cloud_continuation.py'
+  workflow_dispatch:
+    inputs:
+      expected_pr_head:
+        description: Exact current PR 60 head
+        required: true
+        type: string
+  schedule:
+    - cron: '17 * * * *'
+permissions:
+  contents: read
+concurrency:
+  group: fluxion-cloud-pr-60
+  cancel-in-progress: false
+jobs:
+  static-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: |
+          set -euo pipefail
+          python3 -m py_compile .github/bootstrap/fluxion-cloud-continuation.py
+          python3 -m unittest -v tests.test_fluxion_cloud_continuation
+          git diff --check HEAD^
+      - name: Security assertions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          t=Path('.github/workflows/fluxion-cloud-continuation.yml').read_text()
+          banned=('pull_'+'request_target:','continue-'+'on-error:','contents: '+'write','git '+'push','mer'+'ge','de'+'ploy')
+          hit=[x for x in banned if x in t]
+          if hit: raise SystemExit(f'BLOCKED workflow capability: {hit}')
+          print('CLOUD_BOOTSTRAP_SECURITY=PASS')
+          PY
+  checkpoint:
+    needs: static-gate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Read live canonical state and persist bounded RED
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_INPUT: ${{ inputs.expected_pr_head }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/60" > "$RUNNER_TEMP/pr.json"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/68" > "$RUNNER_TEMP/issue.json"
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/issues/68/comments?per_page=100" --slurp | jq 'add' > "$RUNNER_TEMP/comments.json"
+          expected="$EXPECTED_INPUT"
+          test -n "$expected" || expected="$(jq -r .head.sha "$RUNNER_TEMP/pr.json")"
+          python3 .github/bootstrap/fluxion-cloud-continuation.py --pr "$RUNNER_TEMP/pr.json" --issue "$RUNNER_TEMP/issue.json" --comments "$RUNNER_TEMP/comments.json" --expected-head "$expected" --run-id "$GITHUB_RUN_ID" --out "$RUNNER_TEMP/checkpoint.md"
+          gh issue comment 68 --body-file "$RUNNER_TEMP/checkpoint.md"
+          echo "FLUXION_CLOUD_CHECKPOINT=PASS"

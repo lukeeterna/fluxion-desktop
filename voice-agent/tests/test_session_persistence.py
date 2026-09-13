@@ -9,26 +9,25 @@ Verifica:
 - log_audit() scrive in SQLite locale
 - persist_session() usa SQLite come primary (Bridge offline = non-fatal)
 """
+
 import asyncio
 import json
 import sqlite3
-import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 import pytest
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from session_manager import (
-    SessionManager, SessionChannel, SessionState,
-    VoiceSession, SessionTurn
-)
+from session_manager import SessionManager, SessionState
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def tmp_db(tmp_path):
@@ -41,13 +40,14 @@ def manager(tmp_db):
     """SessionManager with isolated SQLite (no HTTP Bridge needed)."""
     return SessionManager(
         http_bridge_url="http://127.0.0.1:19999",  # porta inesistente
-        db_path=tmp_db
+        db_path=tmp_db,
     )
 
 
 # ---------------------------------------------------------------------------
 # Schema & Init
 # ---------------------------------------------------------------------------
+
 
 class TestInit:
     def test_creates_db_file(self, tmp_db):
@@ -57,9 +57,12 @@ class TestInit:
     def test_creates_schema(self, tmp_db):
         SessionManager(db_path=tmp_db)
         conn = sqlite3.connect(tmp_db)
-        tables = {r[0] for r in conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()}
+        tables = {
+            r[0]
+            for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        }
         conn.close()
         assert "voice_sessions" in tables
         assert "voice_audit_log" in tables
@@ -73,6 +76,7 @@ class TestInit:
 # ---------------------------------------------------------------------------
 # create_session → immediate SQLite write
 # ---------------------------------------------------------------------------
+
 
 class TestCreateSession:
     def test_session_in_memory(self, manager):
@@ -99,23 +103,28 @@ class TestCreateSession:
 # add_turn → SQLite via persist_session
 # ---------------------------------------------------------------------------
 
+
 class TestAddTurn:
     def test_add_turn_increments_count(self, manager):
         s = manager.create_session("salone", "Salone")
-        manager.add_turn(s.session_id, "Ciao", "greeting", "Buongiorno!", 40.0, "L1_exact")
+        manager.add_turn(
+            s.session_id, "Ciao", "greeting", "Buongiorno!", 40.0, "L1_exact"
+        )
         session = manager.get_session(s.session_id)
         assert session.total_turns == 1
 
     @pytest.mark.asyncio
     async def test_persist_after_turns(self, manager, tmp_db):
         s = manager.create_session("salone", "Salone")
-        manager.add_turn(s.session_id, "Voglio un taglio", "booking", "Certo!", 80.0, "L2_pattern")
+        manager.add_turn(
+            s.session_id, "Voglio un taglio", "booking", "Certo!", 80.0, "L2_pattern"
+        )
         await manager.persist_session(s.session_id)
 
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
             "SELECT turns_json, total_turns FROM voice_sessions WHERE session_id = ?",
-            (s.session_id,)
+            (s.session_id,),
         ).fetchone()
         conn.close()
 
@@ -130,6 +139,7 @@ class TestAddTurn:
 # close_session → SQLite update
 # ---------------------------------------------------------------------------
 
+
 class TestCloseSession:
     def test_close_updates_state_sqlite(self, manager, tmp_db):
         s = manager.create_session("salone", "Salone")
@@ -138,7 +148,7 @@ class TestCloseSession:
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
             "SELECT state, outcome, booking_id FROM voice_sessions WHERE session_id = ?",
-            (s.session_id,)
+            (s.session_id,),
         ).fetchone()
         conn.close()
 
@@ -148,12 +158,14 @@ class TestCloseSession:
 
     def test_close_escalated(self, manager, tmp_db):
         s = manager.create_session("medical", "Studio Medico")
-        manager.close_session(s.session_id, "escalated", escalation_reason="cliente arrabbiato")
+        manager.close_session(
+            s.session_id, "escalated", escalation_reason="cliente arrabbiato"
+        )
 
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
             "SELECT state, escalation_reason FROM voice_sessions WHERE session_id = ?",
-            (s.session_id,)
+            (s.session_id,),
         ).fetchone()
         conn.close()
 
@@ -166,8 +178,7 @@ class TestCloseSession:
 
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
-            "SELECT state FROM voice_sessions WHERE session_id = ?",
-            (s.session_id,)
+            "SELECT state FROM voice_sessions WHERE session_id = ?", (s.session_id,)
         ).fetchone()
         conn.close()
 
@@ -177,6 +188,7 @@ class TestCloseSession:
 # ---------------------------------------------------------------------------
 # _recover_sessions → restart simulation
 # ---------------------------------------------------------------------------
+
 
 class TestRecoverSessions:
     def test_active_sessions_recovered(self, tmp_db):
@@ -212,7 +224,7 @@ class TestRecoverSessions:
         conn = sqlite3.connect(tmp_db)
         conn.execute(
             "UPDATE voice_sessions SET expires_at = ? WHERE session_id = ?",
-            (expired_time, s.session_id)
+            (expired_time, s.session_id),
         )
         conn.commit()
         conn.close()
@@ -234,9 +246,13 @@ class TestRecoverSessions:
     def test_turns_preserved_after_recovery(self, tmp_db):
         manager1 = SessionManager(db_path=tmp_db)
         s = manager1.create_session("salone", "Salone")
-        manager1.add_turn(s.session_id, "Ciao", "greeting", "Buongiorno!", 30.0, "L1_exact")
-        manager1.add_turn(s.session_id, "Taglio", "booking", "Quando?", 60.0, "L2_pattern")
-        asyncio.get_event_loop().run_until_complete(manager1.persist_session(s.session_id))
+        manager1.add_turn(
+            s.session_id, "Ciao", "greeting", "Buongiorno!", 30.0, "L1_exact"
+        )
+        manager1.add_turn(
+            s.session_id, "Taglio", "booking", "Quando?", 60.0, "L2_pattern"
+        )
+        asyncio.run(manager1.persist_session(s.session_id))
 
         manager2 = SessionManager(db_path=tmp_db)
         recovered = manager2.get_session(s.session_id)
@@ -247,6 +263,7 @@ class TestRecoverSessions:
 # ---------------------------------------------------------------------------
 # load_session → SQLite primary (Bridge offline)
 # ---------------------------------------------------------------------------
+
 
 class TestLoadSession:
     @pytest.mark.asyncio
@@ -282,6 +299,7 @@ class TestLoadSession:
 # persist_session → Bridge offline is non-fatal
 # ---------------------------------------------------------------------------
 
+
 class TestPersistSession:
     @pytest.mark.asyncio
     async def test_persist_returns_true_without_bridge(self, manager):
@@ -304,7 +322,7 @@ class TestPersistSession:
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
             "SELECT context_json FROM voice_sessions WHERE session_id = ?",
-            (s.session_id,)
+            (s.session_id,),
         ).fetchone()
         conn.close()
 
@@ -317,6 +335,7 @@ class TestPersistSession:
 # log_audit → SQLite locale
 # ---------------------------------------------------------------------------
 
+
 class TestLogAudit:
     @pytest.mark.asyncio
     async def test_audit_written_to_sqlite(self, manager, tmp_db):
@@ -326,7 +345,7 @@ class TestLogAudit:
         conn = sqlite3.connect(tmp_db)
         row = conn.execute(
             "SELECT action, details_json FROM voice_audit_log WHERE session_id = ?",
-            (s.session_id,)
+            (s.session_id,),
         ).fetchone()
         conn.close()
 
@@ -346,12 +365,13 @@ class TestLogAudit:
         s = manager.create_session("salone", "Salone")
         await manager.log_audit(s.session_id, "session_start")
         await manager.log_audit(s.session_id, "turn")
-        await manager.log_audit(s.session_id, "booking_created", {"booking_id": "BK001"})
+        await manager.log_audit(
+            s.session_id, "booking_created", {"booking_id": "BK001"}
+        )
 
         conn = sqlite3.connect(tmp_db)
         count = conn.execute(
-            "SELECT COUNT(*) FROM voice_audit_log WHERE session_id = ?",
-            (s.session_id,)
+            "SELECT COUNT(*) FROM voice_audit_log WHERE session_id = ?", (s.session_id,)
         ).fetchone()[0]
         conn.close()
 
@@ -361,6 +381,7 @@ class TestLogAudit:
 # ---------------------------------------------------------------------------
 # Greeting dinamico
 # ---------------------------------------------------------------------------
+
 
 class TestGreeting:
     def test_greeting_uses_business_name(self, manager):

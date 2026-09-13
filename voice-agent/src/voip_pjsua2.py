@@ -20,6 +20,7 @@ import os
 import queue
 import struct
 import sys
+import tempfile
 import threading
 import time
 import wave
@@ -27,6 +28,8 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional
 
 logger = logging.getLogger(__name__)
+
+_PJSIP_LOG_PATH = os.path.join(tempfile.gettempdir(), "sara-pjsip-s244.log")
 
 # S238 FIX F2: dump backtrace of ALL Python threads on SIGABRT.
 # The pjlib grp_lock_unset_owner_thread assertion (lock.c:279) fires from a
@@ -111,12 +114,16 @@ def _install_pjlib_aware_default_executor(loop: asyncio.AbstractEventLoop) -> No
         try:
             old_executor.shutdown(wait=False)
         except Exception as exc:
-            logger.debug(f"S239 F3: old default executor shutdown raised (non-fatal): {exc!r}")
+            logger.debug(
+                f"S239 F3: old default executor shutdown raised (non-fatal): {exc!r}"
+            )
     logger.info("S239 F3: asyncio default executor replaced with pjlib-registered TPE")
 
 
 # Add pjsua2 lib path
-_PJSUA2_LIB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib", "pjsua2")
+_PJSUA2_LIB_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "lib", "pjsua2"
+)
 if _PJSUA2_LIB_DIR not in sys.path:
     sys.path.insert(0, _PJSUA2_LIB_DIR)
 
@@ -124,9 +131,11 @@ if _PJSUA2_LIB_DIR not in sys.path:
 if sys.platform == "darwin":
     existing = os.environ.get("DYLD_LIBRARY_PATH", "")
     if _PJSUA2_LIB_DIR not in existing:
-        os.environ["DYLD_LIBRARY_PATH"] = _PJSUA2_LIB_DIR + (":" + existing if existing else "")
+        os.environ["DYLD_LIBRARY_PATH"] = _PJSUA2_LIB_DIR + (
+            ":" + existing if existing else ""
+        )
 
-import pjsua2 as pj
+import pjsua2 as pj  # noqa: E402
 
 
 def _register_thread_if_needed(name: str) -> None:
@@ -166,9 +175,11 @@ def _pj_error_info(exc: "pj.Error") -> str:
 # Configuration
 # =============================================================================
 
+
 @dataclass
 class SIPConfig:
     """EHIWEB SIP configuration."""
+
     server: str = "sip.vivavox.it"
     port: int = 5060
     username: str = ""
@@ -177,7 +188,7 @@ class SIPConfig:
     stun_server: str = "stun.voip.vivavox.it:3478"
     user_agent: str = "FLUXION-Sara/1.0"
     # D4: TURN server for CGNAT traversal (~20% of Italian PMI behind CGNAT)
-    turn_server: str = ""      # e.g. "turn:turn.example.com:3478"
+    turn_server: str = ""  # e.g. "turn:turn.example.com:3478"
     turn_username: str = ""
     turn_password: str = ""
     # E7: UDP keepalive interval (seconds) for CGNAT NAT binding refresh
@@ -186,7 +197,9 @@ class SIPConfig:
     @classmethod
     def from_env(cls) -> "SIPConfig":
         return cls(
-            server=os.getenv("VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")),
+            server=os.getenv(
+                "VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")
+            ),
             port=int(os.getenv("VOIP_SIP_PORT", os.getenv("EHIWEB_SIP_PORT", "5060"))),
             username=os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", "")),
             password=os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", "")),
@@ -202,6 +215,7 @@ class SIPConfig:
 # Audio Bridge: pjsua2 ↔ Sara Pipeline
 # =============================================================================
 
+
 class SaraAudioPort(pj.AudioMediaPort):
     """Bridges pjsua2 conference bridge with Sara voice pipeline.
 
@@ -211,11 +225,11 @@ class SaraAudioPort(pj.AudioMediaPort):
 
     def __init__(self):
         super().__init__()
-        self.rx_queue = queue.Queue(maxsize=500)   # Caller speech → Sara (10s)
+        self.rx_queue = queue.Queue(maxsize=500)  # Caller speech → Sara (10s)
         self.tx_queue = queue.Queue(maxsize=3000)  # Sara speech → caller (60s)
-        self._silence_frame = b'\x00' * 320        # 20ms silence at 8kHz 16-bit mono
-        self._current_tx_rms = 0.0                 # S142: RMS of current TX frame for barge-in
-        self._port_created = False                 # S235 FIX B: lazy createPort
+        self._silence_frame = b"\x00" * 320  # 20ms silence at 8kHz 16-bit mono
+        self._current_tx_rms = 0.0  # S142: RMS of current TX frame for barge-in
+        self._port_created = False  # S235 FIX B: lazy createPort
         # S237 FIX F1-bis: pjlib group lock owner thread tracking.
         # onFrameRequested/onFrameReceived are invoked at 50Hz by a pjlib audio worker
         # thread (created C-side when conf bridge starts pulling frames). That thread is
@@ -291,7 +305,7 @@ class SaraAudioPort(pj.AudioMediaPort):
         n = len(pcm_data) // 2
         total = 0
         for i in range(n):
-            s = struct.unpack_from('<h', pcm_data, i * 2)[0]
+            s = struct.unpack_from("<h", pcm_data, i * 2)[0]
             total += s * s
         return (total / n) ** 0.5
 
@@ -306,7 +320,7 @@ class SaraAudioPort(pj.AudioMediaPort):
         if audio_data[:4] == b"RIFF":
             try:
                 wav_io = io.BytesIO(audio_data)
-                with wave.open(wav_io, 'rb') as wf:
+                with wave.open(wav_io, "rb") as wf:
                     src_rate = wf.getframerate()
                     pcm_data = wf.readframes(wf.getnframes())
             except Exception as exc:
@@ -319,9 +333,9 @@ class SaraAudioPort(pj.AudioMediaPort):
         # Chunk into 20ms frames (320 bytes = 160 samples * 2 bytes)
         chunk_size = 320
         for i in range(0, len(pcm_data), chunk_size):
-            chunk = pcm_data[i:i + chunk_size]
+            chunk = pcm_data[i : i + chunk_size]
             if len(chunk) < chunk_size:
-                chunk = chunk + b'\x00' * (chunk_size - len(chunk))
+                chunk = chunk + b"\x00" * (chunk_size - len(chunk))
             try:
                 self.tx_queue.put_nowait(chunk)
             except queue.Full:
@@ -340,7 +354,7 @@ class SaraAudioPort(pj.AudioMediaPort):
             pass
 
         if chunks:
-            return b''.join(chunks)
+            return b"".join(chunks)
         return None
 
     def clear_tx(self):
@@ -356,6 +370,7 @@ class SaraAudioPort(pj.AudioMediaPort):
 # Deferred bridge wiring (S243 T1)
 # =============================================================================
 
+
 @dataclass
 class _PendingBridge:
     """Bridge-wiring work item produced by onCallMediaState, consumed by
@@ -364,12 +379,13 @@ class _PendingBridge:
     Why a dataclass instead of a tuple: makes the drain loop self-documenting
     and allows future fields (retry_count, deadline) without refactor.
     """
+
     call: "SaraCall"
     call_audio: "pj.AudioMedia"
     media_index: int
     enqueued_at: float
     attempts: int = 0
-    MAX_ATTEMPTS: int = 25       # 25 * 20ms tick = 500ms total slot wait
+    MAX_ATTEMPTS: int = 25  # 25 * 20ms tick = 500ms total slot wait
     completed: bool = False
 
 
@@ -377,15 +393,16 @@ class _PendingBridge:
 # SIP Call Handler
 # =============================================================================
 
+
 class SaraCall(pj.Call):
     """Handles an incoming SIP call, bridging audio to Sara."""
 
     def __init__(self, acc, call_id=pj.PJSUA_INVALID_ID):
         super().__init__(acc, call_id)
-        self.account = acc                # S243 T2: explicit back-reference for cleanup
+        self.account = acc  # S243 T2: explicit back-reference for cleanup
         self.audio_port = SaraAudioPort()
         self.connected = False
-        self.on_connected = None   # Callback: call connected
+        self.on_connected = None  # Callback: call connected
         self.on_disconnected = None  # Callback: call ended
 
     def onCallState(self, prm):
@@ -443,15 +460,16 @@ class SaraCall(pj.Call):
         # for up to 500ms inside a callback.
         ci = self.getInfo()
         for i, mi in enumerate(ci.media):
-            if mi.type == pj.PJMEDIA_TYPE_AUDIO and \
-               mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE:
+            if (
+                mi.type == pj.PJMEDIA_TYPE_AUDIO
+                and mi.status == pj.PJSUA_CALL_MEDIA_ACTIVE
+            ):
                 # S235 FIX B: lazy createPort on pjsua2 main thread.
                 try:
                     self.audio_port.ensure_port()
                 except pj.Error as exc:
                     logger.error(
-                        f"S236: ensure_port failed | "
-                        f"info={_pj_error_info(exc)}"
+                        f"S236: ensure_port failed | info={_pj_error_info(exc)}"
                     )
                     continue
 
@@ -459,14 +477,14 @@ class SaraCall(pj.Call):
                     call_audio = self.getAudioMedia(i)
                 except pj.Error as exc:
                     logger.warning(
-                        f"S236: getAudioMedia({i}) failed | "
-                        f"info={_pj_error_info(exc)}"
+                        f"S236: getAudioMedia({i}) failed | info={_pj_error_info(exc)}"
                     )
                     continue
 
                 # S236 DIAG H1/H2/H3: introspection (kept for forensic logging).
                 try:
                     import sys as _sys
+
                     call_mro = [c.__name__ for c in type(call_audio).__mro__][:5]
                     port_mro = [c.__name__ for c in type(self.audio_port).__mro__][:5]
                     logger.info(
@@ -513,6 +531,7 @@ class SaraCall(pj.Call):
 # SIP Account
 # =============================================================================
 
+
 class SaraAccount(pj.Account):
     """SIP account that handles incoming calls for Sara."""
 
@@ -520,7 +539,7 @@ class SaraAccount(pj.Account):
         super().__init__()
         self.current_call: Optional[SaraCall] = None
         self.on_incoming_call = None  # Callback for VoIPManager
-        self.on_reg_state = None      # Callback for registration state
+        self.on_reg_state = None  # Callback for registration state
         # S243 T1: deferred bridge wiring queue, drained by _pjsua2_thread.
         # NOT a threading.Queue — single producer (pjsua callback thread)
         # and single consumer (_pjsua2_thread main loop); a plain list
@@ -530,12 +549,14 @@ class SaraAccount(pj.Account):
         # and SaraAudioPort SWIG director objects. Removed on
         # PJSIP_INV_STATE_DISCONNECTED via _schedule_call_release().
         self.active_calls: list = []
-        self._released_calls: list = []   # awaiting next-tick removal
+        self._released_calls: list = []  # awaiting next-tick removal
 
     def onRegState(self, prm):
         info = self.getInfo()
         is_registered = info.regIsActive
-        logger.info(f"Registration: active={is_registered}, status={info.regStatus} {info.regStatusText}")
+        logger.info(
+            f"Registration: active={is_registered}, status={info.regStatus} {info.regStatusText}"
+        )
         if self.on_reg_state:
             self.on_reg_state(is_registered, info.regStatus)
 
@@ -606,7 +627,9 @@ class SaraAccount(pj.Account):
                 try:
                     ci = call.getInfo()
                     if ci.state == pj.PJSIP_INV_STATE_DISCONNECTED:
-                        logger.info("S243 T1: bridge wiring skipped — call disconnected")
+                        logger.info(
+                            "S243 T1: bridge wiring skipped — call disconnected"
+                        )
                         continue
                 except pj.Error:
                     continue
@@ -657,6 +680,7 @@ class SaraAccount(pj.Account):
 # VoIPManager — Drop-in replacement for voip.py VoIPManager
 # =============================================================================
 
+
 class VoIPManager:
     """Production-grade VoIP manager using pjsua2.
 
@@ -672,7 +696,9 @@ class VoIPManager:
         self._running = False
         self._registered = False
         self._reg_status = 0
-        self._main_loop: Optional[asyncio.AbstractEventLoop] = None  # Main aiohttp event loop
+        self._main_loop: Optional[asyncio.AbstractEventLoop] = (
+            None  # Main aiohttp event loop
+        )
 
         # pjsua2 objects (created in _pj_thread)
         self._ep: Optional[pj.Endpoint] = None
@@ -693,9 +719,13 @@ class VoIPManager:
         # S140: Tuned for Italian telephony turn-taking (research: vad-barge-in-research.md)
         self._vad_speech_frames = 0
         self._vad_silence_frames = 0
-        self._vad_speech_threshold = 600   # S140: 500→600 — rejects phone line noise (200-400 RMS)
-        self._vad_silence_timeout = 50     # S143: 75→50 — 50 frames * 20ms = 1000ms silence
-                                           # 1500ms was too slow for natural Italian turn-taking
+        self._vad_speech_threshold = (
+            600  # S140: 500→600 — rejects phone line noise (200-400 RMS)
+        )
+        self._vad_silence_timeout = (
+            50  # S143: 75→50 — 50 frames * 20ms = 1000ms silence
+        )
+        # 1500ms was too slow for natural Italian turn-taking
 
     def set_pipeline(self, pipeline):
         """Set voice pipeline for processing incoming calls."""
@@ -739,7 +769,9 @@ class VoIPManager:
             logger.info(f"VoIP started: {self.config.username}@{self.config.server}")
             return True
         else:
-            logger.warning(f"VoIP: SIP registration pending (status={self._reg_status})")
+            logger.warning(
+                f"VoIP: SIP registration pending (status={self._reg_status})"
+            )
             # Still consider it started — registration may complete later
             self._running = True
             return True
@@ -780,7 +812,8 @@ class VoIPManager:
                 "username": self.config.username,
                 "server": self.config.server,
             },
-            "rtp_active": self._current_call is not None and self._current_call.connected,
+            "rtp_active": self._current_call is not None
+            and self._current_call.connected,
             "engine": "pjsua2",
         }
 
@@ -795,11 +828,15 @@ class VoIPManager:
             # pjsip C-side assertion dumps + buffered stderr flush land
             # in the same file as pjsua logConfig output. Without dup2,
             # Python stderr buffer drops the last events on SIGABRT.
-            import os as _os, sys as _sys
+            import os as _os
+            import sys as _sys
+
             try:
-                _s244_fd = _os.open("/tmp/sara-pjsip-s244.log",
-                                    _os.O_WRONLY | _os.O_CREAT | _os.O_APPEND,
-                                    0o644)
+                _s244_fd = _os.open(
+                    _PJSIP_LOG_PATH,
+                    _os.O_WRONLY | _os.O_CREAT | _os.O_APPEND,
+                    0o644,
+                )
                 _os.dup2(_s244_fd, _sys.stderr.fileno())
                 _os.close(_s244_fd)
             except Exception as _e:
@@ -891,7 +928,7 @@ class VoIPManager:
         ep_cfg.logConfig.level = 5
         ep_cfg.logConfig.consoleLevel = 5
         try:
-            ep_cfg.logConfig.filename = "/tmp/sara-pjsip-s244.log"
+            ep_cfg.logConfig.filename = _PJSIP_LOG_PATH
             ep_cfg.logConfig.fileFlags = 0  # truncate on each run
             # Decor bitmask: year+month+day+time+micro+thread_name+thread_id
             ep_cfg.logConfig.decor = 0xFFFF
@@ -986,7 +1023,9 @@ class VoIPManager:
             acc_cfg.natConfig.udpKaIntervalSec = self.config.keepalive_interval
             # Also set SIP-level keepalive via re-registration at shorter interval
             acc_cfg.regConfig.timeoutSec = min(300, self.config.keepalive_interval * 10)
-            logger.info(f"E7: UDP keepalive enabled every {self.config.keepalive_interval}s")
+            logger.info(
+                f"E7: UDP keepalive enabled every {self.config.keepalive_interval}s"
+            )
 
         # Create account
         self._account = SaraAccount()
@@ -1039,7 +1078,9 @@ class VoIPManager:
         try:
             ci = call.getInfo()
             self._caller_phone = self._extract_phone_from_uri(ci.remoteUri)
-            logger.info(f"Incoming call from: {ci.remoteUri} → phone: {self._caller_phone}")
+            logger.info(
+                f"Incoming call from: {ci.remoteUri} → phone: {self._caller_phone}"
+            )
         except Exception as e:
             self._caller_phone = ""
             logger.warning(f"Could not extract caller phone: {e}")
@@ -1065,9 +1106,7 @@ class VoIPManager:
 
         # Start audio processing thread
         self._audio_thread = threading.Thread(
-            target=self._audio_processing_loop,
-            args=(call,),
-            daemon=True
+            target=self._audio_processing_loop, args=(call,), daemon=True
         )
         self._audio_thread.start()
 
@@ -1075,8 +1114,8 @@ class VoIPManager:
         if self.pipeline:
             threading.Thread(
                 target=self._send_greeting,
-                args=(call, getattr(self, '_caller_phone', '')),
-                daemon=True
+                args=(call, getattr(self, "_caller_phone", "")),
+                daemon=True,
             ).start()
 
     def _on_call_disconnected(self, call: SaraCall):
@@ -1133,7 +1172,10 @@ class VoIPManager:
             # S142: Barge-in detection replaces binary anti-echo
             # Instead of dropping ALL caller audio during TTS, detect if caller
             # is actually speaking (energy significantly above expected echo)
-            sara_speaking = not call.audio_port.tx_queue.empty() or call.audio_port._current_tx_rms > 0
+            sara_speaking = (
+                not call.audio_port.tx_queue.empty()
+                or call.audio_port._current_tx_rms > 0
+            )
             if sara_speaking:
                 audio = call.audio_port.get_caller_audio(timeout=0.01)
                 if audio:
@@ -1143,7 +1185,9 @@ class VoIPManager:
                         barge_in_frames += 1
                         if barge_in_frames >= BARGE_IN_THRESHOLD:
                             # Real barge-in detected! Stop Sara and process caller speech
-                            logger.info(f"BARGE-IN detected! caller_rms={caller_rms:.0f} vs echo={expected_echo:.0f}")
+                            logger.info(
+                                f"BARGE-IN detected! caller_rms={caller_rms:.0f} vs echo={expected_echo:.0f}"
+                            )
                             call.audio_port.clear_tx()  # Stop Sara immediately
                             speech_audio.extend(audio)
                             is_speaking = False
@@ -1204,7 +1248,10 @@ class VoIPManager:
 
                 # S143: Turn complete: had enough speech (300ms min), then 1000ms silence
                 # Was: speech >= 3 (60ms) — too short, triggered on coughs/echo
-                if self._vad_speech_frames >= 15 and self._vad_silence_frames >= self._vad_silence_timeout:
+                if (
+                    self._vad_speech_frames >= 15
+                    and self._vad_silence_frames >= self._vad_silence_timeout
+                ):
                     full_audio = bytes(speech_audio)
                     speech_audio.clear()
                     audio_buffer.clear()
@@ -1219,9 +1266,13 @@ class VoIPManager:
                             continue
                         turn_rms = self._calculate_rms(full_audio)
                         if turn_rms < 400:
-                            logger.debug(f"Turn too quiet (RMS={turn_rms:.0f}), skipping")
+                            logger.debug(
+                                f"Turn too quiet (RMS={turn_rms:.0f}), skipping"
+                            )
                             continue
-                        logger.info(f"Speech turn detected: {dur_ms:.0f}ms audio (RMS={turn_rms:.0f}), sending to Sara")
+                        logger.info(
+                            f"Speech turn detected: {dur_ms:.0f}ms audio (RMS={turn_rms:.0f}), sending to Sara"
+                        )
                         self._process_caller_audio(call, full_audio)
 
         logger.info("Audio processing loop ended")
@@ -1243,7 +1294,9 @@ class VoIPManager:
             future = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )
-            result = future.result(timeout=15)  # L2/L4: 15s max (was 30s — too long for live call)
+            result = future.result(
+                timeout=15
+            )  # L2/L4: 15s max (was 30s — too long for live call)
             elapsed = (time.time() - t0) * 1000
 
             if result:
@@ -1251,7 +1304,9 @@ class VoIPManager:
                 transcription = result.get("transcription", "")
                 has_audio = result.get("audio_response") is not None
                 audio_len = len(result["audio_response"]) if has_audio else 0
-                logger.info(f"Pipeline result ({elapsed:.0f}ms): STT='{transcription}' → response='{text[:80]}' audio={audio_len}B")
+                logger.info(
+                    f"Pipeline result ({elapsed:.0f}ms): STT='{transcription}' → response='{text[:80]}' audio={audio_len}B"
+                )
 
                 # Queue TTS response
                 if has_audio:
@@ -1265,6 +1320,7 @@ class VoIPManager:
                     self._hangup_pending = True  # L5: prevent multiple hangup threads
                     logger.info("should_exit=True — will hangup after TTS playback")
                     _hangup_call = call  # L1: capture reference to THIS call
+
                     def _hangup_after_tts():
                         # Wait for TTS to finish playing
                         while not _hangup_call.audio_port.tx_queue.empty():
@@ -1288,6 +1344,7 @@ class VoIPManager:
                             logger.error(f"Hangup error: {exc}")
                         finally:
                             self._hangup_pending = False
+
                     threading.Thread(target=_hangup_after_tts, daemon=True).start()
             else:
                 logger.warning(f"Pipeline returned None ({elapsed:.0f}ms)")
@@ -1325,14 +1382,15 @@ class VoIPManager:
 # Test
 # =============================================================================
 
+
 async def test_voip():
     """Test pjsua2 VoIP — register and wait for calls."""
     from dotenv import load_dotenv
+
     load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.env"))
 
     logging.basicConfig(
-        level=logging.DEBUG,
-        format='%(asctime)s %(name)s %(levelname)s %(message)s'
+        level=logging.DEBUG, format="%(asctime)s %(name)s %(levelname)s %(message)s"
     )
 
     config = SIPConfig.from_env()

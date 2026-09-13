@@ -13,7 +13,7 @@ Dependencies: numpy only (no torch, no sklearn)
 import re
 import math
 import unicodedata
-from typing import Dict, List, Tuple, Optional, Set
+from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from collections import Counter
 import numpy as np
@@ -22,6 +22,7 @@ import numpy as np
 @dataclass
 class SemanticMatch:
     """Result of semantic intent matching."""
+
     intent: str
     confidence: float
     matched_exemplar: str
@@ -217,6 +218,7 @@ INTENT_EXEMPLARS: Dict[str, List[str]] = {
 # TEXT PREPROCESSING
 # =============================================================================
 
+
 def normalize_text(text: str) -> str:
     """
     Normalize Italian text for matching.
@@ -229,16 +231,15 @@ def normalize_text(text: str) -> str:
     text = text.lower().strip()
 
     # Remove accents
-    text = ''.join(
-        c for c in unicodedata.normalize('NFD', text)
-        if unicodedata.category(c) != 'Mn'
+    text = "".join(
+        c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn"
     )
 
     # Remove punctuation except apostrophes (important in Italian)
     text = re.sub(r"[^\w\s']", " ", text)
 
     # Collapse whitespace
-    text = ' '.join(text.split())
+    text = " ".join(text.split())
 
     return text
 
@@ -265,7 +266,7 @@ def get_character_ngrams(text: str, n_range: Tuple[int, int] = (2, 4)) -> List[s
     min_n, max_n = n_range
     for n in range(min_n, max_n + 1):
         for i in range(len(text) - n + 1):
-            ngrams.append(text[i:i+n])
+            ngrams.append(text[i : i + n])
 
     return ngrams
 
@@ -287,7 +288,7 @@ def get_word_ngrams(text: str, n_range: Tuple[int, int] = (1, 2)) -> List[str]:
     min_n, max_n = n_range
     for n in range(min_n, max_n + 1):
         for i in range(len(words) - n + 1):
-            ngrams.append(' '.join(words[i:i+n]))
+            ngrams.append(" ".join(words[i : i + n]))
 
     return ngrams
 
@@ -295,6 +296,7 @@ def get_word_ngrams(text: str, n_range: Tuple[int, int] = (1, 2)) -> List[str]:
 # =============================================================================
 # TF-IDF VECTORIZER (Pure NumPy)
 # =============================================================================
+
 
 class TFIDFVectorizer:
     """
@@ -307,13 +309,15 @@ class TFIDFVectorizer:
     - L2 normalization
     """
 
-    def __init__(self,
-                 use_char_ngrams: bool = True,
-                 use_word_ngrams: bool = True,
-                 char_n_range: Tuple[int, int] = (2, 4),
-                 word_n_range: Tuple[int, int] = (1, 2),
-                 min_df: int = 1,
-                 max_features: int = 5000):
+    def __init__(
+        self,
+        use_char_ngrams: bool = True,
+        use_word_ngrams: bool = True,
+        char_n_range: Tuple[int, int] = (2, 4),
+        word_n_range: Tuple[int, int] = (1, 2),
+        min_df: int = 1,
+        max_features: int = 5000,
+    ):
         """
         Initialize vectorizer.
 
@@ -342,14 +346,18 @@ class TFIDFVectorizer:
         features = []
 
         if self.use_char_ngrams:
-            features.extend(f"c:{ng}" for ng in get_character_ngrams(normalized, self.char_n_range))
+            features.extend(
+                f"c:{ng}" for ng in get_character_ngrams(normalized, self.char_n_range)
+            )
 
         if self.use_word_ngrams:
-            features.extend(f"w:{ng}" for ng in get_word_ngrams(normalized, self.word_n_range))
+            features.extend(
+                f"w:{ng}" for ng in get_word_ngrams(normalized, self.word_n_range)
+            )
 
         return features
 
-    def fit(self, documents: List[str]) -> 'TFIDFVectorizer':
+    def fit(self, documents: List[str]) -> "TFIDFVectorizer":
         """
         Build vocabulary and compute IDF from documents.
 
@@ -373,7 +381,7 @@ class TFIDFVectorizer:
 
         # Limit to max_features (by frequency)
         if len(df) > self.max_features:
-            top_features = sorted(df.items(), key=lambda x: -x[1])[:self.max_features]
+            top_features = sorted(df.items(), key=lambda x: -x[1])[: self.max_features]
             df = dict(top_features)
 
         # Build vocabulary
@@ -414,7 +422,9 @@ class TFIDFVectorizer:
                 if feature in self.vocabulary_:
                     feat_idx = self.vocabulary_[feature]
                     # Sublinear TF
-                    tfidf[doc_idx, feat_idx] = (1 + math.log(count)) * self.idf_[feat_idx]
+                    tfidf[doc_idx, feat_idx] = (1 + math.log(count)) * self.idf_[
+                        feat_idx
+                    ]
 
         # L2 normalization
         norms = np.linalg.norm(tfidf, axis=1, keepdims=True)
@@ -432,6 +442,7 @@ class TFIDFVectorizer:
 # =============================================================================
 # SEMANTIC INTENT CLASSIFIER
 # =============================================================================
+
 
 class SemanticIntentClassifier:
     """
@@ -457,7 +468,9 @@ class SemanticIntentClassifier:
         self.exemplar_texts: List[str] = []
         self._fitted = False
 
-    def fit(self, intent_exemplars: Dict[str, List[str]] = None) -> 'SemanticIntentClassifier':
+    def fit(
+        self, intent_exemplars: Dict[str, List[str]] = None
+    ) -> "SemanticIntentClassifier":
         """
         Fit classifier with intent exemplars.
 
@@ -516,10 +529,12 @@ class SemanticIntentClassifier:
             intent=self.intent_labels[best_idx],
             confidence=float(best_similarity),
             matched_exemplar=self.exemplar_texts[best_idx],
-            exemplar_similarity=float(best_similarity)
+            exemplar_similarity=float(best_similarity),
         )
 
-    def classify_with_scores(self, text: str, top_k: int = 3) -> List[Tuple[str, float]]:
+    def classify_with_scores(
+        self, text: str, top_k: int = 3
+    ) -> List[Tuple[str, float]]:
         """
         Get top-k intent predictions with scores.
 
@@ -607,32 +622,25 @@ if __name__ == "__main__":
         ("Vorrei prenotare un taglio", "prenotazione"),
         ("Mi può fissare un appuntamento?", "prenotazione"),
         ("Avete posto domani?", "prenotazione"),
-
         # Cancellation
         ("Devo annullare l'appuntamento", "cancellazione"),
         ("Non posso più venire", "cancellazione"),
         ("Voglio cancellare la prenotazione", "cancellazione"),
-
         # Reschedule
         ("Posso spostare l'appuntamento?", "spostamento"),
         ("Vorrei cambiare data", "spostamento"),
         ("Mi anticipate l'appuntamento?", "spostamento"),
-
         # Info
         ("Quanto costa un taglio?", "info_prezzi"),
         ("A che ora aprite?", "info_orari"),
-
         # Confirm/Reject
         ("Sì, va bene", "conferma"),
         ("No grazie", "rifiuto"),
-
         # New client
         ("Non sono mai stato da voi", "nuovo_cliente"),
         ("È la prima volta", "nuovo_cliente"),
-
         # Operator
         ("Voglio parlare con una persona", "operatore"),
-
         # Greetings
         ("Buongiorno", "saluto"),
         ("Grazie mille", "ringraziamento"),
@@ -655,10 +663,10 @@ if __name__ == "__main__":
             status = "✅" if actual == expected else "❌"
             if actual == expected:
                 correct += 1
-            print(f"{status} \"{text}\"")
+            print(f'{status} "{text}"')
             print(f"   Expected: {expected}, Got: {actual} ({conf:.2f})")
         else:
-            print(f"❌ \"{text}\"")
+            print(f'❌ "{text}"')
             print(f"   Expected: {expected}, Got: None (below threshold)")
 
     print("\n" + "=" * 60)

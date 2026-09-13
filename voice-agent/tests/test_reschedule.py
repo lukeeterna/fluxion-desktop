@@ -12,11 +12,10 @@ Verifica:
 import sys
 from pathlib import Path
 from datetime import datetime, timedelta
-from unittest.mock import MagicMock, patch
-from dataclasses import dataclass, field
-from typing import Optional, List
+from unittest.mock import MagicMock
+from dataclasses import dataclass
+from typing import List
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -26,6 +25,7 @@ from booking_manager import BookingManager, Booking, BookingStatus
 # ---------------------------------------------------------------------------
 # Helpers — stub DB
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class FakeCustomer:
@@ -37,6 +37,7 @@ class FakeCustomer:
     def __post_init__(self):
         if self.tier is None:
             from vertical_schemas import CustomerTier
+
             self.tier = CustomerTier.STANDARD
 
 
@@ -47,7 +48,8 @@ def _make_booking(
     date: str = "2026-04-01",
 ) -> Booking:
     from vertical_schemas import CustomerTier
-    end_dt = (datetime.strptime(time, "%H:%M") + timedelta(minutes=duration_minutes))
+
+    end_dt = datetime.strptime(time, "%H:%M") + timedelta(minutes=duration_minutes)
     return Booking(
         booking_id=booking_id,
         customer_id="c1",
@@ -80,8 +82,8 @@ def _make_db(bookings: List[Booking]) -> MagicMock:
 # T1: overlap detection — 14:00-15:00 occupato, 14:30 deve fallire
 # ---------------------------------------------------------------------------
 
-class TestOverlapDetection:
 
+class TestOverlapDetection:
     def test_overlap_conflict_14_30(self):
         """14:30 con durata 60min confligge con 14:00-15:00."""
         existing = [_make_booking("A", "14:00", duration_minutes=60)]
@@ -89,7 +91,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "14:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "14:30",
             duration_minutes=60,
         )
 
@@ -103,7 +108,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "15:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "15:30",
             duration_minutes=60,
         )
 
@@ -117,7 +125,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "15:00",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "15:00",
             duration_minutes=30,
         )
 
@@ -131,7 +142,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "13:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "13:30",
             duration_minutes=60,
         )
 
@@ -145,7 +159,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "13:00",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "13:00",
             duration_minutes=180,
         )
 
@@ -157,7 +174,10 @@ class TestOverlapDetection:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "10:00",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "10:00",
             duration_minutes=60,
         )
 
@@ -169,8 +189,8 @@ class TestOverlapDetection:
 # T2: self-exclude — reschedule non confligge con se stesso
 # ---------------------------------------------------------------------------
 
-class TestSelfExclude:
 
+class TestSelfExclude:
     def test_reschedule_self_exclude(self):
         """Reschedule da 14:00 a 14:30: il vecchio slot non deve bloccare il nuovo."""
         existing = [_make_booking("A", "14:00", duration_minutes=60)]
@@ -180,7 +200,10 @@ class TestSelfExclude:
         # 14:30 con durata 60min normalmente confligge con 14:00-15:00,
         # ma con exclude_booking_id="A" deve essere libero
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "14:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "14:30",
             duration_minutes=60,
             exclude_booking_id="A",
         )
@@ -198,7 +221,10 @@ class TestSelfExclude:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "14:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "14:30",
             duration_minutes=60,
             exclude_booking_id="A",
         )
@@ -213,7 +239,10 @@ class TestSelfExclude:
         bm = BookingManager(db)
 
         available, conflict = bm._check_availability(
-            "b1", "s1", "2026-04-01", "14:30",
+            "b1",
+            "s1",
+            "2026-04-01",
+            "14:30",
             duration_minutes=60,
             exclude_booking_id=None,
         )

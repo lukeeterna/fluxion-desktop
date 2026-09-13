@@ -7,7 +7,6 @@ Used by SalesStateMachine for pitch, objection handling, and closing.
 
 import json
 import logging
-from pathlib import Path
 from typing import Optional, Dict, List
 
 logger = logging.getLogger("fluxion.sales.kb")
@@ -35,10 +34,12 @@ def load_sales_kb() -> Dict:
     with open(_KB_PATH, "r", encoding="utf-8") as f:
         _cached_kb = json.load(f)
 
-    logger.info("[Sales KB] Loaded: %d pitches, %d objections, %d closing tiers",
-                len(_cached_kb.get("product_pitch", {})),
-                len(_cached_kb.get("objections", {})),
-                len(_cached_kb.get("closing_messages", {})))
+    logger.info(
+        "[Sales KB] Loaded: %d pitches, %d objections, %d closing tiers",
+        len(_cached_kb.get("product_pitch", {})),
+        len(_cached_kb.get("objections", {})),
+        len(_cached_kb.get("closing_messages", {})),
+    )
     return _cached_kb
 
 
@@ -115,7 +116,7 @@ def sanitize_sales_text(text: str) -> str:
         lower = result.lower()
         idx = lower.find(forbidden.lower())
         while idx >= 0:
-            result = result[:idx] + replacement + result[idx + len(forbidden):]
+            result = result[:idx] + replacement + result[idx + len(forbidden) :]
             lower = result.lower()
             idx = lower.find(forbidden.lower(), idx + len(replacement))
     return result

@@ -4,10 +4,12 @@ Manages Qwen3-TTS model download, Piper voice auto-download on first run,
 mode persistence, and model presence checks.
 Mode persisted to: voice-agent/.tts_mode (plain text: "quality", "fast", or "auto")
 """
+
 import logging
 import os
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -23,6 +25,7 @@ _WRITABLE_ROOT = get_writable_root()
 _MODEL_DIR = _WRITABLE_ROOT / "models" / "qwen3-tts"
 _MODE_FILE = _WRITABLE_ROOT / ".tts_mode"
 _QWEN_MODEL_ID = "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice"
+_QWEN_MODEL_REVISION = "85e237c12c027371202489a0ec509ded67b5e4b5"
 _REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
 
 # ── Piper voice model auto-download (S211 P4) ───────────────────────────────
@@ -32,8 +35,8 @@ _REFERENCE_AUDIO = _BUNDLE_ROOT / "assets" / "sara-reference-voice.wav"
 # i.e. first sidecar launch with internet. Falls back to SystemTTS if offline.
 _PIPER_VOICE_NAME = "it_IT-paola-medium"
 _PIPER_HF_BASE = (
-    "https://huggingface.co/rhasspy/piper-voices/resolve/main/"
-    "it/it_IT/paola/medium"
+    "https://huggingface.co/rhasspy/piper-voices/resolve/"
+    "1162a9173d0ce503555aed757976b7a9912eae4c/it/it_IT/paola/medium"
 )
 _PIPER_ONNX_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx"
 _PIPER_JSON_URL = f"{_PIPER_HF_BASE}/{_PIPER_VOICE_NAME}.onnx.json"
@@ -42,7 +45,6 @@ _PIPER_DOWNLOAD_TIMEOUT_S = 120  # 63MB on a slow consumer link still fits
 
 
 class TTSDownloadManager:
-
     @staticmethod
     def is_model_downloaded() -> bool:
         """Return True if Qwen3-TTS model directory contains config.json."""
@@ -74,7 +76,7 @@ class TTSDownloadManager:
 
     @staticmethod
     async def download_qwen_model(
-        progress_callback: Optional[Callable[[float, str], None]] = None
+        progress_callback: Optional[Callable[[float, str], None]] = None,
     ) -> bool:
         """
         Download Qwen3-TTS model using huggingface_hub.snapshot_download.
@@ -84,7 +86,9 @@ class TTSDownloadManager:
         try:
             from huggingface_hub import snapshot_download
         except ImportError:
-            logger.warning("[TTSDownload] huggingface_hub not installed — cannot download model")
+            logger.warning(
+                "[TTSDownload] huggingface_hub not installed — cannot download model"
+            )
             if progress_callback:
                 progress_callback(0.0, "huggingface_hub non installato")
             return False
@@ -95,14 +99,16 @@ class TTSDownloadManager:
                 progress_callback(0.05, "Download modello Qwen3-TTS in corso...")
 
             import asyncio
+
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(
                 None,
                 lambda: snapshot_download(
                     repo_id=_QWEN_MODEL_ID,
+                    revision=_QWEN_MODEL_REVISION,
                     local_dir=str(_MODEL_DIR),
                     ignore_patterns=["*.msgpack", "flax_model*"],
-                )
+                ),
             )
 
             if progress_callback:
@@ -153,7 +159,8 @@ class TTSDownloadManager:
         except OSError as exc:
             logger.error(
                 "[TTSDownload] Cannot create Piper target dir %s: %s",
-                _PIPER_TARGET_DIR, exc,
+                _PIPER_TARGET_DIR,
+                exc,
             )
             return False
 
@@ -174,17 +181,22 @@ class TTSDownloadManager:
 
         logger.info(
             "[TTSDownload] First-run: downloading Piper voice '%s' to %s",
-            _PIPER_VOICE_NAME, _PIPER_TARGET_DIR,
+            _PIPER_VOICE_NAME,
+            _PIPER_TARGET_DIR,
         )
 
         for idx, (url, dest) in enumerate(targets):
             tmp = dest.with_suffix(dest.suffix + ".part")
             try:
+                parsed = urlparse(url)
+                if parsed.scheme != "https" or parsed.hostname != "huggingface.co":
+                    raise ValueError(f"Refusing untrusted Piper download URL: {url}")
                 req = urllib.request.Request(
                     url,
                     headers={"User-Agent": "FLUXION-VoiceAgent/1.0"},
                 )
-                with urllib.request.urlopen(
+                # URL is constrained above to HTTPS on the pinned Hugging Face host.
+                with urllib.request.urlopen(  # nosec B310
                     req, timeout=_PIPER_DOWNLOAD_TIMEOUT_S
                 ) as resp:
                     total = int(resp.headers.get("Content-Length") or 0)
@@ -201,18 +213,14 @@ class TTSDownloadManager:
                                 # weight: onnx ≈ 95 %, json ≈ 5 % of total bytes
                                 file_frac = written / total
                                 overall = (idx + file_frac) / len(targets)
-                                progress_callback(
-                                    overall, f"Scarico {dest.name}…"
-                                )
+                                progress_callback(overall, f"Scarico {dest.name}…")
                 # atomic rename — only swap in once fully written
                 os.replace(tmp, dest)
                 logger.info(
                     "[TTSDownload] Downloaded %s (%d bytes)", dest.name, written
                 )
             except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
-                logger.error(
-                    "[TTSDownload] Piper download failed for %s: %s", url, exc
-                )
+                logger.error("[TTSDownload] Piper download failed for %s: %s", url, exc)
                 # cleanup partial file
                 try:
                     if tmp.exists():

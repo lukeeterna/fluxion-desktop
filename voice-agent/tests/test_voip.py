@@ -4,12 +4,11 @@ Tests for FLUXION Voice Agent VoIP Module (Week 4).
 Tests SIP client, RTP transport, and VoIP manager.
 """
 
-import asyncio
 import os
 import pytest
 import struct
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from src.voip import (
     SIPConfig,
@@ -28,6 +27,7 @@ from src.analytics import ConversationLogger
 # Test Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sip_config():
     """Create test SIP configuration."""
@@ -37,6 +37,7 @@ def sip_config():
         username="testuser",
         password="testpass",
         local_ip="127.0.0.1",
+        public_ip="127.0.0.1",
         local_port=15060,
     )
 
@@ -50,7 +51,7 @@ def sip_client(sip_config):
 @pytest.fixture
 def temp_db():
     """Create temporary database for analytics."""
-    with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
+    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
         db_path = f.name
     yield db_path
     os.unlink(db_path)
@@ -66,13 +67,14 @@ def logger(temp_db):
 # SIPConfig Tests
 # =============================================================================
 
+
 class TestSIPConfig:
     """Tests for SIPConfig dataclass."""
 
     def test_default_values(self):
         """Test default configuration values."""
         config = SIPConfig()
-        assert config.server == "sip.ehiweb.it"
+        assert config.server == "sip.vivavox.it"
         assert config.port == 5060
         assert config.transport == "udp"
         assert "PCMU" in config.codecs
@@ -81,10 +83,7 @@ class TestSIPConfig:
     def test_custom_values(self):
         """Test custom configuration."""
         config = SIPConfig(
-            server="custom.server",
-            port=5080,
-            username="user",
-            password="pass"
+            server="custom.server", port=5080, username="user", password="pass"
         )
         assert config.server == "custom.server"
         assert config.port == 5080
@@ -92,12 +91,15 @@ class TestSIPConfig:
 
     def test_from_env(self):
         """Test loading from environment variables."""
-        with patch.dict(os.environ, {
-            "VOIP_SIP_SERVER": "env.server",
-            "VOIP_SIP_PORT": "5070",
-            "VOIP_SIP_USER": "envuser",
-            "VOIP_SIP_PASSWORD": "envpass"
-        }):
+        with patch.dict(
+            os.environ,
+            {
+                "VOIP_SIP_SERVER": "env.server",
+                "VOIP_SIP_PORT": "5070",
+                "VOIP_SIP_USER": "envuser",
+                "VOIP_SIP_PASS": "envpass",
+            },
+        ):
             config = SIPConfig.from_env()
             assert config.server == "env.server"
             assert config.port == 5070
@@ -108,6 +110,7 @@ class TestSIPConfig:
 # =============================================================================
 # SIPMessage Tests
 # =============================================================================
+
 
 class TestSIPMessage:
     """Tests for SIP message parsing and building."""
@@ -206,7 +209,7 @@ class TestSIPMessage:
             "From": "<sip:user@test.server>",
             "To": "<sip:user@test.server>",
             "Call-ID": "test123",
-            "CSeq": "1 REGISTER"
+            "CSeq": "1 REGISTER",
         }
 
         data = msg.build()
@@ -238,6 +241,7 @@ class TestSIPMessage:
 # CallSession Tests
 # =============================================================================
 
+
 class TestCallSession:
     """Tests for CallSession dataclass."""
 
@@ -257,6 +261,7 @@ class TestCallSession:
     def test_duration_connected(self):
         """Test duration after connection."""
         import time
+
         call = CallSession()
         call.connect_time = time.time() - 60  # 60 seconds ago
         call.end_time = time.time()
@@ -265,6 +270,7 @@ class TestCallSession:
     def test_duration_ongoing(self):
         """Test duration for ongoing call."""
         import time
+
         call = CallSession()
         call.connect_time = time.time() - 30  # 30 seconds ago
         # No end_time = still connected
@@ -274,6 +280,7 @@ class TestCallSession:
 # =============================================================================
 # SIPClient Tests
 # =============================================================================
+
 
 class TestSIPClient:
     """Tests for SIP client."""
@@ -315,18 +322,17 @@ class TestSIPClient:
         sip_client._nonce = "abc123"
 
         response = sip_client._compute_digest_response(
-            method="REGISTER",
-            uri="sip:test.server"
+            method="REGISTER", uri="sip:test.server"
         )
 
         # Should be 32-char hex string (MD5)
         assert len(response) == 32
-        assert all(c in '0123456789abcdef' for c in response)
+        assert all(c in "0123456789abcdef" for c in response)
 
     def test_get_status_not_registered(self, sip_client):
         """Test status when not registered."""
         status = sip_client.get_status()
-        assert status["registered"] == False
+        assert not status["registered"]
         assert status["server"] == "test.sip.server"
         assert status["active_call"] is None
 
@@ -336,7 +342,7 @@ class TestSIPClient:
             call_id="test123",
             direction=CallDirection.INBOUND,
             remote_number="+393331234567",
-            state=CallState.CONNECTED
+            state=CallState.CONNECTED,
         )
 
         status = sip_client.get_status()
@@ -350,15 +356,14 @@ class TestSIPClient:
 # RTPTransport Tests
 # =============================================================================
 
+
 class TestRTPTransport:
     """Tests for RTP audio transport."""
 
     def test_init(self):
         """Test RTP transport initialization."""
         rtp = RTPTransport(
-            local_port=10000,
-            remote_ip="192.168.1.100",
-            remote_port=10002
+            local_port=10000, remote_ip="192.168.1.100", remote_port=10002
         )
         assert rtp.local_port == 10000
         assert rtp.remote_ip == "192.168.1.100"
@@ -370,7 +375,7 @@ class TestRTPTransport:
 
         # Create test PCM data (16-bit, 8 samples)
         samples = [0, 1000, 2000, 3000, -3000, -2000, -1000, 0]
-        pcm = struct.pack('<8h', *samples)
+        pcm = struct.pack("<8h", *samples)
 
         # Encode to mu-law
         encoded = rtp._encode_pcmu(pcm)
@@ -381,7 +386,7 @@ class TestRTPTransport:
         assert len(decoded) == 16  # Back to 16-bit (2 bytes per sample)
 
         # Verify we can unpack the decoded data
-        decoded_samples = struct.unpack('<8h', decoded)
+        decoded_samples = struct.unpack("<8h", decoded)
         assert len(decoded_samples) == 8
 
     def test_pcmu_silence(self):
@@ -389,7 +394,7 @@ class TestRTPTransport:
         rtp = RTPTransport(local_port=10000)
 
         # Silence (zeros)
-        silence = b'\x00' * 320  # 160 samples
+        silence = b"\x00" * 320  # 160 samples
         encoded = rtp._encode_pcmu(silence)
 
         # Should compress to ~160 bytes
@@ -399,6 +404,7 @@ class TestRTPTransport:
 # =============================================================================
 # VoIPManager Tests
 # =============================================================================
+
 
 class TestVoIPManager:
     """Tests for VoIP manager."""
@@ -426,8 +432,8 @@ class TestVoIPManager:
         """Test status when not running."""
         manager = VoIPManager()
         status = manager.get_status()
-        assert status["running"] == False
-        assert status["rtp_active"] == False
+        assert not status["running"]
+        assert not status["rtp_active"]
 
     def test_audio_buffer_threshold(self):
         """Test audio buffer threshold."""
@@ -440,31 +446,28 @@ class TestVoIPManager:
         manager = VoIPManager()
 
         # 4 samples at 8kHz
-        samples_8k = struct.pack('<4h', 0, 1000, 2000, 1000)
+        samples_8k = struct.pack("<4h", 0, 1000, 2000, 1000)
 
-        # Should become 8 samples at 16kHz
         samples_16k = manager._upsample_audio(samples_8k)
-        assert len(samples_16k) == 16  # 8 samples * 2 bytes
 
-        # Check interpolation
-        result = struct.unpack('<8h', samples_16k)
-        assert result[0] == 0
-        assert result[2] == 1000
-        assert result[4] == 2000
+        # A stateless 2x rate conversion has no trailing interval to
+        # interpolate, so N input samples produce 2N - 1 output samples.
+        result = struct.unpack("<7h", samples_16k)
+        assert result == (0, 500, 1000, 1500, 2000, 1500, 1000)
 
     def test_downsample_audio(self):
         """Test downsampling from 16kHz to 8kHz."""
         manager = VoIPManager()
 
         # 8 samples at 16kHz
-        samples_16k = struct.pack('<8h', 0, 500, 1000, 1500, 2000, 1500, 1000, 500)
+        samples_16k = struct.pack("<8h", 0, 500, 1000, 1500, 2000, 1500, 1000, 500)
 
         # Should become 4 samples at 8kHz
         samples_8k = manager._downsample_audio(samples_16k)
         assert len(samples_8k) == 8  # 4 samples * 2 bytes
 
         # Check decimation (every other sample)
-        result = struct.unpack('<4h', samples_8k)
+        result = struct.unpack("<4h", samples_8k)
         assert result[0] == 0
         assert result[1] == 1000
         assert result[2] == 2000
@@ -474,15 +477,14 @@ class TestVoIPManager:
 # Call Logging Tests (Analytics)
 # =============================================================================
 
+
 class TestCallLogging:
     """Tests for VoIP call logging in analytics."""
 
     def test_log_call_start(self, logger):
         """Test logging call start."""
         call_id = logger.log_call_start(
-            call_id="call_001",
-            direction="inbound",
-            remote_number="+393331234567"
+            call_id="call_001", direction="inbound", remote_number="+393331234567"
         )
         assert call_id == "call_001"
 
@@ -493,11 +495,11 @@ class TestCallLogging:
 
         # Verify in database
         import sqlite3
+
         conn = sqlite3.connect(logger.db_path)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT * FROM voip_calls WHERE id = ?",
-            ("call_002",)
+            "SELECT * FROM voip_calls WHERE id = ?", ("call_002",)
         ).fetchone()
         conn.close()
 
@@ -514,16 +516,16 @@ class TestCallLogging:
             sip_status_code=200,
             rtp_packets_sent=6000,
             rtp_packets_received=5800,
-            audio_quality_score=4.2
+            audio_quality_score=4.2,
         )
 
         # Verify in database
         import sqlite3
+
         conn = sqlite3.connect(logger.db_path)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT * FROM voip_calls WHERE id = ?",
-            ("call_003",)
+            "SELECT * FROM voip_calls WHERE id = ?", ("call_003",)
         ).fetchone()
         conn.close()
 
@@ -558,7 +560,7 @@ class TestCallLogging:
         assert metrics["completed_calls"] == 2
         assert metrics["missed_calls"] == 1
         assert metrics["avg_duration_seconds"] == 60  # (60+0+120)/3
-        assert metrics["answer_rate"] == pytest.approx(2/3, rel=0.01)
+        assert metrics["answer_rate"] == pytest.approx(2 / 3, rel=0.01)
 
     def test_call_with_conversation(self, logger):
         """Test linking call to conversation session."""
@@ -570,16 +572,16 @@ class TestCallLogging:
             call_id="call_conv1",
             direction="inbound",
             remote_number="+39333444",
-            conversation_id=session_id
+            conversation_id=session_id,
         )
 
         # Verify link
         import sqlite3
+
         conn = sqlite3.connect(logger.db_path)
         conn.row_factory = sqlite3.Row
         row = conn.execute(
-            "SELECT conversation_id FROM voip_calls WHERE id = ?",
-            ("call_conv1",)
+            "SELECT conversation_id FROM voip_calls WHERE id = ?", ("call_conv1",)
         ).fetchone()
         conn.close()
 
@@ -589,6 +591,7 @@ class TestCallLogging:
 # =============================================================================
 # Integration Tests
 # =============================================================================
+
 
 class TestVoIPIntegration:
     """Integration tests for VoIP system."""
@@ -604,6 +607,7 @@ class TestVoIPIntegration:
 
         call.state = CallState.CONNECTED
         import time
+
         call.connect_time = time.time()
         assert call.state == CallState.CONNECTED
 

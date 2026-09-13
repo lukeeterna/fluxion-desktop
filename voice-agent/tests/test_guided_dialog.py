@@ -14,15 +14,14 @@ from pathlib import Path
 
 # Add parent to path
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from guided_dialog import (
     GuidedDialogEngine,
     ItalianFuzzyMatcher,
     DialogState,
-    DialogContext,
     VerticalConfigLoader,
-    SLOT_TO_STATE,
 )
 
 
@@ -30,10 +29,11 @@ from guided_dialog import (
 # FIXTURES
 # ============================================================
 
+
 @pytest.fixture
 def temp_db():
     """Create temporary SQLite database with test data."""
-    fd, path = tempfile.mkstemp(suffix='.db')
+    fd, path = tempfile.mkstemp(suffix=".db")
     os.close(fd)
 
     conn = sqlite3.connect(path)
@@ -85,7 +85,9 @@ def temp_db():
     cursor.execute("INSERT INTO operatori (nome, cognome) VALUES ('Marco', 'Rossi')")
     cursor.execute("INSERT INTO operatori (nome, cognome) VALUES ('Giulia', 'Bianchi')")
     cursor.execute("INSERT INTO operatori (nome, cognome) VALUES ('Luca', 'Verdi')")
-    cursor.execute("INSERT INTO clienti (nome, cognome, telefono) VALUES ('Mario', 'Cliente', '3331234567')")
+    cursor.execute(
+        "INSERT INTO clienti (nome, cognome, telefono) VALUES ('Mario', 'Cliente', '3331234567')"
+    )
 
     conn.commit()
     conn.close()
@@ -99,15 +101,13 @@ def temp_db():
 @pytest.fixture
 def engine(temp_db):
     """Create GuidedDialogEngine instance."""
-    return GuidedDialogEngine(
-        vertical_id="salone",
-        db_path=temp_db
-    )
+    return GuidedDialogEngine(vertical_id="salone", db_path=temp_db)
 
 
 # ============================================================
 # TEST: ItalianFuzzyMatcher
 # ============================================================
+
 
 class TestItalianFuzzyMatcher:
     """Test fuzzy matching italiano."""
@@ -220,15 +220,21 @@ class TestItalianFuzzyMatcher:
         """Test match servizi con sinonimi."""
         services = ["Taglio uomo", "Taglio donna", "Piega", "Colore"]
 
-        assert ItalianFuzzyMatcher.match_servizio_sinonimo("taglio", services) in ["Taglio uomo", "Taglio donna"]
+        assert ItalianFuzzyMatcher.match_servizio_sinonimo("taglio", services) in [
+            "Taglio uomo",
+            "Taglio donna",
+        ]
         assert ItalianFuzzyMatcher.match_servizio_sinonimo("piega", services) == "Piega"
-        assert ItalianFuzzyMatcher.match_servizio_sinonimo("tinta", services) == "Colore"
+        assert (
+            ItalianFuzzyMatcher.match_servizio_sinonimo("tinta", services) == "Colore"
+        )
         assert ItalianFuzzyMatcher.match_servizio_sinonimo("xyz", services) is None
 
 
 # ============================================================
 # TEST: GuidedDialogEngine
 # ============================================================
+
 
 class TestGuidedDialogEngine:
     """Test core dialog engine."""
@@ -384,6 +390,7 @@ class TestGuidedDialogEngine:
 # TEST: Integrazione
 # ============================================================
 
+
 class TestIntegration:
     """Test di integrazione end-to-end."""
 
@@ -393,7 +400,12 @@ class TestIntegration:
 
         # Input ambiguo
         response1, state1 = engine.process_user_input("boh non so")
-        assert "capir" in response1.lower() or "trattamento" in response1.lower() or "aiutarla" in response1.lower() or "servizio" in response1.lower()
+        assert (
+            "capir" in response1.lower()
+            or "trattamento" in response1.lower()
+            or "aiutarla" in response1.lower()
+            or "servizio" in response1.lower()
+        )
 
         # Ancora ambiguo
         response2, state2 = engine.process_user_input("mah")
@@ -431,6 +443,7 @@ class TestIntegration:
 # ============================================================
 # TEST: VerticalConfigLoader
 # ============================================================
+
 
 class TestVerticalConfigLoader:
     """Test config loader."""

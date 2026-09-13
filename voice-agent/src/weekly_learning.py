@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # DB PATH — same as analytics.py
 # ═══════════════════════════════════════════════════════════════════
 
+
 def _get_analytics_db_path() -> str:
     fluxion_dir = Path.home() / ".fluxion"
     return str(fluxion_dir / "voice_analytics.db")
@@ -37,7 +38,10 @@ def _get_analytics_db_path() -> str:
 # INSIGHT QUERIES — each returns a list of findings
 # ═══════════════════════════════════════════════════════════════════
 
-def _query_state_abandonment(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
+
+def _query_state_abandonment(
+    conn: sqlite3.Connection, days: int = 7
+) -> List[Dict[str, Any]]:
     """
     Find FSM states where conversations end in ABANDONED or ERROR.
     High abandonment in a state = UX friction point.
@@ -64,10 +68,7 @@ def _query_state_abandonment(conn: sqlite3.Connection, days: int = 7) -> List[Di
         """,
         (str(-days),),
     ).fetchall()
-    return [
-        {"state": r[0], "outcome": r[1], "count": r[2]}
-        for r in rows
-    ]
+    return [{"state": r[0], "outcome": r[1], "count": r[2]} for r in rows]
 
 
 def _query_state_loops(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
@@ -92,12 +93,13 @@ def _query_state_loops(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str
         (str(-days),),
     ).fetchall()
     return [
-        {"conversation_id": r[0], "state": r[1], "repeat_count": r[2]}
-        for r in rows
+        {"conversation_id": r[0], "state": r[1], "repeat_count": r[2]} for r in rows
     ]
 
 
-def _query_bottleneck_states(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
+def _query_bottleneck_states(
+    conn: sqlite3.Connection, days: int = 7
+) -> List[Dict[str, Any]]:
     """
     Find states with highest average latency — slow NLU or complex processing.
     """
@@ -119,13 +121,12 @@ def _query_bottleneck_states(conn: sqlite3.Connection, days: int = 7) -> List[Di
         """,
         (str(-days),),
     ).fetchall()
-    return [
-        {"state": r[0], "avg_latency_ms": r[1], "turn_count": r[2]}
-        for r in rows
-    ]
+    return [{"state": r[0], "avg_latency_ms": r[1], "turn_count": r[2]} for r in rows]
 
 
-def _query_escalation_patterns(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
+def _query_escalation_patterns(
+    conn: sqlite3.Connection, days: int = 7
+) -> List[Dict[str, Any]]:
     """
     Find most common escalation reasons and the states that trigger them.
     """
@@ -145,13 +146,12 @@ def _query_escalation_patterns(conn: sqlite3.Connection, days: int = 7) -> List[
         """,
         (str(-days),),
     ).fetchall()
-    return [
-        {"reason": r[0], "count": r[1]}
-        for r in rows
-    ]
+    return [{"reason": r[0], "count": r[1]} for r in rows]
 
 
-def _query_low_confidence_patterns(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
+def _query_low_confidence_patterns(
+    conn: sqlite3.Connection, days: int = 7
+) -> List[Dict[str, Any]]:
     """
     Find turns with low intent confidence (<0.5) grouped by state — NLU weak spots.
     """
@@ -181,7 +181,9 @@ def _query_low_confidence_patterns(conn: sqlite3.Connection, days: int = 7) -> L
     ]
 
 
-def _query_frustration_hotspots(conn: sqlite3.Connection, days: int = 7) -> List[Dict[str, Any]]:
+def _query_frustration_hotspots(
+    conn: sqlite3.Connection, days: int = 7
+) -> List[Dict[str, Any]]:
     """
     Find states where frustration level is consistently high (>=2).
     """
@@ -203,10 +205,7 @@ def _query_frustration_hotspots(conn: sqlite3.Connection, days: int = 7) -> List
         """,
         (str(-days),),
     ).fetchall()
-    return [
-        {"state": r[0], "avg_frustration": r[1], "turn_count": r[2]}
-        for r in rows
-    ]
+    return [{"state": r[0], "avg_frustration": r[1], "turn_count": r[2]} for r in rows]
 
 
 def _query_weekly_summary(conn: sqlite3.Connection, days: int = 7) -> Dict[str, Any]:
@@ -253,6 +252,7 @@ def _query_weekly_summary(conn: sqlite3.Connection, days: int = 7) -> Dict[str, 
 # REPORT GENERATION
 # ═══════════════════════════════════════════════════════════════════
 
+
 def generate_weekly_report(days: int = 7) -> Dict[str, Any]:
     """
     Generate a complete weekly learning report.
@@ -263,7 +263,10 @@ def generate_weekly_report(days: int = 7) -> Dict[str, Any]:
     db_path = _get_analytics_db_path()
     if not Path(db_path).exists():
         logger.warning("[WeeklyLearning] Analytics DB not found at %s", db_path)
-        return {"error": "Analytics DB not found", "generated_at": datetime.now().isoformat()}
+        return {
+            "error": "Analytics DB not found",
+            "generated_at": datetime.now().isoformat(),
+        }
 
     try:
         with sqlite3.connect(db_path, timeout=5) as conn:
@@ -391,7 +394,11 @@ def _store_report(conn: sqlite3.Connection, report: Dict[str, Any]) -> None:
             ),
         )
         conn.commit()
-        logger.info("[WeeklyLearning] Report stored: %s (%d insights)", report_id, len(report.get("insights", [])))
+        logger.info(
+            "[WeeklyLearning] Report stored: %s (%d insights)",
+            report_id,
+            len(report.get("insights", [])),
+        )
     except sqlite3.Error as e:
         logger.error("[WeeklyLearning] Failed to store report: %s", e)
 
@@ -420,6 +427,7 @@ def get_latest_report() -> Optional[Dict[str, Any]]:
 # ═══════════════════════════════════════════════════════════════════
 # SCHEDULER ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════
+
 
 async def run_weekly_learning() -> None:
     """
@@ -456,7 +464,7 @@ def format_report_for_wa(report: Dict[str, Any]) -> str:
         return "📊 Report settimanale Sara: nessuna conversazione questa settimana."
 
     lines = [
-        f"📊 *Report Settimanale Sara*",
+        "📊 *Report Settimanale Sara*",
         f"Periodo: ultimi {report.get('period_days', 7)} giorni\n",
         f"📞 Conversazioni: {total}",
         f"✅ Completate: {summary.get('completed', 0)} ({summary.get('completion_rate', 0)}%)",

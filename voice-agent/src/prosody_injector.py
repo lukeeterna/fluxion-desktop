@@ -12,26 +12,25 @@ Works with Edge-TTS, Piper, and SystemTTS without engine-specific code.
 """
 
 import re
-from typing import Optional
 
 
 # Logical break points in Italian (conjunctions, prepositions)
 _BREAK_WORDS = re.compile(
-    r'(?<=\S)\s+(dopo|per|con|che|quindi|inoltre|oppure|mentre|perche|anche)\s+',
+    r"(?<=\S)\s+(dopo|per|con|che|quindi|inoltre|oppure|mentre|perche|anche)\s+",
     re.IGNORECASE,
 )
 
 # Day/time patterns for thinking pause
 _DATE_TIME_RE = re.compile(
-    r'\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica'
-    r'|domani|dopodomani|oggi|alle\s+\d{1,2}[:.]\d{2}|alle\s+\d{1,2})\b',
+    r"\b(luned[iì]|marted[iì]|mercoled[iì]|gioved[iì]|venerd[iì]|sabato|domenica"
+    r"|domani|dopodomani|oggi|alle\s+\d{1,2}[:.]\d{2}|alle\s+\d{1,2})\b",
     re.IGNORECASE,
 )
 
 # Italian list without commas: "A B e C" or "A B C e D"
 # Matches 2+ bare words before "e/ed" + final word
 _BARE_LIST_RE = re.compile(
-    r'(\b\w+)\s+(\w+)\s+(e|ed)\s+(\w+)\b',
+    r"(\b\w+)\s+(\w+)\s+(e|ed)\s+(\w+)\b",
     re.IGNORECASE,
 )
 
@@ -74,7 +73,7 @@ class ProsodyInjector:
 
     def _add_breathing_pauses(self, text: str) -> str:
         """Break long sentences into shorter breath groups."""
-        sentences = text.split('. ')
+        sentences = text.split(". ")
         out = []
         for sentence in sentences:
             if len(sentence) > _BREATH_THRESHOLD:
@@ -87,16 +86,16 @@ class ProsodyInjector:
                         break
                 if best_pos is not None:
                     # Only insert comma if there isn't one already nearby
-                    before = sentence[max(0, best_pos - 2):best_pos]
-                    if ',' not in before and '.' not in before:
-                        sentence = sentence[:best_pos] + ',' + sentence[best_pos:]
+                    before = sentence[max(0, best_pos - 2) : best_pos]
+                    if "," not in before and "." not in before:
+                        sentence = sentence[:best_pos] + "," + sentence[best_pos:]
             out.append(sentence)
-        return '. '.join(out)
+        return ". ".join(out)
 
     def _add_thinking_pause(self, text: str) -> str:
         """Add '...' before dates/times (thinking effect)."""
         # Only add if text doesn't already contain ellipsis
-        if '...' in text:
+        if "..." in text:
             return text
 
         m = _DATE_TIME_RE.search(text)
@@ -109,16 +108,16 @@ class ProsodyInjector:
             return text
 
         # Check if there's already punctuation just before
-        before_char = text[pos - 1] if pos > 0 else ''
-        before2 = text[max(0, pos - 2):pos].strip()
-        if before_char in '.,;:!?':
+        before_char = text[pos - 1] if pos > 0 else ""
+        text[max(0, pos - 2) : pos].strip()
+        if before_char in ".,;:!?":
             return text
 
         # Insert ellipsis before the date/time word
         # Find the space before the match
-        space_pos = text.rfind(' ', 0, pos)
+        space_pos = text.rfind(" ", 0, pos)
         if space_pos > 0:
-            return text[:space_pos] + '...' + text[space_pos:]
+            return text[:space_pos] + "..." + text[space_pos:]
         return text
 
     def _add_list_rhythm(self, text: str) -> str:
@@ -136,11 +135,11 @@ class ProsodyInjector:
     def _clean_punctuation(self, text: str) -> str:
         """Remove double punctuation artifacts."""
         # Double commas
-        text = re.sub(r',\s*,', ',', text)
+        text = re.sub(r",\s*,", ",", text)
         # Comma before period
-        text = re.sub(r',\s*\.', '.', text)
+        text = re.sub(r",\s*\.", ".", text)
         # Double periods (but preserve ellipsis)
-        text = re.sub(r'(?<!\.)\.\.(?!\.)', '.', text)
+        text = re.sub(r"(?<!\.)\.\.(?!\.)", ".", text)
         # Double spaces
-        text = re.sub(r'  +', ' ', text)
+        text = re.sub(r"  +", " ", text)
         return text

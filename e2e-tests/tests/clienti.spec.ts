@@ -21,10 +21,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     const table = page.getByRole('table');
     const emptyState = page.getByText(/nessun cliente|lista vuota/i);
 
-    const isTableVisible = await table.isVisible().catch(() => false);
-    const isEmptyStateVisible = await emptyState.isVisible().catch(() => false);
-
-    expect(isTableVisible || isEmptyStateVisible).toBe(true);
+    await expect(table.or(emptyState).first()).toBeVisible();
   });
 
   test('should create new cliente', async ({ clientiPage, testCliente }) => {
@@ -72,7 +69,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     await clientiPage.submitForm();
 
     // Check for validation errors
-    const validationError = page.getByText(/campo obbligatorio|required/i);
+    const validationError = page.getByText(/richiest|campo obbligatorio|required/i);
     await expect(validationError.first()).toBeVisible();
   });
 
@@ -89,7 +86,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     await clientiPage.submitForm();
 
     // Check for email validation error
-    const emailError = page.getByText(/email.*valida|invalid.*email/i);
+    const emailError = page.getByTestId('client-form').getByText(/email.*valida|invalid.*email/i);
     await expect(emailError).toBeVisible();
   });
 
@@ -106,7 +103,7 @@ test.describe('Clienti CRUD Operations @clienti', () => {
     await clientiPage.submitForm();
 
     // Check for phone validation error
-    const phoneError = page.getByText(/telefono.*valido|invalid.*phone/i);
+    const phoneError = page.getByTestId('client-form').getByText(/telefono.*valido|invalid.*phone/i);
     await expect(phoneError).toBeVisible();
   });
 });
@@ -135,13 +132,14 @@ test.describe('Clienti Search & Filter @clienti', () => {
     await clientiPage.searchCliente('NonExistentCliente12345XYZ');
 
     // Should show empty state or no results message
-    const noResults = page.getByText(/nessun risultato|non trovato|no results/i);
+    const noResults = page.getByText(/nessun cliente trovato|nessun risultato|non trovato|no results/i);
     await expect(noResults).toBeVisible();
   });
 });
 
 test.describe('Clienti Bulk Operations @clienti @bulk', () => {
   test('should create multiple clienti', async ({ clientiPage }) => {
+    await clientiPage.navigate();
     const clienti = TestDataFactory.clienti(3);
 
     for (const cliente of clienti) {

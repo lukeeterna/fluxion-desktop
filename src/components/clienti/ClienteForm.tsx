@@ -31,7 +31,7 @@ const clienteSchema = z.object({
   nome: z.string().min(2, 'Nome richiesto (min 2 caratteri)'),
   cognome: z.string().min(2, 'Cognome richiesto (min 2 caratteri)'),
   soprannome: z.string().optional(), // Per identificazione WhatsApp
-  telefono: z.string().min(10, 'Telefono richiesto (min 10 cifre)'),
+  telefono: z.string().regex(/^\d{10,}$/, 'Telefono non valido (almeno 10 cifre)'),
   email: z.string().email('Email non valida').optional().or(z.literal('')),
   data_nascita: z.string().optional(),
   indirizzo: z.string().optional(),
@@ -145,6 +145,7 @@ export const ClienteForm: FC<ClienteFormProps> = ({
     <Form {...form}>
       <form
         data-testid="client-form"
+        noValidate
         onSubmit={form.handleSubmit(handleSubmit, handleInvalid)}
         className={cn('space-y-6', className)}
       >

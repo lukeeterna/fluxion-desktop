@@ -95,8 +95,8 @@ def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
         return f"[{var_name}]"
 
     # Handle both {{VAR}} (old format) and [VAR] (S126 format)
-    result = re.sub(r'\{\{(\w+)\}\}', replace_match, text)
-    result = re.sub(r'\[([A-Z][A-Z0-9_]+)\]', replace_match, result)
+    result = re.sub(r"\{\{(\w+)\}\}", replace_match, text)
+    result = re.sub(r"\[([A-Z][A-Z0-9_]+)\]", replace_match, result)
     if unresolved:
         print(f"[VERTICAL-D3] Unresolved variables ({len(unresolved)}): {unresolved}")
     return result
@@ -105,7 +105,7 @@ def substitute_variables(text: str, settings: Dict[str, Any]) -> str:
 def load_faqs_for_vertical(
     vertical: str,
     settings: Optional[Dict[str, Any]] = None,
-    data_dir: Optional[Path] = None
+    data_dir: Optional[Path] = None,
 ) -> List[Dict[str, Any]]:
     """
     Load FAQs for a specific business vertical.
@@ -222,6 +222,7 @@ def get_db_settings_for_vertical(vertical: str) -> Dict[str, Any]:
 # CONVENIENCE FUNCTIONS
 # =============================================================================
 
+
 def get_available_verticals() -> List[str]:
     """Get list of available vertical keys."""
     return list(VERTICAL_FAQ_MAP.keys())
@@ -260,4 +261,4 @@ if __name__ == "__main__":
             if faqs:
                 print(f"Sample: {faqs[0].get('question', 'N/A')}")
         else:
-            print(f"FAQ file not found")
+            print("FAQ file not found")

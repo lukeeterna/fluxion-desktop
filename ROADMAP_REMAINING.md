@@ -1,73 +1,153 @@
-# FLUXION — ROADMAP AUTORITATIVO (unico)
+# FLUXION — ROADMAP REMAINING TO PRODUCTION (AUTHORITATIVE)
 
-> **Questo è l'UNICO roadmap valido.** Supersede: `ROADMAP_S183_S190.md` (piano aprile, stale) e la versione precedente di questo file (backup: `ROADMAP_REMAINING.md.bak-PRE-S344-20260606-184921`).
-> Prodotto in S344 (2026-06-06) per mandato founder S343. Allineato allo stato reale verificato sul terreno (gh/git/Glob/Grep, non da handoff).
-> **REGOLA #29**: si lavora SOLO da questo file. Ogni task deve puntare a una voce qui sotto. Vietato freelancing/speculazione.
-> **Obiettivo nord**: primo €497. Il percorso revenue NON passa da Sara (voce), passa dal **Sales Agent WA → checkout €497**.
+> **Stato canonico aggiornato: 2026-08-22.** Questo file è l'unico elenco operativo dei gate rimanenti verso produzione.
+> La precedente roadmap revenue/S344 è storica e non governa più la sequenza di certificazione corrente.
+> **Regola:** nessun gate è GREEN per inferenza. Ogni chiusura richiede evidenza verificabile sullo SHA candidato esatto; un failure di infrastruttura resta RED/BLOCKED, non viene mascherato come prodotto certificato.
 
----
+## Candidato corrente
 
-## ✅ PRONTO (verificato, non rifare)
-- **Payment rail prod** — worker `fluxion-proxy`, smoke €1 LIVE end-to-end + revocation anti-refund (S331, commit `d5c330f`).
-- **Email deliverability** — `fluxion-app.com` Resend verified + smoke pass da `noreply@fluxion-app.com` (S342).
-- **Custom domain** — `https://fluxion-app.com/health` 200 HTTPS su worker prod (S342).
-- **Gestionale core** — app Tauri funzionante.
-- **Sara Layer 1 (testo)** — `voice-agent/scripts/test_all_verticals_e2e.py` 50 OK/3 WARN su 12 verticali (S333).
-- **License client-side** — `src/lib/phone-home.ts` + `src/components/license/SaraTrialBanner.tsx` IMPLEMENTATI (rami offline-grace/clock-rollback/banner non behavior-verified, gated GUI iMac Keychain — REGOLA #12).
+- PR attiva: **#60 — `fix/sara-gate-shell-only`**
+- Base: `master`
+- Gate corrente: **G1 — CI/runtime #60**
+- Gli SHA sono candidati temporanei finché G1 non è interamente GREEN; ogni commit successivo invalida le certificazioni exact-SHA precedenti.
 
 ---
 
-## 🎯 PERCORSO REVENUE — ordine ROI verso primo €497 (tutto CTO-actionable, zero-dep-esterne)
+## G1 — PR #60: CI/runtime completo
 
-### R1 — SALES AGENT: strato conversazione→checkout  `[il vero gap revenue]`
-**Stato**: `tools/SalesAgentWA/` ha scraper+sender+monitor+template+LaunchAgent (girato live 15 apr — ⚠️ claim "205 lead, reply 60%" DISPUTED dal founder S365: nessuna risposta reale; NON usare come evidenza finché non verificato in log). MANCA la chiusura.
-**Componenti GIÀ presenti/definiti** (tutti ~14 apr): `scraper.py`, `sender.py`, `monitor.py`, `agent.py`, `templates.py`, `config.py`, `utm.py`, `dashboard.py`, `test_send.py`, `com.fluxion.salesagent.plist` (LaunchAgent), `SALES-AGENT-BLUEPRINT.md`, `wa_session/` (sessione Chrome WA persistita).
-**Gap verificati (cosa MANCA)**:
-- `config.py:19-27` → CTA/`LANDING_URL` puntano a `https://fluxion-landing.pages.dev`, **non** a `fluxion-app.com` né a link Stripe checkout €497.
-- `monitor.py` logga le risposte ma **nessuno strato conversazione→checkout/handoff** (nessun "497"/"stripe"/"checkout" nei .py).
-- LaunchAgent `com.fluxion.salesagent.plist` non caricato.
-**Done-condition (TERMINAL_FACT)**: una conversazione WA reale di test → l'agente propone link checkout €497 funzionante → Stripe checkout si apre col prezzo corretto. E2E PASS.
-**Sub-task**: (a) cablare link checkout reale €497 (Stripe payment link su prezzo €497, NON €1 smoke); (b) aggiornare CTA a dominio/landing corretto; (c) strato risposta→handoff nel monitor; (d) caricare LaunchAgent.
+**Stato: IN PROGRESS / RED.**
 
-### R2 — DISTRIBUZIONE: release sana multi-OS  `[~10h, secondo blocker]`
-**Stato**: distribuibile OGGI **solo macOS Intel x64** (DMG+PKG su `v1.0.0`).
-**Gap verificati**:
-- `v1.0.1` è "Latest" ma ha **0 asset** → l'auto-updater (`tauri.conf.json` → `github.com/lukeeterna/fluxion-desktop/releases/latest`) punta a una latest **senza binari** = BUG bloccante update.
-- Windows NSIS `.exe` esiste in `v0.0.0-dev` **(draft, non pubblico)** — vicino, va pubblicato+testato.
-- No arm64/Universal Binary (solo Intel x64).
-**Done-condition (TERMINAL_FACT)**: una release pubblica "Latest" con asset funzionanti per macOS + Windows installabili e testati (install → app parte).
-**Sub-task**: (a) FIX release latest vuota (allegare asset o ripubblicare); (b) pubblicare+testare Windows MSI/NSIS; (c) valutare arm64 (mercato secondario, può slittare).
+Done-condition:
+- tutti i workflow richiesti della PR sono GREEN sullo **stesso head SHA**;
+- nessun test viene neutralizzato o escluso per ottenere il verde;
+- failure di test, lint, security scan, Rust/Tauri, E2E e Sara release gate vengono distinti tra difetto prodotto e difetto CI/runtime e corretti alla causa;
+- il `Sara Release Gate (Full)` deve raggiungere realmente la pipeline prevista sul candidato exact-SHA, non solo superare il bootstrap shell.
 
-### R3 — COMPLIANCE P0  `[rischio AGCM/legale, gate go-live pubblico]`
-**Stato item (evidenza S344)**:
-- **E-3** `STRIPE_SECRET_KEY` Worker — no leak committato (CLEAN), MA `refund.ts:202-212` torna 503 se manca → garanzia 30gg non operativa. **Azione**: `wrangler secret put STRIPE_SECRET_KEY` su worker prod + verifica refund path. `[QUICK WIN]`
-- **E-2** disclaimer testimonial — probabile gap sulla landing di vendita principale (disclaimer presente solo in `termini.html`/`guida-gdpr-pmi.html`). **Azione**: aggiungere disclaimer ai testimonial sulla landing vendita.
-- **C-1** admin auth — 0 match in `src/`+`src-tauri/` → assente. **Azione**: verificare se serve per il modello desktop-locale; se sì, implementare.
-- **B-3** fatturazione SDI — solo schema DB (`migrations/007_fatturazione_elettronica.sql`), integrazione SDI INCERTA. **Azione**: verificare scope reale (è P0 per il primo €497?).
-- **B-2** WhatsApp Cloud API — non implementato in source. **Azione**: verificare se necessario per il primo €497 o deferribile (il Sales Agent usa WA web automation, non Cloud API).
-**Done-condition**: per ciascun item P0 confermato in-scope → CHIUSO con evidenza, oppure declassato fuori-P0 con motivazione.
+Evidenza minima:
+- head SHA della PR;
+- elenco workflow + conclusion sul medesimo SHA;
+- log dei fix reali applicati.
+
+Stato osservato prima dell'ultima tornata di fix:
+- Control Plane Static Gate: GREEN;
+- Main CI / Python: RED per assertion conversazionale brittle a fronte di FSM corretta;
+- Voice Agent CI: RED, da chiudere senza indebolire Ruff/security scan;
+- E2E: RED per browser Playwright non installato coerentemente con il progetto Firefox; fix in corso sul branch;
+- Rust/Tauri Test Suite: RED, causa da certificare dai log prima di modificare codice;
+- Sara Release Gate Full: RED nel pre-flight, causa da certificare dai log prima di dichiarare iMac eseguito.
 
 ---
 
-## 🔒 BLOCKED-ON ESTERNO (NON lavoro autonomo)
-- **Sara Layer 2 (audio reale via SIP) — 🟢 SBLOCCATO da S349, RICONFERMATO S365**: `reg_status:200`, Sara risponde a chiamata reale su `0972536918@sip.vivavox.it`. La riga "403/S344" qui era STALE e ha tratto in inganno (S365): verificare SEMPRE lo stato live, non questo snapshot.
-  - **⚠️ GOTCHA OPERATIVO (S365):** "linea occupata" ≠ provider giù. Causa reale = **pipeline non avviata** (es. dopo reboot iMac non riparte da sola). Fix: `ssh imac "cd '/Volumes/MacSSD - Dati/fluxion/voice-agent' && nohup python3 main.py --port 3002 > /tmp/sara_pipeline.log 2>&1 &"` → attendere init → `reg_status:200`.
-  - **Verifica live**: `ssh imac "curl -s http://127.0.0.1:3002/api/voice/voip/status"` → atteso `registered:true, reg_status:200`.
-  - Diagnosi locale CHIUSA (S341-bis). Provider OK. **NON ri-diagnosticare 403.**
-- **Rami license client-side** (offline-grace/clock-rollback/banner) — gated GUI iMac Keychain (REGOLA #12), live-verify in finestra founder-presente.
+## G2 — Issue #65: verdetto indipendente P0
+
+**Stato: BLOCKED ON G1.**
+
+Done-condition:
+- review realmente indipendente del P0 sullo SHA che ha chiuso G1;
+- verdict esplicito **APPROVE**;
+- nessun self-approval o verdict sintetizzato dall'autore del fix;
+- pubblicazione/merge consentiti solo dopo APPROVE.
+
+Se il verdict è REQUEST_CHANGES/REJECT, si torna a G1 con nuovo SHA e nuova review.
 
 ---
 
-## 📦 PRODOTTO — fuori percorso revenue (direttiva founder, non R1/R2/R3)
-- **Magazzino + alert sottoscorta** — modulo gestionale inventario. Aggiunto su direttiva founder S-mag (NON era su questo roadmap; tracciato qui per REGOLA #29).
-  - FASI 1-3 backend (migration `042_magazzino.sql`, 9 comandi Tauri, alert anti-spam) — committate `1a92621`, `cargo test --lib magazzino::` 4/4.
-  - FASE 4 UI React (pagina, hook, sidebar+badge, dashboard widget) + FASE 5 gating Pro-only (flag `magazzino_alert`) — committate `e138345`, `npm run type-check` 0 errori.
-  - **3c email sottoscorta**: DEFER (tocca pipeline Python, non necessaria — coperta da badge+toast). TODO documentato.
-  - **FASE 6 E2E GUI** (IPC + gating live Base=gated/Pro=attiva): BLOCKED-ON founder — richiede launch app GUI iMac con Keychain (REGOLA #12, come rami license). Logica backend già coperta da cargo test.
-  - Dettaglio: `MAGAZZINO_BUILD_2026-06-08.md`.
+## G3 — iMac exact-SHA performance gate
 
-## SEQUENZA OPERATIVA
-1. **R1** (Sales Agent checkout) — apre il primo €497.
-2. **R2** (distribuzione Windows + fix release) — il cliente Windows deve poter installare.
-3. **R3** (compliance, partendo da E-3 quick win) — gate go-live pubblico.
-4. Sara Layer 2 → SOLO quando EHIWEB sblocca (parcheggiato).
+**Stato: BLOCKED ON G2.**
+
+Done-condition:
+- checkout/esecuzione sull'iMac del medesimo SHA approvato in G2;
+- prova runtime reale;
+- **P95 < 2000 ms**;
+- report/log legato allo SHA esatto.
+
+Una prova su SHA precedente o su working tree dirty non vale.
+
+---
+
+## G4 — Trasferimento EHIWEB reale / B2BUA
+
+**Stato: BLOCKED ON G3.**
+
+Done-condition, su trunk EHIWEB reale:
+- chiamata Sara reale e richiesta trasferimento;
+- seconda gamba verso operatore;
+- **risposta effettiva dell'operatore** prima di considerare il transfer riuscito;
+- continuità audio B2BUA verificata tra le gambe previste;
+- scenari `busy`, `no-answer` ed `error` verificati fail-safe;
+- privacy/ownership del trasferimento e dei dati chiamata verificata;
+- log/report riconducibili allo SHA certificato.
+
+Un SIP REFER accettato o un semplice `200` di segnalazione non costituiscono da soli prova di trasferimento riuscito.
+
+---
+
+## G5 — Windows nativo pulito
+
+**Stato: BLOCKED ON G4.**
+
+La precedente certificazione/PR #62 **non vale** come certificazione finale di questo gate.
+
+Done-condition su macchina/runner Windows pulito:
+- Python runtime/dependency path verificato;
+- Go build/runtime verificato;
+- Rust/Tauri build e test verificati;
+- CRT statico dove richiesto dal disegno di release;
+- installer **NSIS** prodotto e installato;
+- avvio applicazione post-install reale;
+- nessuna dipendenza accidentale dalla workstation di sviluppo;
+- artifact e checksum registrati sullo SHA candidato.
+
+---
+
+## G6 — Credential hardening / Issue #63
+
+**Stato: BLOCKED ON G5.**
+
+Done-condition:
+- scanner/check CI rileva credenziali hard-coded reali evitando falsi positivi da semplici nomi di variabili, senza diventare permissivo;
+- virtualenv/vendor/third-party non contaminano il risultato lint/security;
+- segreti runtime sono gestiti tramite secret store/env previsto;
+- **la credenziale già esposta è realmente revocata/ruotata presso il provider**;
+- evidenza della revoca/rotazione registrata senza pubblicare il nuovo segreto;
+- issue #63 chiusa solo dopo entrambe le parti: hardening codice + revoca reale.
+
+La sola modifica dello scanner non chiude G6.
+
+---
+
+## G7 — Installer / release / updater / rollback
+
+**Stato: BLOCKED ON G6.**
+
+Done-condition:
+- release candidate generata dallo SHA certificato;
+- installer macOS/Windows richiesti presenti e installabili;
+- release pubblica coerente: nessuna `latest` vuota o senza asset richiesti;
+- updater prova upgrade verso la release candidata;
+- rollback prova ritorno alla versione precedente/sicura senza perdita o corruzione dei dati prevista dal prodotto;
+- checksum/manifest degli artifact registrati;
+- smoke post-install/post-update/post-rollback GREEN.
+
+---
+
+## G8 — Gate primo cliente
+
+**Stato: BLOCKED ON G7.**
+
+Done-condition:
+- tutti G1–G7 GREEN con evidenza;
+- percorso di installazione/onboarding del primo cliente eseguito sul pacchetto certificato;
+- servizi necessari operativi in produzione;
+- chiamata/booking/gestionale e percorso commerciale in-scope verificati secondo configurazione cliente;
+- rollback/support path disponibile;
+- GO esplicito alla produzione solo dopo il terminal fact del primo cliente.
+
+---
+
+## Ordine vincolante
+
+`G1 #60 CI/runtime` → `G2 #65 APPROVE` → `G3 iMac exact-SHA P95<2000` → `G4 EHIWEB transfer reale` → `G5 Windows nativo pulito` → `G6 #63 + revoca` → `G7 release/updater/rollback` → `G8 primo cliente`.
+
+**PRODUCTION = tutti gli otto gate GREEN.**

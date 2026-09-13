@@ -23,15 +23,24 @@ BACKCHANNELS = {
 }
 
 # FSM states where user is providing slot info
-_INFO_STATES = frozenset({
-    "waiting_name", "waiting_surname", "waiting_date", "waiting_time",
-    "waiting_service", "waiting_phone", "waiting_email",
-})
+_INFO_STATES = frozenset(
+    {
+        "waiting_name",
+        "waiting_surname",
+        "waiting_date",
+        "waiting_time",
+        "waiting_service",
+        "waiting_phone",
+        "waiting_email",
+    }
+)
 
 # FSM states where user is confirming something
-_CONFIRM_STATES = frozenset({
-    "confirming",
-})
+_CONFIRM_STATES = frozenset(
+    {
+        "confirming",
+    }
+)
 
 # Minimum turns between consecutive backchannels
 _COOLDOWN_TURNS = 3
@@ -80,7 +89,9 @@ class BackchannelEngine:
 
         return False
 
-    def get_backchannel(self, context: str = "info_provided", response: str = "") -> str:
+    def get_backchannel(
+        self, context: str = "info_provided", response: str = ""
+    ) -> str:
         """
         Get a random backchannel phrase for the given context.
 

@@ -17,6 +17,7 @@ import uuid
 import json
 import sqlite3
 import aiohttp
+
 try:
     from .http_client import shared_session
 except ImportError:
@@ -39,6 +40,7 @@ DEFAULT_SESSIONS_DB = str(_FLUXION_DIR / "voice_sessions.db")
 
 class SessionChannel(Enum):
     """Session channel types."""
+
     VOICE = "voice"
     WHATSAPP = "whatsapp"
     WEB = "web"
@@ -46,6 +48,7 @@ class SessionChannel(Enum):
 
 class SessionState(Enum):
     """Session lifecycle states."""
+
     ACTIVE = "active"
     IDLE = "idle"
     COMPLETED = "completed"
@@ -56,6 +59,7 @@ class SessionState(Enum):
 @dataclass
 class SessionTurn:
     """A single conversation turn."""
+
     turn_id: str
     timestamp: str
     user_input: str
@@ -65,7 +69,9 @@ class SessionTurn:
     layer_used: str  # L1_exact, L2_pattern, L3_faq, L4_groq
     sentiment: Optional[str] = None
     entities: Dict[str, Any] = field(default_factory=dict)
-    fsm_state: Optional[str] = None  # GAP-D3: BookingState at turn end (e.g. "waiting_date")
+    fsm_state: Optional[str] = (
+        None  # GAP-D3: BookingState at turn end (e.g. "waiting_date")
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -82,13 +88,14 @@ class SessionTurn:
             layer_used=self.layer_used,
             sentiment=self.sentiment,
             entities={},
-            fsm_state=self.fsm_state
+            fsm_state=self.fsm_state,
         )
 
 
 @dataclass
 class VoiceSession:
     """Voice conversation session."""
+
     session_id: str
     channel: SessionChannel
     state: SessionState
@@ -213,7 +220,7 @@ class SessionManager:
         http_bridge_url: str = HTTP_BRIDGE_URL,
         session_timeout_minutes: int = 30,
         gdpr_retention_days: int = 30,
-        db_path: Optional[str] = None
+        db_path: Optional[str] = None,
     ):
         self.http_bridge_url = http_bridge_url
         self.session_timeout_minutes = session_timeout_minutes
@@ -254,7 +261,8 @@ class SessionManager:
         """Write/update session to local SQLite. Always synchronous."""
         try:
             with self._get_db_conn() as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT OR REPLACE INTO voice_sessions (
                         session_id, channel, state, verticale_id, business_name,
                         created_at, updated_at, expires_at,
@@ -272,28 +280,32 @@ class SessionManager:
                         :total_turns, :avg_latency_ms, :groq_calls,
                         :summary
                     )
-                """, {
-                    "session_id": session.session_id,
-                    "channel": session.channel.value,
-                    "state": session.state.value,
-                    "verticale_id": session.verticale_id,
-                    "business_name": session.business_name,
-                    "created_at": session.created_at,
-                    "updated_at": session.updated_at,
-                    "expires_at": session.expires_at,
-                    "client_id": session.client_id,
-                    "client_name": session.client_name,
-                    "phone_number": session.phone_number,
-                    "turns_json": json.dumps([t.to_dict() for t in session.turns], ensure_ascii=False),
-                    "context_json": json.dumps(session.context, ensure_ascii=False),
-                    "outcome": session.outcome,
-                    "booking_id": session.booking_id,
-                    "escalation_reason": session.escalation_reason,
-                    "total_turns": session.total_turns,
-                    "avg_latency_ms": session.avg_latency_ms,
-                    "groq_calls": session.groq_calls,
-                    "summary": session.summary,
-                })
+                """,
+                    {
+                        "session_id": session.session_id,
+                        "channel": session.channel.value,
+                        "state": session.state.value,
+                        "verticale_id": session.verticale_id,
+                        "business_name": session.business_name,
+                        "created_at": session.created_at,
+                        "updated_at": session.updated_at,
+                        "expires_at": session.expires_at,
+                        "client_id": session.client_id,
+                        "client_name": session.client_name,
+                        "phone_number": session.phone_number,
+                        "turns_json": json.dumps(
+                            [t.to_dict() for t in session.turns], ensure_ascii=False
+                        ),
+                        "context_json": json.dumps(session.context, ensure_ascii=False),
+                        "outcome": session.outcome,
+                        "booking_id": session.booking_id,
+                        "escalation_reason": session.escalation_reason,
+                        "total_turns": session.total_turns,
+                        "avg_latency_ms": session.avg_latency_ms,
+                        "groq_calls": session.groq_calls,
+                        "summary": session.summary,
+                    },
+                )
                 conn.commit()
             return True
         except sqlite3.OperationalError as e:
@@ -325,26 +337,28 @@ class SessionManager:
         recovered = 0
         try:
             with self._get_db_conn() as conn:
-                rows = conn.execute("""
+                rows = conn.execute(
+                    """
                     SELECT * FROM voice_sessions
                     WHERE state IN ('active', 'idle')
                       AND expires_at > ?
-                """, (now,)).fetchall()
+                """,
+                    (now,),
+                ).fetchall()
                 for row in rows:
                     session = self._row_to_session(row)
                     self._sessions[session.session_id] = session
                     recovered += 1
             if recovered:
-                print(f"[SessionManager] Recovered {recovered} active session(s) from SQLite.")
+                print(
+                    f"[SessionManager] Recovered {recovered} active session(s) from SQLite."
+                )
         except sqlite3.Error as e:
             print(f"[SessionManager] Recovery error: {e}")
         return recovered
 
     def _log_audit_sqlite(
-        self,
-        session_id: str,
-        action: str,
-        details: Optional[Dict[str, Any]] = None
+        self, session_id: str, action: str, details: Optional[Dict[str, Any]] = None
     ) -> None:
         """Write audit entry directly to local SQLite (sync, no HTTP)."""
         retention_until = (
@@ -352,17 +366,20 @@ class SessionManager:
         ).isoformat()
         try:
             with self._get_db_conn() as conn:
-                conn.execute("""
+                conn.execute(
+                    """
                     INSERT INTO voice_audit_log
                         (session_id, action, timestamp, details_json, retention_until)
                     VALUES (?, ?, ?, ?, ?)
-                """, (
-                    session_id,
-                    action,
-                    datetime.now().isoformat(),
-                    json.dumps(details or {}, ensure_ascii=False),
-                    retention_until,
-                ))
+                """,
+                    (
+                        session_id,
+                        action,
+                        datetime.now().isoformat(),
+                        json.dumps(details or {}, ensure_ascii=False),
+                        retention_until,
+                    ),
+                )
                 conn.commit()
         except sqlite3.Error as e:
             print(f"[SessionManager] Audit SQLite error: {e}")
@@ -400,7 +417,7 @@ class SessionManager:
         verticale_id: str,
         business_name: str,
         channel: SessionChannel = SessionChannel.VOICE,
-        phone_number: Optional[str] = None
+        phone_number: Optional[str] = None,
     ) -> VoiceSession:
         """
         Create a new voice session.
@@ -426,7 +443,7 @@ class SessionManager:
             created_at=now.isoformat(),
             updated_at=now.isoformat(),
             expires_at=expires.isoformat(),
-            phone_number=phone_number
+            phone_number=phone_number,
         )
 
         self._sessions[session.session_id] = session
@@ -452,7 +469,7 @@ class SessionManager:
         layer_used: str,
         sentiment: Optional[str] = None,
         entities: Optional[Dict[str, Any]] = None,
-        fsm_state: Optional[str] = None
+        fsm_state: Optional[str] = None,
     ) -> Optional[str]:
         """
         Add a conversation turn to session.
@@ -475,7 +492,7 @@ class SessionManager:
             layer_used=layer_used,
             sentiment=sentiment,
             entities=entities or {},
-            fsm_state=fsm_state
+            fsm_state=fsm_state,
         )
 
         session.turns.append(turn)
@@ -496,12 +513,7 @@ class SessionManager:
 
         return turn_id
 
-    def update_client(
-        self,
-        session_id: str,
-        client_id: str,
-        client_name: str
-    ) -> bool:
+    def update_client(self, session_id: str, client_id: str, client_name: str) -> bool:
         """Update session with identified client."""
         session = self.get_session(session_id)
         if not session:
@@ -512,11 +524,7 @@ class SessionManager:
         session.updated_at = datetime.now().isoformat()
         return True
 
-    def update_context(
-        self,
-        session_id: str,
-        context: Dict[str, Any]
-    ) -> bool:
+    def update_context(self, session_id: str, context: Dict[str, Any]) -> bool:
         """Update session context (booking info, etc.)."""
         session = self.get_session(session_id)
         if not session:
@@ -531,7 +539,7 @@ class SessionManager:
         session_id: str,
         outcome: str,
         booking_id: Optional[str] = None,
-        escalation_reason: Optional[str] = None
+        escalation_reason: Optional[str] = None,
     ) -> bool:
         """
         Close a session with outcome.
@@ -588,12 +596,12 @@ class SessionManager:
             async with shared_session() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions"
                 async with http_session.post(
-                    url,
-                    json=session.to_dict(),
-                    timeout=aiohttp.ClientTimeout(total=2)
+                    url, json=session.to_dict(), timeout=aiohttp.ClientTimeout(total=2)
                 ) as resp:
                     if resp.status != 200:
-                        print(f"[SessionManager] Bridge sync warning: HTTP {resp.status}")
+                        print(
+                            f"[SessionManager] Bridge sync warning: HTTP {resp.status}"
+                        )
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             # Bridge offline is expected — SQLite already saved
             pass
@@ -630,8 +638,7 @@ class SessionManager:
             async with shared_session() as http_session:
                 url = f"{self.http_bridge_url}/api/voice/sessions/{session_id}"
                 async with http_session.get(
-                    url,
-                    timeout=aiohttp.ClientTimeout(total=3)
+                    url, timeout=aiohttp.ClientTimeout(total=3)
                 ) as resp:
                     if resp.status == 200:
                         data = await resp.json()
@@ -648,10 +655,7 @@ class SessionManager:
         return None
 
     async def log_audit(
-        self,
-        session_id: str,
-        action: str,
-        details: Optional[Dict[str, Any]] = None
+        self, session_id: str, action: str, details: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Log audit entry for GDPR compliance.
@@ -681,13 +685,11 @@ class SessionManager:
                     "details": details or {},
                     "retention_until": (
                         datetime.now() + timedelta(days=self.gdpr_retention_days)
-                    ).isoformat()
+                    ).isoformat(),
                 }
                 async with http_session.post(
-                    url,
-                    json=data,
-                    timeout=aiohttp.ClientTimeout(total=2)
-                ) as resp:
+                    url, json=data, timeout=aiohttp.ClientTimeout(total=2)
+                ):
                     pass
         except (aiohttp.ClientError, asyncio.TimeoutError, OSError):
             pass  # Bridge offline — SQLite audit already written
@@ -712,7 +714,7 @@ class SessionManager:
             "groq_calls": session.groq_calls,
             "client_identified": session.client_id is not None,
             "outcome": session.outcome,
-            "booking_created": session.booking_id is not None
+            "booking_created": session.booking_id is not None,
         }
 
     def get_greeting(self, session_id: str, caller_name: str = "") -> str:
@@ -770,7 +772,7 @@ if __name__ == "__main__":
     session = manager.create_session(
         verticale_id="salone_bella_vita",
         business_name="Salone Bella Vita",
-        channel=SessionChannel.VOICE
+        channel=SessionChannel.VOICE,
     )
     print(f"Created session: {session.session_id[:8]}...")
     print(f"Business: {session.business_name}")
@@ -788,21 +790,21 @@ if __name__ == "__main__":
         latency_ms=45.2,
         layer_used="L2_pattern",
         sentiment="neutral",
-        entities={"servizio": "taglio"}
+        entities={"servizio": "taglio"},
     )
     print(f"\nAdded turn: {turn_id}")
 
     # Update client
     manager.update_client(session.session_id, "cliente_123", "Mario Rossi")
-    print(f"Updated client: Mario Rossi")
+    print("Updated client: Mario Rossi")
 
     # Get summary
     summary = manager.get_session_summary(session.session_id)
-    print(f"\nSession summary:")
+    print("\nSession summary:")
     print(f"  Turns: {summary['total_turns']}")
     print(f"  Avg latency: {summary['avg_latency_ms']:.1f}ms")
     print(f"  Client identified: {summary['client_identified']}")
 
     # Close session
     manager.close_session(session.session_id, "booking_created", "booking_456")
-    print(f"\nSession closed with outcome: booking_created")
+    print("\nSession closed with outcome: booking_created")

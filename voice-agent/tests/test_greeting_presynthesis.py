@@ -9,7 +9,6 @@ and instead test the greeting generation logic + TTSCache behavior.
 """
 
 import sys
-import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
@@ -54,6 +53,7 @@ def _make_tts_cache():
 # ---------------------------------------------------------------------------
 # TTSCache warm_cache tests
 # ---------------------------------------------------------------------------
+
 
 class TestTTSCacheWarmGreetings:
     """Verify TTSCache.warm_cache() correctly pre-populates the cache."""
@@ -115,6 +115,7 @@ class TestTTSCacheWarmGreetings:
 # Greeting variant generation tests
 # ---------------------------------------------------------------------------
 
+
 class TestGreetingVariantGeneration:
     """Verify the greeting text format matches session_manager.get_greeting()."""
 
@@ -151,6 +152,7 @@ class TestGreetingVariantGeneration:
 # Integration-style: simulate warm_greetings + start_session flow
 # ---------------------------------------------------------------------------
 
+
 class TestGreetingPresynthesisFlow:
     """Simulate the orchestrator warm_greetings() + start_session() flow."""
 
@@ -169,6 +171,7 @@ class TestGreetingPresynthesisFlow:
         # Step 2: start_session() picks one greeting based on time of day
         # (any of the 3 — they are all cached)
         from datetime import datetime
+
         hour = datetime.now().hour
         if hour < 13:
             greeting = greetings[0]
@@ -205,5 +208,5 @@ class TestGreetingPresynthesisFlow:
 
         # New greeting should be cached
         tts._engine.synthesize.reset_mock()
-        audio = await tts.synthesize("Salone Mario, buongiorno! Come posso aiutarla?")
+        await tts.synthesize("Salone Mario, buongiorno! Come posso aiutarla?")
         tts._engine.synthesize.assert_not_called()

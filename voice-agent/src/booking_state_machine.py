@@ -27,6 +27,7 @@ import re
 import string
 import logging
 import unicodedata
+import random as _rnd
 
 
 def _strip_accents_lower(s: str) -> str:
@@ -36,10 +37,10 @@ def _strip_accents_lower(s: str) -> str:
     blacklist contengono la forma canonica con accento (es. "Martedì"). Questo
     helper rimuove diacritici e applica casefold, rendendo i confronti robusti.
     """
-    return ''.join(
-        c for c in unicodedata.normalize('NFD', s)
-        if unicodedata.category(c) != 'Mn'
+    return "".join(
+        c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn"
     ).casefold()
+
 
 try:
     from .escalation_manager import build_escalation_summary, build_caller_message
@@ -59,11 +60,11 @@ try:
         extract_operator,
         extract_all,
         ExtractionResult,
-        TimeConstraint,
+        TimeConstraint,  # noqa: F401
         TimeConstraintType,
-        extract_time_constraint,
+        extract_time_constraint,  # noqa: F401
     )
-    from .disambiguation_handler import DisambiguationHandler, name_similarity
+    from .disambiguation_handler import DisambiguationHandler, name_similarity  # noqa: F401
 except ImportError:
     from entity_extractor import (
         extract_date,
@@ -74,18 +75,28 @@ except ImportError:
         extract_operator,
         extract_all,
         ExtractionResult,
-        TimeConstraint,
         TimeConstraintType,
-        extract_time_constraint,
     )
-    from disambiguation_handler import DisambiguationHandler, name_similarity
+    from disambiguation_handler import DisambiguationHandler
 
 # Italian regex module for ambiguous date detection
 try:
     try:
-        from .italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling, is_rifiuto
+        from .italian_regex import (
+            is_ambiguous_date,
+            strip_fillers,
+            extract_multi_services,
+            is_flexible_scheduling,
+            is_rifiuto,
+        )
     except ImportError:
-        from italian_regex import is_ambiguous_date, strip_fillers, extract_multi_services, is_flexible_scheduling, is_rifiuto
+        from italian_regex import (
+            is_ambiguous_date,
+            strip_fillers,  # noqa: F401
+            extract_multi_services,
+            is_flexible_scheduling,
+            is_rifiuto,
+        )  # noqa: F401
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -95,8 +106,10 @@ except ImportError:
 # STATE DEFINITIONS
 # =============================================================================
 
+
 class BookingState(Enum):
     """Booking conversation states."""
+
     IDLE = "idle"
     WAITING_NAME = "waiting_name"
     WAITING_SERVICE = "waiting_service"
@@ -122,6 +135,7 @@ class BookingState(Enum):
 # BOOKING CONTEXT
 # =============================================================================
 
+
 @dataclass
 class BookingContext:
     """
@@ -130,6 +144,7 @@ class BookingContext:
     Stores all collected information and supports JSON serialization
     for persistence across sessions.
     """
+
     state: BookingState = BookingState.IDLE
 
     # Client info
@@ -149,14 +164,20 @@ class BookingContext:
     time: Optional[str] = None  # HH:MM format
     time_display: Optional[str] = None  # "alle 15:00"
     time_is_approximate: bool = False
-    time_constraint_type: Optional[str] = None   # "after"/"before"/"around"/"range"/"first_available"
-    time_constraint_anchor: Optional[str] = None  # "HH:MM" anchor, o "HH:MM-HH:MM" per range
+    time_constraint_type: Optional[str] = (
+        None  # "after"/"before"/"around"/"range"/"first_available"
+    )
+    time_constraint_anchor: Optional[str] = (
+        None  # "HH:MM" anchor, o "HH:MM-HH:MM" per range
+    )
 
     # Operator preference
     operator_id: Optional[str] = None
     operator_name: Optional[str] = None
     operator_requested: bool = False
-    operator_names: List[str] = field(default_factory=list)  # GAP-P1-8: ordered preference list
+    operator_names: List[str] = field(
+        default_factory=list
+    )  # GAP-P1-8: ordered preference list
 
     # Metadata
     notes: Optional[str] = None
@@ -172,7 +193,9 @@ class BookingContext:
     waiting_for_waitlist_confirm: bool = False
     waitlist_id: Optional[str] = None  # ID entry in waitlist table
     proposed_waitlist: bool = False  # True if waitlist was proposed to user
-    alternative_slots: List[Dict[str, str]] = field(default_factory=list)  # Alternative slots offered
+    alternative_slots: List[Dict[str, str]] = field(
+        default_factory=list
+    )  # Alternative slots offered
 
     # Vertical and correction tracking
     vertical: str = "salone"
@@ -180,7 +203,7 @@ class BookingContext:
     clarifications_asked: int = 0
     operator_gender_preference: Optional[str] = None  # "F" or "M"
     urgency: bool = False
-    
+
     # P0-4: "Il solito" — repeat last booking
     is_solito: bool = False
     solito_resolved: bool = False  # True after DB lookup resolved the "solito"
@@ -232,7 +255,9 @@ class BookingContext:
                 "name": self.client_name,
                 "phone": self.client_phone,
                 "email": self.client_email,
-            } if self.client_id or self.client_name else None,
+            }
+            if self.client_id or self.client_name
+            else None,
             "booking": {
                 "service": self.service,
                 "service_display": self.service_display,
@@ -241,7 +266,9 @@ class BookingContext:
                 "time": self.time,
                 "time_display": self.time_display,
                 "operator": self.operator_name,
-            } if self.service or self.date else None,
+            }
+            if self.service or self.date
+            else None,
             "turns": self.turns_count,
         }
 
@@ -284,9 +311,11 @@ class BookingContext:
 # STATE MACHINE RESULT
 # =============================================================================
 
+
 @dataclass
 class StateMachineResult:
     """Result of a state machine transition."""
+
     next_state: BookingState
     response: str
     booking: Optional[Dict[str, Any]] = None
@@ -299,7 +328,9 @@ class StateMachineResult:
     whatsapp_triggered: bool = False  # CoVe 2026: WhatsApp notification triggered
     confidence: float = 1.0  # CoVe 2026: Confidence score
     needs_clarification: bool = False  # CoVe 2026: Needs clarification
-    send_wa_reminder: bool = False  # Timeout: send WhatsApp reminder to complete booking
+    send_wa_reminder: bool = (
+        False  # Timeout: send WhatsApp reminder to complete booking
+    )
     escalate_to_human: bool = False  # Escalation: pass to human operator
 
     def has_follow_up(self) -> bool:
@@ -347,9 +378,25 @@ def _user_requested_multi_service(text: str) -> bool:
 
 # Default service synonyms (can be overridden by verticale config)
 DEFAULT_SERVICES = {
-    "taglio": ["taglio", "tagli", "tagliare", "sforbiciata", "spuntatina", "accorciare",
-               "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
-    "taglio_+_barba": ["taglio e barba", "taglio barba", "taglio con barba", "capelli e barba", "taglio più barba"],
+    "taglio": [
+        "taglio",
+        "tagli",
+        "tagliare",
+        "sforbiciata",
+        "spuntatina",
+        "accorciare",
+        "capelli",
+        "fare i capelli",
+        "taglio capelli",
+        "sistemare i capelli",
+    ],
+    "taglio_+_barba": [
+        "taglio e barba",
+        "taglio barba",
+        "taglio con barba",
+        "capelli e barba",
+        "taglio più barba",
+    ],
     "piega": ["piega", "messa in piega", "asciugatura"],
     "colore": ["colore", "tinta", "colorazione", "colorare", "ritocco"],
     "barba": ["barba", "rasatura", "barba e baffi"],
@@ -483,6 +530,7 @@ CORRECTION_PATTERNS_AUTO = {
 # NAME SANITIZATION
 # =============================================================================
 
+
 def sanitize_name(text: str, is_surname: bool = False) -> str:
     """
     Clean and normalize Italian names/surnames.
@@ -516,7 +564,11 @@ def sanitize_name(text: str, is_surname: bool = False) -> str:
             word = word.capitalize()
 
         # Noble prefix handling for surnames
-        if i == 0 and is_surname and word.lower() in ["di", "de", "del", "della", "von", "van"]:
+        if (
+            i == 0
+            and is_surname
+            and word.lower() in ["di", "de", "del", "della", "von", "van"]
+        ):
             word = word.lower()
 
         processed.append(word)
@@ -524,7 +576,11 @@ def sanitize_name(text: str, is_surname: bool = False) -> str:
     result = " ".join(processed)
 
     # Fix noble prefix: keep lowercase prefix + capitalized rest
-    if is_surname and processed and processed[0].lower() in ["di", "de", "del", "della", "von", "van"]:
+    if (
+        is_surname
+        and processed
+        and processed[0].lower() in ["di", "de", "del", "della", "von", "van"]
+    ):
         if len(processed) > 1:
             parts = [processed[0].lower()]
             parts.extend(p.capitalize() for p in processed[1:])
@@ -534,8 +590,7 @@ def sanitize_name(text: str, is_surname: bool = False) -> str:
 
 
 def sanitize_name_pair(
-    name: Optional[str],
-    surname: Optional[str]
+    name: Optional[str], surname: Optional[str]
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     Clean a name+surname pair.
@@ -574,26 +629,21 @@ TEMPLATES = {
     "ask_time_with_slots": "{date}, benissimo! Abbiamo posto alle {slots}. Cosa preferisci?",
     "ask_operator": "Hai una preferenza per chi ti segue?",
     "ask_name": "Come ti chiami?",
-
     # ── Conferme — entusiasmo, non burocrazia ──
     "confirm_booking": "Allora, {summary}. Tutto giusto?",
     "booking_confirmed": "Fatto! {summary}. Ti aspettiamo!",
     "booking_cancelled": "Nessun problema, annullato! Serve altro?",
-
     # ── Errori — grazia, mai colpa del cliente ──
     "service_ambiguous": "Abbiamo {options}. Tu cosa preferisci?",
     "service_not_understood": "Scusa, non ho capito bene. Che servizio ti interessa?",
     "date_not_understood": "Per quale giorno ti andrebbe?",
     "time_not_understood": "A che ora vorresti venire?",
-
     # ── Interruzioni ──
     "reset_ack": "Certo, ricominciamo! Dimmi.",
     "change_ack": "Certo! Dimmi.",
     "operator_escalate": "Ti passo un collega, un attimino...",
-
     # ── Orari approssimativi ──
     "time_approximate": "Di {preference} c'è posto alle {slots}. Quale preferisci?",
-
     # ── Registrazione nuovi clienti — calore, non burocrazia ──
     "propose_registration": "Non ti trovo nei nostri archivi. Ti registro al volo?",
     "ask_surname": "E il cognome?",
@@ -601,7 +651,6 @@ TEMPLATES = {
     "confirm_registration": "Allora: {name} {surname}, telefono {phone}. Tutto giusto?",
     "registration_complete": "Benvenuto {name}! Sei dei nostri!",
     "registration_cancelled": "Ma figurati, nessun problema! Serve altro?",
-
     # ── Flusso guidato ──
     "ask_surname_after_name": "Piacere {name}! E di cognome?",
     "confirm_phone_number": "Ho capito {phone}, corretto?",
@@ -609,7 +658,6 @@ TEMPLATES = {
     "welcome_back": "Che bello risentirti {name}! Cosa facciamo oggi?",
     "week_no_availability": "Eh, {week} siamo pieni! Proviamo la settimana dopo?",
     "week_availability": "{week} c'è posto {days}. Quale giorno preferisci?",
-
     # ── Fallback ──
     "fallback_clarify": "Scusa, mi sono persa un attimo. Mi ripeti?",
     # ── Chiusura — calda, non burocratica ──
@@ -628,7 +676,6 @@ TEMPLATES = {
 }
 
 # S135: Micro-reazioni emotive — iniettate PRIMA delle risposte template
-import random as _rnd
 MICRO_REACTIONS = {
     "service_picked": ["Ottima scelta!", "Perfetto!", "Bellissimo!", "Ci sta!"],
     "date_picked": ["Perfetto!", "Benissimo!", "Ottimo!"],
@@ -639,6 +686,7 @@ MICRO_REACTIONS = {
     "error_soft": ["Scusa!", "Ops!", "Ah!"],
     "returning": ["Che bello!", "Che piacere!", "Eccoti!"],
 }
+
 
 def _micro(category: str) -> str:
     """Pick a random micro-reaction for natural warmth."""
@@ -688,6 +736,7 @@ def get_goodbye(context: str, business_name: str, date: str = "") -> str:
 # BOOKING STATE MACHINE
 # =============================================================================
 
+
 class BookingStateMachine:
     """
     Enterprise state machine for booking conversations.
@@ -704,7 +753,7 @@ class BookingStateMachine:
         services_config: Optional[Dict[str, List[str]]] = None,
         reference_date: Optional[datetime] = None,
         vertical: str = "salone",
-        groq_nlu=None
+        groq_nlu=None,
     ):
         """
         Initialize state machine.
@@ -752,7 +801,9 @@ class BookingStateMachine:
                 elif isinstance(value, date):
                     normalized_date = value
                 elif isinstance(value, str):
-                    normalized_date = datetime.strptime(value.strip(), "%Y-%m-%d").date()
+                    normalized_date = datetime.strptime(
+                        value.strip(), "%Y-%m-%d"
+                    ).date()
                 else:
                     raise TypeError(f"unsupported date type: {type(value).__name__}")
 
@@ -763,9 +814,13 @@ class BookingStateMachine:
                 except ImportError:
                     from availability_checker import AvailabilityConfig
 
-                availability_config = AvailabilityConfig.for_vertical(self.context.vertical)
+                availability_config = AvailabilityConfig.for_vertical(
+                    self.context.vertical
+                )
                 today = date.today()
-                latest_allowed = today + timedelta(days=availability_config.max_advance_days)
+                latest_allowed = today + timedelta(
+                    days=availability_config.max_advance_days
+                )
                 accepted = today <= normalized_date <= latest_allowed
                 reason = "in_range" if accepted else "out_of_range"
 
@@ -880,21 +935,23 @@ class BookingStateMachine:
     def handle_input(self, user_input: str) -> StateMachineResult:
         """
         Handle user input (alias for process_message, for test compatibility).
-        
+
         CoVe 2026: This is the public API method used by tests and orchestrator.
         """
         return self.process_message(user_input)
 
-    def handle_input_with_confidence(self, user_input: str, confidence: float) -> StateMachineResult:
+    def handle_input_with_confidence(
+        self, user_input: str, confidence: float
+    ) -> StateMachineResult:
         """
         Handle user input with STT confidence score.
-        
+
         CoVe 2026: If confidence < 0.7, ask user to repeat.
-        
+
         Args:
             user_input: User's message text
             confidence: STT confidence score (0.0 - 1.0)
-            
+
         Returns:
             StateMachineResult with response
         """
@@ -904,21 +961,21 @@ class BookingStateMachine:
                 next_state=self.context.state,
                 response="Scusi, non ho capito bene. Può ripetere per favore?",
                 confidence=confidence,
-                needs_clarification=True
+                needs_clarification=True,
             )
-        
+
         # Normal processing
         return self.process_message(user_input)
 
     def handle_api_error(self, error_message: str) -> StateMachineResult:
         """
         Handle API/backend errors gracefully.
-        
+
         CoVe 2026: Provides user-friendly error recovery.
-        
+
         Args:
             error_message: The error message from API
-            
+
         Returns:
             StateMachineResult with recovery response
         """
@@ -926,30 +983,30 @@ class BookingStateMachine:
             next_state=self.context.state,
             response=f"Mi scusi, c'è un problema tecnico ({error_message}). Può riprovare tra un momento?",
             confidence=0.5,
-            needs_clarification=True
+            needs_clarification=True,
         )
 
     def complete_booking(self) -> StateMachineResult:
         """
         Complete the booking and trigger WhatsApp notification.
-        
+
         CoVe 2026: Finalizes booking and triggers notifications.
-        
+
         Returns:
             StateMachineResult with booking confirmation
         """
         # Mark booking as complete (use existing COMPLETED state)
         self.context.state = BookingState.COMPLETED
         self.context.booking_confirmed = True
-        
+
         # Check if WhatsApp should be triggered
         whatsapp_triggered = bool(self.context.client_phone)
-        
+
         return StateMachineResult(
             next_state=BookingState.COMPLETED,
             response="Prenotazione completata con successo!",
             booking=self.context.to_dict(),
-            whatsapp_triggered=whatsapp_triggered
+            whatsapp_triggered=whatsapp_triggered,
         )
 
     def process_message(self, user_input: str) -> StateMachineResult:
@@ -983,7 +1040,9 @@ class BookingStateMachine:
             return self._track_strikes(backtrack_result, _state_before)
 
         # Update context with extracted entities
-        date_update_result = self._update_context_from_extraction(extracted, text=user_input)
+        date_update_result = self._update_context_from_extraction(
+            extracted, text=user_input
+        )
         if date_update_result is False:
             self.context.state = BookingState.WAITING_DATE
             return self._track_strikes(
@@ -1039,11 +1098,15 @@ class BookingStateMachine:
             result = self._handle_confirming_name(user_input, extracted)
 
         elif state == BookingState.COMPLETED:
-            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+            _bye = get_goodbye(
+                "booking_done",
+                self._business_name,
+                date=self.context.date_display or "",
+            )
             result = StateMachineResult(
                 next_state=BookingState.COMPLETED,
                 response=f"L'appuntamento e' gia' stato confermato. {_bye}",
-                should_exit=True
+                should_exit=True,
             )
 
         elif state == BookingState.CANCELLED:
@@ -1051,13 +1114,12 @@ class BookingStateMachine:
             result = StateMachineResult(
                 next_state=BookingState.CANCELLED,
                 response=f"Va bene, nessun problema. {_bye}",
-                should_exit=True
+                should_exit=True,
             )
 
         else:
             result = StateMachineResult(
-                next_state=self.context.state,
-                response=TEMPLATES["fallback_clarify"]
+                next_state=self.context.state, response=TEMPLATES["fallback_clarify"]
             )
 
         # E6: Global 3-strike escalation tracking
@@ -1119,18 +1181,20 @@ class BookingStateMachine:
                     self.context.state = BookingState.IDLE
                     return StateMachineResult(
                         next_state=BookingState.IDLE,
-                        response="Certo, nessun problema. La aspettiamo quando vuole!"
+                        response="Certo, nessun problema. La aspettiamo quando vuole!",
                     )
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response=TEMPLATES["reset_ack"]
+                    response=TEMPLATES["reset_ack"],
                 )
 
         # Operator escalation — E5: with context handoff
         for pattern in INTERRUPTION_PATTERNS["operator"]:
             if re.search(pattern, text_lower):
-                summary = build_escalation_summary(self.context, reason="richiesta utente")
+                summary = build_escalation_summary(
+                    self.context, reason="richiesta utente"
+                )
                 caller_msg = build_caller_message(summary)
                 return StateMachineResult(
                     next_state=self.context.state,
@@ -1138,7 +1202,7 @@ class BookingStateMachine:
                     should_exit=True,
                     lookup_type="operator_escalation",
                     lookup_params={"escalation_summary": summary},
-                    escalate_to_human=True
+                    escalate_to_human=True,
                 )
 
         # Change request (soft interruption - just acknowledge)
@@ -1158,19 +1222,23 @@ class BookingStateMachine:
             if re.search(pattern, text_lower):
                 # P1-11: "anzi" standalone (no payload) → clarify what to change
                 if re.match(r"^anzi[\s,!]*$", text_lower.strip()):
-                    if self.context.state not in (BookingState.IDLE, BookingState.COMPLETED):
+                    if self.context.state not in (
+                        BookingState.IDLE,
+                        BookingState.COMPLETED,
+                    ):
                         return StateMachineResult(
                             next_state=self.context.state,
-                            response="Certo, cosa vuole cambiare? Il servizio, la data o l'orario?"
+                            response="Certo, cosa vuole cambiare? Il servizio, la data o l'orario?",
                         )
                 return StateMachineResult(
-                    next_state=self.context.state,
-                    response=TEMPLATES["change_ack"]
+                    next_state=self.context.state, response=TEMPLATES["change_ack"]
                 )
 
         return None
 
-    def _check_backtracking(self, text: str, extracted: "ExtractionResult") -> Optional[StateMachineResult]:
+    def _check_backtracking(
+        self, text: str, extracted: "ExtractionResult"
+    ) -> Optional[StateMachineResult]:
         """F19-FIX4: FSM BACKTRACKING — detect correction signals and go back to the right state.
 
         Handles: "no, volevo tingere la barba", "non ho detto taglio", "intendevo sabato",
@@ -1182,7 +1250,8 @@ class BookingStateMachine:
 
         # Only backtrack from mid-flow states, not from initial states
         _BACKTRACKABLE = {
-            BookingState.WAITING_DATE, BookingState.WAITING_TIME,
+            BookingState.WAITING_DATE,
+            BookingState.WAITING_TIME,
             BookingState.CONFIRMING,
         }
         if current_state not in _BACKTRACKABLE:
@@ -1192,19 +1261,25 @@ class BookingStateMachine:
         _CORRECTION_TRIGGERS = [
             r"\bno[\s,]+(?:volevo|intendevo|preferisco|meglio)\b",
             r"\bnon\s+ho\s+detto\b",
-            r"\bintendevo\b", r"\bvolevo\s+dire\b",
-            r"\bsbagliato\b", r"\bho\s+sbagliato\b",
+            r"\bintendevo\b",
+            r"\bvolevo\s+dire\b",
+            r"\bsbagliato\b",
+            r"\bho\s+sbagliato\b",
         ]
         has_correction = any(re.search(p, text_lower) for p in _CORRECTION_TRIGGERS)
         if not has_correction:
             return None
 
-        logger.info(f"[F19-BACKTRACK] Correction detected in {current_state.value}: '{text[:60]}'")
+        logger.info(
+            f"[F19-BACKTRACK] Correction detected in {current_state.value}: '{text[:60]}'"
+        )
 
         # Determine which field is being corrected based on entities found
         if extracted.services or extracted.service:
             # User wants to change service
-            new_service = extracted.services[0] if extracted.services else extracted.service
+            new_service = (
+                extracted.services[0] if extracted.services else extracted.service
+            )
             self.context.service = new_service
             self.context.services = extracted.services or [new_service]
             self.context.service_display = self._normalize_service_display(new_service)
@@ -1213,10 +1288,12 @@ class BookingStateMachine:
             if next_state is None:
                 next_state = BookingState.CONFIRMING
             self.context.state = next_state
-            logger.info(f"[F19-BACKTRACK] Service corrected to '{new_service}', going to {next_state.value}")
+            logger.info(
+                f"[F19-BACKTRACK] Service corrected to '{new_service}', going to {next_state.value}"
+            )
             return StateMachineResult(
                 next_state=next_state,
-                response=f"Perfetto, {self.context.service_display}! {self._get_state_response(next_state)}"
+                response=f"Perfetto, {self.context.service_display}! {self._get_state_response(next_state)}",
             )
 
         if extracted.date:
@@ -1225,7 +1302,9 @@ class BookingStateMachine:
                 extracted.date.to_string("%Y-%m-%d"),
                 origin="backtracking_date_correction",
             ):
-                self._set_context_date(None, origin="backtracking_date_correction_rejected_clear")
+                self._set_context_date(
+                    None, origin="backtracking_date_correction_rejected_clear"
+                )
                 self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
@@ -1239,7 +1318,7 @@ class BookingStateMachine:
             logger.info(f"[F19-BACKTRACK] Date corrected to '{self.context.date}'")
             return StateMachineResult(
                 next_state=BookingState.WAITING_TIME,
-                response=f"D'accordo, {self.context.date_display}. A che ora le farebbe comodo?"
+                response=f"D'accordo, {self.context.date_display}. A che ora le farebbe comodo?",
             )
 
         if extracted.time:
@@ -1250,16 +1329,18 @@ class BookingStateMachine:
             logger.info(f"[F19-BACKTRACK] Time corrected to '{self.context.time}'")
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=f"D'accordo, {self.context.time_display}. {self._format_confirm_booking()}"
+                response=f"D'accordo, {self.context.time_display}. {self._format_confirm_booking()}",
             )
 
         # Correction signal detected but no specific entity — ask what to change
         return StateMachineResult(
             next_state=current_state,
-            response="Capisco, cosa desidera modificare? Il servizio, la data o l'orario?"
+            response="Capisco, cosa desidera modificare? Il servizio, la data o l'orario?",
         )
 
-    def _update_context_from_extraction(self, extracted, text: str = "", force_update: bool = False):
+    def _update_context_from_extraction(
+        self, extracted, text: str = "", force_update: bool = False
+    ):
         """
         Update context with extracted entities.
 
@@ -1278,11 +1359,19 @@ class BookingStateMachine:
         date_update_result = None
 
         # Handle ExtractionResult input (normal flow)
-        if extracted.date and (force_update or not self.context.date):
+        # A date uttered while resolving identity is a birth date, not a
+        # booking date. Let the DISAMBIGUATING_NAME handler validate it.
+        if (
+            extracted.date
+            and self.context.state != BookingState.DISAMBIGUATING_NAME
+            and (force_update or not self.context.date)
+        ):
             # Skip ambiguous dates like "prossima settimana" - ask for specific day
             if HAS_ITALIAN_REGEX and extracted.date.original_text:
                 if is_ambiguous_date(extracted.date.original_text):
-                    logger.info(f"[SM] Ambiguous date skipped: {extracted.date.original_text}")
+                    logger.info(
+                        f"[SM] Ambiguous date skipped: {extracted.date.original_text}"
+                    )
                     # Don't set date - let handler ask for clarification
                     pass
                 else:
@@ -1309,9 +1398,11 @@ class BookingStateMachine:
                 self.context.time_display = tc.display()
                 self.context.time_constraint_type = tc.constraint_type.value
                 self.context.time_constraint_anchor = (
-                    tc.anchor_time.strftime("%H:%M") if tc.anchor_time
+                    tc.anchor_time.strftime("%H:%M")
+                    if tc.anchor_time
                     else f"{tc.range_start.strftime('%H:%M')}-{tc.range_end.strftime('%H:%M')}"
-                    if tc.range_start else None
+                    if tc.range_start
+                    else None
                 )
             else:
                 self.context.time_display = f"alle {extracted.time.to_string()}"
@@ -1324,7 +1415,11 @@ class BookingStateMachine:
         # Otherwise _handle_idle would route to WAITING_SERVICE for disambiguation
         # and Sara would loop asking "Visita generale o specialistica?" even though
         # the user already stated an explicit specialty.
-        if hasattr(extracted, 'ambiguous_services') and extracted.ambiguous_services and not self.context.service:
+        if (
+            hasattr(extracted, "ambiguous_services")
+            and extracted.ambiguous_services
+            and not self.context.service
+        ):
             self.context._ambiguous_services = extracted.ambiguous_services
 
         # Handle multiple services
@@ -1337,7 +1432,11 @@ class BookingStateMachine:
         # DROP extracted multi-services entirely instead of merging/ambig-storing —
         # otherwise "visita odontoiatrica" gets polluted with generic
         # "Visita generale" + "Visita specialistica" via the merge branch below.
-        if extracted.services and len(extracted.services) > 1 and not _user_requested_multi_service(text):
+        if (
+            extracted.services
+            and len(extracted.services) > 1
+            and not _user_requested_multi_service(text)
+        ):
             if self.context.service:
                 extracted.services = []
             else:
@@ -1348,7 +1447,9 @@ class BookingStateMachine:
                 # No existing service — set all extracted
                 self.context.services = extracted.services
                 self.context.service = extracted.services[0]
-                display_names = [self._normalize_service_display(s) for s in extracted.services]
+                display_names = [
+                    self._normalize_service_display(s) for s in extracted.services
+                ]
                 self.context.service_display = " e ".join(display_names)
             elif len(extracted.services) > 1:
                 # Already have a service, but user mentioned multiple — merge new ones in
@@ -1365,26 +1466,37 @@ class BookingStateMachine:
         elif extracted.service and (force_update or not self.context.service):
             self.context.service = extracted.service
             self.context.services = [extracted.service]
-            self.context.service_display = self._normalize_service_display(extracted.service)
+            self.context.service_display = self._normalize_service_display(
+                extracted.service
+            )
 
         # Handle operator preference
         # F19-FIX2: Validate operator names against DB list (if available)
-        if extracted.operators and len(extracted.operators) >= 1 and (force_update or not self.context.operator_name):
-            valid_ops = [op for op in extracted.operators
-                         if self._is_valid_operator(op.name)]
+        if (
+            extracted.operators
+            and len(extracted.operators) >= 1
+            and (force_update or not self.context.operator_name)
+        ):
+            valid_ops = [
+                op for op in extracted.operators if self._is_valid_operator(op.name)
+            ]
             if valid_ops:
                 self.context.operator_names = [op.name for op in valid_ops]
                 self.context.operator_name = valid_ops[0].name
                 self.context.operator_requested = True
             else:
-                logger.info(f"[F19] Operator names rejected (not in DB): {[op.name for op in extracted.operators]}")
+                logger.info(
+                    f"[F19] Operator names rejected (not in DB): {[op.name for op in extracted.operators]}"
+                )
         elif extracted.operator and (force_update or not self.context.operator_name):
             if self._is_valid_operator(extracted.operator.name):
                 self.context.operator_names = [extracted.operator.name]
                 self.context.operator_name = extracted.operator.name
                 self.context.operator_requested = True
             else:
-                logger.info(f"[F19] Operator '{extracted.operator.name}' rejected (not in DB)")
+                logger.info(
+                    f"[F19] Operator '{extracted.operator.name}' rejected (not in DB)"
+                )
 
         if extracted.name and (force_update or not self.context.client_name):
             clean_name, clean_surname = sanitize_name_pair(extracted.name.name, None)
@@ -1400,16 +1512,20 @@ class BookingStateMachine:
 
         return date_update_result
 
-    def _update_context_from_dict(self, fields: Dict[str, Any], force_update: bool = False):
+    def _update_context_from_dict(
+        self, fields: Dict[str, Any], force_update: bool = False
+    ):
         """Update context from a dict of field->value (used by correction patterns)."""
         date_update_result = None
         for field_name, value in fields.items():
             if value is None:
                 continue
 
-            current = getattr(self.context, field_name, None) if field_name in [
-                "service", "date", "time", "operator_name"
-            ] else None
+            current = (
+                getattr(self.context, field_name, None)
+                if field_name in ["service", "date", "time", "operator_name"]
+                else None
+            )
 
             if not force_update and current is not None:
                 continue
@@ -1420,7 +1536,9 @@ class BookingStateMachine:
                     origin="context_dict_date_correction",
                 )
                 if date_update_result:
-                    self.context.date_display = self._format_date_display(self.context.date)
+                    self.context.date_display = self._format_date_display(
+                        self.context.date
+                    )
             elif field_name == "time" or field_name == "ora":
                 self.context.time = value
                 self.context.time_display = self._format_time_display(value)
@@ -1452,10 +1570,12 @@ class BookingStateMachine:
 
         return date_update_result
 
-    def _handle_idle(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_idle(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle IDLE state - entry point for booking flow."""
         # S125: Check for bare-word service ambiguity before anything else
-        ambiguous = getattr(self.context, '_ambiguous_services', None)
+        ambiguous = getattr(self.context, "_ambiguous_services", None)
         if ambiguous and len(ambiguous) > 1:
             display_names = [self._normalize_service_display(s) for s in ambiguous]
             options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
@@ -1463,7 +1583,7 @@ class BookingStateMachine:
             self.context._ambiguous_services = None  # Clear after prompting
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
-                response=TEMPLATES["service_ambiguous"].format(options=options_str)
+                response=TEMPLATES["service_ambiguous"].format(options=options_str),
             )
 
         # Check if user already provided ALL info (name + service + date + time)
@@ -1475,7 +1595,7 @@ class BookingStateMachine:
                 response=self._format_confirm_booking(),
                 needs_db_lookup=True,
                 lookup_type="client",
-                lookup_params={"name": self.context.client_name}
+                lookup_params={"name": self.context.client_name},
             )
 
         # ALWAYS ask for name first if not provided
@@ -1489,93 +1609,200 @@ class BookingStateMachine:
 
             # S142: Bare name detection — "Marco Rossi" or "Marco" without "sono"/"mi chiamo"
             if not _name_in_text:
-                _bare = text.strip().rstrip('.!?,;:')
+                _bare = text.strip().rstrip(".!?,;:")
                 _words = _bare.split()
-                _not_name = {"buongiorno", "buonasera", "ciao", "salve", "grazie", "prego",
-                             "arrivederci", "perfetto", "benissimo", "certamente", "scusi",
-                             "vorrei", "prenotare", "appuntamento", "taglio", "piega",
-                             "colore", "barba", "tinta", "visita", "trattamento",
-                             # S158: Service/action words — NOT names
-                             "pulizia", "seduta", "tagliando", "cambio", "massaggio",
-                             "consulenza", "lezione", "corso", "bagno", "tosatura",
-                             "manicure", "pedicure", "sbiancamento", "igiene", "ecografia",
-                             "analisi", "revisione", "riparazione", "equilibratura",
-                             "convergenza", "fisioterapia", "pilates", "yoga", "spinning",
-                             "zumba", "dentale", "denti", "capelli", "gomme", "olio",
-                             "freni", "dei", "del", "della", "delle", "degli", "per",
-                             "con", "una", "primo", "prima",
-                             # S226: Italian conjugated verbs in question position — NOT names
-                             # avere
-                             "ho", "hai", "ha", "abbiamo", "avete", "hanno",
-                             # essere (skip "sono" — too multi-use, blocked by extract_name path)
-                             "sei", "siamo", "siete",
-                             # potere
-                             "posso", "puoi", "puo", "può", "possiamo", "potete", "possono",
-                             # sapere
-                             "sa", "sai", "sapete", "sanno",
-                             # fare
-                             "fa", "fai", "fate", "facciamo", "fanno",
-                             # conoscere / offrire / vendere / fornire (question verbs)
-                             "conosci", "conosce", "conoscete",
-                             "offri", "offre", "offrite",
-                             "vendi", "vende", "vendete",
-                             "fornisci", "fornisce", "fornite",
-                             "esiste", "esistono",
-                             # Question pronouns / interrogatives
-                             "che", "cosa", "come", "dove", "quando",
-                             "quanto", "quanti", "quanta", "quante",
-                             "chi", "quale", "quali", "perché", "perche", "perchè"}
+                _not_name = {
+                    "buongiorno",
+                    "buonasera",
+                    "ciao",
+                    "salve",
+                    "grazie",
+                    "prego",
+                    "arrivederci",
+                    "perfetto",
+                    "benissimo",
+                    "certamente",
+                    "scusi",
+                    "vorrei",
+                    "prenotare",
+                    "appuntamento",
+                    "taglio",
+                    "piega",
+                    "colore",
+                    "barba",
+                    "tinta",
+                    "visita",
+                    "trattamento",
+                    # S158: Service/action words — NOT names
+                    "pulizia",
+                    "seduta",
+                    "tagliando",
+                    "cambio",
+                    "massaggio",
+                    "consulenza",
+                    "lezione",
+                    "corso",
+                    "bagno",
+                    "tosatura",
+                    "manicure",
+                    "pedicure",
+                    "sbiancamento",
+                    "igiene",
+                    "ecografia",
+                    "analisi",
+                    "revisione",
+                    "riparazione",
+                    "equilibratura",
+                    "convergenza",
+                    "fisioterapia",
+                    "pilates",
+                    "yoga",
+                    "spinning",
+                    "zumba",
+                    "dentale",
+                    "denti",
+                    "capelli",
+                    "gomme",
+                    "olio",
+                    "freni",
+                    "dei",
+                    "del",
+                    "della",
+                    "delle",
+                    "degli",
+                    "per",
+                    "con",
+                    "una",
+                    "primo",
+                    "prima",
+                    # S226: Italian conjugated verbs in question position — NOT names
+                    # avere
+                    "ho",
+                    "hai",
+                    "ha",
+                    "abbiamo",
+                    "avete",
+                    "hanno",
+                    # essere (skip "sono" — too multi-use, blocked by extract_name path)
+                    "sei",
+                    "siamo",
+                    "siete",
+                    # potere
+                    "posso",
+                    "puoi",
+                    "puo",
+                    "può",
+                    "possiamo",
+                    "potete",
+                    "possono",
+                    # sapere
+                    "sa",
+                    "sai",
+                    "sapete",
+                    "sanno",
+                    # fare
+                    "fa",
+                    "fai",
+                    "fate",
+                    "facciamo",
+                    "fanno",
+                    # conoscere / offrire / vendere / fornire (question verbs)
+                    "conosci",
+                    "conosce",
+                    "conoscete",
+                    "offri",
+                    "offre",
+                    "offrite",
+                    "vendi",
+                    "vende",
+                    "vendete",
+                    "fornisci",
+                    "fornisce",
+                    "fornite",
+                    "esiste",
+                    "esistono",
+                    # Question pronouns / interrogatives
+                    "che",
+                    "cosa",
+                    "come",
+                    "dove",
+                    "quando",
+                    "quanto",
+                    "quanti",
+                    "quanta",
+                    "quante",
+                    "chi",
+                    "quale",
+                    "quali",
+                    "perché",
+                    "perche",
+                    "perchè",
+                }
                 # S226: questions ending with '?' are NEVER names (FAQ/info path)
-                _is_question = text.strip().endswith('?')
+                _is_question = text.strip().endswith("?")
                 # S142 FIX-9: Case-insensitive — STT often produces "marco rossi"
-                if (not _is_question
-                        and 1 <= len(_words) <= 3
-                        and all(len(w) >= 2 for w in _words)
-                        and not any(w.lower() in _not_name for w in _words)):
+                if (
+                    not _is_question
+                    and 1 <= len(_words) <= 3
+                    and all(len(w) >= 2 for w in _words)
+                    and not any(w.lower() in _not_name for w in _words)
+                ):
                     # NAME-GATE: bare name detected — store as PENDING, never commit
                     # without explicit confirmation ("La registro come X, corretto?")
                     parts = [sanitize_name(w) for w in _words]
                     self.context._pending_name = parts[0]
-                    self.context._pending_surname = sanitize_name(parts[1], is_surname=True) if len(parts) >= 2 else None
+                    self.context._pending_surname = (
+                        sanitize_name(parts[1], is_surname=True)
+                        if len(parts) >= 2
+                        else None
+                    )
                     display = self.context._pending_name
                     if self.context._pending_surname:
                         display += " " + self.context._pending_surname
                     self.context.state = BookingState.CONFIRMING_NAME
-                    logger.info(f"[NAME-GATE] Bare name in IDLE: '{_bare}' → pending={display}, asking confirmation")
+                    logger.info(
+                        f"[NAME-GATE] Bare name in IDLE: '{_bare}' → pending={display}, asking confirmation"
+                    )
                     return StateMachineResult(
                         next_state=BookingState.CONFIRMING_NAME,
-                        response=TEMPLATES["confirm_name_gate"].format(name=display)
+                        response=TEMPLATES["confirm_name_gate"].format(name=display),
                     )
 
             if _name_in_text:
                 return self._handle_waiting_name(text, extracted)
             return StateMachineResult(
-                next_state=BookingState.WAITING_NAME,
-                response=TEMPLATES["ask_name"]
+                next_state=BookingState.WAITING_NAME, response=TEMPLATES["ask_name"]
             )
 
         # Have name - continue flow
         if self.context.client_name:
             if self.context.client_id:
                 # Client already identified (follow-up booking) - skip identity collection
-                display_name = self.context.client_name.split()[0] if self.context.client_name else ""
+                display_name = (
+                    self.context.client_name.split()[0]
+                    if self.context.client_name
+                    else ""
+                )
                 greeting = f"Certo {display_name}! "
                 if self.context.service:
                     self.context.state = BookingState.WAITING_DATE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_DATE,
-                        response=greeting + TEMPLATES["ask_date"].format(
+                        response=greeting
+                        + TEMPLATES["ask_date"].format(
                             service=self.context.service_display or self.context.service
-                        )
+                        ),
                     )
                 else:
                     self.context.state = BookingState.WAITING_SERVICE
-                    solito = self._check_solito_redirect(extracted, self.context.client_id)
+                    solito = self._check_solito_redirect(
+                        extracted, self.context.client_id
+                    )
                     if solito:
                         return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=greeting + TEMPLATES["ask_service"]
+                        response=greeting + TEMPLATES["ask_service"],
                     )
 
             # No client_id — need identity verification
@@ -1586,15 +1813,16 @@ class BookingStateMachine:
                     self.context.state = BookingState.WAITING_DATE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_DATE,
-                        response=greeting + TEMPLATES["ask_date"].format(
+                        response=greeting
+                        + TEMPLATES["ask_date"].format(
                             service=self.context.service_display or self.context.service
                         ),
                         needs_db_lookup=True,
                         lookup_type="client_by_name_surname",
                         lookup_params={
                             "name": self.context.client_name,
-                            "surname": self.context.client_surname
-                        }
+                            "surname": self.context.client_surname,
+                        },
                     )
                 else:
                     self.context.state = BookingState.WAITING_SERVICE
@@ -1605,20 +1833,31 @@ class BookingStateMachine:
                         lookup_type="client_by_name_surname",
                         lookup_params={
                             "name": self.context.client_name,
-                            "surname": self.context.client_surname
-                        }
+                            "surname": self.context.client_surname,
+                        },
                     )
             else:
                 # S122: Try to extract surname from text before asking
                 _surname_pat = re.search(
-                    r'(?:sono|mi\s+chiamo)\s+\S+\s+([A-ZÀ-Ö][a-zàèéìòù]+)',
-                    text, re.IGNORECASE
+                    r"(?:sono|mi\s+chiamo)\s+\S+\s+([A-ZÀ-Ö][a-zàèéìòù]+)",
+                    text,
+                    re.IGNORECASE,
                 )
                 if _surname_pat:
                     _cand = _surname_pat.group(1)
-                    _NON_SURNAME = {"vorrei", "prenotare", "per", "un", "una", "il", "la"}
+                    _NON_SURNAME = {
+                        "vorrei",
+                        "prenotare",
+                        "per",
+                        "un",
+                        "una",
+                        "il",
+                        "la",
+                    }
                     if _cand.lower() not in _NON_SURNAME and len(_cand) >= 2:
-                        self.context.client_surname = sanitize_name(_cand, is_surname=True)
+                        self.context.client_surname = sanitize_name(
+                            _cand, is_surname=True
+                        )
                         # Now chain to name lookup
                         self.context.state = BookingState.WAITING_NAME
                         return self._handle_waiting_name(text, extracted)
@@ -1628,17 +1867,18 @@ class BookingStateMachine:
                     next_state=BookingState.WAITING_SURNAME,
                     response=TEMPLATES["ask_surname_after_name"].format(
                         name=self.context.client_name
-                    )
+                    ),
                 )
 
         # Fallback - ask for name
         self.context.state = BookingState.WAITING_NAME
         return StateMachineResult(
-            next_state=BookingState.WAITING_NAME,
-            response=TEMPLATES["ask_name"]
+            next_state=BookingState.WAITING_NAME, response=TEMPLATES["ask_name"]
         )
 
-    def _handle_confirming_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_confirming_name(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """NAME-GATE handler: caller confirms or denies the pending bare name.
 
         VERDE path: explicit affirmation → commit _pending_name → WAITING_NAME
@@ -1646,11 +1886,24 @@ class BookingStateMachine:
         """
         text_lower = text.lower().strip()
 
-        _DENY = {"no", "nope", "non è", "non sono", "sbagliato", "errato",
-                 "mi chiamo altro", "diverso", "è sbagliato", "non mi chiamo"}
+        _DENY = {
+            "no",
+            "nope",
+            "non è",
+            "non sono",
+            "sbagliato",
+            "errato",
+            "mi chiamo altro",
+            "diverso",
+            "è sbagliato",
+            "non mi chiamo",
+        }
 
         is_yes = self._is_explicit_confirmation(text_lower)
-        is_no = any(d in text_lower for d in _DENY) or re.search(r"\bno\b", text_lower) is not None
+        is_no = (
+            any(d in text_lower for d in _DENY)
+            or re.search(r"\bno\b", text_lower) is not None
+        )
 
         if is_yes and not is_no:
             # Commit pending name
@@ -1659,7 +1912,9 @@ class BookingStateMachine:
                 self.context.client_surname = self.context._pending_surname
             self.context._pending_name = None
             self.context._pending_surname = None
-            logger.info(f"[NAME-GATE] Confirmed → client_name={self.context.client_name}")
+            logger.info(
+                f"[NAME-GATE] Confirmed → client_name={self.context.client_name}"
+            )
             # Chain into WAITING_NAME to continue the slot-filling flow
             self.context.state = BookingState.WAITING_NAME
             return self._handle_waiting_name(text, extracted)
@@ -1668,44 +1923,58 @@ class BookingStateMachine:
         self.context._pending_name = None
         self.context._pending_surname = None
         self.context.state = BookingState.WAITING_NAME
-        logger.info(f"[NAME-GATE] Denied/unclear → discarded, asking name. input='{text}'")
+        logger.info(
+            f"[NAME-GATE] Denied/unclear → discarded, asking name. input='{text}'"
+        )
         return StateMachineResult(
-            next_state=BookingState.WAITING_NAME,
-            response=TEMPLATES["ask_name"]
+            next_state=BookingState.WAITING_NAME, response=TEMPLATES["ask_name"]
         )
 
-    def _handle_waiting_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_waiting_name(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle WAITING_NAME state."""
         text_lower = text.lower()
+
+        # GAP-A5 Fix B: reject before any identity parsing
+        # so phrases such as "no grazie" cannot become client_name="No".
+        if HAS_ITALIAN_REGEX:
+            _is_reject, _ = is_rifiuto(text)
+            if _is_reject:
+                self.context.state = BookingState.IDLE
+                return StateMachineResult(
+                    next_state=BookingState.IDLE,
+                    response="Nessun problema! Sono qui se cambia idea.",
+                )
 
         # =====================================================================
         # NEW CLIENT DETECTION - Check if user indicates they're new
         # =====================================================================
         NEW_CLIENT_INDICATORS = [
             # "mai stato/venuto"
-            r"mai\s+stato",              # "mai stato da voi"
-            r"mai\s+venuto",             # "mai venuto"
-            r"mai\s+prenotato",          # "mai prenotato"
+            r"mai\s+stato",  # "mai stato da voi"
+            r"mai\s+venuto",  # "mai venuto"
+            r"mai\s+prenotato",  # "mai prenotato"
             # "prima volta" (con typo comuni)
-            r"pr[io]ma\s+volta",         # "prima volta" / "proma volta" (typo)
-            r"prima\s+visita",           # "prima visita"
+            r"pr[io]ma\s+volta",  # "prima volta" / "proma volta" (typo)
+            r"prima\s+visita",  # "prima visita"
             # "non sono..."
-            r"non\s+sono\s+mai",         # "non sono mai stato"
-            r"non\s+sono\s+cliente",     # "non sono cliente"
-            r"non\s+sono\s+.*\s+cliente",# "non sono ancora cliente"
-            r"non\s+sono\s+registrat",   # "non sono registrato/a"
+            r"non\s+sono\s+mai",  # "non sono mai stato"
+            r"non\s+sono\s+cliente",  # "non sono cliente"
+            r"non\s+sono\s+.*\s+cliente",  # "non sono ancora cliente"
+            r"non\s+sono\s+registrat",  # "non sono registrato/a"
             # "non mi conoscete"
-            r"non\s+mi\s+conosc",        # "non mi conoscete" / "non mi conosci"
-            r"non\s+mi\s+avete",         # "non mi avete in archivio"
-            r"non\s+sono\s+in\s+archivio",# "non sono in archivio"
-            r"non\s+sono\s+nel",         # "non sono nel vostro sistema"
+            r"non\s+mi\s+conosc",  # "non mi conoscete" / "non mi conosci"
+            r"non\s+mi\s+avete",  # "non mi avete in archivio"
+            r"non\s+sono\s+in\s+archivio",  # "non sono in archivio"
+            r"non\s+sono\s+nel",  # "non sono nel vostro sistema"
             # "nuovo/nuova cliente"
-            r"nuov[oa]\s+cliente",       # "nuovo cliente" / "nuova cliente"
-            r"sono\s+nuov[oa]",          # "sono nuovo" / "sono nuova"
+            r"nuov[oa]\s+cliente",  # "nuovo cliente" / "nuova cliente"
+            r"sono\s+nuov[oa]",  # "sono nuovo" / "sono nuova"
             # Altri indicatori
-            r"non\s+ho\s+mai",           # "non ho mai prenotato"
-            r"non\s+vi\s+conosco",       # "non vi conosco"
-            r"non\s+c['\u2019]?\s*è\s+il\s+mio", # "non c'è il mio nome"
+            r"non\s+ho\s+mai",  # "non ho mai prenotato"
+            r"non\s+vi\s+conosco",  # "non vi conosco"
+            r"non\s+c['\u2019]?\s*è\s+il\s+mio",  # "non c'è il mio nome"
         ]
 
         for pattern in NEW_CLIENT_INDICATORS:
@@ -1716,26 +1985,74 @@ class BookingStateMachine:
 
                 # S122: Extract name+surname from utterance
                 # Patterns: "mi chiamo Marco Rossi", "sono Marco Rossi", "sono io Marco"
-                _NON_NAMES = {"sono", "cliente", "nuovo", "nuova", "mai", "registrato",
-                              "registrata", "prima", "volta", "visita", "stato", "venuto",
-                              "prenotato", "conoscete", "conosci", "archivio", "sistema",
-                              "disponibile", "libero", "buongiorno", "buonasera", "ciao",
-                              "salve", "vorrei", "prenotare", "appuntamento",
-                              # S126: articles + FAQ words
-                              "il", "lo", "la", "le", "li", "gli", "un", "una", "uno",
-                              "orari", "orario", "prezzi", "prezzo", "informazioni",
-                              "servizi", "servizio", "costi", "costo", "tariffe",
-                              "quali", "come", "dove", "quando", "quanto", "cosa"}
+                _NON_NAMES = {
+                    "sono",
+                    "cliente",
+                    "nuovo",
+                    "nuova",
+                    "mai",
+                    "registrato",
+                    "registrata",
+                    "prima",
+                    "volta",
+                    "visita",
+                    "stato",
+                    "venuto",
+                    "prenotato",
+                    "conoscete",
+                    "conosci",
+                    "archivio",
+                    "sistema",
+                    "disponibile",
+                    "libero",
+                    "buongiorno",
+                    "buonasera",
+                    "ciao",
+                    "salve",
+                    "vorrei",
+                    "prenotare",
+                    "appuntamento",
+                    # S126: articles + FAQ words
+                    "il",
+                    "lo",
+                    "la",
+                    "le",
+                    "li",
+                    "gli",
+                    "un",
+                    "una",
+                    "uno",
+                    "orari",
+                    "orario",
+                    "prezzi",
+                    "prezzo",
+                    "informazioni",
+                    "servizi",
+                    "servizio",
+                    "costi",
+                    "costo",
+                    "tariffe",
+                    "quali",
+                    "come",
+                    "dove",
+                    "quando",
+                    "quanto",
+                    "cosa",
+                }
                 # Try "mi chiamo X Y" / "sono X Y" (capture name + optional surname)
                 _NAME_PATTERNS = [
-                    r'(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+(?:\s+[A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)?)',
-                    r'(?:^|\.\s*|,\s*|\b)sono\s+([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)(?:\s*[,.]|\s+(?:e|è|non|mai|prima))',
+                    r"(?:mi\s+chiamo|sono\s+io|mi\s+chiama)\s+([A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+(?:\s+[A-ZÀ-Ö][a-zàèéìòùA-ZÀ-Ö]+)?)",
+                    r"(?:^|\.\s*|,\s*|\b)sono\s+([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)(?:\s*[,.]|\s+(?:e|è|non|mai|prima))",
                 ]
                 for _pat in _NAME_PATTERNS:
                     for _m in re.finditer(_pat, text, re.IGNORECASE):
                         _full = _m.group(1).strip()
                         _parts = _full.split()
-                        _clean_parts = [w for w in _parts if w.lower() not in _NON_NAMES and len(w) >= 2]
+                        _clean_parts = [
+                            w
+                            for w in _parts
+                            if w.lower() not in _NON_NAMES and len(w) >= 2
+                        ]
                         if len(_clean_parts) >= 2:
                             _name = sanitize_name(_clean_parts[0])
                             _surname = sanitize_name(_clean_parts[1], is_surname=True)
@@ -1746,14 +2063,14 @@ class BookingStateMachine:
                                 next_state=BookingState.REGISTERING_PHONE,
                                 response=TEMPLATES["ask_phone"].format(
                                     name=f"{_name} {_surname}"
-                                )
+                                ),
                             )
                         elif len(_clean_parts) == 1:
                             _clean = sanitize_name(_clean_parts[0])
                             self.context.client_name = _clean
                             return StateMachineResult(
                                 next_state=BookingState.REGISTERING_SURNAME,
-                                response=f"Benvenuto {_clean}! Mi può dare il cognome?"
+                                response=f"Benvenuto {_clean}! Mi può dare il cognome?",
                             )
 
                 # S122: Also try entity extractor as fallback
@@ -1768,64 +2085,155 @@ class BookingStateMachine:
                                 next_state=BookingState.REGISTERING_PHONE,
                                 response=TEMPLATES["ask_phone"].format(
                                     name=f"{_ename} {_esurname}"
-                                )
+                                ),
                             )
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_SURNAME,
-                            response=f"Benvenuto {_ename}! Mi può dare il cognome?"
+                            response=f"Benvenuto {_ename}! Mi può dare il cognome?",
                         )
 
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
-                    response="Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?"
+                    response="Benvenuto! Piacere di conoscerla. Mi può dire il suo nome e cognome?",
                 )
 
         # S122: Extract name+surname for EXISTING clients too
         # (patterns like "sono Anna Bianchi", "mi chiamo Luca Bianchi")
         # Also runs when name is set but surname is missing (entity extractor
         # often only captures first name)
-        if not self.context.client_name or (self.context.client_name and not self.context.client_surname):
+        if not self.context.client_name or (
+            self.context.client_name and not self.context.client_surname
+        ):
             # S126: Use comprehensive blacklist to prevent FAQ/info words as names
-            _NON_NAMES_EX = {"sono", "nuovo", "nuova", "cliente", "mai", "registrato",
-                             "prima", "volta", "stato", "venuto", "buongiorno", "buonasera",
-                             "ciao", "salve", "vorrei", "prenotare", "appuntamento",
-                             # Articles/pronouns
-                             "il", "lo", "la", "le", "li", "gli", "un", "una", "uno",
-                             "del", "dei", "delle", "di", "da", "in", "con", "su", "per",
-                             # FAQ/info words — S126 fix for "orari" extracted as name
-                             "orari", "orario", "prezzi", "prezzo", "tariffe", "tariffa",
-                             "informazioni", "informazione", "info", "costi", "costo",
-                             "disponibilita", "disponibilità", "listino",
-                             "apertura", "chiusura", "servizi", "servizio",
-                             "pagamento", "pagamenti", "contanti", "carta",
-                             "promozione", "promozioni", "offerta", "offerte",
-                             "attesa", "durata", "tempo", "garanzia",
-                             "preventivo", "preventivi", "prodotti", "prodotto",
-                             # Common verbs/adjectives
-                             "quali", "come", "dove", "quando", "quanto", "cosa",
-                             "fare", "avere", "essere", "potere", "dovere", "sapere",
-                             "grazie", "prego", "scusi", "perfetto", "bene", "male",
-                             # Service words
-                             "taglio", "piega", "colore", "barba", "massaggio",
-                             "visita", "trattamento", "pulizia", "revisione",
-                             "tagliando", "gomme", "allenamento"}
+            _NON_NAMES_EX = {
+                "sono",
+                "nuovo",
+                "nuova",
+                "cliente",
+                "mai",
+                "registrato",
+                "prima",
+                "volta",
+                "stato",
+                "venuto",
+                "buongiorno",
+                "buonasera",
+                "ciao",
+                "salve",
+                "vorrei",
+                "prenotare",
+                "appuntamento",
+                # Articles/pronouns
+                "il",
+                "lo",
+                "la",
+                "le",
+                "li",
+                "gli",
+                "un",
+                "una",
+                "uno",
+                "del",
+                "dei",
+                "delle",
+                "di",
+                "da",
+                "in",
+                "con",
+                "su",
+                "per",
+                # FAQ/info words — S126 fix for "orari" extracted as name
+                "orari",
+                "orario",
+                "prezzi",
+                "prezzo",
+                "tariffe",
+                "tariffa",
+                "informazioni",
+                "informazione",
+                "info",
+                "costi",
+                "costo",
+                "disponibilita",
+                "disponibilità",
+                "listino",
+                "apertura",
+                "chiusura",
+                "servizi",
+                "servizio",
+                "pagamento",
+                "pagamenti",
+                "contanti",
+                "carta",
+                "promozione",
+                "promozioni",
+                "offerta",
+                "offerte",
+                "attesa",
+                "durata",
+                "tempo",
+                "garanzia",
+                "preventivo",
+                "preventivi",
+                "prodotti",
+                "prodotto",
+                # Common verbs/adjectives
+                "quali",
+                "come",
+                "dove",
+                "quando",
+                "quanto",
+                "cosa",
+                "fare",
+                "avere",
+                "essere",
+                "potere",
+                "dovere",
+                "sapere",
+                "grazie",
+                "prego",
+                "scusi",
+                "perfetto",
+                "bene",
+                "male",
+                # Service words
+                "taglio",
+                "piega",
+                "colore",
+                "barba",
+                "massaggio",
+                "visita",
+                "trattamento",
+                "pulizia",
+                "revisione",
+                "tagliando",
+                "gomme",
+                "allenamento",
+            }
             _EX_PATTERNS = [
                 # "sono Anna Bianchi" / "mi chiamo Marco Rossi"
-                r'(?:sono|mi\s+chiamo)\s+([A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?)',
+                r"(?:sono|mi\s+chiamo)\s+([A-ZÀ-Ö][a-zàèéìòù]+(?:\s+[A-ZÀ-Ö][a-zàèéìòù]+)?)",
                 # Just a name pair on its own line: "Anna Bianchi" (tolerant of trailing punct)
-                r'^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)[.!?,;:\s]*$',
+                r"^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)[.!?,;:\s]*$",
             ]
             for _pat in _EX_PATTERNS:
                 _m = re.search(_pat, text, re.IGNORECASE)
                 if _m:
                     _full = _m.group(1).strip()
                     _parts = _full.split()
-                    _clean = [w for w in _parts if w.lower() not in _NON_NAMES_EX and len(w) >= 2]
+                    _clean = [
+                        w
+                        for w in _parts
+                        if w.lower() not in _NON_NAMES_EX and len(w) >= 2
+                    ]
                     if len(_clean) >= 2:
                         # Only overwrite name if not already set (or set to same value)
                         _new_name = sanitize_name(_clean[0])
                         _new_surname = sanitize_name(_clean[1], is_surname=True)
-                        if not self.context.client_name or self.context.client_name.lower() == _new_name.lower():
+                        if (
+                            not self.context.client_name
+                            or self.context.client_name.lower() == _new_name.lower()
+                        ):
                             self.context.client_name = _new_name
                         self.context.client_surname = _new_surname
                     elif len(_clean) == 1 and not self.context.client_name:
@@ -1843,7 +2251,11 @@ class BookingStateMachine:
         if self.context.client_name:
             if self.context.client_id:
                 # Client already known (e.g. follow-up booking in same call)
-                display_name = self.context.client_name.split()[0] if self.context.client_name else ""
+                display_name = (
+                    self.context.client_name.split()[0]
+                    if self.context.client_name
+                    else ""
+                )
                 self.context.state = BookingState.WAITING_SERVICE
                 solito = self._check_solito_redirect(extracted, self.context.client_id)
                 if solito:
@@ -1857,24 +2269,23 @@ class BookingStateMachine:
                 # Both name+surname available
                 # CHECK FOR PHONETIC DISAMBIGUATION FIRST
                 needs_disambig, disambig_info = self._check_name_disambiguation(
-                    self.context.client_name,
-                    self.context.client_surname
+                    self.context.client_name, self.context.client_surname
                 )
-                
+
                 if needs_disambig and disambig_info:
                     # Ambiguous match - ask for confirmation
                     self.context.disambiguation_candidates = [disambig_info["client"]]
                     self.context.disambiguation_attempts = 0
                     self.context.state = BookingState.DISAMBIGUATING_NAME
-                    
+
                     suggested_name = disambig_info["client"]["nome"]
                     suggested_surname = disambig_info["client"]["cognome"]
-                    
+
                     return StateMachineResult(
                         next_state=BookingState.DISAMBIGUATING_NAME,
                         response=TEMPLATES["disambiguation_ask"].format(
                             suggested_name=f"{suggested_name} {suggested_surname}"
-                        )
+                        ),
                     )
                 elif disambig_info and disambig_info.get("match_type") == "exact":
                     # Exact match - use this client directly
@@ -1885,10 +2296,12 @@ class BookingStateMachine:
                     # S125: If service already selected (from earlier disambiguation), skip to date
                     if self.context.service:
                         self.context.state = BookingState.WAITING_DATE
-                        svc_display = self.context.service_display or self.context.service
+                        svc_display = (
+                            self.context.service_display or self.context.service
+                        )
                         return StateMachineResult(
                             next_state=BookingState.WAITING_DATE,
-                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?",
                         )
                     self.context.state = BookingState.WAITING_SERVICE
                     solito = self._check_solito_redirect(extracted, client["id"])
@@ -1896,7 +2309,9 @@ class BookingStateMachine:
                         return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"])
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
                 elif disambig_info and disambig_info.get("match_type") == "nickname":
                     # CoVe: Match per soprannome - riconoscimento speciale
@@ -1906,18 +2321,21 @@ class BookingStateMachine:
                     self.context.client_surname = client["cognome"]
                     self.context.state = BookingState.WAITING_SERVICE
                     soprannome = client.get("soprannome", "")
-                    logger.info(f"[DISAMBIGUATION] Client recognized by nickname: {soprannome} -> {client['nome']}")
+                    logger.info(
+                        f"[DISAMBIGUATION] Client recognized by nickname: {soprannome} -> {client['nome']}"
+                    )
                     solito = self._check_solito_redirect(extracted, client["id"])
                     if solito:
                         return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["nickname_recognized"].format(
-                            soprannome=soprannome,
-                            nome=client["nome"]
-                        ) + " " + TEMPLATES["ask_service"]
+                            soprannome=soprannome, nome=client["nome"]
+                        )
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
-                
+
                 # No match or new client - go to DB lookup
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
@@ -1927,8 +2345,8 @@ class BookingStateMachine:
                     lookup_type="client_by_name_surname",
                     lookup_params={
                         "name": self.context.client_name,
-                        "surname": self.context.client_surname
-                    }
+                        "surname": self.context.client_surname,
+                    },
                 )
             # S142: Name only — DB lookup first, then decide
             # 1 match → go direct to service | 2+ → ask surname | 0 → new client
@@ -1938,7 +2356,7 @@ class BookingStateMachine:
                 response="",  # orchestrator fills after DB lookup
                 needs_db_lookup=True,
                 lookup_type="client_by_name_only",
-                lookup_params={"name": self.context.client_name}
+                lookup_params={"name": self.context.client_name},
             )
 
         # Try to extract name from raw text (regex patterns)
@@ -1949,27 +2367,26 @@ class BookingStateMachine:
             if clean_surname:
                 # Got both name+surname (e.g. "Sono Gino Di Nanni")
                 self.context.client_surname = clean_surname
-                
+
                 # CHECK FOR PHONETIC DISAMBIGUATION
                 needs_disambig, disambig_info = self._check_name_disambiguation(
-                    self.context.client_name, 
-                    self.context.client_surname
+                    self.context.client_name, self.context.client_surname
                 )
-                
+
                 if needs_disambig and disambig_info:
                     # Ambiguous match - ask for confirmation
                     self.context.disambiguation_candidates = [disambig_info["client"]]
                     self.context.disambiguation_attempts = 0
                     self.context.state = BookingState.DISAMBIGUATING_NAME
-                    
+
                     suggested_name = disambig_info["client"]["nome"]
                     suggested_surname = disambig_info["client"]["cognome"]
-                    
+
                     return StateMachineResult(
                         next_state=BookingState.DISAMBIGUATING_NAME,
                         response=TEMPLATES["disambiguation_ask"].format(
                             suggested_name=f"{suggested_name} {suggested_surname}"
-                        )
+                        ),
                     )
                 elif disambig_info and disambig_info.get("match_type") == "exact":
                     # Exact match - use this client directly
@@ -1980,10 +2397,12 @@ class BookingStateMachine:
                     # S125: If service already selected (from earlier disambiguation), skip to date
                     if self.context.service:
                         self.context.state = BookingState.WAITING_DATE
-                        svc_display = self.context.service_display or self.context.service
+                        svc_display = (
+                            self.context.service_display or self.context.service
+                        )
                         return StateMachineResult(
                             next_state=BookingState.WAITING_DATE,
-                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?",
                         )
                     self.context.state = BookingState.WAITING_SERVICE
                     solito = self._check_solito_redirect(extracted, client["id"])
@@ -1991,7 +2410,9 @@ class BookingStateMachine:
                         return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"])
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
                 elif disambig_info and disambig_info.get("match_type") == "nickname":
                     # CoVe: Match per soprannome nel secondo blocco
@@ -2001,18 +2422,21 @@ class BookingStateMachine:
                     self.context.client_surname = client["cognome"]
                     self.context.state = BookingState.WAITING_SERVICE
                     soprannome = client.get("soprannome", "")
-                    logger.info(f"[DISAMBIGUATION] Client recognized by nickname (2nd block): {soprannome}")
+                    logger.info(
+                        f"[DISAMBIGUATION] Client recognized by nickname (2nd block): {soprannome}"
+                    )
                     solito = self._check_solito_redirect(extracted, client["id"])
                     if solito:
                         return solito
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
                         response=TEMPLATES["nickname_recognized"].format(
-                            soprannome=soprannome,
-                            nome=client["nome"]
-                        ) + " " + TEMPLATES["ask_service"]
+                            soprannome=soprannome, nome=client["nome"]
+                        )
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
-                
+
                 # No match or new client - proceed with normal lookup
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
@@ -2022,8 +2446,8 @@ class BookingStateMachine:
                     lookup_type="client_by_name_surname",
                     lookup_params={
                         "name": self.context.client_name,
-                        "surname": self.context.client_surname
-                    }
+                        "surname": self.context.client_surname,
+                    },
                 )
             # Name only — ask for surname
             self.context.state = BookingState.WAITING_SURNAME
@@ -2031,18 +2455,21 @@ class BookingStateMachine:
                 next_state=BookingState.WAITING_SURNAME,
                 response=TEMPLATES["ask_surname_after_name"].format(
                     name=self.context.client_name
-                )
+                ),
             )
 
         # Fallback: Try spaCy NER for person names
         try:
             import spacy
+
             nlp = spacy.load("it_core_news_sm")
             doc = nlp(text)
             for ent in doc.ents:
                 if ent.label_ == "PER":
                     extracted_name = ent.text.strip()
-                    extracted_name = ' '.join(word.capitalize() for word in extracted_name.split())
+                    extracted_name = " ".join(
+                        word.capitalize() for word in extracted_name.split()
+                    )
                     clean_name, clean_surname = sanitize_name_pair(extracted_name, None)
                     self.context.client_name = clean_name or extracted_name
                     if clean_surname:
@@ -2055,15 +2482,15 @@ class BookingStateMachine:
                             lookup_type="client_by_name_surname",
                             lookup_params={
                                 "name": self.context.client_name,
-                                "surname": self.context.client_surname
-                            }
+                                "surname": self.context.client_surname,
+                            },
                         )
                     self.context.state = BookingState.WAITING_SURNAME
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SURNAME,
                         response=TEMPLATES["ask_surname_after_name"].format(
                             name=self.context.client_name
-                        )
+                        ),
                     )
         except (ImportError, AttributeError, RuntimeError):
             pass  # spaCy non disponibile — fallback a regex
@@ -2073,35 +2500,70 @@ class BookingStateMachine:
         # Requires 2+ lowercase chars after capital (filters "Sì", "No") +
         # blacklist for common non-name words.
         BARE_NAME_BLACKLIST = {
-            "Sì", "Si", "No", "Ok", "Forse",
-            "Oggi", "Domani", "Ieri", "Dopodomani", "Stanotte",
-            "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica",
-            "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
-            "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre",
-            "Grazie", "Prego", "Ciao", "Salve", "Arrivederci",
-            "Buongiorno", "Buonasera", "Buonanotte",
-            "Conferma", "Confermo", "Annullo", "Cancello",
+            "Sì",
+            "Si",
+            "No",
+            "Ok",
+            "Forse",
+            "Oggi",
+            "Domani",
+            "Ieri",
+            "Dopodomani",
+            "Stanotte",
+            "Lunedì",
+            "Martedì",
+            "Mercoledì",
+            "Giovedì",
+            "Venerdì",
+            "Sabato",
+            "Domenica",
+            "Gennaio",
+            "Febbraio",
+            "Marzo",
+            "Aprile",
+            "Maggio",
+            "Giugno",
+            "Luglio",
+            "Agosto",
+            "Settembre",
+            "Ottobre",
+            "Novembre",
+            "Dicembre",
+            "Grazie",
+            "Prego",
+            "Ciao",
+            "Salve",
+            "Arrivederci",
+            "Buongiorno",
+            "Buonasera",
+            "Buonanotte",
+            "Conferma",
+            "Confermo",
+            "Annullo",
+            "Cancello",
         }
         # S217-P1: confronto accent/case-insensitive. STT/test mandano spesso
         # "Martedi" senza accento mentre la blacklist sopra ha "Martedì" — la
         # forma senza accento veniva accettata come nome ("piacere martedi!").
         _bare_blacklist_norm = {_strip_accents_lower(w) for w in BARE_NAME_BLACKLIST}
         bare_name_match = re.match(
-            r'^([A-Z][a-zàèéìòùì]{2,}(?:\s+[A-Z][a-zàèéìòùì]{1,}){0,2})\s*$',
-            text.strip()
+            r"^([A-Z][a-zàèéìòùì]{2,}(?:\s+[A-Z][a-zàèéìòùì]{1,}){0,2})\s*$",
+            text.strip(),
         )
-        if bare_name_match and _strip_accents_lower(text.strip()) not in _bare_blacklist_norm:
+        if (
+            bare_name_match
+            and _strip_accents_lower(text.strip()) not in _bare_blacklist_norm
+        ):
             bare_name = bare_name_match.group(1).strip()
             parts = bare_name.split()
             first = parts[0]
-            rest = ' '.join(parts[1:]) if len(parts) > 1 else None
+            rest = " ".join(parts[1:]) if len(parts) > 1 else None
             clean_name, clean_surname = sanitize_name_pair(first, rest)
             self.context.client_name = clean_name or first
             if clean_surname:
                 self.context.client_surname = clean_surname
                 needs_disambig, disambig_info = self._check_name_disambiguation(
-                    self.context.client_name,
-                    self.context.client_surname
+                    self.context.client_name, self.context.client_surname
                 )
                 if needs_disambig and disambig_info:
                     self.context.disambiguation_candidates = [disambig_info["client"]]
@@ -2113,9 +2575,12 @@ class BookingStateMachine:
                         next_state=BookingState.DISAMBIGUATING_NAME,
                         response=TEMPLATES["disambiguation_ask"].format(
                             suggested_name=f"{suggested_name} {suggested_surname}"
-                        )
+                        ),
                     )
-                elif disambig_info and disambig_info.get("match_type") in ("exact", "nickname"):
+                elif disambig_info and disambig_info.get("match_type") in (
+                    "exact",
+                    "nickname",
+                ):
                     client = disambig_info["client"]
                     self.context.client_id = client["id"]
                     self.context.client_name = client["nome"]
@@ -2123,15 +2588,19 @@ class BookingStateMachine:
                     # S125: If service already selected, skip to date
                     if self.context.service:
                         self.context.state = BookingState.WAITING_DATE
-                        svc_display = self.context.service_display or self.context.service
+                        svc_display = (
+                            self.context.service_display or self.context.service
+                        )
                         return StateMachineResult(
                             next_state=BookingState.WAITING_DATE,
-                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?"
+                            response=f"Bentornato {client['nome']}! {svc_display}, per quale giorno?",
                         )
                     self.context.state = BookingState.WAITING_SERVICE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=TEMPLATES["welcome_back"].format(name=client["nome"]) + " " + TEMPLATES["ask_service"]
+                        response=TEMPLATES["welcome_back"].format(name=client["nome"])
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
                 # No DB match — proceed to lookup
                 self.context.state = BookingState.WAITING_SERVICE
@@ -2142,41 +2611,34 @@ class BookingStateMachine:
                     lookup_type="client_by_name_surname",
                     lookup_params={
                         "name": self.context.client_name,
-                        "surname": self.context.client_surname
-                    }
+                        "surname": self.context.client_surname,
+                    },
                 )
             # Name only — ask for surname
             self.context.state = BookingState.WAITING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.WAITING_SURNAME,
-                response=TEMPLATES["ask_surname_after_name"].format(name=self.context.client_name)
+                response=TEMPLATES["ask_surname_after_name"].format(
+                    name=self.context.client_name
+                ),
             )
-
-        # GAP-A5 Fix B: explicit rejection before asking again
-        # "no grazie", "lascia perdere", "non voglio", "ho cambiato idea", etc.
-        if HAS_ITALIAN_REGEX:
-            _is_reject, _ = is_rifiuto(text)
-            if _is_reject:
-                self.context.state = BookingState.IDLE
-                return StateMachineResult(
-                    next_state=BookingState.IDLE,
-                    response="Nessun problema! Sono qui se cambia idea."
-                )
 
         # Couldn't extract name
         return StateMachineResult(
             next_state=BookingState.WAITING_NAME,
-            response="Mi dice il nome, per cortesia?"
+            response="Mi dice il nome, per cortesia?",
         )
 
-    def _check_name_disambiguation(self, input_name: str, input_surname: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+    def _check_name_disambiguation(
+        self, input_name: str, input_surname: str
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Check if input name is phonetically similar to existing clients.
         Uses Levenshtein distance + phonetic variants dictionary.
-        
+
         CoVe: Aggiunto supporto soprannome (nickname) per disambiguazione avanzata.
         Se l'utente usa il soprannome, viene riconosciuto e matchato.
-        
+
         Returns:
             Tuple of (needs_disambiguation, candidate_info)
             - needs_disambiguation: True if ambiguous match found
@@ -2189,86 +2651,112 @@ class BookingStateMachine:
             if clients:
                 return self._evaluate_candidates(input_name, input_surname, clients)
             return False, None
-        
+
         try:
             # Import sqlite3 for DB lookup
             import sqlite3
             import os
-            
+
             # Import phonetic variants
             try:
-                from .disambiguation_handler import PHONETIC_VARIANTS
+                from .disambiguation_handler import PHONETIC_VARIANTS  # noqa: F401
             except ImportError:
-                from disambiguation_handler import PHONETIC_VARIANTS
-            
+                pass
+
             # CoVe: Multiple DB path attempts for different environments
             import sys as _sys
-            _home = Path.home() if 'Path' in dir() else __import__('pathlib').Path.home()
+
+            _home = __import__("pathlib").Path.home()
             if _sys.platform == "win32":
-                _appdata = __import__('pathlib').Path(os.environ.get("APPDATA", str(_home / "AppData" / "Roaming")))
+                _appdata = __import__("pathlib").Path(
+                    os.environ.get("APPDATA", str(_home / "AppData" / "Roaming"))
+                )
                 _win_paths = [
                     str(_appdata / "com.fluxion.desktop" / "fluxion.db"),
                     str(_appdata / "fluxion" / "fluxion.db"),
                 ]
             else:
                 _win_paths = []
-            db_paths = [
-                os.environ.get("FLUXION_DB_PATH", ""),           # Env var override (highest priority)
-                str(_home / "Library" / "Application Support" / "com.fluxion.desktop" / "fluxion.db"),  # macOS Tauri DB
-            ] + _win_paths + [
-                os.path.join(os.path.dirname(__file__), "..", "..", "fluxion.db"),  # Project root
-                "./fluxion.db",                                   # Relative path (lowest priority)
-            ]
+            db_paths = (
+                [
+                    os.environ.get(
+                        "FLUXION_DB_PATH", ""
+                    ),  # Env var override (highest priority)
+                    str(
+                        _home
+                        / "Library"
+                        / "Application Support"
+                        / "com.fluxion.desktop"
+                        / "fluxion.db"
+                    ),  # macOS Tauri DB
+                ]
+                + _win_paths
+                + [
+                    os.path.join(
+                        os.path.dirname(__file__), "..", "..", "fluxion.db"
+                    ),  # Project root
+                    "./fluxion.db",  # Relative path (lowest priority)
+                ]
+            )
             db_paths = [p for p in db_paths if p]  # Filter empty strings
-            
+
             db_path = None
             for path in db_paths:
                 if os.path.exists(path) and os.path.getsize(path) > 0:
                     db_path = path
                     break
-            
+
             # CoVe: Se DB non esiste, simula per test noti
             if not db_path:
-                logger.warning(f"[DISAMBIGUATION] Database not found, using test simulation mode")
-                return self._check_name_disambiguation_simulation(input_name, input_surname)
-            
+                logger.warning(
+                    "[DISAMBIGUATION] Database not found, using test simulation mode"
+                )
+                return self._check_name_disambiguation_simulation(
+                    input_name, input_surname
+                )
+
             # Connect to database
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
-            
+
             # CoVe: Cerca per cognome OR soprannome (nickname matching)
             cursor.execute(
                 """SELECT id, nome, cognome, soprannome, data_nascita 
                    FROM clienti 
                    WHERE LOWER(cognome) = LOWER(?) 
                    OR LOWER(soprannome) = LOWER(?)""",
-                (input_surname, input_surname)
+                (input_surname, input_surname),
             )
             matching_clients = cursor.fetchall()
-            
+
             # CoVe: Cerca anche per nome/soprannome (se input è il soprannome)
             cursor.execute(
                 """SELECT id, nome, cognome, soprannome, data_nascita 
                    FROM clienti 
                    WHERE LOWER(soprannome) = LOWER(?)
                    OR LOWER(nome) = LOWER(?)""",
-                (input_name, input_name)
+                (input_name, input_name),
             )
             nickname_matches = cursor.fetchall()
-            
+
             conn.close()
-            
+
             # Unisci risultati (rimuovi duplicati)
-            all_matches = list(matching_clients) + [c for c in nickname_matches if c not in matching_clients]
-            
+            all_matches = list(matching_clients) + [
+                c for c in nickname_matches if c not in matching_clients
+            ]
+
             if not all_matches:
                 return False, None
-            
+
             return self._evaluate_candidates(input_name, input_surname, all_matches)
-                
+
         except sqlite3.Error as e:
             # DB error — log and proceed without disambiguation
-            logger.error("[DISAMBIGUATION] DB error in disambiguation check: %s — fallback simulation", e)
+            logger.error(
+                "[DISAMBIGUATION] DB error in disambiguation check: %s — fallback simulation",
+                e,
+            )
             return self._check_name_disambiguation_simulation(input_name, input_surname)
         except ValueError as e:
             logger.warning("[DISAMBIGUATION] Input invalido: %s", e)
@@ -2277,8 +2765,10 @@ class BookingStateMachine:
             # Unexpected error — log with stack trace
             logger.error("[DISAMBIGUATION] Unexpected error: %s", e, exc_info=True)
             return self._check_name_disambiguation_simulation(input_name, input_surname)
-    
-    def _check_name_disambiguation_simulation(self, input_name: str, input_surname: str) -> Tuple[bool, Optional[Dict[str, Any]]]:
+
+    def _check_name_disambiguation_simulation(
+        self, input_name: str, input_surname: str
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Simulazione CoVe per test quando DB non è disponibile.
         Conosce alcuni clienti di test per validare il flusso.
@@ -2288,52 +2778,81 @@ class BookingStateMachine:
         # CoVe 2026: Aggiunti Mario/Maria per test disambiguazione fonetica
         test_clients = {
             "peruzzi": [
-                {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
+                {
+                    "id": "test-gigio",
+                    "nome": "Gigio",
+                    "cognome": "Peruzzi",
+                    "soprannome": "Gigi",
+                    "data_nascita": "1985-03-15",
+                },
             ],
             "bianchi": [
-                {"id": "test-maria", "nome": "Maria", "cognome": "Bianchi", "soprannome": None, "data_nascita": "1990-07-22"},
+                {
+                    "id": "test-maria",
+                    "nome": "Maria",
+                    "cognome": "Bianchi",
+                    "soprannome": None,
+                    "data_nascita": "1990-07-22",
+                },
             ],
             "gigi": [  # Match per soprannome
-                {"id": "test-gigio", "nome": "Gigio", "cognome": "Peruzzi", "soprannome": "Gigi", "data_nascita": "1985-03-15"},
+                {
+                    "id": "test-gigio",
+                    "nome": "Gigio",
+                    "cognome": "Peruzzi",
+                    "soprannome": "Gigi",
+                    "data_nascita": "1985-03-15",
+                },
             ],
             "rossi": [  # CoVe 2026: Mario e Maria per test disambiguazione
-                {"id": "test-mario", "nome": "Mario", "cognome": "Rossi", "soprannome": None, "data_nascita": "1980-05-10"},
-                {"id": "test-maria-rossi", "nome": "Maria", "cognome": "Rossi", "soprannome": None, "data_nascita": "1982-08-15"},
+                {
+                    "id": "test-mario",
+                    "nome": "Mario",
+                    "cognome": "Rossi",
+                    "soprannome": None,
+                    "data_nascita": "1980-05-10",
+                },
+                {
+                    "id": "test-maria-rossi",
+                    "nome": "Maria",
+                    "cognome": "Rossi",
+                    "soprannome": None,
+                    "data_nascita": "1982-08-15",
+                },
             ],
         }
-        
+
         input_surname_lower = input_surname.lower()
         input_name_lower = input_name.lower()
-        
+
         # Cerca per cognome o soprannome
         all_matches = []
         if input_surname_lower in test_clients:
             all_matches.extend(test_clients[input_surname_lower])
         if input_name_lower in test_clients:
-            all_matches.extend([c for c in test_clients[input_name_lower] if c not in all_matches])
-        
+            all_matches.extend(
+                [c for c in test_clients[input_name_lower] if c not in all_matches]
+            )
+
         if not all_matches:
             return False, None
-        
+
         # Convert to tuple format per compatibilità (id, nome, cognome, soprannome, data_nascita)
         db_tuples = [
             (c["id"], c["nome"], c["cognome"], c.get("soprannome"), c["data_nascita"])
             for c in all_matches
         ]
-        
+
         return self._evaluate_candidates(input_name, input_surname, db_tuples)
-    
+
     def _evaluate_candidates(
-        self, 
-        input_name: str, 
-        input_surname: str, 
-        matching_clients: list
+        self, input_name: str, input_surname: str, matching_clients: list
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """
         Valuta i candidati e determina se serve disambiguazione.
         CoVe: Separato per riutilizzo tra DB reale e simulazione.
         CoVe: Aggiunto supporto soprannome - se matcha il soprannome = match esatto.
-        
+
         🔒 CRITICAL FIX: Valuta sia NOME che COGNOME insieme.
         Se il cognome non corrisponde, NON è un match valido.
         """
@@ -2341,11 +2860,11 @@ class BookingStateMachine:
             from disambiguation_handler import PHONETIC_VARIANTS, name_similarity
         except ImportError:
             from .disambiguation_handler import PHONETIC_VARIANTS, name_similarity
-        
+
         candidates = []
         input_name_lower = input_name.lower() if input_name else ""
         input_surname_lower = input_surname.lower() if input_surname else ""
-        
+
         for client_data in matching_clients:
             # Gestisci sia tuple che dizionari
             if isinstance(client_data, dict):
@@ -2361,11 +2880,11 @@ class BookingStateMachine:
                 cognome = client_data[2]
                 soprannome = client_data[3] if len(client_data) > 3 else None
                 data_nascita = client_data[4] if len(client_data) > 4 else None
-            
+
             nome_lower = nome.lower()
-            cognome_lower = cognome.lower() if cognome else ""
+            cognome.lower() if cognome else ""
             soprannome_lower = soprannome.lower() if soprannome else None
-            
+
             # 🔒 CRITICAL FIX: Verifica match cognome prima di procedere
             # Se l'utente ha fornito un cognome diverso dal cliente nel DB, è un cliente diverso
             surname_similarity = 0.0
@@ -2380,27 +2899,36 @@ class BookingStateMachine:
             else:
                 # Nessun cognome né input né DB → neutrale
                 surname_similarity = 0.5
-            
+
             # 🔒 Se il cognome è completamente diverso (< 0.3 similarity), scarta questo candidato
             # A meno che non sia un match per soprannome (gestito dopo)
             if surname_similarity < 0.3 and input_surname and cognome:
-                logger.debug(f"[DISAMBIGUATION] Surname mismatch: '{input_surname}' vs '{cognome}' (sim: {surname_similarity:.2f}) - Skipping")
+                logger.debug(
+                    f"[DISAMBIGUATION] Surname mismatch: '{input_surname}' vs '{cognome}' (sim: {surname_similarity:.2f}) - Skipping"
+                )
                 continue
-            
+
             # CoVe: Se input matcha esattamente il soprannome = match perfetto (1.0)
-            if soprannome_lower and (input_name_lower == soprannome_lower or input_surname_lower == soprannome_lower):
-                logger.info(f"[DISAMBIGUATION] Nickname match: '{input_name}' = soprannome '{soprannome}'")
-                candidates.append({
-                    "id": client_id,
-                    "nome": nome,
-                    "cognome": cognome,
-                    "soprannome": soprannome,
-                    "data_nascita": data_nascita,
-                    "similarity": 1.0,  # Match esatto per soprannome
-                    "match_type": "nickname"
-                })
+            if soprannome_lower and (
+                input_name_lower == soprannome_lower
+                or input_surname_lower == soprannome_lower
+            ):
+                logger.info(
+                    f"[DISAMBIGUATION] Nickname match: '{input_name}' = soprannome '{soprannome}'"
+                )
+                candidates.append(
+                    {
+                        "id": client_id,
+                        "nome": nome,
+                        "cognome": cognome,
+                        "soprannome": soprannome,
+                        "data_nascita": data_nascita,
+                        "similarity": 1.0,  # Match esatto per soprannome
+                        "match_type": "nickname",
+                    }
+                )
                 continue
-            
+
             # Calculate Levenshtein similarity con nome
             levenshtein_sim = name_similarity(input_name, nome)
 
@@ -2419,31 +2947,37 @@ class BookingStateMachine:
                 name_similarity_score = min(0.75, levenshtein_sim + phonetic_bonus)
             else:
                 name_similarity_score = min(1.0, levenshtein_sim + phonetic_bonus)
-            combined_similarity = (0.6 * name_similarity_score) + (0.4 * surname_similarity)
-            
-            candidates.append({
-                "id": client_id,
-                "nome": nome,
-                "cognome": cognome,
-                "soprannome": soprannome,
-                "data_nascita": data_nascita,
-                "similarity": combined_similarity,
-                "match_type": "name",
-                "debug": {
-                    "name_sim": name_similarity_score,
-                    "surname_sim": surname_similarity,
-                    "combined": combined_similarity
+            combined_similarity = (0.6 * name_similarity_score) + (
+                0.4 * surname_similarity
+            )
+
+            candidates.append(
+                {
+                    "id": client_id,
+                    "nome": nome,
+                    "cognome": cognome,
+                    "soprannome": soprannome,
+                    "data_nascita": data_nascita,
+                    "similarity": combined_similarity,
+                    "match_type": "name",
+                    "debug": {
+                        "name_sim": name_similarity_score,
+                        "surname_sim": surname_similarity,
+                        "combined": combined_similarity,
+                    },
                 }
-            })
-        
+            )
+
         # 🔒 CRITICAL: Se nessun candidato supera il filtro cognome → nuovo cliente
         if not candidates:
-            logger.info(f"[DISAMBIGUATION] No valid candidates after surname filter for '{input_name} {input_surname}'")
+            logger.info(
+                f"[DISAMBIGUATION] No valid candidates after surname filter for '{input_name} {input_surname}'"
+            )
             return False, None
-        
+
         # Sort by similarity descending
         candidates.sort(key=lambda x: x["similarity"], reverse=True)
-        
+
         # CoVe 2026: Check for phonetic ambiguity (e.g., Mario vs Maria with same surname)
         # If multiple candidates with phonetically similar names, require disambiguation
         if len(candidates) >= 2:
@@ -2451,50 +2985,60 @@ class BookingStateMachine:
                 from disambiguation_handler import is_phonetically_similar
             except ImportError:
                 from .disambiguation_handler import is_phonetically_similar
-            
+
             top_name = candidates[0]["nome"].lower()
             second_name = candidates[1]["nome"].lower()
-            
+
             if is_phonetically_similar(top_name, second_name, threshold=0.75):
-                logger.info(f"[DISAMBIGUATION] Phonetic ambiguity detected: '{candidates[0]['nome']}' vs '{candidates[1]['nome']}'")
+                logger.info(
+                    f"[DISAMBIGUATION] Phonetic ambiguity detected: '{candidates[0]['nome']}' vs '{candidates[1]['nome']}'"
+                )
                 return True, {
                     "match_type": "phonetic_ambiguity",
                     "client": candidates[0],
                     "similarity": candidates[0]["similarity"],
-                    "all_candidates": candidates
+                    "all_candidates": candidates,
                 }
-        
+
         # Get best match
         best_candidate = candidates[0]
         similarity = best_candidate["similarity"]
         match_type = best_candidate.get("match_type", "name")
-        
-        logger.info(f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} {best_candidate['cognome']} (similarity: {similarity:.2f}, type: {match_type})")
-        
+
+        logger.info(
+            f"[DISAMBIGUATION] Best match for '{input_name} {input_surname}': {best_candidate['nome']} {best_candidate['cognome']} (similarity: {similarity:.2f}, type: {match_type})"
+        )
+
         # CoVe: Se match per soprannome, tratta come match esatto speciale
         if match_type == "nickname":
-            logger.info(f"[DISAMBIGUATION] Nickname match confirmed for '{best_candidate['soprannome']}'")
+            logger.info(
+                f"[DISAMBIGUATION] Nickname match confirmed for '{best_candidate['soprannome']}'"
+            )
             return False, {"match_type": "nickname", "client": best_candidate}
-        
+
         # 🔒 CRITICAL FIX: Aumentate le soglie per evitare falsi positivi
         # THRESHOLD_HIGH: 0.90 = exact match (prima era 0.95 troppo alta, ma 0.60 troppo bassa)
         # THRESHOLD_MED: 0.70 = phonetically similar, needs confirmation
         if similarity >= 0.90:
             # Exact match - no disambiguation needed
-            logger.info(f"[DISAMBIGUATION] Exact match confirmed (similarity >= 0.90)")
+            logger.info("[DISAMBIGUATION] Exact match confirmed (similarity >= 0.90)")
             return False, {"match_type": "exact", "client": best_candidate}
         elif similarity >= 0.70:
             # Ambiguous match - needs disambiguation
-            logger.info(f"[DISAMBIGUATION] Ambiguous match detected, needs confirmation (similarity: {similarity:.2f})")
+            logger.info(
+                f"[DISAMBIGUATION] Ambiguous match detected, needs confirmation (similarity: {similarity:.2f})"
+            )
             return True, {
                 "match_type": "ambiguous",
                 "client": best_candidate,
                 "similarity": similarity,
-                "all_candidates": candidates
+                "all_candidates": candidates,
             }
         else:
             # No significant match - new client
-            logger.info(f"[DISAMBIGUATION] No significant match (similarity: {similarity:.2f}) - treating as new client")
+            logger.info(
+                f"[DISAMBIGUATION] No significant match (similarity: {similarity:.2f}) - treating as new client"
+            )
             return False, None
 
     def _extract_surname_from_text(self, text: str) -> Optional[str]:
@@ -2508,14 +3052,65 @@ class BookingStateMachine:
 
         # Blacklist: words that are NOT surnames
         _SURNAME_BLACKLIST = {
-            "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
-            "il", "un", "una", "uno", "gli", "dei", "delle", "del",
-            "appena", "già", "proprio", "anche", "ancora", "allora",
-            "cognome", "nome", "mio", "suo", "è", "e",
-            "detto", "fatto", "stato", "dico", "bene", "ecco",
-            "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
-            "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
-            "ciao", "buongiorno", "buonasera", "salve", "grazie", "niente",
+            "vi",
+            "ho",
+            "mi",
+            "si",
+            "se",
+            "ci",
+            "ne",
+            "lo",
+            "la",
+            "le",
+            "li",
+            "il",
+            "un",
+            "una",
+            "uno",
+            "gli",
+            "dei",
+            "delle",
+            "del",
+            "appena",
+            "già",
+            "proprio",
+            "anche",
+            "ancora",
+            "allora",
+            "cognome",
+            "nome",
+            "mio",
+            "suo",
+            "è",
+            "e",
+            "detto",
+            "fatto",
+            "stato",
+            "dico",
+            "bene",
+            "ecco",
+            "ehi",
+            "eh",
+            "oh",
+            "ah",
+            "ahi",
+            "uhm",
+            "ehm",
+            "boh",
+            "mah",
+            "beh",
+            "senti",
+            "senta",
+            "scolta",
+            "ascolta",
+            "aspetta",
+            "aspetti",
+            "ciao",
+            "buongiorno",
+            "buonasera",
+            "salve",
+            "grazie",
+            "niente",
         }
 
         # Phase 1: Contextual phrase patterns
@@ -2533,10 +3128,13 @@ class BookingStateMachine:
             match = re.search(pattern, text_stripped, re.IGNORECASE)
             if match:
                 candidate = match.group(1).strip()
-                clean_parts = [w for w in candidate.split()
-                               if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2]
+                clean_parts = [
+                    w
+                    for w in candidate.split()
+                    if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2
+                ]
                 if clean_parts:
-                    surname = sanitize_name(' '.join(clean_parts), is_surname=True)
+                    surname = sanitize_name(" ".join(clean_parts), is_surname=True)
                     if surname:
                         return surname
 
@@ -2560,8 +3158,9 @@ class BookingStateMachine:
         # Phase 3: Raw text fallback
         text_clean = sanitize_name(text_stripped)
         raw_words = text_clean.split() if text_clean else []
-        clean_words = [w for w in raw_words
-                       if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2]
+        clean_words = [
+            w for w in raw_words if w.lower() not in _SURNAME_BLACKLIST and len(w) >= 2
+        ]
 
         if clean_words and self.context.client_name:
             # Filter out the client's name if they repeated it
@@ -2569,18 +3168,19 @@ class BookingStateMachine:
             surname_words = [w for w in clean_words if w.lower() != name_lower]
             if not surname_words:
                 surname_words = clean_words  # All words match name? Use them anyway
-            candidate = ' '.join(surname_words)
+            candidate = " ".join(surname_words)
             if candidate:
                 return sanitize_name(candidate, is_surname=True)
         elif clean_words:
-            return sanitize_name(' '.join(clean_words), is_surname=True)
+            return sanitize_name(" ".join(clean_words), is_surname=True)
 
         # Phase 4: Groq LLM fallback
         if self.groq_nlu and self.context.client_name:
-            logger.info(f"[SM] surname extraction: regex failed, trying Groq for '{text_stripped[:50]}'")
+            logger.info(
+                f"[SM] surname extraction: regex failed, trying Groq for '{text_stripped[:50]}'"
+            )
             groq_result = self.groq_nlu.extract_surname(
-                utterance=text_stripped,
-                nome=self.context.client_name
+                utterance=text_stripped, nome=self.context.client_name
             )
             if groq_result and groq_result.get("cognome"):
                 cognome = sanitize_name(groq_result["cognome"], is_surname=True)
@@ -2589,7 +3189,9 @@ class BookingStateMachine:
 
         return None
 
-    def _handle_waiting_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_waiting_surname(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle WAITING_SURNAME state - collect surname after name, then DB lookup."""
 
         # GAP-A5 Fix B (surname): check explicit rejection BEFORE surname extraction
@@ -2600,7 +3202,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.IDLE
                 return StateMachineResult(
                     next_state=BookingState.IDLE,
-                    response="Nessun problema! Sono qui se cambia idea."
+                    response="Nessun problema! Sono qui se cambia idea.",
                 )
 
         # If surname was already populated (e.g., "Sono Gino Di Nanni" extracted in WAITING_NAME)
@@ -2612,8 +3214,8 @@ class BookingStateMachine:
                 lookup_type="client_by_name_surname",
                 lookup_params={
                     "name": self.context.client_name or "",
-                    "surname": self.context.client_surname
-                }
+                    "surname": self.context.client_surname,
+                },
             )
 
         # Extract surname from text
@@ -2628,8 +3230,8 @@ class BookingStateMachine:
                 lookup_type="client_by_name_surname",
                 lookup_params={
                     "name": self.context.client_name or "",
-                    "surname": self.context.client_surname
-                }
+                    "surname": self.context.client_surname,
+                },
             )
 
         # GAP-A5 Fix B (surname): explicit rejection before asking again
@@ -2639,20 +3241,23 @@ class BookingStateMachine:
                 self.context.state = BookingState.IDLE
                 return StateMachineResult(
                     next_state=BookingState.IDLE,
-                    response="Nessun problema! Sono qui se cambia idea."
+                    response="Nessun problema! Sono qui se cambia idea.",
                 )
 
         # Couldn't extract surname - re-ask
         return StateMachineResult(
             next_state=BookingState.WAITING_SURNAME,
-            response="Mi ripete il cognome, per cortesia?"
+            response="Mi ripete il cognome, per cortesia?",
         )
 
     def _check_service_vertical_constraint(self) -> Optional["StateMachineResult"]:
         """GAP-G3: Palestra abbonamento → soft escalation (not a bookable slot).
         Returns a StateMachineResult if the service requires special handling, else None.
         """
-        if self.context.vertical == "palestra" and self.context.service == "abbonamento":
+        if (
+            self.context.vertical == "palestra"
+            and self.context.service == "abbonamento"
+        ):
             return StateMachineResult(
                 next_state=BookingState.WAITING_SERVICE,
                 response=(
@@ -2662,7 +3267,9 @@ class BookingStateMachine:
             )
         return None
 
-    def _check_solito_redirect(self, extracted: "ExtractionResult", client_id: str) -> Optional[StateMachineResult]:
+    def _check_solito_redirect(
+        self, extracted: "ExtractionResult", client_id: str
+    ) -> Optional[StateMachineResult]:
         """P0-4: Check if 'il solito' was detected and redirect to DB lookup."""
         if extracted.is_solito and not self.context.solito_resolved:
             self.context.is_solito = True
@@ -2671,11 +3278,13 @@ class BookingStateMachine:
                 response="",
                 needs_db_lookup=True,
                 lookup_type="solito",
-                lookup_params={"client_id": client_id}
+                lookup_params={"client_id": client_id},
             )
         return None
 
-    def _handle_waiting_service(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_waiting_service(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle WAITING_SERVICE state."""
         # P0-4: "Il solito" — request DB lookup for client history
         if extracted and extracted.is_solito and not self.context.solito_resolved:
@@ -2686,13 +3295,13 @@ class BookingStateMachine:
                     response="",  # orchestrator will fill after DB lookup
                     needs_db_lookup=True,
                     lookup_type="solito",
-                    lookup_params={"client_id": self.context.client_id}
+                    lookup_params={"client_id": self.context.client_id},
                 )
             else:
                 # Can't do "il solito" without identified client
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response="Per poter ripetere il solito appuntamento, ho bisogno di sapere il suo nome. Come si chiama?"
+                    response="Per poter ripetere il solito appuntamento, ho bisogno di sapere il suo nome. Come si chiama?",
                 )
 
         if self.context.service:
@@ -2706,7 +3315,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=self._format_confirm_booking()
+                    response=self._format_confirm_booking(),
                 )
 
             if self.context.date:
@@ -2714,10 +3323,15 @@ class BookingStateMachine:
                 self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
                     next_state=BookingState.WAITING_TIME,
-                    response=TEMPLATES["ask_time"].format(date=self.context.date_display or self.context.date),
+                    response=TEMPLATES["ask_time"].format(
+                        date=self.context.date_display or self.context.date
+                    ),
                     needs_db_lookup=True,
                     lookup_type="availability",
-                    lookup_params={"date": self.context.date, "service": self.context.service}
+                    lookup_params={
+                        "date": self.context.date,
+                        "service": self.context.service,
+                    },
                 )
 
             # S125: If name not yet collected, ask for it before date
@@ -2726,7 +3340,7 @@ class BookingStateMachine:
                 svc_display = self.context.service_display or self.context.service
                 return StateMachineResult(
                     next_state=BookingState.WAITING_NAME,
-                    response=f"Bene, {svc_display}! Mi dice il suo nome, per cortesia?"
+                    response=f"Bene, {svc_display}! Mi dice il suo nome, per cortesia?",
                 )
 
             # Ask for date
@@ -2735,7 +3349,7 @@ class BookingStateMachine:
                 next_state=BookingState.WAITING_DATE,
                 response=TEMPLATES["ask_date"].format(
                     service=self.context.service_display or self.context.service
-                )
+                ),
             )
 
         # Try to extract services from raw text (supports multiple services)
@@ -2748,8 +3362,14 @@ class BookingStateMachine:
             if ambiguous:
                 # Build disambiguation options from ambiguous services only
                 ambiguous_ids = [s for s, _ in ambiguous]
-                display_names = [self._normalize_service_display(s) for s in ambiguous_ids]
-                options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1] if len(display_names) > 1 else display_names[0]
+                display_names = [
+                    self._normalize_service_display(s) for s in ambiguous_ids
+                ]
+                options_str = (
+                    ", ".join(display_names[:-1]) + " o " + display_names[-1]
+                    if len(display_names) > 1
+                    else display_names[0]
+                )
 
                 if clear:
                     # S135: Mixed — keep clear services, ask about ambiguous ones
@@ -2758,19 +3378,23 @@ class BookingStateMachine:
                     clear_services = clear_services[:3]
                     self.context.services = clear_services
                     self.context.service = clear_services[0]
-                    clear_display = [self._normalize_service_display(s) for s in clear_services]
+                    clear_display = [
+                        self._normalize_service_display(s) for s in clear_services
+                    ]
                     self.context.service_display = " e ".join(clear_display)
                     # Store pending ambiguous for next turn
                     self.context._ambiguous_services = ambiguous_ids
                     return StateMachineResult(
                         next_state=self.context.state,
-                        response=f"Ho notato {self.context.service_display}. Per il taglio, intende {options_str}?"
+                        response=f"Ho notato {self.context.service_display}. Per il taglio, intende {options_str}?",
                     )
                 else:
                     # All ambiguous — ask to pick one
                     return StateMachineResult(
                         next_state=self.context.state,
-                        response=TEMPLATES["service_ambiguous"].format(options=options_str)
+                        response=TEMPLATES["service_ambiguous"].format(
+                            options=options_str
+                        ),
                     )
 
             services = [s[0] for s in services_results]
@@ -2783,9 +3407,7 @@ class BookingStateMachine:
             # so Sara never creates N appointments on a list of N variants.
             if len(services) > 1 and not _user_requested_multi_service(text):
                 display_names = [self._normalize_service_display(s) for s in services]
-                options_str = (
-                    ", ".join(display_names[:-1]) + " o " + display_names[-1]
-                )
+                options_str = ", ".join(display_names[:-1]) + " o " + display_names[-1]
                 # Preserve the candidate list for the next turn's resolution
                 self.context._ambiguous_services = services
                 return StateMachineResult(
@@ -2809,10 +3431,15 @@ class BookingStateMachine:
                 self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
                     next_state=BookingState.WAITING_TIME,
-                    response=TEMPLATES["ask_time"].format(date=self.context.date_display or self.context.date),
+                    response=TEMPLATES["ask_time"].format(
+                        date=self.context.date_display or self.context.date
+                    ),
                     needs_db_lookup=True,
                     lookup_type="availability",
-                    lookup_params={"date": self.context.date, "service": self.context.service}
+                    lookup_params={
+                        "date": self.context.date,
+                        "service": self.context.service,
+                    },
                 )
 
             self.context.state = BookingState.WAITING_DATE
@@ -2820,7 +3447,7 @@ class BookingStateMachine:
                 next_state=BookingState.WAITING_DATE,
                 response=TEMPLATES["ask_date"].format(
                     service=self.context.service_display
-                )
+                ),
             )
 
         # Fallback: try italian_regex multi-service extraction
@@ -2833,7 +3460,9 @@ class BookingStateMachine:
                     svc_lower = svc_name.lower()
                     matched = None
                     for svc_id, synonyms in self.services_config.items():
-                        if svc_lower == svc_id or svc_lower in [s.lower() for s in synonyms]:
+                        if svc_lower == svc_id or svc_lower in [
+                            s.lower() for s in synonyms
+                        ]:
                             matched = svc_id
                             break
                     if matched:
@@ -2841,36 +3470,52 @@ class BookingStateMachine:
                 if service_ids:
                     # S205 BUG-015: enforce explicit multi-conjunction before combo
                     if len(service_ids) > 1 and not _user_requested_multi_service(text):
-                        display_names = [self._normalize_service_display(s) for s in service_ids]
+                        display_names = [
+                            self._normalize_service_display(s) for s in service_ids
+                        ]
                         options_str = (
                             ", ".join(display_names[:-1]) + " o " + display_names[-1]
                         )
                         self.context._ambiguous_services = service_ids
                         return StateMachineResult(
                             next_state=BookingState.WAITING_SERVICE,
-                            response=TEMPLATES["service_ambiguous"].format(options=options_str),
+                            response=TEMPLATES["service_ambiguous"].format(
+                                options=options_str
+                            ),
                         )
                     self.context.services = service_ids
                     self.context.service = service_ids[0]
-                    display_names = [self._normalize_service_display(s) for s in service_ids]
+                    display_names = [
+                        self._normalize_service_display(s) for s in service_ids
+                    ]
                     self.context.service_display = " e ".join(display_names)
                     self.context.state = BookingState.WAITING_DATE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_DATE,
                         response=TEMPLATES["ask_date"].format(
                             service=self.context.service_display
-                        )
+                        ),
                     )
 
         # Couldn't extract service
         return StateMachineResult(
             next_state=BookingState.WAITING_SERVICE,
-            response=TEMPLATES["service_not_understood"]
+            response=TEMPLATES["service_not_understood"],
         )
 
-    _PROACTIVE_REJECT_WORDS = {"no", "altro", "diverso", "cambiare", "qualcosa di diverso", "niente", "non voglio"}
+    _PROACTIVE_REJECT_WORDS = {
+        "no",
+        "altro",
+        "diverso",
+        "cambiare",
+        "qualcosa di diverso",
+        "niente",
+        "non voglio",
+    }
 
-    def _handle_waiting_date(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_waiting_date(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle WAITING_DATE state."""
         # G5: Handle rejection of proactive offer — reset to WAITING_SERVICE
         if self.context.proactive_offer:
@@ -2885,7 +3530,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response="Nessun problema! Che trattamento desidera oggi?"
+                    response="Nessun problema! Che trattamento desidera oggi?",
                 )
             # Accept proactive offer — mark as resolved and continue
             self.context.proactive_offer = False
@@ -2913,17 +3558,22 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=self._format_confirm_booking()
+                    response=self._format_confirm_booking(),
                 )
 
             # Ask for time
             self.context.state = BookingState.WAITING_TIME
             return StateMachineResult(
                 next_state=BookingState.WAITING_TIME,
-                response=TEMPLATES["ask_time"].format(date=self.context.date_display or self.context.date),
+                response=TEMPLATES["ask_time"].format(
+                    date=self.context.date_display or self.context.date
+                ),
                 needs_db_lookup=True,
                 lookup_type="availability",
-                lookup_params={"date": self.context.date, "service": self.context.service}
+                lookup_params={
+                    "date": self.context.date,
+                    "service": self.context.service,
+                },
             )
 
         # P1-13: Extract negative day constraints ("non il lunedì", "tranne il sabato")
@@ -2953,7 +3603,7 @@ class BookingStateMachine:
                     "service": self.context.service,
                     "days_ahead": 7,
                     "exclude_days": self.context.exclude_days,
-                }
+                },
             )
 
         # Check for ambiguous dates BEFORE extraction
@@ -2972,8 +3622,8 @@ class BookingStateMachine:
                 lookup_type="week_availability",
                 lookup_params={
                     "week_offset": week_offset,
-                    "service": self.context.service
-                }
+                    "service": self.context.service,
+                },
             )
 
         # Try to extract date from raw text
@@ -2995,7 +3645,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.CONFIRMING
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response=self._format_confirm_booking()
+                    response=self._format_confirm_booking(),
                 )
 
             self.context.state = BookingState.WAITING_TIME
@@ -3004,38 +3654,74 @@ class BookingStateMachine:
                 response=TEMPLATES["ask_time"].format(date=self.context.date_display),
                 needs_db_lookup=True,
                 lookup_type="availability",
-                lookup_params={"date": self.context.date, "service": self.context.service}
+                lookup_params={
+                    "date": self.context.date,
+                    "service": self.context.service,
+                },
             )
 
         # Couldn't extract date
         if new_services:
-            added_display = " e ".join(self._normalize_service_display(s) for s in new_services)
+            added_display = " e ".join(
+                self._normalize_service_display(s) for s in new_services
+            )
             return StateMachineResult(
                 next_state=BookingState.WAITING_DATE,
-                response=f"Ho aggiunto {added_display}. Per quale giorno vorrebbe prenotare?"
+                response=f"Ho aggiunto {added_display}. Per quale giorno vorrebbe prenotare?",
             )
         return StateMachineResult(
             next_state=BookingState.WAITING_DATE,
-            response=TEMPLATES["date_not_understood"]
+            response=TEMPLATES["date_not_understood"],
         )
 
-    _WEEKDAY_NAMES = {"lunedì", "lunedi", "martedì", "martedi", "mercoledì", "mercoledi",
-                      "giovedì", "giovedi", "venerdì", "venerdi", "sabato", "domenica"}
-    _DATE_CHANGE_MARKERS = {"non posso", "non va bene", "invece", "cambiamo",
-                            "meglio", "piuttosto", "altro giorno", "cambio giorno"}
+    _WEEKDAY_NAMES = {
+        "lunedì",
+        "lunedi",
+        "martedì",
+        "martedi",
+        "mercoledì",
+        "mercoledi",
+        "giovedì",
+        "giovedi",
+        "venerdì",
+        "venerdi",
+        "sabato",
+        "domenica",
+    }
+    _DATE_CHANGE_MARKERS = {
+        "non posso",
+        "non va bene",
+        "invece",
+        "cambiamo",
+        "meglio",
+        "piuttosto",
+        "altro giorno",
+        "cambio giorno",
+    }
 
     # FIX-6 CoVe2026: pattern fascia oraria approssimativa ("dopo le 17", "nel pomeriggio")
     _TIME_PREFERENCE_PATTERNS = [
-        (r"\bpomeriggio\b|\bdopo\s+(?:le\s+)?(?:pranzo|12|13|14)\b", "14:00", "pomeriggio"),
-        (r"\bmattina\b|\bmattino\b|\bprima\s+(?:di\s+)?(?:pranzo|12|13)\b", "10:00", "mattina"),
+        (
+            r"\bpomeriggio\b|\bdopo\s+(?:le\s+)?(?:pranzo|12|13|14)\b",
+            "14:00",
+            "pomeriggio",
+        ),
+        (
+            r"\bmattina\b|\bmattino\b|\bprima\s+(?:di\s+)?(?:pranzo|12|13)\b",
+            "10:00",
+            "mattina",
+        ),
         (r"\bsera\b|\btardi\b|\bdopo\s+le\s+(?:17|18|19)\b", "18:00", "sera"),
         (r"\bdopo\s+le\s+(\d{1,2})\b", None, "dopo_ora"),  # "dopo le 17" → cattura ora
     ]
     _TIME_PREFERENCE_COMPILED = [
-        (re.compile(p, re.IGNORECASE), t, lbl) for p, t, lbl in _TIME_PREFERENCE_PATTERNS
+        (re.compile(p, re.IGNORECASE), t, lbl)
+        for p, t, lbl in _TIME_PREFERENCE_PATTERNS
     ]
 
-    def _handle_waiting_time(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_waiting_time(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle WAITING_TIME state with back-navigation to WAITING_DATE."""
         text_lower = text.lower()
 
@@ -3049,7 +3735,9 @@ class BookingStateMachine:
                         hour = int(m.group(1))
                         self.context.time = f"{hour:02d}:00"
                         self.context.time_display = f"dopo le {hour:02d}:00"
-                        self.context.time_constraint_type = TimeConstraintType.AFTER.value
+                        self.context.time_constraint_type = (
+                            TimeConstraintType.AFTER.value
+                        )
                         self.context.time_constraint_anchor = f"{hour:02d}:00"
                     elif default_time:
                         self.context.time = default_time
@@ -3059,7 +3747,7 @@ class BookingStateMachine:
                         self.context.state = BookingState.CONFIRMING
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
-                            response=self._format_confirm_booking()
+                            response=self._format_confirm_booking(),
                         )
                     break
 
@@ -3070,7 +3758,6 @@ class BookingStateMachine:
 
         if has_weekday and (has_change_marker or not has_time):
             # User wants to change date — back-navigate to WAITING_DATE
-            old_date = self.context.date_display or self.context.date
             self._set_context_date(None, origin="waiting_time_date_change_clear")
             self.context.date_display = None
             self.context.time = None
@@ -3078,7 +3765,7 @@ class BookingStateMachine:
             self.context.state = BookingState.WAITING_DATE
             return StateMachineResult(
                 next_state=BookingState.WAITING_DATE,
-                response=f"D'accordo, cambiamo giorno. Per quando preferirebbe?"
+                response="D'accordo, cambiamo giorno. Per quando preferirebbe?",
             )
 
         if self.context.time:
@@ -3086,7 +3773,7 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=self._format_confirm_booking()
+                response=self._format_confirm_booking(),
             )
 
         # Try to extract time from raw text
@@ -3110,13 +3797,13 @@ class BookingStateMachine:
             self.context.state = BookingState.CONFIRMING
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
-                response=self._format_confirm_booking()
+                response=self._format_confirm_booking(),
             )
 
         # Couldn't extract time
         return StateMachineResult(
             next_state=BookingState.WAITING_TIME,
-            response=TEMPLATES["time_not_understood"]
+            response=TEMPLATES["time_not_understood"],
         )
 
     # =========================================================================
@@ -3162,16 +3849,39 @@ class BookingStateMachine:
 
         return entities
 
-    def _detect_correction_or_rejection_signal(self, user_lower: str) -> Tuple[bool, bool]:
+    def _detect_correction_or_rejection_signal(
+        self, user_lower: str
+    ) -> Tuple[bool, bool]:
         """
         C1: Separate correction signals from rejection signals.
         Returns (has_correction, has_rejection).
         """
-        correction_words = ["meglio", "piuttosto", "invece", "anzi", "preferisco",
-                            "in realtà", "cambio", "cambia", "metti", "togli", "aggiungi"]
-        rejection_words = ["no", "niente", "non voglio", "annulla", "cancella",
-                           "lascia perdere", "lasciamo stare", "no grazie",
-                           "non mi interessa", "ho cambiato idea", "meglio di no"]
+        correction_words = [
+            "meglio",
+            "piuttosto",
+            "invece",
+            "anzi",
+            "preferisco",
+            "in realtà",
+            "cambio",
+            "cambia",
+            "metti",
+            "togli",
+            "aggiungi",
+        ]
+        rejection_words = [
+            "no",
+            "niente",
+            "non voglio",
+            "annulla",
+            "cancella",
+            "lascia perdere",
+            "lasciamo stare",
+            "no grazie",
+            "non mi interessa",
+            "ho cambiato idea",
+            "meglio di no",
+        ]
 
         has_correction = any(w in user_lower for w in correction_words)
         has_rejection = any(w in user_lower for w in rejection_words)
@@ -3198,14 +3908,19 @@ class BookingStateMachine:
         }
         self.context.last_booking = booking
         date_display = self.context.date_display or ""
-        _bname = getattr(self, '_business_name', '') or ''
-        goodbye = get_goodbye("booking_done", _bname, date=date_display) if _bname else "A presto! Buona giornata!"
+        _bname = getattr(self, "_business_name", "") or ""
+        goodbye = (
+            get_goodbye("booking_done", _bname, date=date_display)
+            if _bname
+            else "A presto! Buona giornata!"
+        )
         self.context.state = BookingState.COMPLETED
         return StateMachineResult(
             next_state=BookingState.COMPLETED,
-            response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}" + extra_suffix,
+            response=f"Perfetto, prenotazione confermata! Le invieremo la conferma via WhatsApp. {goodbye}"
+            + extra_suffix,
             booking=booking,
-            should_exit=True
+            should_exit=True,
         )
 
     # =========================================================================
@@ -3213,11 +3928,17 @@ class BookingStateMachine:
     # =========================================================================
 
     _REGISTRATION_CANCEL_PATTERNS = [
-        r"\bannulla\b", r"\bcancella\b", r"\blascia\s+(?:perdere|stare)\b",
-        r"\bnon\s+(?:mi\s+)?interessa\b", r"\bnon\s+voglio\b",
-        r"\bno\s+grazie\b", r"\bho\s+cambiato\s+idea\b",
-        r"\bmeglio\s+di\s+no\b", r"\bnon\s+serve\b",
-        r"\bfatto\s+niente\b", r"\bniente\b",
+        r"\bannulla\b",
+        r"\bcancella\b",
+        r"\blascia\s+(?:perdere|stare)\b",
+        r"\bnon\s+(?:mi\s+)?interessa\b",
+        r"\bnon\s+voglio\b",
+        r"\bno\s+grazie\b",
+        r"\bho\s+cambiato\s+idea\b",
+        r"\bmeglio\s+di\s+no\b",
+        r"\bnon\s+serve\b",
+        r"\bfatto\s+niente\b",
+        r"\bniente\b",
     ]
 
     def _is_registration_cancel(self, text_lower: str) -> bool:
@@ -3231,11 +3952,11 @@ class BookingStateMachine:
         self.context.client_phone = None
         self.context.is_new_client = False
         self.context.state = BookingState.CANCELLED
-        _bye = get_goodbye("generic", getattr(self, '_business_name', '') or '')
+        _bye = get_goodbye("generic", getattr(self, "_business_name", "") or "")
         return StateMachineResult(
             next_state=BookingState.CANCELLED,
             response=f"Nessun problema, la registrazione è annullata. {_bye}",
-            should_exit=True
+            should_exit=True,
         )
 
     # =========================================================================
@@ -3244,7 +3965,9 @@ class BookingStateMachine:
 
     _MAX_CONSECUTIVE_FAILURES = 3
 
-    def _track_strikes(self, result: "StateMachineResult", state_before: "BookingState") -> "StateMachineResult":
+    def _track_strikes(
+        self, result: "StateMachineResult", state_before: "BookingState"
+    ) -> "StateMachineResult":
         """E6: Track consecutive failures. Auto-escalate after 3 strikes."""
         if result.should_exit or result.escalate_to_human:
             # Call ending or already escalating — don't interfere
@@ -3258,12 +3981,16 @@ class BookingStateMachine:
 
         # Same state returned — possible failure
         self.context.consecutive_failures += 1
-        logger.debug(f"[E6] Strike {self.context.consecutive_failures}/{self._MAX_CONSECUTIVE_FAILURES} in {state_before.value}")
+        logger.debug(
+            f"[E6] Strike {self.context.consecutive_failures}/{self._MAX_CONSECUTIVE_FAILURES} in {state_before.value}"
+        )
 
         if self.context.consecutive_failures >= self._MAX_CONSECUTIVE_FAILURES:
             logger.info(f"[E6] 3-strike escalation triggered in {state_before.value}")
             self.context.consecutive_failures = 0
-            summary = build_escalation_summary(self.context, reason="3 tentativi senza comprensione")
+            summary = build_escalation_summary(
+                self.context, reason="3 tentativi senza comprensione"
+            )
             caller_msg = build_caller_message(summary)
             return StateMachineResult(
                 next_state=self.context.state,
@@ -3290,16 +4017,22 @@ class BookingStateMachine:
     def _format_correction_summary(self, corrections: Dict[str, Any]) -> str:
         """Format a human-readable summary of corrections."""
         field_labels = {
-            "ora": "ora", "time": "ora",
-            "data": "data", "date": "data",
-            "servizio": "servizio", "service": "servizio",
-            "operatore": "operatore", "operator": "operatore",
-            "tipo_attivita": "attività", "specialita": "specialità",
-            "num_coperti": "coperti", "tipo_intervento": "intervento",
+            "ora": "ora",
+            "time": "ora",
+            "data": "data",
+            "date": "data",
+            "servizio": "servizio",
+            "service": "servizio",
+            "operatore": "operatore",
+            "operator": "operatore",
+            "tipo_attivita": "attività",
+            "specialita": "specialità",
+            "num_coperti": "coperti",
+            "tipo_intervento": "intervento",
         }
         parts = []
-        for field, value in corrections.items():
-            label = field_labels.get(field, field)
+        for field_name, value in corrections.items():
+            label = field_labels.get(field_name, field_name)
             parts.append(f"{label} → {value}")
         return ", ".join(parts)
 
@@ -3326,21 +4059,35 @@ class BookingStateMachine:
                 f"Le invieremo una conferma su WhatsApp. Grazie e arrivederci!"
             )
         elif vertical == "palestra":
-            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+            _bye = get_goodbye(
+                "booking_done",
+                self._business_name,
+                date=self.context.date_display or "",
+            )
             return (
                 f"Fantastico! Ho prenotato {summary}. "
                 f"Ricevera' conferma su WhatsApp. {_bye}"
             )
         elif vertical == "medical":
-            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+            _bye = get_goodbye(
+                "booking_done",
+                self._business_name,
+                date=self.context.date_display or "",
+            )
             return (
                 f"Prenotazione confermata! {summary}. "
                 f"Ricordi la documentazione necessaria. Ricevera' conferma su WhatsApp. {_bye}"
             )
         elif vertical == "auto":
-            _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+            _bye = get_goodbye(
+                "booking_done",
+                self._business_name,
+                date=self.context.date_display or "",
+            )
             return f"Perfetto! {summary}. Ricevera' conferma su WhatsApp. {_bye}"
-        _bye = get_goodbye("booking_done", self._business_name, date=self.context.date_display or "")
+        _bye = get_goodbye(
+            "booking_done", self._business_name, date=self.context.date_display or ""
+        )
         return f"Prenotazione confermata! {summary}. Conferma su WhatsApp. {_bye}"
 
     def _get_state_response(self, state: BookingState) -> str:
@@ -3349,11 +4096,15 @@ class BookingStateMachine:
             return TEMPLATES["ask_service"]
         elif state == BookingState.WAITING_DATE:
             return TEMPLATES["ask_date"].format(
-                service=self.context.service_display or self.context.service or "il servizio"
+                service=self.context.service_display
+                or self.context.service
+                or "il servizio"
             )
         elif state == BookingState.WAITING_TIME:
             return TEMPLATES["ask_time"].format(
-                date=self.context.date_display or self.context.date or "il giorno scelto"
+                date=self.context.date_display
+                or self.context.date
+                or "il giorno scelto"
             )
         elif state == BookingState.CONFIRMING:
             return self._format_confirm_booking()
@@ -3436,6 +4187,7 @@ class BookingStateMachine:
     def _vary(self, key: str, default: str = "") -> str:
         """F19-FIX7: Pick a random response variant for natural copy."""
         import random
+
         variants = self._RESPONSE_VARIANTS.get(key, [])
         return random.choice(variants) if variants else default
 
@@ -3452,9 +4204,29 @@ class BookingStateMachine:
         """C4: Format YYYY-MM-DD to Italian display."""
         try:
             dt = datetime.strptime(date_str, "%Y-%m-%d")
-            days_it = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
-            months_it = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-                         "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"]
+            days_it = [
+                "lunedì",
+                "martedì",
+                "mercoledì",
+                "giovedì",
+                "venerdì",
+                "sabato",
+                "domenica",
+            ]
+            months_it = [
+                "gennaio",
+                "febbraio",
+                "marzo",
+                "aprile",
+                "maggio",
+                "giugno",
+                "luglio",
+                "agosto",
+                "settembre",
+                "ottobre",
+                "novembre",
+                "dicembre",
+            ]
             return f"{days_it[dt.weekday()]} {dt.day} {months_it[dt.month - 1]}"
         except (ValueError, IndexError):
             return date_str
@@ -3476,7 +4248,7 @@ class BookingStateMachine:
                 next_state=BookingState.COMPLETED,
                 response=response,
                 should_exit=True,
-                send_wa_reminder=True
+                send_wa_reminder=True,
             )
         elif self.context.client_name:
             # Have name but no booking started
@@ -3486,16 +4258,14 @@ class BookingStateMachine:
                 "Può richiamarci quando vuole, sarò qui! Buona giornata."
             )
             return StateMachineResult(
-                next_state=BookingState.COMPLETED,
-                response=response,
-                should_exit=True
+                next_state=BookingState.COMPLETED, response=response, should_exit=True
             )
         else:
             # No context at all
             return StateMachineResult(
                 next_state=BookingState.COMPLETED,
                 response="Sembra che non sia più in linea. Può richiamarci quando vuole. A presto!",
-                should_exit=True
+                should_exit=True,
             )
 
     def _get_next_required_slot(self) -> Optional[BookingState]:
@@ -3540,16 +4310,15 @@ class BookingStateMachine:
             next_state = BookingState.CONFIRMING
         response = self._get_state_response(next_state)
         self.context.state = next_state
-        return StateMachineResult(
-            next_state=next_state,
-            response=response
-        )
+        return StateMachineResult(next_state=next_state, response=response)
 
     # =========================================================================
     # CONFIRMING STATE HANDLER (C2: entities FIRST, 3-level correction)
     # =========================================================================
 
-    def _handle_confirming(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_confirming(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """
         Handle CONFIRMING state with 3-level correction logic.
 
@@ -3572,22 +4341,22 @@ class BookingStateMachine:
                 response=(
                     "Mi scusi, non riesco a trovare la soluzione giusta per lei. "
                     "Vuole ricominciare da capo? Sono qui ad aiutarla."
-                )
+                ),
             )
 
         # Bug 5 F02.1: Vertical-specific entities from extract_vertical_entities() in orchestrator
         # wired via self.context.extra_entities (set in orchestrator.py L0-PRE layer).
-        _extra = getattr(self.context, 'extra_entities', {}) or {}
+        _extra = getattr(self.context, "extra_entities", {}) or {}
         _extra_lines = []
-        if _extra.get('specialty'):
+        if _extra.get("specialty"):
             _extra_lines.append(f"Specialità: {_extra['specialty']}")
-        if _extra.get('urgency'):
+        if _extra.get("urgency"):
             _extra_lines.append("Urgente")
-        if _extra.get('visit_type'):
+        if _extra.get("visit_type"):
             _extra_lines.append(f"Tipo visita: {_extra['visit_type']}")
-        if _extra.get('vehicle_plate'):
+        if _extra.get("vehicle_plate"):
             _extra_lines.append(f"Targa: {_extra['vehicle_plate']}")
-        if _extra.get('vehicle_brand'):
+        if _extra.get("vehicle_brand"):
             _extra_lines.append(f"Veicolo: {_extra['vehicle_brand']}")
         _extra_suffix = ("\n" + "\n".join(_extra_lines)) if _extra_lines else ""
 
@@ -3608,7 +4377,9 @@ class BookingStateMachine:
                 force_update=True,
             )
             if date_update_result is False:
-                self._set_context_date(None, origin="confirming_level1_correction_rejected_clear")
+                self._set_context_date(
+                    None, origin="confirming_level1_correction_rejected_clear"
+                )
                 self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
@@ -3631,28 +4402,32 @@ class BookingStateMachine:
             return StateMachineResult(
                 next_state=BookingState.CONFIRMING,
                 response=response,
-                context_updates=level1_entities
+                context_updates=level1_entities,
             )
 
         # =====================================================================
         # PHASE 3: Explicit "cambio X" (existing logic, keep)
         # =====================================================================
         if "cambio" in text_lower or "cambia" in text_lower:
-            if any(word in text_lower for word in ["servizio", "taglio", "colore", "piega"]):
+            if any(
+                word in text_lower for word in ["servizio", "taglio", "colore", "piega"]
+            ):
                 self.context.service = None
                 self.context.service_display = None
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response="D'accordo, quale servizio desidera?"
+                    response="D'accordo, quale servizio desidera?",
                 )
             if any(word in text_lower for word in ["data", "giorno", "quando"]):
-                self._set_context_date(None, origin="confirming_explicit_date_change_clear")
+                self._set_context_date(
+                    None, origin="confirming_explicit_date_change_clear"
+                )
                 self.context.date_display = None
                 self.context.state = BookingState.WAITING_DATE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_DATE,
-                    response="D'accordo, per quale giorno?"
+                    response="D'accordo, per quale giorno?",
                 )
             if any(word in text_lower for word in ["ora", "orario", "tempo"]):
                 self.context.time = None
@@ -3660,7 +4435,7 @@ class BookingStateMachine:
                 self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
                     next_state=BookingState.WAITING_TIME,
-                    response="D'accordo, a che ora preferisce?"
+                    response="D'accordo, a che ora preferisce?",
                 )
 
         # =====================================================================
@@ -3672,21 +4447,35 @@ class BookingStateMachine:
         # =====================================================================
         # E3: SLOT REJECTION — if user says "no" and alternatives exist, offer them
         # =====================================================================
-        _SOFT_NO = [r"^\s*no\s*$", r"\bno\b", r"\bnon\s+va\b", r"\bun\s*'?\s*altro\s+orario\b"]
-        if (self.context.alternative_slots
-                and any(re.search(p, text_lower) for p in _SOFT_NO)
-                and not any(re.search(p, text_lower) for p in [r"\bannulla\b", r"\bcancella\b", r"\blascia\b"])):
+        _SOFT_NO = [
+            r"^\s*no\s*$",
+            r"\bno\b",
+            r"\bnon\s+va\b",
+            r"\bun\s*'?\s*altro\s+orario\b",
+        ]
+        if (
+            self.context.alternative_slots
+            and any(re.search(p, text_lower) for p in _SOFT_NO)
+            and not any(
+                re.search(p, text_lower)
+                for p in [r"\bannulla\b", r"\bcancella\b", r"\blascia\b"]
+            )
+        ):
             alts = self.context.alternative_slots[:3]
             alt_times = [s.get("time", "") for s in alts if s.get("time")]
             self.context.alternative_slots = []  # consumed
             if alt_times:
-                slots_display = ", ".join(alt_times[:-1]) + " o " + alt_times[-1] if len(alt_times) > 1 else alt_times[0]
+                slots_display = (
+                    ", ".join(alt_times[:-1]) + " o " + alt_times[-1]
+                    if len(alt_times) > 1
+                    else alt_times[0]
+                )
                 self.context.time = None
                 self.context.time_display = None
                 self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
                     next_state=BookingState.WAITING_TIME,
-                    response=f"Nessun problema! C'è anche posto alle {slots_display}. Quale preferisce?"
+                    response=f"Nessun problema! C'è anche posto alle {slots_display}. Quale preferisce?",
                 )
 
         # =====================================================================
@@ -3697,11 +4486,15 @@ class BookingStateMachine:
         # =====================================================================
         _EXPLICIT_CANCEL = [
             r"^\s*no\s*$",  # bare "no" alone
-            r"\bannulla\b", r"\bcancella\b", r"\blascia\s+perdere\b",
+            r"\bannulla\b",
+            r"\bcancella\b",
+            r"\blascia\s+perdere\b",
             r"\bnon\s+voglio\b",  # "non voglio" (clear rejection)
             r"\bnon\s+mi\s+interessa\s+più\b",
-            r"\blasciamo\s+stare\b", r"\bno\s+grazie\b",
-            r"\bho\s+cambiato\s+idea\b", r"\bmeglio\s+di\s+no\b",
+            r"\blasciamo\s+stare\b",
+            r"\bno\s+grazie\b",
+            r"\bho\s+cambiato\s+idea\b",
+            r"\bmeglio\s+di\s+no\b",
         ]
         is_explicit_cancel = any(re.search(p, text_lower) for p in _EXPLICIT_CANCEL)
         if is_explicit_cancel:
@@ -3711,13 +4504,13 @@ class BookingStateMachine:
                 return StateMachineResult(
                     next_state=BookingState.CANCELLED,
                     response="Nessun problema. Posso aiutarla in altro modo?",
-                    should_exit=True
+                    should_exit=True,
                 )
             else:
                 # User was correcting but now wants to cancel
                 return StateMachineResult(
                     next_state=BookingState.CONFIRMING,
-                    response="Mi faccia capire meglio, vuole annullare la prenotazione o cambiare qualcosa?"
+                    response="Mi faccia capire meglio, vuole annullare la prenotazione o cambiare qualcosa?",
                 )
 
         # =====================================================================
@@ -3725,7 +4518,9 @@ class BookingStateMachine:
         # "preferisco dopo le 17", "meglio con un'operatrice", etc.
         # =====================================================================
         if self.groq_nlu:
-            logger.info(f"[SM] CONFIRMING: no entities/yes/no, trying Groq for '{text[:50]}'")
+            logger.info(
+                f"[SM] CONFIRMING: no entities/yes/no, trying Groq for '{text[:50]}'"
+            )
             groq_result = self.groq_nlu.extract_confirming(
                 utterance=text,
                 servizio=self.context.service_display or self.context.service or "",
@@ -3749,20 +4544,25 @@ class BookingStateMachine:
                             self.context.time = time_result.to_string()
                             self.context.time_display = time_result.get_display()
                             if time_result.time_constraint:
-                                self.context.time_constraint_type = time_result.time_constraint.constraint_type.value
+                                self.context.time_constraint_type = (
+                                    time_result.time_constraint.constraint_type.value
+                                )
                                 self.context.time_constraint_anchor = (
-                                    time_result.time_constraint.anchor_time.strftime("%H:%M")
-                                    if time_result.time_constraint.anchor_time else None
+                                    time_result.time_constraint.anchor_time.strftime(
+                                        "%H:%M"
+                                    )
+                                    if time_result.time_constraint.anchor_time
+                                    else None
                                 )
                         else:
                             # Use Groq's value directly if it looks like HH:MM
-                            if re.match(r'^\d{1,2}:\d{2}$', valore):
+                            if re.match(r"^\d{1,2}:\d{2}$", valore):
                                 self.context.time = valore
                                 self.context.time_display = f"alle {valore}"
                         self.context.corrections_made += 1
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
-                            response=f"Perfetto! ora → {self.context.time_display or valore}. Confermi ora?"
+                            response=f"Perfetto! ora → {self.context.time_display or valore}. Confermi ora?",
                         )
 
                     elif campo == "data" and valore:
@@ -3771,18 +4571,23 @@ class BookingStateMachine:
                             date_result.to_string("%Y-%m-%d"),
                             origin="confirming_groq_date_correction",
                         ):
-                            self._set_context_date(None, origin="confirming_groq_date_correction_rejected_clear")
+                            self._set_context_date(
+                                None,
+                                origin="confirming_groq_date_correction_rejected_clear",
+                            )
                             self.context.date_display = None
                             self.context.state = BookingState.WAITING_DATE
                             return StateMachineResult(
                                 next_state=BookingState.WAITING_DATE,
                                 response=TEMPLATES["date_not_understood"],
                             )
-                        self.context.date_display = self._format_date_display(self.context.date)
+                        self.context.date_display = self._format_date_display(
+                            self.context.date
+                        )
                         self.context.corrections_made += 1
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
-                            response=f"Perfetto! data → {self.context.date_display or valore}. Confermi ora?"
+                            response=f"Perfetto! data → {self.context.date_display or valore}. Confermi ora?",
                         )
 
                     elif campo == "servizio" and valore:
@@ -3791,16 +4596,18 @@ class BookingStateMachine:
                         self.context.state = BookingState.WAITING_SERVICE
                         return StateMachineResult(
                             next_state=BookingState.WAITING_SERVICE,
-                            response=f"D'accordo, modifichiamo il servizio. Cosa desidera?"
+                            response="D'accordo, modifichiamo il servizio. Cosa desidera?",
                         )
 
                     elif campo == "operatore" and valore:
-                        self.context.operator_name = sanitize_name(valore, is_surname=True)
+                        self.context.operator_name = sanitize_name(
+                            valore, is_surname=True
+                        )
                         self.context.operator_requested = True
                         self.context.corrections_made += 1
                         return StateMachineResult(
                             next_state=BookingState.CONFIRMING,
-                            response=f"Perfetto! operatore → {self.context.operator_name}. Confermi ora?"
+                            response=f"Perfetto! operatore → {self.context.operator_name}. Confermi ora?",
                         )
 
                 elif decisione == "cancellazione":
@@ -3808,7 +4615,7 @@ class BookingStateMachine:
                     return StateMachineResult(
                         next_state=BookingState.CANCELLED,
                         response=f"Nessun problema. Se cambia idea, ci chiami pure. {get_goodbye('generic', self._business_name)}",
-                        should_exit=True
+                        should_exit=True,
                     )
 
         # =====================================================================
@@ -3820,16 +4627,15 @@ class BookingStateMachine:
         else:
             response = f"Riepilogo: {self.context.get_summary()}. Conferma o mi dica cosa cambiare."
 
-        return StateMachineResult(
-            next_state=BookingState.CONFIRMING,
-            response=response
-        )
+        return StateMachineResult(next_state=BookingState.CONFIRMING, response=response)
 
     # =========================================================================
     # NEW CLIENT REGISTRATION HANDLERS
     # =========================================================================
 
-    def _handle_propose_registration(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_propose_registration(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle PROPOSE_REGISTRATION state - ask if user wants to register."""
         text_lower = text.lower()
 
@@ -3851,20 +4657,29 @@ class BookingStateMachine:
                         next_state=BookingState.REGISTERING_PHONE,
                         response=TEMPLATES["ask_phone"].format(
                             name=f"{clean_name} {clean_surname}"
-                        )
+                        ),
                     )
                 else:
                     # Only first name → ask for surname
                     self.context.state = BookingState.REGISTERING_SURNAME
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
-                        response=TEMPLATES["ask_surname"]
+                        response=TEMPLATES["ask_surname"],
                     )
 
         # =================================================================
         # PRIORITY 2: Affirmative response ("sì", "ok", etc.)
         # =================================================================
-        affirmative = ["sì", "si", "ok", "va bene", "certo", "volentieri", "registrami", "registra"]
+        affirmative = [
+            "sì",
+            "si",
+            "ok",
+            "va bene",
+            "certo",
+            "volentieri",
+            "registrami",
+            "registra",
+        ]
         if any(word in text_lower for word in affirmative):
             self.context.is_new_client = True
 
@@ -3876,7 +4691,7 @@ class BookingStateMachine:
                     next_state=BookingState.REGISTERING_PHONE,
                     response=TEMPLATES["ask_phone"].format(
                         name=f"{self.context.client_name} {self.context.client_surname}"
-                    )
+                    ),
                 )
 
             # Check if client_name contains both (fallback)
@@ -3884,19 +4699,19 @@ class BookingStateMachine:
                 parts = self.context.client_name.split()
                 if len(parts) >= 2:
                     self.context.client_name = parts[0]
-                    self.context.client_surname = ' '.join(parts[1:])
+                    self.context.client_surname = " ".join(parts[1:])
                     self.context.state = BookingState.REGISTERING_PHONE
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_PHONE,
                         response=TEMPLATES["ask_phone"].format(
                             name=f"{self.context.client_name} {self.context.client_surname}"
-                        )
+                        ),
                     )
 
             self.context.state = BookingState.REGISTERING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,
-                response=TEMPLATES["ask_surname"]
+                response=TEMPLATES["ask_surname"],
             )
 
         # Check for negative responses
@@ -3906,16 +4721,18 @@ class BookingStateMachine:
             return StateMachineResult(
                 next_state=BookingState.CANCELLED,
                 response=TEMPLATES["registration_cancelled"],
-                should_exit=True
+                should_exit=True,
             )
 
         # Re-ask
         return StateMachineResult(
             next_state=BookingState.PROPOSE_REGISTRATION,
-            response="Vuole che la registri come nuovo cliente? Dica sì o no."
+            response="Vuole che la registri come nuovo cliente? Dica sì o no.",
         )
 
-    def _handle_registering_surname(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_registering_surname(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle REGISTERING_SURNAME state - collect full name (nome + cognome)."""
         text_lower = text.lower().strip()
 
@@ -3930,28 +4747,57 @@ class BookingStateMachine:
         # Prevents "Sì, confermo" from being stored as surname (BUG 2)
         # =================================================================
         _CONFIRMATION_WORDS = {
-            "si", "sì", "no", "noo", "nono",
-            "confermo", "confermato",
-            "ok", "okay", "okk", "okei", "okkei",
-            "esatto", "giusto", "bene", "perfetto", "ottimo",
-            "certo", "certamente", "assolutamente", "sicuramente",
-            "grazie", "prego", "capito", "chiaro",
+            "si",
+            "sì",
+            "no",
+            "noo",
+            "nono",
+            "confermo",
+            "confermato",
+            "ok",
+            "okay",
+            "okk",
+            "okei",
+            "okkei",
+            "esatto",
+            "giusto",
+            "bene",
+            "perfetto",
+            "ottimo",
+            "certo",
+            "certamente",
+            "assolutamente",
+            "sicuramente",
+            "grazie",
+            "prego",
+            "capito",
+            "chiaro",
             # S122: registration-related words are NOT surnames
-            "registrami", "registra", "registratemi", "registrazione",
-            "procediamo", "procedi", "avanti", "andiamo", "vai",
-            "facciamo", "faccia", "prego", "volentieri",
+            "registrami",
+            "registra",
+            "registratemi",
+            "registrazione",
+            "procediamo",
+            "procedi",
+            "avanti",
+            "andiamo",
+            "vai",
+            "facciamo",
+            "faccia",
+            "prego",
+            "volentieri",
         }
-        text_words_set = set(re.sub(r'[,!?.]', '', text_lower).split())
+        text_words_set = set(re.sub(r"[,!?.]", "", text_lower).split())
         if text_words_set and text_words_set.issubset(_CONFIRMATION_WORDS):
             # Pure confirmation/negation — ask again for the surname
             if self.context.client_name:
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_SURNAME,
-                    response=f"Grazie {self.context.client_name}! Per registrarla ho bisogno del cognome."
+                    response=f"Grazie {self.context.client_name}! Per registrarla ho bisogno del cognome.",
                 )
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,
-                response="Mi ripete nome e cognome, per cortesia?"
+                response="Mi ripete nome e cognome, per cortesia?",
             )
 
         # =================================================================
@@ -3975,16 +4821,58 @@ class BookingStateMachine:
                 extracted_text = match.group(1).strip()
                 parts = extracted_text.split()
                 # Filter out blacklisted words
-                from entity_extractor import extract_name as _extract_name
                 # Use the NAME_BLACKLIST from entity_extractor
                 _BLACKLIST = {
-                    "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
-                    "il", "un", "una", "uno", "gli", "dei", "delle", "del",
-                    "appena", "già", "proprio", "anche", "ancora", "allora",
-                    "cognome", "nome", "mio", "suo", "è",
-                    "detto", "fatto", "stato", "dico",
-                    "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
-                    "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
+                    "vi",
+                    "ho",
+                    "mi",
+                    "si",
+                    "se",
+                    "ci",
+                    "ne",
+                    "lo",
+                    "la",
+                    "le",
+                    "li",
+                    "il",
+                    "un",
+                    "una",
+                    "uno",
+                    "gli",
+                    "dei",
+                    "delle",
+                    "del",
+                    "appena",
+                    "già",
+                    "proprio",
+                    "anche",
+                    "ancora",
+                    "allora",
+                    "cognome",
+                    "nome",
+                    "mio",
+                    "suo",
+                    "è",
+                    "detto",
+                    "fatto",
+                    "stato",
+                    "dico",
+                    "ehi",
+                    "eh",
+                    "oh",
+                    "ah",
+                    "ahi",
+                    "uhm",
+                    "ehm",
+                    "boh",
+                    "mah",
+                    "beh",
+                    "senti",
+                    "senta",
+                    "scolta",
+                    "ascolta",
+                    "aspetta",
+                    "aspetti",
                 }
                 clean_parts = [w for w in parts if w.lower() not in _BLACKLIST]
                 if clean_parts:
@@ -3992,7 +4880,7 @@ class BookingStateMachine:
                         # Full name: "mi chiamo Nicola Arquati"
                         self.context.client_name = sanitize_name(clean_parts[0])
                         self.context.client_surname = sanitize_name(
-                            ' '.join(clean_parts[1:]), is_surname=True
+                            " ".join(clean_parts[1:]), is_surname=True
                         )
                     elif len(clean_parts) >= 2 and self.context.client_name:
                         # Already have name, this is name + surname repeated
@@ -4009,7 +4897,7 @@ class BookingStateMachine:
                             self.context.client_name = sanitize_name(clean_parts[0])
                             return StateMachineResult(
                                 next_state=BookingState.REGISTERING_SURNAME,
-                                response=f"Piacere {self.context.client_name}! E il cognome?"
+                                response=f"Piacere {self.context.client_name}! E il cognome?",
                             )
 
                     if self.context.client_name and self.context.client_surname:
@@ -4018,7 +4906,7 @@ class BookingStateMachine:
                             next_state=BookingState.REGISTERING_PHONE,
                             response=TEMPLATES["ask_phone"].format(
                                 name=f"{self.context.client_name} {self.context.client_surname}"
-                            )
+                            ),
                         )
 
         # =================================================================
@@ -4031,10 +4919,15 @@ class BookingStateMachine:
         if name:
             clean_name, clean_surname = sanitize_name_pair(name.name, None)
             if clean_name and clean_surname:
-                if self.context.client_name and clean_name.lower() != self.context.client_name.lower():
+                if (
+                    self.context.client_name
+                    and clean_name.lower() != self.context.client_name.lower()
+                ):
                     # Already have a different name (e.g. "Gino"), user gave surname "Di Nanni"
                     # sanitize_name_pair incorrectly split it — treat entire input as surname
-                    self.context.client_surname = sanitize_name(name.name, is_surname=True)
+                    self.context.client_surname = sanitize_name(
+                        name.name, is_surname=True
+                    )
                 else:
                     # No name yet, or user repeated name + gave surname ("Gino Di Nanni")
                     self.context.client_name = clean_name
@@ -4042,13 +4935,15 @@ class BookingStateMachine:
             elif clean_name:
                 if self.context.client_name and not self.context.client_surname:
                     # We already have a name, treat this as surname
-                    self.context.client_surname = sanitize_name(clean_name, is_surname=True)
+                    self.context.client_surname = sanitize_name(
+                        clean_name, is_surname=True
+                    )
                 elif not self.context.client_name:
                     # Only one word - treat as name, ask for surname
                     self.context.client_name = clean_name
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
-                        response=f"Piacere {self.context.client_name}! E il cognome?"
+                        response=f"Piacere {self.context.client_name}! E il cognome?",
                     )
         else:
             # =================================================================
@@ -4058,64 +4953,124 @@ class BookingStateMachine:
             raw_words = text_clean.split()
             # Filter out blacklisted words
             _BLACKLIST = {
-                "vi", "ho", "mi", "si", "se", "ci", "ne", "lo", "la", "le", "li",
-                "il", "un", "una", "uno", "gli", "appena", "già", "proprio",
-                "allora", "cognome", "nome", "mio", "suo", "è", "detto",
-                "fatto", "stato", "dico", "bene", "ecco",
-                "ehi", "eh", "oh", "ah", "ahi", "uhm", "ehm", "boh", "mah", "beh",
-                "senti", "senta", "scolta", "ascolta", "aspetta", "aspetti",
+                "vi",
+                "ho",
+                "mi",
+                "si",
+                "se",
+                "ci",
+                "ne",
+                "lo",
+                "la",
+                "le",
+                "li",
+                "il",
+                "un",
+                "una",
+                "uno",
+                "gli",
+                "appena",
+                "già",
+                "proprio",
+                "allora",
+                "cognome",
+                "nome",
+                "mio",
+                "suo",
+                "è",
+                "detto",
+                "fatto",
+                "stato",
+                "dico",
+                "bene",
+                "ecco",
+                "ehi",
+                "eh",
+                "oh",
+                "ah",
+                "ahi",
+                "uhm",
+                "ehm",
+                "boh",
+                "mah",
+                "beh",
+                "senti",
+                "senta",
+                "scolta",
+                "ascolta",
+                "aspetta",
+                "aspetti",
             }
-            clean_words = [w for w in raw_words if w.lower() not in _BLACKLIST and len(w) >= 2]
+            clean_words = [
+                w for w in raw_words if w.lower() not in _BLACKLIST and len(w) >= 2
+            ]
 
             if clean_words:
                 clean_name, clean_surname = sanitize_name_pair(
-                    ' '.join(clean_words), None
+                    " ".join(clean_words), None
                 )
                 if clean_name and clean_surname:
-                    if self.context.client_name and clean_name.lower() != self.context.client_name.lower():
+                    if (
+                        self.context.client_name
+                        and clean_name.lower() != self.context.client_name.lower()
+                    ):
                         # Already have a different name, treat entire input as surname
                         self.context.client_surname = sanitize_name(
-                            ' '.join(clean_words), is_surname=True
+                            " ".join(clean_words), is_surname=True
                         )
                     else:
                         self.context.client_name = clean_name
                         self.context.client_surname = clean_surname
                 elif clean_name:
                     # Prefissi nobiliari come "De", "Di", "Lo" NON sono nomi propri
-                    _NOBLE_PFXS = {"de", "di", "del", "della", "lo", "la", "d", "da", "von", "van"}
+                    _NOBLE_PFXS = {
+                        "de",
+                        "di",
+                        "del",
+                        "della",
+                        "lo",
+                        "la",
+                        "d",
+                        "da",
+                        "von",
+                        "van",
+                    }
                     if self.context.client_name:
                         # We already have name, this is surname
                         self.context.client_surname = sanitize_name(
-                            ' '.join(clean_words), is_surname=True
+                            " ".join(clean_words), is_surname=True
                         )
                     elif clean_name.lower() in _NOBLE_PFXS and len(clean_words) > 1:
                         # "De Piscopo" con client_name None — l'intero input è il nome completo
-                        full = sanitize_name(' '.join(clean_words), is_surname=False)
+                        full = sanitize_name(" ".join(clean_words), is_surname=False)
                         parts = full.split()
                         self.context.client_name = sanitize_name(parts[0])
-                        self.context.client_surname = sanitize_name(
-                            ' '.join(parts[1:]), is_surname=True
-                        ) if len(parts) > 1 else None
+                        self.context.client_surname = (
+                            sanitize_name(" ".join(parts[1:]), is_surname=True)
+                            if len(parts) > 1
+                            else None
+                        )
                         if not self.context.client_surname:
                             return StateMachineResult(
                                 next_state=BookingState.REGISTERING_SURNAME,
-                                response=f"Piacere {self.context.client_name}! E il cognome?"
+                                response=f"Piacere {self.context.client_name}! E il cognome?",
                             )
                     else:
                         self.context.client_name = clean_name
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_SURNAME,
-                            response=f"Piacere {self.context.client_name}! E il cognome?"
+                            response=f"Piacere {self.context.client_name}! E il cognome?",
                         )
             else:
                 # =============================================================
                 # PHASE 4: Groq LLM fallback for conversational Italian
                 # =============================================================
                 if self.groq_nlu:
-                    logger.info(f"[SM] REGISTERING_SURNAME: regex failed, trying Groq for '{text[:50]}'")
+                    logger.info(
+                        f"[SM] REGISTERING_SURNAME: regex failed, trying Groq for '{text[:50]}'"
+                    )
                     groq_result = self.groq_nlu.extract_surname(
-                        utterance=text,
-                        nome=self.context.client_name or ""
+                        utterance=text, nome=self.context.client_name or ""
                     )
                     if groq_result and groq_result.get("cognome"):
                         cognome = sanitize_name(groq_result["cognome"], is_surname=True)
@@ -4126,7 +5081,7 @@ class BookingStateMachine:
                 if not self.context.client_surname:
                     return StateMachineResult(
                         next_state=BookingState.REGISTERING_SURNAME,
-                        response="Mi ripete il cognome, per cortesia?"
+                        response="Mi ripete il cognome, per cortesia?",
                     )
 
         # Have both name and surname - ask for phone
@@ -4136,22 +5091,24 @@ class BookingStateMachine:
                 next_state=BookingState.REGISTERING_PHONE,
                 response=TEMPLATES["ask_phone"].format(
                     name=f"{self.context.client_name} {self.context.client_surname}"
-                )
+                ),
             )
 
         # Missing something - ask again
         if self.context.client_name and not self.context.client_surname:
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,
-                response=f"Grazie {self.context.client_name}! E il cognome?"
+                response=f"Grazie {self.context.client_name}! E il cognome?",
             )
 
         return StateMachineResult(
             next_state=BookingState.REGISTERING_SURNAME,
-            response="Mi ripete nome e cognome, per cortesia?"
+            response="Mi ripete nome e cognome, per cortesia?",
         )
 
-    def _handle_registering_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_registering_phone(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle REGISTERING_PHONE state - collect phone number."""
         text_lower = text.lower().strip()
 
@@ -4179,13 +5136,15 @@ class BookingStateMachine:
                     # "di cognome Neri" → surname only
                     surname = parts[-1] if parts else None
                     if surname:
-                        self.context.client_surname = sanitize_name(surname, is_surname=True)
+                        self.context.client_surname = sanitize_name(
+                            surname, is_surname=True
+                        )
                         # Re-ask phone
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_PHONE,
                             response=TEMPLATES["ask_phone"].format(
                                 name=f"{self.context.client_name} {self.context.client_surname}"
-                            )
+                            ),
                         )
                 else:
                     # "mi chiamo Filippo Neri" → update both
@@ -4199,7 +5158,7 @@ class BookingStateMachine:
                         next_state=BookingState.REGISTERING_PHONE,
                         response=TEMPLATES["ask_phone"].format(
                             name=f"{self.context.client_name} {self.context.client_surname or ''}".strip()
-                        )
+                        ),
                     )
 
         # Try to extract phone
@@ -4208,12 +5167,13 @@ class BookingStateMachine:
         else:
             # Try to extract phone number from text
             from entity_extractor import extract_phone, _normalize_phone_whisper
+
             phone = extract_phone(text)
             if phone:
                 self.context.client_phone = phone
             else:
                 # Use raw input, clean up
-                digits = ''.join(c for c in text if c.isdigit())
+                digits = "".join(c for c in text if c.isdigit())
                 if 9 <= len(digits) <= 12:  # Valid Italian phone length
                     self.context.client_phone = digits
                 else:
@@ -4225,13 +5185,13 @@ class BookingStateMachine:
 
         if self.context.client_phone:
             # Sanity check: Italian numbers are 9-12 digits
-            phone_digits = re.sub(r'\D', '', self.context.client_phone)
+            phone_digits = re.sub(r"\D", "", self.context.client_phone)
             if len(phone_digits) > 12:
                 # Still too long after normalization → ask to repeat
                 self.context.client_phone = None
                 return StateMachineResult(
                     next_state=BookingState.REGISTERING_PHONE,
-                    response="Non ho capito bene il numero. Me lo ripete cifra per cifra, per favore?"
+                    response="Non ho capito bene il numero. Me lo ripete cifra per cifra, per favore?",
                 )
 
             # Got phone - confirm the number before creating client
@@ -4240,31 +5200,43 @@ class BookingStateMachine:
                 next_state=BookingState.CONFIRMING_PHONE,
                 response=TEMPLATES["confirm_phone_number"].format(
                     phone=self.context.client_phone
-                )
+                ),
             )
 
         # Couldn't get phone - check if it's a name/surname correction via Groq
         if self.groq_nlu:
             # Detect correction signals: "no", "ho detto", "cognome", "mi chiamo"
-            correction_signals = ["no", "ho detto", "cognome", "nome", "mi chiamo", "sbagliato", "correggi"]
+            correction_signals = [
+                "no",
+                "ho detto",
+                "cognome",
+                "nome",
+                "mi chiamo",
+                "sbagliato",
+                "correggi",
+            ]
             if any(s in text_lower for s in correction_signals):
-                logger.info(f"[SM] REGISTERING_PHONE: correction detected, trying Groq for '{text[:50]}'")
+                logger.info(
+                    f"[SM] REGISTERING_PHONE: correction detected, trying Groq for '{text[:50]}'"
+                )
                 groq_result = self.groq_nlu.extract_phone_correction(
                     utterance=text,
                     nome=self.context.client_name or "",
-                    cognome=self.context.client_surname or ""
+                    cognome=self.context.client_surname or "",
                 )
                 if groq_result:
                     tipo = groq_result.get("tipo_azione", "")
                     valore = groq_result.get("valore")
 
                     if tipo == "correzione_cognome" and valore:
-                        self.context.client_surname = sanitize_name(valore, is_surname=True)
+                        self.context.client_surname = sanitize_name(
+                            valore, is_surname=True
+                        )
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_PHONE,
                             response=TEMPLATES["ask_phone"].format(
                                 name=f"{self.context.client_name} {self.context.client_surname}"
-                            )
+                            ),
                         )
                     elif tipo == "correzione_nome" and valore:
                         clean_name, clean_surname = sanitize_name_pair(valore, None)
@@ -4277,13 +5249,13 @@ class BookingStateMachine:
                             self.context.state = BookingState.REGISTERING_SURNAME
                             return StateMachineResult(
                                 next_state=BookingState.REGISTERING_SURNAME,
-                                response=f"Perfetto, {self.context.client_name}. E il cognome?"
+                                response=f"Perfetto, {self.context.client_name}. E il cognome?",
                             )
                         return StateMachineResult(
                             next_state=BookingState.REGISTERING_PHONE,
                             response=TEMPLATES["ask_phone"].format(
                                 name=f"{self.context.client_name} {self.context.client_surname}"
-                            )
+                            ),
                         )
 
         # S122: If user said acknowledgment ("sì", "ok", "certo") without a number,
@@ -4292,16 +5264,18 @@ class BookingStateMachine:
         if any(w in text_lower for w in _ack_words):
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_PHONE,
-                response="Perfetto, mi dica il numero di telefono."
+                response="Perfetto, mi dica il numero di telefono.",
             )
 
         # No phone, no correction - ask again
         return StateMachineResult(
             next_state=BookingState.REGISTERING_PHONE,
-            response="Mi ripete il numero di telefono, per cortesia?"
+            response="Mi ripete il numero di telefono, per cortesia?",
         )
 
-    def _handle_confirming_phone(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_confirming_phone(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle CONFIRMING_PHONE state - confirm phone number before creating client."""
         text_lower = text.lower().strip()
 
@@ -4313,12 +5287,14 @@ class BookingStateMachine:
         affirmative = ["sì", "si", "ok", "va bene", "confermo", "esatto", "corretto"]
         if any(word in text_lower for word in affirmative):
             # Phone confirmed - create client
-            reg_name = f"{self.context.client_name} {self.context.client_surname}".strip()
+            reg_name = (
+                f"{self.context.client_name} {self.context.client_surname}".strip()
+            )
             reg_response = TEMPLATES["registration_complete"].format(name=reg_name)
             create_params = {
                 "nome": self.context.client_name,
                 "cognome": self.context.client_surname,
-                "telefono": self.context.client_phone
+                "telefono": self.context.client_phone,
             }
             # S126: If service already in context (from first message), skip to date
             if self.context.service:
@@ -4330,7 +5306,7 @@ class BookingStateMachine:
                     follow_up_response=f"{svc_display}, per quale giorno?",
                     needs_db_lookup=True,
                     lookup_type="create_client",
-                    lookup_params=create_params
+                    lookup_params=create_params,
                 )
             self.context.state = BookingState.WAITING_SERVICE
             return StateMachineResult(
@@ -4339,18 +5315,23 @@ class BookingStateMachine:
                 follow_up_response=TEMPLATES["ask_service"],
                 needs_db_lookup=True,
                 lookup_type="create_client",
-                lookup_params=create_params
+                lookup_params=create_params,
             )
 
         # Check for negative responses
-        negative_patterns = [r"\bno\b", r"\bnon\s+è\s+corretto\b", r"\bsbagliato\b", r"\berrato\b"]
+        negative_patterns = [
+            r"\bno\b",
+            r"\bnon\s+è\s+corretto\b",
+            r"\bsbagliato\b",
+            r"\berrato\b",
+        ]
         if any(re.search(pattern, text_lower) for pattern in negative_patterns):
             # Phone wrong - go back to phone collection
             self.context.client_phone = None
             self.context.state = BookingState.REGISTERING_PHONE
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_PHONE,
-                response=TEMPLATES["confirm_phone_reask"]
+                response=TEMPLATES["confirm_phone_reask"],
             )
 
         # Check if user gave a new phone number directly
@@ -4360,10 +5341,11 @@ class BookingStateMachine:
                 next_state=BookingState.CONFIRMING_PHONE,
                 response=TEMPLATES["confirm_phone_number"].format(
                     phone=self.context.client_phone
-                )
+                ),
             )
         else:
             from entity_extractor import extract_phone
+
             phone = extract_phone(text)
             if phone:
                 self.context.client_phone = phone
@@ -4371,13 +5353,13 @@ class BookingStateMachine:
                     next_state=BookingState.CONFIRMING_PHONE,
                     response=TEMPLATES["confirm_phone_number"].format(
                         phone=self.context.client_phone
-                    )
+                    ),
                 )
 
         # Fallback - re-ask confirmation
         return StateMachineResult(
             next_state=BookingState.CONFIRMING_PHONE,
-            response=f"Per confermare, il numero è {self.context.client_phone or ''}. È corretto?"
+            response=f"Per confermare, il numero è {self.context.client_phone or ''}. È corretto?",
         )
 
     def propose_new_client_registration(self, client_name: str) -> StateMachineResult:
@@ -4396,10 +5378,12 @@ class BookingStateMachine:
         self.context.state = BookingState.PROPOSE_REGISTRATION
         return StateMachineResult(
             next_state=BookingState.PROPOSE_REGISTRATION,
-            response=TEMPLATES["propose_registration"]
+            response=TEMPLATES["propose_registration"],
         )
 
-    def start_booking_flow(self, initial_context: Optional[Dict] = None) -> StateMachineResult:
+    def start_booking_flow(
+        self, initial_context: Optional[Dict] = None
+    ) -> StateMachineResult:
         """
         Start a new booking flow.
 
@@ -4431,32 +5415,64 @@ class BookingStateMachine:
                 next_state=BookingState.WAITING_DATE,
                 response=TEMPLATES["ask_date"].format(
                     service=self.context.service_display or self.context.service
-                )
+                ),
             )
 
         self.context.state = BookingState.WAITING_SERVICE
         return StateMachineResult(
-            next_state=BookingState.WAITING_SERVICE,
-            response=TEMPLATES["ask_service"]
+            next_state=BookingState.WAITING_SERVICE, response=TEMPLATES["ask_service"]
         )
 
-    def _handle_disambiguating_name(self, text: str, extracted: ExtractionResult) -> StateMachineResult:
+    def _handle_disambiguating_name(
+        self, text: str, extracted: ExtractionResult
+    ) -> StateMachineResult:
         """Handle DISAMBIGUATING_NAME state - ask for birth date confirmation."""
         text_lower = text.lower()
 
         # ESCAPE: if user wants to skip disambiguation and just book
         _BOOKING_ESCAPE = [
-            r'\bdomani\b', r'\boggi\b', r'\bdopodomani\b',
-            r'\blunedi\b', r'\bmartedi\b', r'\bmercoledi\b', r'\bgiovedi\b',
-            r'\bvenerdi\b', r'\bsabato\b', r'\bdomenica\b',
-            r'\balle\s+\d', r'\bpomeriggio\b', r'\bmattina\b', r'\bsera\b',
-            r'\bvorrei\b', r'\bvoglio\b', r'\bprenotar',
-            r'\bsì\b', r'\bsi\b', r'\bconfermo\b', r'\besatto\b', r'\bproprio\b',
+            r"\bdomani\b",
+            r"\boggi\b",
+            r"\bdopodomani\b",
+            r"\blunedi\b",
+            r"\bmartedi\b",
+            r"\bmercoledi\b",
+            r"\bgiovedi\b",
+            r"\bvenerdi\b",
+            r"\bsabato\b",
+            r"\bdomenica\b",
+            r"\balle\s+\d",
+            r"\bpomeriggio\b",
+            r"\bmattina\b",
+            r"\bsera\b",
+            r"\bvorrei\b",
+            r"\bvoglio\b",
+            r"\bprenotar",
+            r"\bsì\b",
+            r"\bsi\b",
+            r"\bconfermo\b",
+            r"\besatto\b",
+            r"\bproprio\b",
         ]
         # "sì" / "confermo" = user confirms the suggested name
-        _CONFIRM_WORDS = {"sì", "si", "confermo", "esatto", "proprio", "proprio lui",
-                          "proprio lei", "sono io", "giusto", "corretto", "quello", "quella"}
-        if any(w in text_lower.split() for w in _CONFIRM_WORDS) or text_lower.strip() in _CONFIRM_WORDS:
+        _CONFIRM_WORDS = {
+            "sì",
+            "si",
+            "confermo",
+            "esatto",
+            "proprio",
+            "proprio lui",
+            "proprio lei",
+            "sono io",
+            "giusto",
+            "corretto",
+            "quello",
+            "quella",
+        }
+        if (
+            any(w in text_lower.split() for w in _CONFIRM_WORDS)
+            or text_lower.strip() in _CONFIRM_WORDS
+        ):
             # User confirmed the suggested name match
             if self.context.disambiguation_candidates:
                 candidate = self.context.disambiguation_candidates[0]
@@ -4470,19 +5486,23 @@ class BookingStateMachine:
                     svc_display = self.context.service_display or self.context.service
                     return StateMachineResult(
                         next_state=BookingState.WAITING_DATE,
-                        response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?"
+                        response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?",
                     )
                 self.context.state = BookingState.WAITING_SERVICE
                 return StateMachineResult(
                     next_state=BookingState.WAITING_SERVICE,
-                    response=TEMPLATES["welcome_back"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
+                    response=TEMPLATES["welcome_back"].format(name=candidate["nome"])
+                    + " "
+                    + TEMPLATES["ask_service"],
                 )
 
         # ESCAPE: booking-related words (date/time/service) → accept the candidate
         # and continue booking. User is clearly trying to book, not answer DOB.
         for esc_pat in _BOOKING_ESCAPE:
             if re.search(esc_pat, text_lower):
-                logger.info(f"[DISAMBIGUATION] Escape: booking intent in '{text}', accepting candidate")
+                logger.info(
+                    f"[DISAMBIGUATION] Escape: booking intent in '{text}', accepting candidate"
+                )
                 if self.context.disambiguation_candidates:
                     # Accept the suggested client match
                     candidate = self.context.disambiguation_candidates[0]
@@ -4497,7 +5517,7 @@ class BookingStateMachine:
                     name = self.context.client_name or ""
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=f"Certo {name}! " + TEMPLATES["ask_service"]
+                        response=f"Certo {name}! " + TEMPLATES["ask_service"],
                     )
                 if not self.context.date:
                     self.context.state = BookingState.WAITING_DATE
@@ -4505,53 +5525,74 @@ class BookingStateMachine:
                         next_state=BookingState.WAITING_DATE,
                         response=TEMPLATES["ask_date"].format(
                             service=self.context.service_display or self.context.service
-                        )
+                        ),
                     )
                 self.context.state = BookingState.WAITING_TIME
                 return StateMachineResult(
                     next_state=BookingState.WAITING_TIME,
-                    response="A che ora le farebbe comodo?"
+                    response="A che ora le farebbe comodo?",
                 )
 
         # Check for negative responses (no, wrong, different person)
         # CoVe: Espansi pattern per coprire più casi di rifiuto
         negative_indicators = [
-            "no", "sbagliato", "diverso", "non sono", "altro", "nuovo cliente",
-            "non sono io", "sono un altro", "sono una persona diversa", 
-            "persona diversa", "non è il mio nome", "non mi chiamo",
-            "mi chiamo diversamente", "sono diversa", "sono diverso",
-            "non corrisponde", "non sono quel", "non sono quella"
+            "no",
+            "sbagliato",
+            "diverso",
+            "non sono",
+            "altro",
+            "nuovo cliente",
+            "non sono io",
+            "sono un altro",
+            "sono una persona diversa",
+            "persona diversa",
+            "non è il mio nome",
+            "non mi chiamo",
+            "mi chiamo diversamente",
+            "sono diversa",
+            "sono diverso",
+            "non corrisponde",
+            "non sono quel",
+            "non sono quella",
         ]
         if any(ind in text_lower for ind in negative_indicators):
-            logger.info(f"[DISAMBIGUATION] User rejected match: '{text}' -> proceeding to registration")
+            logger.info(
+                f"[DISAMBIGUATION] User rejected match: '{text}' -> proceeding to registration"
+            )
             # User denied - proceed as new client
             self.context.disambiguation_candidates = []
             self.context.disambiguation_attempts = 0
             self.context.state = BookingState.REGISTERING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,
-                response="Capisco, la registro come nuovo cliente. Mi può dire il suo nome e cognome?"
+                response="Capisco, la registro come nuovo cliente. Mi può dire il suo nome e cognome?",
             )
-        
+
         # CoVe FIX: Usa extract_birth_date dal DisambiguationHandler, NON extract_date
         # extract_date è per date di booking (domani, oggi), non per date di nascita
         birth_date = None
         if self.disambiguation_handler:
             birth_date = self.disambiguation_handler.extract_birth_date(text)
-            logger.info(f"[DISAMBIGUATION] Extracted birth date: {birth_date} from '{text}'")
-        
+            logger.info(
+                f"[DISAMBIGUATION] Extracted birth date: {birth_date} from '{text}'"
+            )
+
         if birth_date and self.context.disambiguation_candidates:
             # Check if date matches candidate
             candidate = self.context.disambiguation_candidates[0]
             candidate_birth = candidate.get("data_nascita", "")
-            
+
             if candidate_birth:
                 # Normalize dates for comparison
                 input_date = birth_date.strftime("%Y-%m-%d")
-                logger.info(f"[DISAMBIGUATION] Comparing dates: input={input_date}, candidate={candidate_birth}")
+                logger.info(
+                    f"[DISAMBIGUATION] Comparing dates: input={input_date}, candidate={candidate_birth}"
+                )
                 if input_date == candidate_birth:
                     # Match confirmed!
-                    logger.info(f"[DISAMBIGUATION] Match confirmed for client: {candidate['id']}")
+                    logger.info(
+                        f"[DISAMBIGUATION] Match confirmed for client: {candidate['id']}"
+                    )
                     self.context.client_id = candidate["id"]
                     self.context.client_name = candidate["nome"]
                     self.context.client_surname = candidate["cognome"]
@@ -4560,44 +5601,57 @@ class BookingStateMachine:
                     # S125: If service already selected, skip to date
                     if self.context.service:
                         self.context.state = BookingState.WAITING_DATE
-                        svc_display = self.context.service_display or self.context.service
+                        svc_display = (
+                            self.context.service_display or self.context.service
+                        )
                         return StateMachineResult(
                             next_state=BookingState.WAITING_DATE,
-                            response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?"
+                            response=f"Bentornato {candidate['nome']}! {svc_display}, per quale giorno?",
                         )
                     self.context.state = BookingState.WAITING_SERVICE
                     return StateMachineResult(
                         next_state=BookingState.WAITING_SERVICE,
-                        response=TEMPLATES["welcome_back"].format(name=candidate["nome"]) + " " + TEMPLATES["ask_service"]
+                        response=TEMPLATES["welcome_back"].format(
+                            name=candidate["nome"]
+                        )
+                        + " "
+                        + TEMPLATES["ask_service"],
                     )
-        
+
         # No clear response - ask again with clarification
         self.context.disambiguation_attempts += 1
-        logger.info(f"[DISAMBIGUATION] Attempt {self.context.disambiguation_attempts}, no clear match")
+        logger.info(
+            f"[DISAMBIGUATION] Attempt {self.context.disambiguation_attempts}, no clear match"
+        )
         if self.context.disambiguation_attempts >= 2:
             # Too many attempts - proceed as new client
-            logger.info("[DISAMBIGUATION] Max attempts reached, proceeding to registration")
+            logger.info(
+                "[DISAMBIGUATION] Max attempts reached, proceeding to registration"
+            )
             self.context.disambiguation_candidates = []
             self.context.disambiguation_attempts = 0
             self.context.state = BookingState.REGISTERING_SURNAME
             return StateMachineResult(
                 next_state=BookingState.REGISTERING_SURNAME,
-                response="Non ho capito bene. La registro come nuovo cliente. Mi dica nome e cognome?"
+                response="Non ho capito bene. La registro come nuovo cliente. Mi dica nome e cognome?",
             )
-        
+
         # Ask again
-        candidate = self.context.disambiguation_candidates[0] if self.context.disambiguation_candidates else None
+        candidate = (
+            self.context.disambiguation_candidates[0]
+            if self.context.disambiguation_candidates
+            else None
+        )
         if candidate:
             return StateMachineResult(
                 next_state=BookingState.DISAMBIGUATING_NAME,
-                response=TEMPLATES["disambiguation_retry"]
+                response=TEMPLATES["disambiguation_retry"],
             )
-        
+
         return StateMachineResult(
             next_state=BookingState.REGISTERING_SURNAME,
-            response="Mi dica il suo nome e cognome per favore?"
+            response="Mi dica il suo nome e cognome per favore?",
         )
-
 
 
 # =============================================================================
@@ -4616,22 +5670,22 @@ if __name__ == "__main__":
     print(f"Response: {result.response}")
 
     result = sm.process_message("vorrei un taglio")
-    print(f"\nUser: vorrei un taglio")
+    print("\nUser: vorrei un taglio")
     print(f"State: {result.next_state.value}")
     print(f"Response: {result.response}")
 
     result = sm.process_message("domani")
-    print(f"\nUser: domani")
+    print("\nUser: domani")
     print(f"State: {result.next_state.value}")
     print(f"Response: {result.response}")
 
     result = sm.process_message("alle 15")
-    print(f"\nUser: alle 15")
+    print("\nUser: alle 15")
     print(f"State: {result.next_state.value}")
     print(f"Response: {result.response}")
 
     result = sm.process_message("sì confermo")
-    print(f"\nUser: sì confermo")
+    print("\nUser: sì confermo")
     print(f"State: {result.next_state.value}")
     print(f"Response: {result.response}")
     print(f"Booking: {result.booking}")
@@ -4643,10 +5697,10 @@ if __name__ == "__main__":
     sm.reset()
     result = sm.start_booking_flow()
     result = sm.process_message("voglio un colore")
-    print(f"\nUser: voglio un colore")
+    print("\nUser: voglio un colore")
     print(f"State: {result.next_state.value}")
 
     result = sm.process_message("no aspetta, ricominciamo")
-    print(f"\nUser: no aspetta, ricominciamo")
+    print("\nUser: no aspetta, ricominciamo")
     print(f"State: {result.next_state.value}")
     print(f"Response: {result.response}")

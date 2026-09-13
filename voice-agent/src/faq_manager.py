@@ -21,7 +21,7 @@ import json
 import re
 from pathlib import Path
 from typing import Optional, Dict, List, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import time
 
 # Try to import semantic retriever (optional dependency)
@@ -32,28 +32,34 @@ try:
         create_faq_retriever,
         RetrievalResult,
     )
+
     HAS_SEMANTIC = True
 except ImportError:
     try:
         from faq_retriever import (
-            FAISSFAQRetriever,
-            HybridFAQRetriever,
+            FAISSFAQRetriever,  # noqa: F401
+            HybridFAQRetriever,  # noqa: F401
             create_faq_retriever,
-            RetrievalResult,
+            RetrievalResult,  # noqa: F401
         )
+
         HAS_SEMANTIC = True
     except ImportError:
         HAS_SEMANTIC = False
-        print("[INFO] Semantic FAQ retrieval not available (missing sentence-transformers)")
+        print(
+            "[INFO] Semantic FAQ retrieval not available (missing sentence-transformers)"
+        )
 
 
 # =============================================================================
 # DATA STRUCTURES
 # =============================================================================
 
+
 @dataclass
 class FAQMatch:
     """Result of FAQ lookup."""
+
     answer: str
     question: str
     confidence: float
@@ -75,6 +81,7 @@ class FAQMatch:
 @dataclass
 class FAQConfig:
     """Configuration for FAQ manager."""
+
     # Thresholds
     keyword_confidence: float = 0.8  # Confidence for keyword matches
     semantic_threshold: float = 0.55  # Minimum semantic similarity
@@ -101,23 +108,57 @@ KEYWORD_CATEGORIES = {
         "boost": 2.0,  # Price queries are common, boost them
     },
     "orario": {
-        "keywords": ["orario", "orari", "aprite", "chiudete", "aperti", "chiusi",
-                     "quando apre", "a che ora", "apertura", "chiusura"],
+        "keywords": [
+            "orario",
+            "orari",
+            "aprite",
+            "chiudete",
+            "aperti",
+            "chiusi",
+            "quando apre",
+            "a che ora",
+            "apertura",
+            "chiusura",
+        ],
         "boost": 1.5,
     },
     "servizio": {
-        "keywords": ["taglio", "piega", "colore", "tinta", "barba", "trattamento",
-                     "cheratina", "servizi", "servizio"],
+        "keywords": [
+            "taglio",
+            "piega",
+            "colore",
+            "tinta",
+            "barba",
+            "trattamento",
+            "cheratina",
+            "servizi",
+            "servizio",
+        ],
         "boost": 1.0,
     },
     "pagamento": {
-        "keywords": ["pagare", "pagamento", "carta", "contanti", "satispay",
-                     "bancomat", "bonifico", "accettate"],
+        "keywords": [
+            "pagare",
+            "pagamento",
+            "carta",
+            "contanti",
+            "satispay",
+            "bancomat",
+            "bonifico",
+            "accettate",
+        ],
         "boost": 1.5,
     },
     "prenotazione": {
-        "keywords": ["prenotare", "prenoto", "prenotazione", "appuntamento",
-                     "disdire", "cancellare", "spostare"],
+        "keywords": [
+            "prenotare",
+            "prenoto",
+            "prenotazione",
+            "appuntamento",
+            "disdire",
+            "cancellare",
+            "spostare",
+        ],
         "boost": 1.0,
     },
     "parcheggio": {
@@ -125,19 +166,36 @@ KEYWORD_CATEGORIES = {
         "boost": 1.0,
     },
     "contatti": {
-        "keywords": ["telefono", "numero", "whatsapp", "email", "indirizzo",
-                     "dove siete", "come vi trovo"],
+        "keywords": [
+            "telefono",
+            "numero",
+            "whatsapp",
+            "email",
+            "indirizzo",
+            "dove siete",
+            "come vi trovo",
+        ],
         "boost": 1.0,
     },
     "varie": {
-        "keywords": ["wifi", "internet", "bambini", "cane", "domicilio", "casa",
-                     "prodotti", "shampoo"],
+        "keywords": [
+            "wifi",
+            "internet",
+            "bambini",
+            "cane",
+            "domicilio",
+            "casa",
+            "prodotti",
+            "shampoo",
+        ],
         "boost": 0.8,
     },
 }
 
 
-def keyword_match_score(query: str, faq_question: str, faq_answer: str) -> Tuple[float, str]:
+def keyword_match_score(
+    query: str, faq_question: str, faq_answer: str
+) -> Tuple[float, str]:
     """
     Calculate keyword match score between query and FAQ.
 
@@ -173,14 +231,32 @@ def keyword_match_score(query: str, faq_question: str, faq_answer: str) -> Tuple
     common_words = query_words & question_words
     if common_words:
         # Exclude common words (stop words)
-        stop_words = {"un", "una", "il", "la", "lo", "i", "le", "gli", "che", "di", "a", "da", "in", "per", "con"}
+        stop_words = {
+            "un",
+            "una",
+            "il",
+            "la",
+            "lo",
+            "i",
+            "le",
+            "gli",
+            "che",
+            "di",
+            "a",
+            "da",
+            "in",
+            "per",
+            "con",
+        }
         meaningful_common = common_words - stop_words
         meaningful_query = query_words - stop_words
         meaningful_question = question_words - stop_words
 
         if meaningful_common and meaningful_query and meaningful_question:
             # Jaccard-like similarity
-            jaccard = len(meaningful_common) / len(meaningful_query | meaningful_question)
+            jaccard = len(meaningful_common) / len(
+                meaningful_query | meaningful_question
+            )
             if jaccard >= 0.5:
                 return 0.7 + (jaccard * 0.2), "word_overlap"
 
@@ -204,7 +280,9 @@ def keyword_match_score(query: str, faq_question: str, faq_answer: str) -> Tuple
             score = overlap * boost * 0.5  # Max 0.5 * 2.0 = 1.0 for category match
 
             # Small boost if answer contains price (€)
-            if "€" in faq_answer and any(kw in query_lower for kw in ["prezzo", "costa", "costo"]):
+            if "€" in faq_answer and any(
+                kw in query_lower for kw in ["prezzo", "costa", "costo"]
+            ):
                 score = min(score * 1.1, 0.75)  # Cap at 0.75
 
             if score > best_score:
@@ -215,9 +293,7 @@ def keyword_match_score(query: str, faq_question: str, faq_answer: str) -> Tuple
 
 
 def find_keyword_match(
-    query: str,
-    faqs: List[Dict[str, str]],
-    min_score: float = 0.5
+    query: str, faqs: List[Dict[str, str]], min_score: float = 0.5
 ) -> Optional[FAQMatch]:
     """
     Find best FAQ match using keyword matching.
@@ -256,6 +332,7 @@ def find_keyword_match(
 # =============================================================================
 # FAQ MANAGER
 # =============================================================================
+
 
 class FAQManager:
     """
@@ -327,7 +404,9 @@ class FAQManager:
         print(f"   [FAQ] Loaded {len(faqs)} FAQs from {path}")
         return len(faqs)
 
-    def load_faqs_from_markdown(self, path: str, settings: Optional[Dict] = None) -> int:
+    def load_faqs_from_markdown(
+        self, path: str, settings: Optional[Dict] = None
+    ) -> int:
         """
         Load FAQs from markdown file.
 
@@ -351,10 +430,12 @@ class FAQManager:
 
         # Substitute variables if settings provided
         if settings:
+
             def replace_var(match):
                 var_name = match.group(1)
                 return settings.get(var_name, f"[{var_name}]")
-            content = re.sub(r'\{\{(\w+)\}\}', replace_var, content)
+
+            content = re.sub(r"\{\{(\w+)\}\}", replace_var, content)
 
         # Parse markdown
         faqs = []
@@ -377,17 +458,21 @@ class FAQManager:
                     answer = parts[1].strip()
 
                     # D3: Skip entries with unresolved variables + log
-                    unresolved_vars = re.findall(r'\[([A-Z][A-Z0-9_]+)\]', answer)
+                    unresolved_vars = re.findall(r"\[([A-Z][A-Z0-9_]+)\]", answer)
                     if unresolved_vars:
-                        print(f"   [FAQ-D3] Skipped FAQ (unresolved vars {unresolved_vars}): {question[:60]}")
+                        print(
+                            f"   [FAQ-D3] Skipped FAQ (unresolved vars {unresolved_vars}): {question[:60]}"
+                        )
                         continue
 
-                    faqs.append({
-                        "id": f"faq_{faq_id:03d}",
-                        "question": question,
-                        "answer": answer,
-                        "category": current_category,
-                    })
+                    faqs.append(
+                        {
+                            "id": f"faq_{faq_id:03d}",
+                            "question": question,
+                            "answer": answer,
+                            "category": current_category,
+                        }
+                    )
                     faq_id += 1
 
         self.faqs.extend(faqs)
@@ -401,7 +486,7 @@ class FAQManager:
         question: str,
         answer: str,
         category: str = "",
-        faq_id: Optional[str] = None
+        faq_id: Optional[str] = None,
     ) -> str:
         """
         Add a single FAQ.
@@ -410,12 +495,14 @@ class FAQManager:
             FAQ ID
         """
         faq_id = faq_id or f"faq_{len(self.faqs):03d}"
-        self.faqs.append({
-            "id": faq_id,
-            "question": question,
-            "answer": answer,
-            "category": category,
-        })
+        self.faqs.append(
+            {
+                "id": faq_id,
+                "question": question,
+                "answer": answer,
+                "category": category,
+            }
+        )
         self._semantic_ready = False
         return faq_id
 
@@ -452,9 +539,7 @@ class FAQManager:
             return False
 
     def find_answer(
-        self,
-        query: str,
-        category: Optional[str] = None
+        self, query: str, category: Optional[str] = None
     ) -> Optional[FAQMatch]:
         """
         Find best answer for a query.
@@ -480,17 +565,18 @@ class FAQManager:
             faqs_to_search = [f for f in self.faqs if f.get("category") == category]
 
         # Step 1: Try keyword matching
-        keyword_result = find_keyword_match(
-            query,
-            faqs_to_search,
-            min_score=0.5
-        )
+        keyword_result = find_keyword_match(query, faqs_to_search, min_score=0.5)
 
-        if keyword_result and keyword_result.confidence >= self.config.keyword_confidence:
+        if (
+            keyword_result
+            and keyword_result.confidence >= self.config.keyword_confidence
+        ):
             # High-confidence keyword match - use it
             self._keyword_hits += 1
             self._last_query_time_ms = (time.time() - start_time) * 1000
-            print(f"   [FAQ] Keyword match: {keyword_result.confidence:.2f} ({self._last_query_time_ms:.1f}ms)")
+            print(
+                f"   [FAQ] Keyword match: {keyword_result.confidence:.2f} ({self._last_query_time_ms:.1f}ms)"
+            )
             return keyword_result
 
         # Step 2: Try semantic search
@@ -524,8 +610,7 @@ class FAQManager:
             if self.config.combine_scores:
                 # Combine scores with weighted average
                 combined_confidence = (
-                    keyword_result.confidence * 0.4 +
-                    semantic_result.confidence * 0.6
+                    keyword_result.confidence * 0.4 + semantic_result.confidence * 0.6
                 )
 
                 # Use the one with higher individual confidence
@@ -542,7 +627,11 @@ class FAQManager:
                 if self.config.prefer_keyword:
                     result = keyword_result
                 else:
-                    result = semantic_result if semantic_result.confidence > keyword_result.confidence else keyword_result
+                    result = (
+                        semantic_result
+                        if semantic_result.confidence > keyword_result.confidence
+                        else keyword_result
+                    )
 
         elif keyword_result:
             result = keyword_result
@@ -555,13 +644,19 @@ class FAQManager:
         self._last_query_time_ms = (time.time() - start_time) * 1000
 
         if result:
-            print(f"   [FAQ] {result.source} match: {result.confidence:.2f} ({self._last_query_time_ms:.1f}ms)")
+            print(
+                f"   [FAQ] {result.source} match: {result.confidence:.2f} ({self._last_query_time_ms:.1f}ms)"
+            )
         else:
-            print(f"   [FAQ] No match for: {query[:50]}... ({self._last_query_time_ms:.1f}ms)")
+            print(
+                f"   [FAQ] No match for: {query[:50]}... ({self._last_query_time_ms:.1f}ms)"
+            )
 
         return result
 
-    def get_answer_text(self, query: str, category: Optional[str] = None) -> Optional[str]:
+    def get_answer_text(
+        self, query: str, category: Optional[str] = None
+    ) -> Optional[str]:
         """
         Convenience method to get just the answer text.
 
@@ -597,11 +692,12 @@ class FAQManager:
 # FACTORY FUNCTIONS
 # =============================================================================
 
+
 def create_faq_manager(
     json_path: Optional[str] = None,
     markdown_path: Optional[str] = None,
     settings: Optional[Dict] = None,
-    config: Optional[FAQConfig] = None
+    config: Optional[FAQConfig] = None,
 ) -> FAQManager:
     """
     Factory function to create configured FAQ manager.
@@ -630,11 +726,12 @@ def create_faq_manager(
 # LEGACY COMPATIBILITY
 # =============================================================================
 
+
 def find_faq_answer_hybrid(
     text: str,
     qa_dict: Dict[str, str],
     faqs: Optional[List[Dict]] = None,
-    semantic_retriever: Optional[Any] = None
+    semantic_retriever: Optional[Any] = None,
 ) -> Optional[str]:
     """
     Legacy-compatible function for hybrid FAQ lookup.
@@ -681,11 +778,36 @@ if __name__ == "__main__":
 
     # Create test FAQs
     test_faqs = [
-        {"id": "001", "question": "Quanto costa un taglio donna?", "answer": "€35", "category": "prezzi"},
-        {"id": "002", "question": "A che ora aprite?", "answer": "Alle 9:00", "category": "orari"},
-        {"id": "003", "question": "Accettate Satispay?", "answer": "Sì, accettiamo Satispay", "category": "pagamenti"},
-        {"id": "004", "question": "C'è parcheggio?", "answer": "Sì, parcheggio gratuito", "category": "servizi"},
-        {"id": "005", "question": "Devo prenotare?", "answer": "Consigliamo la prenotazione", "category": "prenotazioni"},
+        {
+            "id": "001",
+            "question": "Quanto costa un taglio donna?",
+            "answer": "€35",
+            "category": "prezzi",
+        },
+        {
+            "id": "002",
+            "question": "A che ora aprite?",
+            "answer": "Alle 9:00",
+            "category": "orari",
+        },
+        {
+            "id": "003",
+            "question": "Accettate Satispay?",
+            "answer": "Sì, accettiamo Satispay",
+            "category": "pagamenti",
+        },
+        {
+            "id": "004",
+            "question": "C'è parcheggio?",
+            "answer": "Sì, parcheggio gratuito",
+            "category": "servizi",
+        },
+        {
+            "id": "005",
+            "question": "Devo prenotare?",
+            "answer": "Consigliamo la prenotazione",
+            "category": "prenotazioni",
+        },
     ]
 
     # Create manager

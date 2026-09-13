@@ -6,18 +6,19 @@ No cloud, no training, no regex chaos.
 """
 
 import logging
-from typing import Optional, Tuple, Dict, List
-from dataclasses import dataclass
+from typing import Tuple, Dict, List
 
 logger = logging.getLogger("fluxion.nlu.template_fallback")
 
 # Try rapidfuzz first (C-speed), fall back to fuzzywuzzy, then basic
 try:
     from rapidfuzz import fuzz, process as rf_process
+
     _FUZZY_ENGINE = "rapidfuzz"
 except ImportError:
     try:
         from fuzzywuzzy import fuzz, process as rf_process
+
         _FUZZY_ENGINE = "fuzzywuzzy"
     except ImportError:
         _FUZZY_ENGINE = None
@@ -188,11 +189,32 @@ for intent, templates in INTENT_TEMPLATES.items():
 
 # Profanity word list (Italian common)
 _PROFANITY_WORDS = {
-    "cazzo", "merda", "minchia", "stronzo", "stronza", "vaffanculo",
-    "fanculo", "puttana", "troia", "bastardo", "bastarda", "coglione",
-    "porco", "madonna", "dio", "porcodio", "dioporco", "porcamadonna",
-    "diocane", "porcatroia", "cazzata", "incazzato", "incazzata",
-    "del cazzo", "di merda", "figlio di puttana",
+    "cazzo",
+    "merda",
+    "minchia",
+    "stronzo",
+    "stronza",
+    "vaffanculo",
+    "fanculo",
+    "puttana",
+    "troia",
+    "bastardo",
+    "bastarda",
+    "coglione",
+    "porco",
+    "madonna",
+    "dio",
+    "porcodio",
+    "dioporco",
+    "porcamadonna",
+    "diocane",
+    "porcatroia",
+    "cazzata",
+    "incazzato",
+    "incazzata",
+    "del cazzo",
+    "di merda",
+    "figlio di puttana",
 }
 
 # Threshold for fuzzy matching
@@ -253,5 +275,7 @@ def classify_template(text: str) -> Tuple[str, float]:
     intent = _ALL_TEMPLATES[idx][1]
     confidence = score / 100.0
 
-    logger.debug(f"[TEMPLATE] '{text_lower}' → {intent} ({score}%) matched='{matched_text}'")
+    logger.debug(
+        f"[TEMPLATE] '{text_lower}' → {intent} ({score}%) matched='{matched_text}'"
+    )
     return intent, confidence

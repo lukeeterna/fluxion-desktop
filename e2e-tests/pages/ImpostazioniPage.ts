@@ -1,6 +1,6 @@
 /**
  * Impostazioni Page Object
- * Includes VoiceAgentSettings section locators
+ * Covers the managed Sara receptionist and voice-quality controls.
  */
 
 import { Page, Locator, expect } from '@playwright/test';
@@ -11,52 +11,41 @@ export class ImpostazioniPage extends BasePage {
 
   readonly voiceAgentHeading: Locator;
   readonly statusBadge: Locator;
-  readonly groqKeyInput: Locator;
-  // data-testid on buttons for reliable cross-page scoping
-  readonly testButton: Locator;
-  readonly saveButton: Locator;
-  // Eye toggle scoped to the input wrapper div
-  readonly eyeToggle: Locator;
+  readonly managedNotice: Locator;
+  readonly noCredentialNotice: Locator;
+  readonly qualityHeading: Locator;
+  readonly automaticRadio: Locator;
+  readonly qualityRadio: Locator;
+  readonly fastRadio: Locator;
+  readonly saveModeButton: Locator;
 
   constructor(page: Page) {
     super(page);
 
-    this.voiceAgentHeading = page.getByRole('heading', { name: /Assistente Vocale Sara/i });
-    this.statusBadge = page.locator('span').filter({ hasText: /Attivo|Non configurata/ }).first();
-    this.groqKeyInput = page.locator('#groq-api-key');
-    this.testButton = page.getByTestId('voice-settings-testa');
-    this.saveButton = page.getByTestId('voice-settings-salva');
-    // Ghost button inside the relative div that wraps the password input
-    this.eyeToggle = page.locator('div.relative').filter({ has: page.locator('#groq-api-key') }).getByRole('button');
-  }
-
-  // =============================================================================
-  // ACTIONS
-  // =============================================================================
-
-  async fillGroqKey(key: string): Promise<void> {
-    await this.groqKeyInput.fill(key);
-  }
-
-  async clickTesta(): Promise<void> {
-    await this.testButton.click();
-  }
-
-  async clickSalva(): Promise<void> {
-    await this.saveButton.click();
+    this.voiceAgentHeading = page
+      .getByRole('heading', { name: /Sara — Receptionist AI/i, level: 2 })
+      .last();
+    this.statusBadge = page.getByText(/Attiva|Non disponibile|Verifica\.\.\./i).last();
+    this.managedNotice = page.getByText('Gestita automaticamente da FLUXION AI');
+    this.noCredentialNotice = page.getByText(/Nessuna chiave API da inserire/i);
+    this.qualityHeading = page.getByRole('heading', { name: /Qualità Voce Sara/i });
+    this.automaticRadio = page.getByRole('radio', { name: /Automatico \(consigliato\)/i });
+    this.qualityRadio = page.getByRole('radio', { name: /Alta Qualità \(Qwen3-TTS\)/i });
+    this.fastRadio = page.getByRole('radio', { name: /Veloce \(Piper\)/i });
+    this.saveModeButton = page.getByRole('button', { name: /Salva modalità/i });
   }
 
   async scrollToVoiceAgentSection(): Promise<void> {
     await this.voiceAgentHeading.scrollIntoViewIfNeeded();
   }
 
-  async toggleKeyVisibility(): Promise<void> {
-    await this.eyeToggle.click();
+  async selectQualityMode(): Promise<void> {
+    await this.qualityRadio.check();
   }
 
-  // =============================================================================
-  // ASSERTIONS
-  // =============================================================================
+  async saveVoiceMode(): Promise<void> {
+    await this.saveModeButton.click();
+  }
 
   async expectPageLoaded(): Promise<void> {
     await this.waitForPageLoad();
@@ -68,22 +57,23 @@ export class ImpostazioniPage extends BasePage {
     await expect(this.voiceAgentHeading).toBeVisible();
   }
 
-  async expectStatusBadge(status?: 'Attivo' | 'Non configurata'): Promise<void> {
-    if (status) {
-      await expect(this.page.locator('span').filter({ hasText: status }).first()).toBeVisible();
-    } else {
-      await expect(this.statusBadge).toBeVisible();
-    }
+  async expectStatusBadge(): Promise<void> {
+    await this.scrollToVoiceAgentSection();
+    await expect(this.statusBadge).toBeVisible();
   }
 
-  async expectGroqInputVisible(): Promise<void> {
-    await expect(this.groqKeyInput).toBeVisible();
-    await expect(this.groqKeyInput).toHaveAttribute('type', 'password');
+  async expectManagedConfiguration(): Promise<void> {
+    await this.scrollToVoiceAgentSection();
+    await expect(this.managedNotice).toBeVisible();
+    await expect(this.noCredentialNotice).toBeVisible();
   }
 
-  async expectActionButtonsVisible(): Promise<void> {
-    await expect(this.testButton).toBeVisible();
-    await expect(this.saveButton).toBeVisible();
+  async expectQualityControls(): Promise<void> {
+    await this.qualityHeading.scrollIntoViewIfNeeded();
+    await expect(this.automaticRadio).toBeVisible();
+    await expect(this.qualityRadio).toBeVisible();
+    await expect(this.fastRadio).toBeVisible();
+    await expect(this.saveModeButton).toBeVisible();
   }
 
   async takeVoiceSettingsScreenshot(name = 'voice-agent-settings'): Promise<void> {

@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import pytest
-from booking_state_machine import BookingStateMachine, BookingState, BookingContext, StateMachineResult
+from booking_state_machine import BookingStateMachine, BookingState, BookingContext
 
 
 def make_sm(vertical="salone", **ctx_overrides):
@@ -24,29 +24,46 @@ def make_sm(vertical="salone", **ctx_overrides):
 # E1: Dead State Removal
 # =============================================================================
 
+
 class TestE1DeadStateRemoval:
-    def test_state_count_is_14(self):
-        """E1+E4: 23 states reduced to 14."""
-        assert len(list(BookingState)) == 14
+    def test_state_count_is_15(self):
+        """E1+E4 removed dead states; NAME-GATE later added CONFIRMING_NAME."""
+        assert len(list(BookingState)) == 15
 
     def test_removed_states_not_in_enum(self):
         """Removed states should not exist."""
         removed = [
-            "CHECKING_AVAILABILITY", "SLOT_UNAVAILABLE", "PROPOSING_WAITLIST",
-            "CONFIRMING_WAITLIST", "WAITLIST_SAVED", "WAITING_OPERATOR",
-            "REGISTERING_CONFIRM", "DISAMBIGUATING_BIRTH_DATE",
+            "CHECKING_AVAILABILITY",
+            "SLOT_UNAVAILABLE",
+            "PROPOSING_WAITLIST",
+            "CONFIRMING_WAITLIST",
+            "WAITLIST_SAVED",
+            "WAITING_OPERATOR",
+            "REGISTERING_CONFIRM",
+            "DISAMBIGUATING_BIRTH_DATE",
             "ASKING_CLOSE_CONFIRMATION",
         ]
         for name in removed:
             assert not hasattr(BookingState, name), f"{name} should be removed"
 
     def test_active_states_exist(self):
-        """All 14 active states exist."""
+        """All 15 active states exist, including the later NAME-GATE state."""
         active = [
-            "IDLE", "WAITING_NAME", "WAITING_SERVICE", "WAITING_DATE",
-            "WAITING_TIME", "CONFIRMING", "COMPLETED", "CANCELLED",
-            "WAITING_SURNAME", "CONFIRMING_PHONE", "PROPOSE_REGISTRATION",
-            "REGISTERING_SURNAME", "REGISTERING_PHONE", "DISAMBIGUATING_NAME",
+            "IDLE",
+            "WAITING_NAME",
+            "WAITING_SERVICE",
+            "WAITING_DATE",
+            "WAITING_TIME",
+            "CONFIRMING",
+            "COMPLETED",
+            "CANCELLED",
+            "WAITING_SURNAME",
+            "CONFIRMING_PHONE",
+            "PROPOSE_REGISTRATION",
+            "REGISTERING_SURNAME",
+            "REGISTERING_PHONE",
+            "DISAMBIGUATING_NAME",
+            "CONFIRMING_NAME",
         ]
         for name in active:
             assert hasattr(BookingState, name), f"{name} should exist"
@@ -56,11 +73,20 @@ class TestE1DeadStateRemoval:
 # E2: Exit Path from Registration
 # =============================================================================
 
+
 class TestE2RegistrationExit:
-    @pytest.mark.parametrize("cancel_phrase", [
-        "annulla", "no grazie", "lascia perdere", "non mi interessa",
-        "non voglio", "ho cambiato idea", "niente",
-    ])
+    @pytest.mark.parametrize(
+        "cancel_phrase",
+        [
+            "annulla",
+            "no grazie",
+            "lascia perdere",
+            "non mi interessa",
+            "non voglio",
+            "ho cambiato idea",
+            "niente",
+        ],
+    )
     def test_cancel_from_registering_surname(self, cancel_phrase):
         """Cancel during surname collection exits to CANCELLED."""
         sm = make_sm(state=BookingState.REGISTERING_SURNAME, client_name="Mario")
@@ -68,14 +94,20 @@ class TestE2RegistrationExit:
         assert result.next_state == BookingState.CANCELLED
         assert result.should_exit is True
 
-    @pytest.mark.parametrize("cancel_phrase", [
-        "annulla", "no grazie", "lascia perdere",
-    ])
+    @pytest.mark.parametrize(
+        "cancel_phrase",
+        [
+            "annulla",
+            "no grazie",
+            "lascia perdere",
+        ],
+    )
     def test_cancel_from_registering_phone(self, cancel_phrase):
         """Cancel during phone collection exits to CANCELLED."""
         sm = make_sm(
             state=BookingState.REGISTERING_PHONE,
-            client_name="Mario", client_surname="Rossi"
+            client_name="Mario",
+            client_surname="Rossi",
         )
         result = sm.process_message(cancel_phrase)
         assert result.next_state == BookingState.CANCELLED
@@ -85,8 +117,9 @@ class TestE2RegistrationExit:
         """Cancel during phone confirmation exits to CANCELLED."""
         sm = make_sm(
             state=BookingState.CONFIRMING_PHONE,
-            client_name="Mario", client_surname="Rossi",
-            client_phone="3331234567"
+            client_name="Mario",
+            client_surname="Rossi",
+            client_phone="3331234567",
         )
         result = sm.process_message("no grazie, lascia perdere")
         assert result.next_state == BookingState.CANCELLED
@@ -103,17 +136,24 @@ class TestE2RegistrationExit:
 # E3: Single Slot Suggestion
 # =============================================================================
 
+
 class TestE3SlotSuggestion:
     def test_slot_rejection_offers_alternatives(self):
         """Declining suggested slot offers alternatives."""
         sm = make_sm(
             state=BookingState.CONFIRMING,
-            client_name="Mario", service="taglio", service_display="Taglio",
-            date="2026-04-15", date_display="martedì",
-            time="10:00", time_display="alle 10:00",
+            client_name="Mario",
+            service="taglio",
+            service_display="Taglio",
+            date="2026-04-15",
+            date_display="martedì",
+            time="10:00",
+            time_display="alle 10:00",
         )
         sm.context.alternative_slots = [
-            {"time": "11:30"}, {"time": "14:00"}, {"time": "16:00"}
+            {"time": "11:30"},
+            {"time": "14:00"},
+            {"time": "16:00"},
         ]
         result = sm.process_message("no")
         assert result.next_state == BookingState.WAITING_TIME
@@ -124,8 +164,11 @@ class TestE3SlotSuggestion:
         """'annulla' should cancel, not offer alternatives."""
         sm = make_sm(
             state=BookingState.CONFIRMING,
-            client_name="Mario", service="taglio", service_display="Taglio",
-            date="2026-04-15", time="10:00",
+            client_name="Mario",
+            service="taglio",
+            service_display="Taglio",
+            date="2026-04-15",
+            time="10:00",
         )
         sm.context.alternative_slots = [{"time": "11:30"}]
         result = sm.process_message("annulla")
@@ -135,8 +178,10 @@ class TestE3SlotSuggestion:
         """Without alternatives, 'no' follows normal cancel flow."""
         sm = make_sm(
             state=BookingState.CONFIRMING,
-            client_name="Mario", service="taglio",
-            date="2026-04-15", time="10:00",
+            client_name="Mario",
+            service="taglio",
+            date="2026-04-15",
+            time="10:00",
         )
         # No alternative_slots set
         result = sm.process_message("no")
@@ -148,39 +193,55 @@ class TestE3SlotSuggestion:
 # E4: Direct Completion (no ASKING_CLOSE_CONFIRMATION)
 # =============================================================================
 
+
 class TestE4DirectCompletion:
     def test_confirmation_goes_to_completed(self):
         """Confirming booking goes directly to COMPLETED."""
         sm = make_sm(
             state=BookingState.CONFIRMING,
-            client_name="Mario", client_id="123",
-            service="taglio", service_display="Taglio",
-            date="2026-04-15", date_display="martedì",
-            time="10:00", time_display="alle 10:00",
+            client_name="Mario",
+            client_id="123",
+            service="taglio",
+            service_display="Taglio",
+            date="2026-04-15",
+            date_display="martedì",
+            time="10:00",
+            time_display="alle 10:00",
         )
         result = sm.process_message("sì confermo")
         assert result.next_state == BookingState.COMPLETED
         assert result.should_exit is True
         assert result.booking is not None
-        assert "whatsapp" in result.response.lower() or "confermata" in result.response.lower()
+        assert (
+            "whatsapp" in result.response.lower()
+            or "confermata" in result.response.lower()
+        )
 
 
 # =============================================================================
 # E5: Escalation with Context Handoff
 # =============================================================================
 
+
 class TestE5EscalationHandoff:
     def test_operator_escalation_has_context(self):
         """Operator escalation includes collected info."""
         sm = make_sm(
             state=BookingState.WAITING_TIME,
-            client_name="Marco", service="taglio", service_display="Taglio",
+            client_name="Marco",
+            service="taglio",
+            service_display="Taglio",
             date_display="venerdì",
         )
         result = sm.process_message("voglio parlare con un operatore")
         assert result.should_exit is True
         assert result.escalate_to_human is True
-        assert "Taglio" in result.response or "annotato" in result.response
+        # E6-FIX deliberately removed false live-transfer promises.
+        # Context is carried in lookup_params for the human handoff, while the
+        # caller receives an honest callback commitment.
+        assert "richiam" in result.response.lower()
+        assert "arrivederci" in result.response.lower()
+        assert "collega" not in result.response.lower()
         # Summary in lookup_params
         summary = result.lookup_params.get("escalation_summary", {})
         assert summary.get("cliente") == "Marco"
@@ -195,7 +256,11 @@ class TestE5EscalationHandoff:
 
     def test_escalation_manager_functions(self):
         """Test escalation_manager module directly."""
-        from escalation_manager import build_escalation_summary, format_escalation_response, build_caller_message
+        from escalation_manager import (
+            build_escalation_summary,
+            format_escalation_response,
+            build_caller_message,
+        )
 
         ctx = BookingContext()
         ctx.client_name = "Luigi"
@@ -211,13 +276,17 @@ class TestE5EscalationHandoff:
         assert "Piega" in formatted
 
         msg = build_caller_message(summary)
-        assert "collega" in msg
-        assert "Piega" in msg
+        # FIX-A/E6 contract: no fabricated colleague on the line. The detailed
+        # booking context is for the operator handoff, not repeated to caller.
+        assert "richiam" in msg.lower()
+        assert "arrivederci" in msg.lower()
+        assert "collega" not in msg.lower()
 
 
 # =============================================================================
 # E6: Global 3-Strike Escalation
 # =============================================================================
+
 
 class TestE6ThreeStrikeEscalation:
     def test_three_failures_trigger_escalation(self):
@@ -248,8 +317,10 @@ class TestE6ThreeStrikeEscalation:
         """Already exiting calls shouldn't trigger strike tracking."""
         sm = make_sm(
             state=BookingState.CONFIRMING,
-            client_name="Mario", service="taglio",
-            date="2026-04-15", time="10:00",
+            client_name="Mario",
+            service="taglio",
+            date="2026-04-15",
+            time="10:00",
         )
         r = sm.process_message("sì confermo")
         assert r.should_exit is True
@@ -260,17 +331,19 @@ class TestE6ThreeStrikeEscalation:
 # E7: VoIP Keepalive (syntax check only — pjsua2 not available on MacBook)
 # =============================================================================
 
+
 class TestE7VoIPKeepalive:
     def test_sip_config_has_keepalive(self):
         """SIPConfig dataclass has keepalive_interval field."""
         import ast
+
         source = Path(__file__).parent.parent / "src" / "voip_pjsua2.py"
         tree = ast.parse(source.read_text())
         # Check that keepalive_interval is in the SIPConfig class
         found = False
         for node in ast.walk(tree):
-            if isinstance(node, ast.AnnAssign) and hasattr(node.target, 'id'):
-                if node.target.id == 'keepalive_interval':
+            if isinstance(node, ast.AnnAssign) and hasattr(node.target, "id"):
+                if node.target.id == "keepalive_interval":
                     found = True
         assert found, "keepalive_interval not found in voip_pjsua2.py"
 

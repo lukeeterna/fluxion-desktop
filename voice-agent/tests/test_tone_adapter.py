@@ -6,9 +6,9 @@ Verifies that Sara adapts her response tone based on caller sentiment.
 
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import pytest
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
 from tone_adapter import ToneAdapter, ToneMode
 
 
@@ -52,10 +52,10 @@ class TestToneTransitions:
         adapter.update_tone("negative", 2)  # -> EMPATHETIC
         assert adapter.current_tone == ToneMode.EMPATHETIC
 
-        adapter.update_tone("neutral", 0)   # -> still EMPATHETIC (sticky)
+        adapter.update_tone("neutral", 0)  # -> still EMPATHETIC (sticky)
         assert adapter.current_tone == ToneMode.EMPATHETIC
 
-        adapter.update_tone("neutral", 0)   # -> still EMPATHETIC
+        adapter.update_tone("neutral", 0)  # -> still EMPATHETIC
         assert adapter.current_tone == ToneMode.EMPATHETIC
 
         adapter.update_tone("positive", 0)  # -> ENTHUSIASTIC (breaks sticky)
@@ -67,19 +67,19 @@ class TestToneTransitions:
         adapter.update_tone("positive", 0)  # -> ENTHUSIASTIC, 2 turns remaining
         assert adapter.current_tone == ToneMode.ENTHUSIASTIC
 
-        adapter.update_tone("neutral", 0)   # turn 1 -> ENTHUSIASTIC (1 remaining)
+        adapter.update_tone("neutral", 0)  # turn 1 -> ENTHUSIASTIC (1 remaining)
         assert adapter.current_tone == ToneMode.ENTHUSIASTIC
 
-        adapter.update_tone("neutral", 0)   # turn 2 -> NEUTRAL (0 remaining)
+        adapter.update_tone("neutral", 0)  # turn 2 -> NEUTRAL (0 remaining)
         assert adapter.current_tone == ToneMode.NEUTRAL
 
     def test_enthusiastic_renewed_by_positive(self):
         """A new positive turn resets the 2-turn counter."""
         adapter = ToneAdapter()
         adapter.update_tone("positive", 0)  # ENTHUSIASTIC, 2 turns
-        adapter.update_tone("neutral", 0)   # 1 remaining
+        adapter.update_tone("neutral", 0)  # 1 remaining
         adapter.update_tone("positive", 0)  # re-armed, 2 turns
-        adapter.update_tone("neutral", 0)   # 1 remaining
+        adapter.update_tone("neutral", 0)  # 1 remaining
         assert adapter.current_tone == ToneMode.ENTHUSIASTIC
 
 
@@ -113,34 +113,52 @@ class TestEmpatheticAdaptation:
 
     def test_empathetic_adds_prefix(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Ho prenotato per le 15:00.", ToneMode.EMPATHETIC)
+        result = adapter.adapt_response(
+            "Ho prenotato per le 15:00.", ToneMode.EMPATHETIC
+        )
         # Should start with one of the empathy prefixes
-        empathy_starts = ["Capisco.", "Ha ragione.", "Mi dispiace.", "Comprendo.", "Mi scusi."]
-        assert any(result.startswith(p) for p in empathy_starts), f"Response should start with empathy prefix: {result}"
+        empathy_starts = [
+            "Capisco.",
+            "Ha ragione.",
+            "Mi dispiace.",
+            "Comprendo.",
+            "Mi scusi.",
+        ]
+        assert any(result.startswith(p) for p in empathy_starts), (
+            f"Response should start with empathy prefix: {result}"
+        )
 
     def test_empathetic_strips_backchannel(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Perfetto! Procediamo con la prenotazione.", ToneMode.EMPATHETIC)
+        result = adapter.adapt_response(
+            "Perfetto! Procediamo con la prenotazione.", ToneMode.EMPATHETIC
+        )
         # "Perfetto!" backchannel should be stripped
         assert "Perfetto" not in result or "Perfetto." not in result.split(" ", 1)[0]
         assert "prenotazione" in result
 
     def test_empathetic_strips_fillers(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Allora, procediamo con la prenotazione.", ToneMode.EMPATHETIC)
+        result = adapter.adapt_response(
+            "Allora, procediamo con la prenotazione.", ToneMode.EMPATHETIC
+        )
         # "Allora," should be removed
         assert "Allora" not in result
         assert "prenotazione" in result
 
     def test_empathetic_shortens_removes_filler_dunque(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Dunque, vediamo gli orari disponibili.", ToneMode.EMPATHETIC)
+        result = adapter.adapt_response(
+            "Dunque, vediamo gli orari disponibili.", ToneMode.EMPATHETIC
+        )
         assert "Dunque" not in result
         assert "orari disponibili" in result
 
     def test_empathetic_preserves_questions(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Per quale giorno desidera prenotare?", ToneMode.EMPATHETIC)
+        result = adapter.adapt_response(
+            "Per quale giorno desidera prenotare?", ToneMode.EMPATHETIC
+        )
         assert "?" in result
 
     def test_empathetic_prefix_rotates(self):
@@ -164,14 +182,20 @@ class TestEnthusiasticAdaptation:
 
     def test_enthusiastic_adds_warmth(self):
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Ho prenotato per le 15:00.", ToneMode.ENTHUSIASTIC)
+        result = adapter.adapt_response(
+            "Ho prenotato per le 15:00.", ToneMode.ENTHUSIASTIC
+        )
         warmth_words = ["Che bello!", "Fantastico!", "Ottimo!", "Benissimo!"]
-        assert any(w in result for w in warmth_words), f"Should contain warmth prefix: {result}"
+        assert any(w in result for w in warmth_words), (
+            f"Should contain warmth prefix: {result}"
+        )
 
     def test_enthusiastic_skips_already_enthusiastic(self):
         """Don't double-up if response already starts enthusiastically."""
         adapter = ToneAdapter()
-        result = adapter.adapt_response("Fantastico, procediamo!", ToneMode.ENTHUSIASTIC)
+        result = adapter.adapt_response(
+            "Fantastico, procediamo!", ToneMode.ENTHUSIASTIC
+        )
         # Should not prepend another "Fantastico!"
         assert not result.startswith("Fantastico! Fantastico")
         assert not result.startswith("Ottimo! Fantastico")
@@ -196,7 +220,16 @@ class TestIntegrationFlow:
         assert adapter.current_tone == ToneMode.EMPATHETIC
         r1 = adapter.adapt_response("Perfetto! Vediamo gli orari.")
         assert "!" not in r1
-        assert any(r1.startswith(p) for p in ["Capisco.", "Ha ragione.", "Mi dispiace.", "Comprendo.", "Mi scusi."])
+        assert any(
+            r1.startswith(p)
+            for p in [
+                "Capisco.",
+                "Ha ragione.",
+                "Mi dispiace.",
+                "Comprendo.",
+                "Mi scusi.",
+            ]
+        )
 
         # Turn 2: still negative
         adapter.update_tone("neutral", 0)

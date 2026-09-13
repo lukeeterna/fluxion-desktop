@@ -26,6 +26,7 @@ class CallState(Enum):
 @dataclass
 class SIPConfig:
     """Ehiweb SIP configuration."""
+
     server: str = "sip.vivavox.it"
     port: int = 5060
     username: str = ""
@@ -49,6 +50,7 @@ class SIPConfig:
 @dataclass
 class CallInfo:
     """Active call information."""
+
     call_id: str
     direction: CallDirection
     remote_number: str
@@ -133,6 +135,7 @@ class SIPClient:
             return None
 
         import time
+
         call_id = f"call_{int(time.time())}"
 
         self.active_call = CallInfo(
@@ -140,7 +143,7 @@ class SIPClient:
             direction=CallDirection.OUTBOUND,
             remote_number=number,
             state=CallState.RINGING,
-            start_time=time.time()
+            start_time=time.time(),
         )
 
         print(f"📞 Calling {number}...")
@@ -157,6 +160,7 @@ class SIPClient:
 
         self.active_call.state = CallState.CONNECTED
         import time
+
         self.active_call.start_time = time.time()
 
         if self.on_call_connected:
@@ -171,6 +175,7 @@ class SIPClient:
             return False
 
         import time
+
         self.active_call.state = CallState.ENDED
         self.active_call.end_time = time.time()
 
@@ -217,7 +222,9 @@ class SIPClient:
                 "remote_number": self.active_call.remote_number,
                 "state": self.active_call.state.value,
                 "duration": self.active_call.duration_seconds,
-            } if self.active_call else None
+            }
+            if self.active_call
+            else None,
         }
 
 
@@ -336,16 +343,14 @@ class VoIPManager:
 
     def get_status(self) -> Dict[str, Any]:
         """Get VoIP manager status."""
-        return {
-            "running": self.running,
-            "sip": self.sip.get_status()
-        }
+        return {"running": self.running, "sip": self.sip.get_status()}
 
 
 # Test
 async def test_sip():
     """Test SIP client."""
     from dotenv import load_dotenv
+
     load_dotenv()
 
     config = SIPConfig.from_env()

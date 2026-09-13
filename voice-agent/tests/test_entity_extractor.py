@@ -44,17 +44,14 @@ DATE_TEST_CASES = [
     ("domani", 1, "tomorrow"),
     ("dopodomani", 2, "day after tomorrow"),
     ("oggi", 0, "today"),
-
     # Day names
     ("lunedì", 6, "next Monday (from Tuesday)"),  # Next Monday is 6 days away
     ("mercoledì", 1, "next Wednesday (tomorrow from Tuesday)"),
     ("venerdì", 3, "next Friday"),
     ("sabato", 4, "next Saturday"),
     ("domenica", 5, "next Sunday"),
-
     # Week references
     ("la prossima settimana", 6, "next week (Monday)"),
-
     # Explicit dates
     ("il 15 gennaio", 2, "January 15"),
     ("20 gennaio", 7, "January 20"),
@@ -68,14 +65,12 @@ TIME_TEST_CASES = [
     ("ore 10", 10, 0, "at 10:00"),
     ("10:30", 10, 30, "10:30 standalone"),
     ("alle 9 e mezza", 9, 30, "9:30 with 'mezza'"),
-
     # Approximate slots
     ("di pomeriggio", 15, 0, "afternoon slot"),
     ("mattina", 10, 0, "morning slot"),
     ("sera", 19, 0, "evening slot"),
     ("mezzogiorno", 12, 0, "noon"),
     ("tardo pomeriggio", 17, 0, "late afternoon"),
-
     # Ranges
     ("tra le 14 e le 16", 15, 0, "range midpoint"),
 ]
@@ -121,9 +116,15 @@ EMAIL_TEST_CASES = [
     ("MARIO@GMAIL.COM", "mario@gmail.com"),
     # --- GAP-P1-2: keyword-anchored priority ---
     ("scrivi a support@azienda.it, la mia email è mario@gmail.com", "mario@gmail.com"),
-    ("contatti: info@salone.it - la mia mail è luigi.bianchi@hotmail.it", "luigi.bianchi@hotmail.it"),
+    (
+        "contatti: info@salone.it - la mia mail è luigi.bianchi@hotmail.it",
+        "luigi.bianchi@hotmail.it",
+    ),
     ("l'indirizzo email è anna.verdi@libero.it", "anna.verdi@libero.it"),
-    ("per comunicazioni ufficio@studio.it, ma la mia e-mail è personal@gmail.com", "personal@gmail.com"),
+    (
+        "per comunicazioni ufficio@studio.it, ma la mia e-mail è personal@gmail.com",
+        "personal@gmail.com",
+    ),
     ("mia mail: mario@email.it", "mario@email.it"),
     # --- GAP-P1-2: STT artifacts ---
     ("la mia email è mario chiocciola gmail punto com", "mario@gmail.com"),
@@ -131,8 +132,16 @@ EMAIL_TEST_CASES = [
 ]
 
 SERVICE_CONFIG = {
-    "taglio": ["taglio", "sforbiciata", "spuntatina", "tagli",
-               "capelli", "fare i capelli", "taglio capelli", "sistemare i capelli"],
+    "taglio": [
+        "taglio",
+        "sforbiciata",
+        "spuntatina",
+        "tagli",
+        "capelli",
+        "fare i capelli",
+        "taglio capelli",
+        "sistemare i capelli",
+    ],
     "colore": ["colore", "tinta", "colorazione"],
     "piega": ["piega", "messa in piega", "asciugatura"],
     "barba": ["barba", "rifinitura barba", "rasatura barba"],
@@ -152,18 +161,22 @@ SERVICE_TEST_CASES = [
 # TESTS
 # =============================================================================
 
+
 class TestDateExtraction:
     """Test date extraction."""
 
     def test_relative_dates(self):
         """Test relative date keywords."""
-        for text, expected_days, desc in DATE_TEST_CASES[:3]:  # oggi, domani, dopodomani
+        for text, expected_days, desc in DATE_TEST_CASES[
+            :3
+        ]:  # oggi, domani, dopodomani
             result = extract_date(text, reference_date=REFERENCE_DATE)
             assert result is not None, f"Failed to extract: {text}"
 
             expected_date = REFERENCE_DATE + timedelta(days=expected_days)
-            assert result.date.date() == expected_date.date(), \
+            assert result.date.date() == expected_date.date(), (
                 f"Wrong date for '{text}': got {result.date.date()}, expected {expected_date.date()}"
+            )
 
     def test_day_names(self):
         """Test day name extraction."""
@@ -222,18 +235,21 @@ class TestTimeExtraction:
         for text, expected_hour, expected_minute, desc in TIME_TEST_CASES[:5]:
             result = extract_time(text)
             assert result is not None, f"Failed to extract: {text}"
-            assert result.time.hour == expected_hour, \
+            assert result.time.hour == expected_hour, (
                 f"Wrong hour for '{text}': got {result.time.hour}, expected {expected_hour}"
-            assert result.time.minute == expected_minute, \
+            )
+            assert result.time.minute == expected_minute, (
                 f"Wrong minute for '{text}': got {result.time.minute}, expected {expected_minute}"
+            )
 
     def test_approximate_slots(self):
         """Test approximate time slot keywords."""
         for text, expected_hour, _, desc in TIME_TEST_CASES[5:10]:
             result = extract_time(text)
             assert result is not None, f"Failed to extract: {text}"
-            assert result.time.hour == expected_hour, \
+            assert result.time.hour == expected_hour, (
                 f"Wrong hour for '{text}': got {result.time.hour}, expected {expected_hour}"
+            )
             assert result.is_approximate is True
 
     def test_time_ranges(self):
@@ -387,8 +403,9 @@ class TestNameExtraction:
         for text, expected_name, desc in NAME_TEST_CASES:
             result = extract_name(text)
             assert result is not None, f"Failed to extract: {text}"
-            assert result.name == expected_name, \
+            assert result.name == expected_name, (
                 f"Wrong name for '{text}': got '{result.name}', expected '{expected_name}'"
+            )
 
     def test_capitalization(self):
         """Test name capitalization."""
@@ -442,8 +459,9 @@ class TestServiceExtraction:
         for text, expected in SERVICE_TEST_CASES:
             result = extract_service(text, SERVICE_CONFIG)
             assert result is not None, f"Failed to extract: {text}"
-            assert result[0] == expected, \
+            assert result[0] == expected, (
                 f"Wrong service for '{text}': got '{result[0]}', expected '{expected}'"
+            )
 
     def test_no_match_returns_none(self):
         """Test unknown service returns None."""
@@ -510,6 +528,7 @@ class TestPerformance:
 # BUG 6: "prossima" ignored when days_ahead > 0
 # =============================================================================
 
+
 class TestBug6ProssimaSettimana:
     """BUG 6: 'mercoledì della settimana prossima' must return next week, not this week."""
 
@@ -518,7 +537,9 @@ class TestBug6ProssimaSettimana:
 
     def test_mercoledi_settimana_prossima_from_monday(self):
         """Critical case: 'mercoledì della settimana prossima' from Monday."""
-        result = extract_date("mercoledì della settimana prossima", reference_date=self.REF_MONDAY)
+        result = extract_date(
+            "mercoledì della settimana prossima", reference_date=self.REF_MONDAY
+        )
         assert result is not None
         # Must be Feb 11 (next week Wed), NOT Feb 4 (this week Wed)
         assert result.date.day == 11, f"Expected day 11, got {result.date.day}"
@@ -526,14 +547,18 @@ class TestBug6ProssimaSettimana:
 
     def test_venerdi_prossima_settimana_from_monday(self):
         """'venerdì della prossima settimana' from Monday."""
-        result = extract_date("venerdì della prossima settimana", reference_date=self.REF_MONDAY)
+        result = extract_date(
+            "venerdì della prossima settimana", reference_date=self.REF_MONDAY
+        )
         assert result is not None
         # Must be Feb 13 (next week Fri), NOT Feb 6 (this week Fri)
         assert result.date.day == 13, f"Expected day 13, got {result.date.day}"
 
     def test_giovedi_settimana_prossima_from_monday(self):
         """'giovedì settimana prossima' from Monday."""
-        result = extract_date("giovedì settimana prossima", reference_date=self.REF_MONDAY)
+        result = extract_date(
+            "giovedì settimana prossima", reference_date=self.REF_MONDAY
+        )
         assert result is not None
         assert result.date.day == 12, f"Expected day 12, got {result.date.day}"
 
@@ -552,7 +577,9 @@ class TestBug6ProssimaSettimana:
     def test_lunedi_settimana_prossima_from_tuesday(self):
         """'lunedì della settimana prossima' from Tuesday - modulo already wraps."""
         ref_tuesday = datetime(2026, 2, 3, 10, 0, 0)
-        result = extract_date("lunedì della settimana prossima", reference_date=ref_tuesday)
+        result = extract_date(
+            "lunedì della settimana prossima", reference_date=ref_tuesday
+        )
         assert result is not None
         # Tuesday→Monday via modulo = 6 days = Feb 9 (next Monday)
         # weekday(0) < today_weekday(1) → modulo already wrapped → no +7
@@ -561,7 +588,9 @@ class TestBug6ProssimaSettimana:
     def test_sabato_settimana_prossima_from_wednesday(self):
         """'sabato della settimana prossima' from Wednesday."""
         ref_wednesday = datetime(2026, 2, 4, 10, 0, 0)
-        result = extract_date("sabato della settimana prossima", reference_date=ref_wednesday)
+        result = extract_date(
+            "sabato della settimana prossima", reference_date=ref_wednesday
+        )
         assert result is not None
         # Wed→Sat = 3 days = Feb 7 (this week). weekday(5)>today(2) → +7 = Feb 14
         assert result.date.day == 14, f"Expected day 14, got {result.date.day}"
@@ -577,6 +606,7 @@ class TestBug6ProssimaSettimana:
 # BUG 1: "capelli" extraction as taglio service
 # =============================================================================
 
+
 class TestBug1CapelliExtraction:
     """BUG 1: 'capelli' must be extracted as taglio service."""
 
@@ -589,15 +619,17 @@ class TestBug1CapelliExtraction:
     def test_multiservice_barba_capelli_tinta(self):
         """Real case: 'barba, capelli e tinta' → 3 services."""
         from entity_extractor import extract_services
+
         results = extract_services(
-            "io mi devo fare la barba mi devo fare i capelli e la tinta",
-            SERVICE_CONFIG
+            "io mi devo fare la barba mi devo fare i capelli e la tinta", SERVICE_CONFIG
         )
         service_ids = [r[0] for r in results]
         assert "taglio" in service_ids, f"'taglio' missing from {service_ids}"
         assert "barba" in service_ids, f"'barba' missing from {service_ids}"
         assert "colore" in service_ids, f"'colore' missing from {service_ids}"
-        assert len(service_ids) == 3, f"Expected 3 services, got {len(service_ids)}: {service_ids}"
+        assert len(service_ids) == 3, (
+            f"Expected 3 services, got {len(service_ids)}: {service_ids}"
+        )
 
     def test_taglio_capelli_variant(self):
         """'taglio capelli' → taglio."""
@@ -609,7 +641,9 @@ class TestBug1CapelliExtraction:
         """Existing taglio synonyms still work."""
         for term in ["taglio", "sforbiciata", "spuntatina"]:
             result = extract_service(f"vorrei un {term}", SERVICE_CONFIG)
-            assert result is not None and result[0] == "taglio", f"Regression on '{term}'"
+            assert result is not None and result[0] == "taglio", (
+                f"Regression on '{term}'"
+            )
 
 
 class TestExtractTimeAMPM:
@@ -695,12 +729,11 @@ class TestExtractDateSTTTruncation:
 # TESTS: GAP-B2 (Mese prossimo / fra N mesi) + GAP-B6 (Weekend)
 # =============================================================================
 
-import pytest as _pytest
 
 # Reference: giovedì 2026-03-12 (weekday=3)
-_REF_THU = datetime(2026, 3, 12)   # giovedì
-_REF_SAT = datetime(2026, 3, 14)   # sabato
-_REF_SUN = datetime(2026, 3, 15)   # domenica
+_REF_THU = datetime(2026, 3, 12)  # giovedì
+_REF_SAT = datetime(2026, 3, 14)  # sabato
+_REF_SUN = datetime(2026, 3, 15)  # domenica
 
 
 class TestDateRelativeMonthAndWeekend:
@@ -854,6 +887,7 @@ class TestDateRelativeMonthAndWeekend:
 # GAP-P0-1: Phone Validation
 # =============================================================================
 
+
 class TestPhoneValidation:
     """GAP-P0-1: Phone min/max length + mobile-only validation."""
 
@@ -884,12 +918,17 @@ class TestPhoneValidation:
         """9-digit mobile (minimum valid)."""
         result = extract_phone("333123456")
         # This hits the Whisper fallback path; bare length check must pass
-        assert result is None or len(result.lstrip('+').lstrip('39')) >= 9 or result is not None
+        assert (
+            result is None
+            or len(result.lstrip("+").lstrip("39")) >= 9
+            or result is not None
+        )
 
 
 # =============================================================================
 # GAP-P0-2: Email RFC5322 Compliance
 # =============================================================================
+
 
 class TestEmailValidation:
     """GAP-P0-2: Email RFC5322-lite compliance + lowercase normalisation."""
@@ -929,6 +968,7 @@ class TestEmailValidation:
 # =============================================================================
 # GAP-P1-8: MULTI-OPERATOR EXTRACTION TESTS
 # =============================================================================
+
 
 class TestMultiOperatorExtraction:
     """Tests for extract_operators_multi() — GAP-P1-8."""
@@ -1005,4 +1045,5 @@ class TestMultiOperatorExtraction:
 
 if __name__ == "__main__":
     import pytest
+
     pytest.main([__file__, "-v"])

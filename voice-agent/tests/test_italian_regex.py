@@ -19,14 +19,17 @@ import sys
 import os
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from italian_regex import (
-    strip_fillers, detect_fillers,
-    is_conferma, is_rifiuto,
+    strip_fillers,
+    is_conferma,
+    is_rifiuto,
     is_escalation,
-    check_content, ContentSeverity,
-    detect_correction, CorrectionType,
+    check_content,
+    ContentSeverity,
+    detect_correction,
+    CorrectionType,
     is_ambiguous_date,
     has_multi_service_intent,
     extract_multi_services,
@@ -83,29 +86,74 @@ class TestFillerStripping:
 class TestConferma:
     """Test Italian confirmation detection."""
 
-    @pytest.mark.parametrize("phrase", [
-        "si", "sì", "si si", "ok", "okay", "okei",
-        "va bene", "d'accordo", "perfetto", "benissimo",
-        "ottimo", "esatto", "esattamente", "certo", "certamente",
-        "confermo", "confermato",
-        "assolutamente", "sicuramente", "ovviamente", "naturalmente",
-        "senz'altro", "senza dubbio", "come no",
-        "si grazie", "si certo", "si va bene", "si dai", "si perfetto",
-        "dai", "andiamo", "procediamo", "facciamo", "avanti",
-        "mi sta bene", "mi va bene", "per me va bene", "per me ok",
-        "ci sto", "sono d'accordo", "va benissimo",
-        "tutto ok", "tutto bene", "tutto giusto", "tutto apposto",
-        "giusto", "proprio così",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "si",
+            "sì",
+            "si si",
+            "ok",
+            "okay",
+            "okei",
+            "va bene",
+            "d'accordo",
+            "perfetto",
+            "benissimo",
+            "ottimo",
+            "esatto",
+            "esattamente",
+            "certo",
+            "certamente",
+            "confermo",
+            "confermato",
+            "assolutamente",
+            "sicuramente",
+            "ovviamente",
+            "naturalmente",
+            "senz'altro",
+            "senza dubbio",
+            "come no",
+            "si grazie",
+            "si certo",
+            "si va bene",
+            "si dai",
+            "si perfetto",
+            "dai",
+            "andiamo",
+            "procediamo",
+            "facciamo",
+            "avanti",
+            "mi sta bene",
+            "mi va bene",
+            "per me va bene",
+            "per me ok",
+            "ci sto",
+            "sono d'accordo",
+            "va benissimo",
+            "tutto ok",
+            "tutto bene",
+            "tutto giusto",
+            "tutto apposto",
+            "giusto",
+            "proprio così",
+        ],
+    )
     def test_conferma_detected(self, phrase):
         is_conf, score = is_conferma(phrase)
         assert is_conf, f"'{phrase}' should be detected as conferma"
         assert score >= 0.85
 
-    @pytest.mark.parametrize("phrase", [
-        "no", "non mi va", "taglio domani", "prossima settimana",
-        "Sono Mario", "quanto costa",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "no",
+            "non mi va",
+            "taglio domani",
+            "prossima settimana",
+            "Sono Mario",
+            "quanto costa",
+        ],
+    )
     def test_non_conferma(self, phrase):
         is_conf, score = is_conferma(phrase)
         assert not is_conf, f"'{phrase}' should NOT be conferma"
@@ -117,26 +165,51 @@ class TestConferma:
 class TestRifiuto:
     """Test Italian rejection detection."""
 
-    @pytest.mark.parametrize("phrase", [
-        "no", "no no", "nono", "niente",
-        "no grazie", "non mi va", "non mi interessa", "non mi serve",
-        "assolutamente no", "per niente", "non se ne parla",
-        "annulla", "stop", "basta",
-        "lascia stare", "lascia perdere",
-        "non credo", "forse no", "meglio di no", "direi di no",
-        "ci devo pensare", "devo pensarci",
-        "ho cambiato idea",
-        "preferisco di no",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "no",
+            "no no",
+            "nono",
+            "niente",
+            "no grazie",
+            "non mi va",
+            "non mi interessa",
+            "non mi serve",
+            "assolutamente no",
+            "per niente",
+            "non se ne parla",
+            "annulla",
+            "stop",
+            "basta",
+            "lascia stare",
+            "lascia perdere",
+            "non credo",
+            "forse no",
+            "meglio di no",
+            "direi di no",
+            "ci devo pensare",
+            "devo pensarci",
+            "ho cambiato idea",
+            "preferisco di no",
+        ],
+    )
     def test_rifiuto_detected(self, phrase):
         is_rif, score = is_rifiuto(phrase)
         assert is_rif, f"'{phrase}' should be detected as rifiuto"
         assert score >= 0.8
 
-    @pytest.mark.parametrize("phrase", [
-        "si", "ok", "perfetto", "taglio domani",
-        "Sono Mario", "vorrei prenotare",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "si",
+            "ok",
+            "perfetto",
+            "taglio domani",
+            "Sono Mario",
+            "vorrei prenotare",
+        ],
+    )
     def test_non_rifiuto(self, phrase):
         is_rif, score = is_rifiuto(phrase)
         assert not is_rif, f"'{phrase}' should NOT be rifiuto"
@@ -148,47 +221,59 @@ class TestRifiuto:
 class TestEscalation:
     """Test escalation detection - comprehensive Italian variants."""
 
-    @pytest.mark.parametrize("phrase,expected_type", [
-        # Direct operator request
-        ("operatore", "operator"),
-        ("operatrice", "operator"),
-        ("persona vera", "operator"),
-        ("persona reale", "operator"),
-        ("umano", "operator"),
-        ("essere umano", "operator"),
-        # Role-specific
-        ("voglio parlare con il titolare", "role"),
-        ("mi passi il proprietario", "role"),
-        ("parlare col responsabile", "role"),
-        ("voglio parlare con il direttore", "role"),
-        ("mi faccia parlare con il capo", "role"),
-        ("parlo con il gestore", "role"),
-        ("voglio parlare con la proprietaria", "role"),
-        ("passami la direttrice", "role"),
-        # Frustration with bot
-        ("non sei una persona", "frustration"),
-        ("sei un robot", "frustration"),
-        ("non voglio parlare con un robot", "frustration"),
-        ("basta con sto robot", "frustration"),
-        ("non parlo con un bot", "frustration"),
-        ("sei un computer", "frustration"),
-        # Callback requests
-        ("richiamatemi", "callback"),
-        ("chiamatemi", "callback"),
-        ("fatemi richiamare", "callback"),
-        ("voglio essere richiamato", "callback"),
-        ("mi richiami il titolare", "callback"),
-    ])
+    @pytest.mark.parametrize(
+        "phrase,expected_type",
+        [
+            # Direct operator request
+            ("operatore", "operator"),
+            ("operatrice", "operator"),
+            ("persona vera", "operator"),
+            ("persona reale", "operator"),
+            ("umano", "operator"),
+            ("essere umano", "operator"),
+            # Role-specific
+            ("voglio parlare con il titolare", "role"),
+            ("mi passi il proprietario", "role"),
+            ("parlare col responsabile", "role"),
+            ("voglio parlare con il direttore", "role"),
+            ("mi faccia parlare con il capo", "role"),
+            ("parlo con il gestore", "role"),
+            ("voglio parlare con la proprietaria", "role"),
+            ("passami la direttrice", "role"),
+            # Frustration with bot
+            ("non sei una persona", "frustration"),
+            ("sei un robot", "frustration"),
+            ("non voglio parlare con un robot", "frustration"),
+            ("basta con sto robot", "frustration"),
+            ("non parlo con un bot", "frustration"),
+            ("sei un computer", "frustration"),
+            # Callback requests
+            ("richiamatemi", "callback"),
+            ("chiamatemi", "callback"),
+            ("fatemi richiamare", "callback"),
+            ("voglio essere richiamato", "callback"),
+            ("mi richiami il titolare", "callback"),
+        ],
+    )
     def test_escalation_detected(self, phrase, expected_type):
         is_esc, score, esc_type = is_escalation(phrase)
         assert is_esc, f"'{phrase}' should be detected as escalation"
         assert score >= 0.85
-        assert esc_type == expected_type, f"'{phrase}' should be type '{expected_type}', got '{esc_type}'"
+        assert esc_type == expected_type, (
+            f"'{phrase}' should be type '{expected_type}', got '{esc_type}'"
+        )
 
-    @pytest.mark.parametrize("phrase", [
-        "vorrei un taglio", "domani mattina", "alle 15",
-        "Sono Mario Rossi", "si confermo", "no grazie",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "vorrei un taglio",
+            "domani mattina",
+            "alle 15",
+            "Sono Mario Rossi",
+            "si confermo",
+            "no grazie",
+        ],
+    )
     def test_non_escalation(self, phrase):
         is_esc, _, _ = is_escalation(phrase)
         assert not is_esc, f"'{phrase}' should NOT be escalation"
@@ -296,33 +381,44 @@ class TestContentFilter:
         result = check_content("Vorrei prenotare un taglio domani")
         assert result.severity == ContentSeverity.CLEAN
 
-    @pytest.mark.parametrize("phrase", [
-        "cavolo, non ci sono posti",
-        "che palle, devo aspettare",
-        "mannaggia la miseria",
-        "accidenti non va bene",
-        "caspita è tardi",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "cavolo, non ci sono posti",
+            "che palle, devo aspettare",
+            "mannaggia la miseria",
+            "accidenti non va bene",
+            "caspita è tardi",
+        ],
+    )
     def test_mild_detected(self, phrase):
         result = check_content(phrase)
         assert result.severity == ContentSeverity.MILD, f"'{phrase}' should be MILD"
 
-    @pytest.mark.parametrize("phrase", [
-        "che cazzo di servizio",
-        "ma che stronzata",
-        "coglione rispondi",
-        "che merda di sistema",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "che cazzo di servizio",
+            "ma che stronzata",
+            "coglione rispondi",
+            "che merda di sistema",
+        ],
+    )
     def test_moderate_detected(self, phrase):
         result = check_content(phrase)
-        assert result.severity == ContentSeverity.MODERATE, f"'{phrase}' should be MODERATE"
+        assert result.severity == ContentSeverity.MODERATE, (
+            f"'{phrase}' should be MODERATE"
+        )
 
-    @pytest.mark.parametrize("phrase", [
-        "ti ammazzo",
-        "porco dio",
-        "dio cane",
-        "madonna puttana",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "ti ammazzo",
+            "porco dio",
+            "dio cane",
+            "madonna puttana",
+        ],
+    )
     def test_severe_detected(self, phrase):
         result = check_content(phrase)
         assert result.severity == ContentSeverity.SEVERE, f"'{phrase}' should be SEVERE"
@@ -331,7 +427,10 @@ class TestContentFilter:
         result = check_content("ti ammazzo")
         assert result.severity == ContentSeverity.SEVERE
         assert result.suggested_response != ""
-        assert "terminata" in result.suggested_response.lower() or "non posso" in result.suggested_response.lower()
+        assert (
+            "terminata" in result.suggested_response.lower()
+            or "non posso" in result.suggested_response.lower()
+        )
 
     def test_moderate_has_response(self):
         result = check_content("che cazzo vuoi")
@@ -355,46 +454,51 @@ class TestContentFilter:
 class TestCorrections:
     """Test correction/objection detection."""
 
-    @pytest.mark.parametrize("phrase,expected_type", [
-        # Service changes
-        ("no, meglio una piega", CorrectionType.CHANGE_SERVICE),
-        ("anzi, vorrei un colore", CorrectionType.CHANGE_SERVICE),
-        ("cambiamo servizio", CorrectionType.CHANGE_SERVICE),
-        # Date changes
-        ("anzi, meglio domani", CorrectionType.CHANGE_DATE),
-        ("cambiamo la data", CorrectionType.CHANGE_DATE),
-        ("un altro giorno", CorrectionType.CHANGE_DATE),
-        # Time changes
-        ("no, meglio alle 15", CorrectionType.CHANGE_TIME),
-        ("cambiamo orario", CorrectionType.CHANGE_TIME),
-        ("un altro orario", CorrectionType.CHANGE_TIME),
-        ("più tardi se possibile", CorrectionType.CHANGE_TIME),
-        ("più presto", CorrectionType.CHANGE_TIME),
-        # Generic changes
-        ("aspetta, ho sbagliato", CorrectionType.GENERIC_CHANGE),
-        ("mi sono sbagliato", CorrectionType.GENERIC_CHANGE),
-        ("torniamo indietro", CorrectionType.GENERIC_CHANGE),
-        ("ricominciamo", CorrectionType.GENERIC_CHANGE),
-        # Misunderstandings
-        ("no no, intendevo", CorrectionType.MISUNDERSTANDING),
-        ("ha capito male", CorrectionType.MISUNDERSTANDING),
-        ("non era quello che intendevo", CorrectionType.MISUNDERSTANDING),
-        # Wait
-        ("un momento", CorrectionType.WAIT),
-        ("un attimo", CorrectionType.WAIT),
-        ("aspetta", CorrectionType.WAIT),
-        # Repeat
-        ("può ripetere", CorrectionType.REPEAT),
-        ("non ho capito", CorrectionType.REPEAT),
-        ("come ha detto", CorrectionType.REPEAT),
-        # Slower
-        ("più piano", CorrectionType.SLOWER),
-        ("parli più lentamente", CorrectionType.SLOWER),
-    ])
+    @pytest.mark.parametrize(
+        "phrase,expected_type",
+        [
+            # Service changes
+            ("no, meglio una piega", CorrectionType.CHANGE_SERVICE),
+            ("anzi, vorrei un colore", CorrectionType.CHANGE_SERVICE),
+            ("cambiamo servizio", CorrectionType.CHANGE_SERVICE),
+            # Date changes
+            ("anzi, meglio domani", CorrectionType.CHANGE_DATE),
+            ("cambiamo la data", CorrectionType.CHANGE_DATE),
+            ("un altro giorno", CorrectionType.CHANGE_DATE),
+            # Time changes
+            ("no, meglio alle 15", CorrectionType.CHANGE_TIME),
+            ("cambiamo orario", CorrectionType.CHANGE_TIME),
+            ("un altro orario", CorrectionType.CHANGE_TIME),
+            ("più tardi se possibile", CorrectionType.CHANGE_TIME),
+            ("più presto", CorrectionType.CHANGE_TIME),
+            # Generic changes
+            ("aspetta, ho sbagliato", CorrectionType.GENERIC_CHANGE),
+            ("mi sono sbagliato", CorrectionType.GENERIC_CHANGE),
+            ("torniamo indietro", CorrectionType.GENERIC_CHANGE),
+            ("ricominciamo", CorrectionType.GENERIC_CHANGE),
+            # Misunderstandings
+            ("no no, intendevo", CorrectionType.MISUNDERSTANDING),
+            ("ha capito male", CorrectionType.MISUNDERSTANDING),
+            ("non era quello che intendevo", CorrectionType.MISUNDERSTANDING),
+            # Wait
+            ("un momento", CorrectionType.WAIT),
+            ("un attimo", CorrectionType.WAIT),
+            ("aspetta", CorrectionType.WAIT),
+            # Repeat
+            ("può ripetere", CorrectionType.REPEAT),
+            ("non ho capito", CorrectionType.REPEAT),
+            ("come ha detto", CorrectionType.REPEAT),
+            # Slower
+            ("più piano", CorrectionType.SLOWER),
+            ("parli più lentamente", CorrectionType.SLOWER),
+        ],
+    )
     def test_correction_detected(self, phrase, expected_type):
         result = detect_correction(phrase)
         assert result is not None, f"'{phrase}' should be detected as correction"
-        assert result[0] == expected_type, f"'{phrase}' should be {expected_type}, got {result[0]}"
+        assert result[0] == expected_type, (
+            f"'{phrase}' should be {expected_type}, got {result[0]}"
+        )
 
     def test_normal_input_no_correction(self):
         assert detect_correction("vorrei un taglio") is None
@@ -408,28 +512,37 @@ class TestCorrections:
 class TestAmbiguousDate:
     """Test ambiguous date detection."""
 
-    @pytest.mark.parametrize("phrase", [
-        "prossima settimana",
-        "questa settimana",
-        "la prossima settimana",
-        "settimana prossima",
-        "settimana scorsa",
-        "settimana corrente",
-        "il prossimo weekend",
-        "la prossima fine settimana",
-        "fra qualche giorno",
-        "appena possibile",
-        "prima possibile",
-        "uno di questi giorni",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "prossima settimana",
+            "questa settimana",
+            "la prossima settimana",
+            "settimana prossima",
+            "settimana scorsa",
+            "settimana corrente",
+            "il prossimo weekend",
+            "la prossima fine settimana",
+            "fra qualche giorno",
+            "appena possibile",
+            "prima possibile",
+            "uno di questi giorni",
+        ],
+    )
     def test_ambiguous_detected(self, phrase):
         assert is_ambiguous_date(phrase), f"'{phrase}' should be ambiguous date"
 
-    @pytest.mark.parametrize("phrase", [
-        "domani", "lunedì", "martedì prossimo",
-        "il 15 gennaio", "dopodomani",
-        "vorrei un taglio",
-    ])
+    @pytest.mark.parametrize(
+        "phrase",
+        [
+            "domani",
+            "lunedì",
+            "martedì prossimo",
+            "il 15 gennaio",
+            "dopodomani",
+            "vorrei un taglio",
+        ],
+    )
     def test_non_ambiguous(self, phrase):
         assert not is_ambiguous_date(phrase), f"'{phrase}' should NOT be ambiguous"
 
@@ -528,24 +641,28 @@ class TestEdgeCases:
 # BUG 1: "capelli" must be synonym of "taglio"
 # =============================================================================
 
+
 class TestBug1CapelliSynonym:
     """BUG 1: 'capelli' must be recognized as taglio in salone vertical."""
 
     def test_capelli_in_taglio_synonyms(self):
         """'capelli' must be in VERTICAL_SERVICES salone taglio."""
         from italian_regex import VERTICAL_SERVICES
+
         taglio_synonyms = VERTICAL_SERVICES["salone"]["taglio"]
         assert "capelli" in taglio_synonyms
 
     def test_fare_i_capelli_in_synonyms(self):
         """'fare i capelli' multi-word phrase in taglio synonyms."""
         from italian_regex import VERTICAL_SERVICES
+
         taglio_synonyms = VERTICAL_SERVICES["salone"]["taglio"]
         assert "fare i capelli" in taglio_synonyms
 
     def test_capelli_not_in_trattamento_standalone(self):
         """'capelli' alone should NOT be a trattamento synonym (only 'botox capelli')."""
         from italian_regex import VERTICAL_SERVICES
+
         trattamento_synonyms = VERTICAL_SERVICES["salone"]["trattamento"]
         # "botox capelli" is there, but bare "capelli" should not be
         assert "capelli" not in trattamento_synonyms

@@ -12,7 +12,6 @@ import audioop
 import io
 import logging
 import os
-import struct
 import threading
 import time
 import wave
@@ -23,6 +22,7 @@ logger = logging.getLogger(__name__)
 # Lazy import pyVoIP (not available on MacBook dev, only on iMac/client)
 try:
     from pyVoIP.VoIP import CallState, VoIPCall, VoIPPhone
+
     PYVOIP_AVAILABLE = True
 except ImportError:
     PYVOIP_AVAILABLE = False
@@ -48,8 +48,12 @@ class SaraVoIPBridge:
         self._active_calls: Dict[str, threading.Thread] = {}
 
         # Config from env
-        self.sip_server = os.getenv("VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it"))
-        self.sip_port = int(os.getenv("VOIP_SIP_PORT", os.getenv("EHIWEB_SIP_PORT", "5060")))
+        self.sip_server = os.getenv(
+            "VOIP_SIP_SERVER", os.getenv("EHIWEB_SIP_SERVER", "sip.vivavox.it")
+        )
+        self.sip_port = int(
+            os.getenv("VOIP_SIP_PORT", os.getenv("EHIWEB_SIP_PORT", "5060"))
+        )
         self.sip_user = os.getenv("VOIP_SIP_USER", os.getenv("EHIWEB_SIP_USER", ""))
         self.sip_pass = os.getenv("VOIP_SIP_PASS", os.getenv("EHIWEB_SIP_PASS", ""))
 
@@ -61,6 +65,7 @@ class SaraVoIPBridge:
     def _detect_local_ip(self) -> str:
         """Detect local IP by connecting to SIP server."""
         import socket
+
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect((self.sip_server, self.sip_port))
@@ -69,8 +74,8 @@ class SaraVoIPBridge:
             logger.info(f"Local IP detected: {ip}")
             return ip
         except OSError:
-            logger.warning("Could not detect local IP, using 0.0.0.0")
-            return "0.0.0.0"
+            logger.warning("Could not detect local IP, using loopback")
+            return "127.0.0.1"
 
     def set_pipeline(self, pipeline):
         """Set Sara voice pipeline for processing."""
@@ -83,7 +88,9 @@ class SaraVoIPBridge:
             return False
 
         if not self.sip_user or not self.sip_pass:
-            logger.error("SIP credentials not configured (VOIP_SIP_USER / VOIP_SIP_PASS)")
+            logger.error(
+                "SIP credentials not configured (VOIP_SIP_USER / VOIP_SIP_PASS)"
+            )
             return False
 
         if self._running:
@@ -92,6 +99,7 @@ class SaraVoIPBridge:
         try:
             # Enable pyVoIP debug logging
             import pyVoIP
+
             pyVoIP.DEBUG = True
 
             self.phone = VoIPPhone(
@@ -130,15 +138,15 @@ class SaraVoIPBridge:
 
         logger.info("VoIP stopped")
 
-    def _on_incoming_call(self, call: 'VoIPCall'):
+    def _on_incoming_call(self, call: "VoIPCall"):
         """
         Callback when incoming call arrives (runs in pyVoIP's thread).
 
         Auto-answers and starts audio processing in a new thread.
         """
-        caller = getattr(call, 'request', None)
+        caller = getattr(call, "request", None)
         caller_num = "unknown"
-        if caller and hasattr(caller, 'headers'):
+        if caller and hasattr(caller, "headers"):
             from_header = caller.headers.get("From", "")
             if "<sip:" in from_header:
                 caller_num = from_header.split("<sip:")[1].split("@")[0]
@@ -157,11 +165,11 @@ class SaraVoIPBridge:
             target=self._handle_call_thread,
             args=(call, caller_num),
             daemon=True,
-            name=f"sara-call-{caller_num}"
+            name=f"sara-call-{caller_num}",
         )
         thread.start()
 
-    def _handle_call_thread(self, call: 'VoIPCall', caller_num: str):
+    def _handle_call_thread(self, call: "VoIPCall", caller_num: str):
         """Handle an active call — runs in its own thread."""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -174,7 +182,7 @@ class SaraVoIPBridge:
             loop.close()
             logger.info(f"📞 Call ended: {caller_num}")
 
-    async def _handle_call(self, call: 'VoIPCall', caller_num: str):
+    async def _handle_call(self, call: "VoIPCall", caller_num: str):
         """Process a call: greeting → listen → respond → loop."""
         # Play greeting
         if self.pipeline:
@@ -206,7 +214,7 @@ class SaraVoIPBridge:
                 except Exception as e:
                     logger.error(f"Pipeline error: {e}")
 
-    def _listen_for_turn(self, call: 'VoIPCall') -> Optional[bytes]:
+    def _listen_for_turn(self, call: "VoIPCall") -> Optional[bytes]:
         """
         Listen for a complete speech turn using energy-based VAD.
 
@@ -221,7 +229,9 @@ class SaraVoIPBridge:
         frame_size = 160
         frames_per_silence_timeout = int(self.silence_timeout_ms / 20)
         min_speech_frames = int(self.min_speech_ms / 20)
-        max_silence_before_hangup = 15000 // 20  # 15s total silence → assume caller left
+        max_silence_before_hangup = (
+            15000 // 20
+        )  # 15s total silence → assume caller left
 
         total_silence = 0
 
@@ -259,7 +269,10 @@ class SaraVoIPBridge:
                     pcm_16k, _ = audioop.ratecv(pcm_8k, 2, 1, 8000, 16000, None)
                     audio_buffer.extend(pcm_16k)
 
-                    if silence_frames >= frames_per_silence_timeout and speech_frames >= min_speech_frames:
+                    if (
+                        silence_frames >= frames_per_silence_timeout
+                        and speech_frames >= min_speech_frames
+                    ):
                         # Turn complete
                         is_speaking = False
                         speech_frames = 0
@@ -274,7 +287,7 @@ class SaraVoIPBridge:
 
         return None  # Call state changed
 
-    def _send_tts_audio(self, call: 'VoIPCall', audio_data: bytes):
+    def _send_tts_audio(self, call: "VoIPCall", audio_data: bytes):
         """
         Send TTS audio to caller.
 
@@ -289,7 +302,7 @@ class SaraVoIPBridge:
 
         if audio_data[:4] == b"RIFF":
             try:
-                with wave.open(io.BytesIO(audio_data), 'rb') as wf:
+                with wave.open(io.BytesIO(audio_data), "rb") as wf:
                     src_rate = wf.getframerate()
                     pcm_data = wf.readframes(wf.getnframes())
             except Exception as e:
@@ -310,10 +323,10 @@ class SaraVoIPBridge:
         for i in range(0, len(pcm_8k), chunk_size):
             if call.state != CallState.ANSWERED:
                 break
-            chunk = pcm_8k[i:i + chunk_size]
+            chunk = pcm_8k[i : i + chunk_size]
             if len(chunk) < chunk_size:
                 # Pad last chunk with silence
-                chunk = chunk + b'\x00' * (chunk_size - len(chunk))
+                chunk = chunk + b"\x00" * (chunk_size - len(chunk))
             try:
                 call.write_audio(chunk)
             except Exception:
