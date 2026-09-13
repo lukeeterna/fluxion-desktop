@@ -90,10 +90,10 @@ jobs:
             [ "$owner" = "VOS_FABRIC_G2" ] || fail PREEXISTING_UNOWNED_VOS_WORKER
             pass VOS_WORKER "existing workflow-owned instance"
           else
-            "$MP" launch 24.04 --name vos-worker --cpus 2 --memory 4G --disk 30G
+            "$MP" launch 22.04 --name vos-worker --cpus 2 --memory 4G --disk 30G
             created_now=1
             "$MP" exec vos-worker -- sudo sh -c 'mkdir -p /var/lib/vos-fabric && printf "%s\n" VOS_FABRIC_G2 > /var/lib/vos-fabric/worker-owner'
-            pass VOS_WORKER "created"
+            pass VOS_WORKER "created image=22.04"
           fi
 
           rollback_new_worker() {
