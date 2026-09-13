@@ -1,0 +1,105 @@
+name: VOS Fabric Recover FLUXION
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-recover-fluxion.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-fluxion-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Restore FLUXION and report console session
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          uid="$(id -u)"
+          console_user="$(stat -f '%Su' /dev/console 2>/dev/null || true)"
+          echo "CONSOLE_USER=$console_user"
+          if launchctl print "gui/$uid" >/dev/null 2>&1; then
+            echo 'GUI_DOMAIN=PRESENT'
+          else
+            echo 'GUI_DOMAIN=ABSENT'
+          fi
+
+          FLUXION_DIR='/Volumes/MacSSD - Dati/fluxion/voice-agent'
+          PY='/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python'
+          [ -d "$FLUXION_DIR" ] && [ -f "$FLUXION_DIR/main.py" ] && [ -f "$FLUXION_DIR/.env" ] && [ -x "$PY" ] || {
+            echo 'FLUXION_PREREQUISITES=RED'
+            exit 70
+          }
+          echo 'FLUXION_PREREQUISITES=GREEN'
+
+          if curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1; then
+            echo 'FLUXION_PROCESS=ALREADY_HEALTHY'
+          else
+            cd "$FLUXION_DIR"
+            set -a
+            . ./.env
+            set +a
+            VOICE_ENGINE=go nohup "$PY" main.py --port 3002 >/tmp/sara_3002.log 2>&1 </dev/null &
+            echo "FLUXION_STARTED_PID=$!"
+          fi
+
+          health_ok=0
+          for _ in $(seq 1 30); do
+            if curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1; then
+              health_ok=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$health_ok" -ne 1 ]; then
+            echo 'FLUXION_HEALTH=RED'
+            tail -80 /tmp/sara_3002.log 2>/dev/null | sed -E 's/(pass(word)?|token|secret|key)=([^ ]+)/\1=[REDACTED]/Ig' || true
+            exit 71
+          fi
+          echo 'FLUXION_HEALTH=GREEN'
+
+          sip_green=0
+          for _ in $(seq 1 30); do
+            status="$(curl -fsS --max-time 3 http://127.0.0.1:3002/api/voice/voip/status 2>/dev/null || true)"
+            if printf '%s' "$status" | grep -Eq '"registered"[[:space:]]*:[[:space:]]*true'; then
+              sip_green=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$sip_green" -eq 1 ]; then
+            echo 'FLUXION_SIP_REGISTERED=GREEN'
+          else
+            echo 'FLUXION_SIP_REGISTERED=RED'
+            exit 72
+          fi
+
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || {
+            echo 'FLUXION_3002_LISTENER=RED'
+            exit 73
+          }
+          echo 'FLUXION_3002_LISTENER=GREEN'
+
+          if lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
+            echo 'FLUXION_5080_LISTENER=GREEN'
+          else
+            echo 'FLUXION_5080_LISTENER=RED'
+            ps -axo pid=,command= | grep -E 'goengine|engine_darwin|voice-agent|main.py' | grep -v grep || true
+            exit 74
+          fi
+
+          echo 'FLUXION_RUNTIME_RECOVERY=GREEN'
+          REMOTE
