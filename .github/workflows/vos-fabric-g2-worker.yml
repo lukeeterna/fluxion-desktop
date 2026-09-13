@@ -2,6 +2,11 @@ name: VOS Fabric G2 Linux Codex Worker
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-worker.yml"
 
 permissions:
   contents: read
@@ -143,7 +148,6 @@ jobs:
             *) rollback_new_worker; fail "CODEX_AUTH_STATUS_RC=$auth_rc" ;;
           esac
 
-          # Production regression check after VM + Codex installation. Never restart services here.
           post_fail=0
           launch_running com.zeroclaw.fall-detector || post_fail=1
           launch_running com.go2rtc || post_fail=1
