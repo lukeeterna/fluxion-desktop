@@ -13,6 +13,8 @@ Architecture:
 - Graceful: WA unavailable → logs warning, does not crash pipeline
 """
 
+from typing import TYPE_CHECKING
+
 import json
 import logging
 import os
@@ -64,10 +66,16 @@ def _get_db_path() -> Optional[Path]:
 # SENT REMINDERS TRACKING (idempotent — no double-send)
 # ═══════════════════════════════════════════════════════════════════
 
-try:
+if TYPE_CHECKING:
     from .resource_path import get_writable_root
-except ImportError:
-    from resource_path import get_writable_root
+else:
+    if TYPE_CHECKING:
+        from .resource_path import get_writable_root
+    else:
+        try:
+            from .resource_path import get_writable_root
+        except ImportError:
+            from resource_path import get_writable_root
 _SENT_LOG_PATH = get_writable_root() / ".whatsapp-session" / "reminders_sent.json"
 
 
@@ -156,7 +164,7 @@ def _get_appointments_in_window(
 
 
 async def check_and_send_reminders(
-    wa_client: Any, callback_handler: Any = None
+    wa_client: Any, callback_handler: Any | None = None
 ) -> None:
     """
     Main scheduler job. Runs every 15 min.
@@ -212,7 +220,7 @@ async def _send_reminder(
     wa_client: Any,
     appt: Dict[str, Any],
     reminder_type: str,
-    callback_handler: Any = None,
+    callback_handler: Any | None = None,
 ) -> bool:
     """
     Send a single WA reminder. Returns True on success.
@@ -734,7 +742,9 @@ async def check_and_recall_dormant(wa_client: Any) -> None:
 # ═══════════════════════════════════════════════════════════════════
 
 
-def start_reminder_scheduler(wa_client: Any, callback_handler: Any = None) -> Any:
+def start_reminder_scheduler(
+    wa_client: Any, callback_handler: Any | None = None
+) -> Any:
     """
     Start APScheduler AsyncIOScheduler for appointment reminders.
 

@@ -14,13 +14,13 @@ Performance targets:
 
 import re
 import unicodedata
-from typing import Optional, Tuple, Dict, List
+from typing import TYPE_CHECKING, Optional, Tuple, Dict, List
 from dataclasses import dataclass
 from enum import Enum
 
 # Italian regex module for robust L0 patterns
 try:
-    try:
+    if TYPE_CHECKING:
         from .italian_regex import (
             is_conferma,
             is_rifiuto,
@@ -29,15 +29,25 @@ try:
             detect_correction,
             CorrectionType,
         )
-    except ImportError:
-        from italian_regex import (
-            is_conferma,
-            is_rifiuto,
-            is_escalation,
-            strip_fillers,  # noqa: F401
-            detect_correction,  # noqa: F401
-            CorrectionType,  # noqa: F401
-        )
+    else:
+        try:
+            from .italian_regex import (
+                is_conferma,
+                is_rifiuto,
+                is_escalation,
+                strip_fillers,
+                detect_correction,
+                CorrectionType,
+            )
+        except ImportError:
+            from italian_regex import (
+                is_conferma,
+                is_rifiuto,
+                is_escalation,
+                strip_fillers,  # noqa: F401
+                detect_correction,  # noqa: F401
+                CorrectionType,  # noqa: F401
+            )
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False

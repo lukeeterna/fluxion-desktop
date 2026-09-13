@@ -11,6 +11,8 @@ TTS Engines (priority order):
 3. System TTS - macOS say command (last resort)
 """
 
+from typing import TYPE_CHECKING
+
 import os
 import re
 import tempfile
@@ -20,20 +22,26 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from enum import Enum
 
+_ADAPTIVE_ENGINE_AVAILABLE = False
+
 # FluxionTTS Adaptive engine layer (plans 01+02)
-try:
+if TYPE_CHECKING:
     from .tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
     from .tts_download_manager import TTSDownloadManager
-
-    _ADAPTIVE_ENGINE_AVAILABLE = True
-except ImportError:
+else:
     try:
-        from tts_engine import create_tts_engine, TTSMode, TTSEngineSelector  # noqa: F401
-        from tts_download_manager import TTSDownloadManager
+        from .tts_engine import create_tts_engine, TTSMode, TTSEngineSelector
+        from .tts_download_manager import TTSDownloadManager
 
         _ADAPTIVE_ENGINE_AVAILABLE = True
     except ImportError:
-        _ADAPTIVE_ENGINE_AVAILABLE = False
+        try:
+            from tts_engine import create_tts_engine, TTSMode, TTSEngineSelector  # noqa: F401
+            from tts_download_manager import TTSDownloadManager
+
+            _ADAPTIVE_ENGINE_AVAILABLE = True
+        except ImportError:
+            _ADAPTIVE_ENGINE_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -397,6 +405,7 @@ class ChatterboxTTS:
             WAV audio bytes (24kHz)
         """
         self._load_model()
+        assert ChatterboxTTS._model is not None
 
         # Ensure Italian mode with [it] prefix
         if not text.strip().startswith("[it]"):
@@ -428,6 +437,7 @@ class ChatterboxTTS:
     async def synthesize_to_file(self, text: str, output_path: str) -> str:
         """Convert text to speech and save to file."""
         self._load_model()
+        assert ChatterboxTTS._model is not None
 
         if not text.strip().startswith("[it]"):
             text = "[it] " + text
@@ -475,6 +485,7 @@ class PiperTTS:
         self.models_dir.mkdir(parents=True, exist_ok=True)
 
         # Find piper binary
+        self.piper_binary: Optional[Path]
         if piper_binary:
             self.piper_binary = Path(piper_binary)
         else:

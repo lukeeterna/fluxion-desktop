@@ -12,16 +12,24 @@ Features:
 - Multi-channel support (voice, whatsapp)
 """
 
+from typing import TYPE_CHECKING
+
 import asyncio
 import uuid
 import json
 import sqlite3
 import aiohttp
 
-try:
+if TYPE_CHECKING:
     from .http_client import shared_session
-except ImportError:
-    from http_client import shared_session
+else:
+    if TYPE_CHECKING:
+        from .http_client import shared_session
+    else:
+        try:
+            from .http_client import shared_session
+        except ImportError:
+            from http_client import shared_session
 from contextlib import contextmanager
 from dataclasses import dataclass, field, asdict
 from typing import Optional, List, Dict, Any
@@ -800,6 +808,7 @@ if __name__ == "__main__":
 
     # Get summary
     summary = manager.get_session_summary(session.session_id)
+    assert summary is not None
     print("\nSession summary:")
     print(f"  Turns: {summary['total_turns']}")
     print(f"  Avg latency: {summary['avg_latency_ms']:.1f}ms")

@@ -14,6 +14,8 @@ Selection:
 Python 3.9 compatible. No torch/transformers/psutil at module load time.
 """
 
+from typing import TYPE_CHECKING
+
 import asyncio
 import io
 import logging
@@ -29,36 +31,49 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+_PSUTIL_AVAILABLE = False
+_EDGE_TTS_AVAILABLE = False
+_PIPER_PY_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # ─── Optional psutil (graceful fallback) ──────────────────────────────────────
-try:
+if TYPE_CHECKING:
     import psutil
+else:
+    try:
+        import psutil
 
-    _PSUTIL_AVAILABLE = True
-except ImportError:
-    _PSUTIL_AVAILABLE = False
+        _PSUTIL_AVAILABLE = True
+    except ImportError:
+        _PSUTIL_AVAILABLE = False
 
 # ─── Optional edge_tts (graceful fallback to Piper/SystemTTS) ─────────────────
-try:
+if TYPE_CHECKING:
     import edge_tts
+else:
+    try:
+        import edge_tts
 
-    _EDGE_TTS_AVAILABLE = True
-except ImportError:
-    edge_tts = None  # type: ignore
-    _EDGE_TTS_AVAILABLE = False
+        _EDGE_TTS_AVAILABLE = True
+    except ImportError:
+        edge_tts = None  # type: ignore
+        _EDGE_TTS_AVAILABLE = False
 
 # ─── Optional Piper Python API (preferred over subprocess in frozen mode) ─────
 # Subprocess approach fails in distribution because piper CLI is a shebang script
 # pointing to system Python 3.9 — end-users won't have it. Python API works
 # anywhere PiperVoice + onnxruntime are bundled.
-try:
+if TYPE_CHECKING:
     from piper.voice import PiperVoice  # type: ignore
+else:
+    try:
+        from piper.voice import PiperVoice  # type: ignore
 
-    _PIPER_PY_AVAILABLE = True
-except ImportError:
-    PiperVoice = None  # type: ignore
-    _PIPER_PY_AVAILABLE = False
+        _PIPER_PY_AVAILABLE = True
+    except ImportError:
+        PiperVoice = None  # type: ignore
+        _PIPER_PY_AVAILABLE = False
 
 # ─── Piper model name (mirrors tts.py) ────────────────────────────────────────
 _PIPER_MODEL = "it_IT-paola-medium"
@@ -477,10 +492,13 @@ class PiperTTSEngine:
           4. ~/.local/share/piper/voices (older layout, kept for backwards compat)
           5. S211 P4: auto-download from Hugging Face into writable dir if missing
         """
-        try:
+        if TYPE_CHECKING:
             from .resource_path import get_writable_root, get_bundle_root
-        except ImportError:
-            from resource_path import get_writable_root, get_bundle_root
+        else:
+            try:
+                from .resource_path import get_writable_root, get_bundle_root
+            except ImportError:
+                from resource_path import get_writable_root, get_bundle_root
 
         candidates = [
             get_writable_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
@@ -502,10 +520,13 @@ class PiperTTSEngine:
         # ~63 MB Piper voice so the very first booking call sounds like Sara
         # rather than the macOS `say` system voice (or Windows SAPI default).
         try:
-            try:
+            if TYPE_CHECKING:
                 from .tts_download_manager import TTSDownloadManager
-            except ImportError:
-                from tts_download_manager import TTSDownloadManager
+            else:
+                try:
+                    from .tts_download_manager import TTSDownloadManager
+                except ImportError:
+                    from tts_download_manager import TTSDownloadManager
             logger.info(
                 "[PiperTTSEngine] Piper voice missing — attempting first-run "
                 "download (writable=%s)",
@@ -580,6 +601,7 @@ class PiperTTSEngine:
     def _synthesize_python(self, text: str) -> bytes:
         """Run PiperVoice.synthesize_wav in a worker thread → WAV bytes."""
         buf = io.BytesIO()
+        assert self._py_voice is not None
         with wave.open(buf, "wb") as wav_file:
             self._py_voice.synthesize_wav(text, wav_file)
         return buf.getvalue()

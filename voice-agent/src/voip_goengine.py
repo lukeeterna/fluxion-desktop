@@ -37,7 +37,10 @@ import time
 import wave
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from src.analytics import ConversationLogger
 
 logger = logging.getLogger("voip_goengine")
 
@@ -177,6 +180,7 @@ class GoEngineVoIPManager:
         # Analytics: STESSO singleton letto da /api/metrics/latency (main.py:858 get_logger()).
         # La sessione si apre a CALL_START; ogni turno reale scrive conversation_turns
         # → alimenta get_percentile_stats (count). Best-effort: mai bloccare il media-layer.
+        self._analytics: Optional[ConversationLogger]
         try:
             from src.analytics import get_logger
 
@@ -346,7 +350,7 @@ class GoEngineVoIPManager:
                 pass
 
     def _read_frames(self, conn: socket.socket):
-        header = b""
+        header: Optional[bytes] = b""
         conn.settimeout(1.0)
         while self._running and not self._stop_evt.is_set():
             try:
@@ -359,7 +363,7 @@ class GoEngineVoIPManager:
                 return
             typ = header[0]
             (ln,) = struct.unpack(">H", header[1:3])
-            payload = b""
+            payload: Optional[bytes] = b""
             if ln:
                 try:
                     payload = self._recv_exact(conn, ln)
@@ -367,6 +371,7 @@ class GoEngineVoIPManager:
                     return
                 if payload is None:
                     return
+            assert payload is not None
             self._dispatch(typ, payload)
 
     @staticmethod
@@ -865,6 +870,8 @@ class GoEngineVoIPManager:
                 len(audio_8k),
             )
             audio_16k, _ = audioop.ratecv(audio_8k, 2, 1, 8000, 16000, None)
+            assert self.pipeline is not None
+            assert self._main_loop is not None
             fut = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )

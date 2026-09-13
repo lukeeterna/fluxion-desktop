@@ -1291,6 +1291,8 @@ class VoIPManager:
 
             # Schedule on main event loop (where httpx/groq clients live)
             t0 = time.time()
+            assert self.pipeline is not None
+            assert self._main_loop is not None
             future = asyncio.run_coroutine_threadsafe(
                 self.pipeline.process_audio(audio_16k), self._main_loop
             )

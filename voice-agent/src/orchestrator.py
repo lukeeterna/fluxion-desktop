@@ -30,6 +30,8 @@ Features:
 - Circuit breaker for API resilience
 """
 
+from typing import TYPE_CHECKING
+
 import re
 import io
 import time
@@ -39,17 +41,25 @@ import aiohttp
 import sqlite3
 import logging
 
-try:
+if TYPE_CHECKING:
     from .http_client import shared_session
-except ImportError:
-    from http_client import shared_session
+else:
+    if TYPE_CHECKING:
+        from .http_client import shared_session
+    else:
+        try:
+            from .http_client import shared_session
+        except ImportError:
+            from http_client import shared_session
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple
 from enum import Enum
 from datetime import datetime
 
+HAS_GUIDED_DIALOG = False
+
 # Local imports - support both package and direct execution
-try:
+if TYPE_CHECKING:
     from .intent_classifier import classify_intent, IntentCategory, IntentResult
     from .booking_state_machine import (
         BookingStateMachine,
@@ -80,27 +90,98 @@ try:
     from .audit_client import audit_client
     from .operator_gender import extract_operator_gender_preference
     from .prosody_injector import ProsodyInjector
-except ImportError:
-    from intent_classifier import classify_intent, IntentCategory, IntentResult
-    from booking_state_machine import (
-        BookingStateMachine,
-        BookingState,
-        TEMPLATES,
-        get_goodbye,
-    )
-    from disambiguation_handler import DisambiguationHandler, DisambiguationState
-    from availability_checker import get_availability_checker
-    from session_manager import VoiceSession, SessionChannel, get_session_manager
-    from groq_client import GroqClient, LLM_FAST_MODEL
-    from groq_nlu import GroqNLU
-    from tts import get_tts, TTSCache
-    from audit_client import audit_client
-    from operator_gender import extract_operator_gender_preference
-    from prosody_injector import ProsodyInjector
+else:
+    if TYPE_CHECKING:
+        from .intent_classifier import classify_intent, IntentCategory, IntentResult
+        from .booking_state_machine import (
+            BookingStateMachine,
+            BookingState,
+            StateMachineResult,  # noqa: F401
+            TEMPLATES,
+            get_goodbye,
+        )  # noqa: F401
+        from .disambiguation_handler import (
+            DisambiguationHandler,
+            DisambiguationState,
+            DisambiguationResult,  # noqa: F401
+        )  # noqa: F401
+        from .availability_checker import (
+            AvailabilityChecker,  # noqa: F401
+            AvailabilityResult,  # noqa: F401
+            get_availability_checker,
+        )  # noqa: F401
+        from .session_manager import (
+            SessionManager,  # noqa: F401
+            VoiceSession,
+            SessionChannel,
+            get_session_manager,
+        )  # noqa: F401
+        from .groq_client import GroqClient, LLM_FAST_MODEL
+        from .groq_nlu import GroqNLU
+        from .tts import get_tts, TTSCache
+        from .audit_client import audit_client
+        from .operator_gender import extract_operator_gender_preference
+        from .prosody_injector import ProsodyInjector
+    else:
+        try:
+            from .intent_classifier import classify_intent, IntentCategory, IntentResult
+            from .booking_state_machine import (
+                BookingStateMachine,
+                BookingState,
+                StateMachineResult,  # noqa: F401
+                TEMPLATES,
+                get_goodbye,
+            )  # noqa: F401
+            from .disambiguation_handler import (
+                DisambiguationHandler,
+                DisambiguationState,
+                DisambiguationResult,  # noqa: F401
+            )  # noqa: F401
+            from .availability_checker import (
+                AvailabilityChecker,  # noqa: F401
+                AvailabilityResult,  # noqa: F401
+                get_availability_checker,
+            )  # noqa: F401
+            from .session_manager import (
+                SessionManager,  # noqa: F401
+                VoiceSession,
+                SessionChannel,
+                get_session_manager,
+            )  # noqa: F401
+            from .groq_client import GroqClient, LLM_FAST_MODEL
+            from .groq_nlu import GroqNLU
+            from .tts import get_tts, TTSCache
+            from .audit_client import audit_client
+            from .operator_gender import extract_operator_gender_preference
+            from .prosody_injector import ProsodyInjector
+        except ImportError:
+            from intent_classifier import classify_intent, IntentCategory, IntentResult
+            from booking_state_machine import (
+                BookingStateMachine,
+                BookingState,
+                TEMPLATES,
+                get_goodbye,
+            )
+            from disambiguation_handler import (
+                DisambiguationHandler,
+                DisambiguationState,
+            )
+            from availability_checker import get_availability_checker
+            from session_manager import (
+                VoiceSession,
+                SessionChannel,
+                get_session_manager,
+            )
+            from groq_client import GroqClient, LLM_FAST_MODEL
+            from groq_nlu import GroqNLU
+            from tts import get_tts, TTSCache
+            from audit_client import audit_client
+            from operator_gender import extract_operator_gender_preference
+            from prosody_injector import ProsodyInjector
 
 # Italian Regex module (L0 content filter, escalation, corrections)
 try:
-    try:
+    if TYPE_CHECKING:
         from .italian_regex import (
             prefilter,
             check_content,
@@ -116,22 +197,39 @@ try:
             is_time_pressure,
             SUB_VERTICAL_TO_MACRO,
         )
-    except ImportError:
-        from italian_regex import (
-            prefilter,
-            check_content,  # noqa: F401
-            is_escalation as regex_is_escalation,  # noqa: F401
-            ContentSeverity,
-            RegexPreFilterResult,  # noqa: F401
-            strip_fillers,  # noqa: F401
-            is_ambiguous_date,  # noqa: F401
-            extract_multi_services,  # noqa: F401
-            get_service_synonyms,  # noqa: F401
-            VERTICAL_SERVICES,
-            check_vertical_guardrail,
-            is_time_pressure,
-            SUB_VERTICAL_TO_MACRO,
-        )
+    else:
+        try:
+            from .italian_regex import (
+                prefilter,
+                check_content,
+                is_escalation as regex_is_escalation,
+                ContentSeverity,
+                RegexPreFilterResult,
+                strip_fillers,
+                is_ambiguous_date,
+                extract_multi_services,
+                get_service_synonyms,
+                VERTICAL_SERVICES,
+                check_vertical_guardrail,
+                is_time_pressure,
+                SUB_VERTICAL_TO_MACRO,
+            )
+        except ImportError:
+            from italian_regex import (
+                prefilter,
+                check_content,  # noqa: F401
+                is_escalation as regex_is_escalation,  # noqa: F401
+                ContentSeverity,
+                RegexPreFilterResult,  # noqa: F401
+                strip_fillers,  # noqa: F401
+                is_ambiguous_date,  # noqa: F401
+                extract_multi_services,  # noqa: F401
+                get_service_synonyms,  # noqa: F401
+                VERTICAL_SERVICES,
+                check_vertical_guardrail,
+                is_time_pressure,
+                SUB_VERTICAL_TO_MACRO,
+            )
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -139,10 +237,13 @@ except ImportError:
 
 # F03: Intent LRU cache (100-slot, eliminates 3x classify_intent per turn)
 try:
-    try:
+    if TYPE_CHECKING:
         from .intent_lru_cache import get_cached_intent, clear_intent_cache
-    except ImportError:
-        from intent_lru_cache import get_cached_intent, clear_intent_cache
+    else:
+        try:
+            from .intent_lru_cache import get_cached_intent, clear_intent_cache
+        except ImportError:
+            from intent_lru_cache import get_cached_intent, clear_intent_cache
     HAS_INTENT_CACHE = True
 except ImportError:
 
@@ -156,19 +257,25 @@ except ImportError:
 
 # Vertical entity extractor (F02)
 try:
-    try:
+    if TYPE_CHECKING:
         from .entity_extractor import extract_vertical_entities
-    except ImportError:
-        from entity_extractor import extract_vertical_entities
+    else:
+        try:
+            from .entity_extractor import extract_vertical_entities
+        except ImportError:
+            from entity_extractor import extract_vertical_entities
     HAS_VERTICAL_ENTITIES = True
 except ImportError:
     HAS_VERTICAL_ENTITIES = False
 
 try:
-    try:
+    if TYPE_CHECKING:
         from .entity_extractor import detect_solito as _detect_solito
-    except ImportError:
-        from entity_extractor import detect_solito as _detect_solito
+    else:
+        try:
+            from .entity_extractor import detect_solito as _detect_solito
+        except ImportError:
+            from entity_extractor import detect_solito as _detect_solito
 except ImportError:
 
     def _detect_solito(text: str) -> bool:
@@ -177,110 +284,143 @@ except ImportError:
 
 # Optional imports
 try:
-    try:
+    if TYPE_CHECKING:
         from .faq_manager import FAQManager
-    except ImportError:
-        from faq_manager import FAQManager
+    else:
+        try:
+            from .faq_manager import FAQManager
+        except ImportError:
+            from faq_manager import FAQManager
     HAS_FAQ_MANAGER = True
 except ImportError:
     HAS_FAQ_MANAGER = False
 
 # Vertical FAQ Loader
 try:
-    try:
+    if TYPE_CHECKING:
         from .vertical_loader import load_faqs_for_vertical, get_faq_path
-    except ImportError:
-        from vertical_loader import load_faqs_for_vertical, get_faq_path  # noqa: F401
+    else:
+        try:
+            from .vertical_loader import load_faqs_for_vertical, get_faq_path
+        except ImportError:
+            from vertical_loader import load_faqs_for_vertical, get_faq_path  # noqa: F401
     HAS_VERTICAL_LOADER = True
 except ImportError:
     HAS_VERTICAL_LOADER = False
 
 try:
-    try:
+    if TYPE_CHECKING:
         from .sentiment import SentimentAnalyzer, FrustrationLevel
-    except ImportError:
-        from sentiment import SentimentAnalyzer, FrustrationLevel  # noqa: F401
+    else:
+        try:
+            from .sentiment import SentimentAnalyzer, FrustrationLevel
+        except ImportError:
+            from sentiment import SentimentAnalyzer, FrustrationLevel  # noqa: F401
     HAS_SENTIMENT = True
 except ImportError:
     HAS_SENTIMENT = False
 
 # B5: Tone Adapter — adapts response text based on caller sentiment
 try:
-    try:
+    if TYPE_CHECKING:
         from .tone_adapter import ToneAdapter
-    except ImportError:
-        from tone_adapter import ToneAdapter
+    else:
+        try:
+            from .tone_adapter import ToneAdapter
+        except ImportError:
+            from tone_adapter import ToneAdapter
     HAS_TONE_ADAPTER = True
 except ImportError:
     HAS_TONE_ADAPTER = False
 
 # B4: Backchannel Engine (conversational acknowledgments)
 try:
-    try:
+    if TYPE_CHECKING:
         from .backchannel_engine import BackchannelEngine
-    except ImportError:
-        from backchannel_engine import BackchannelEngine
+    else:
+        try:
+            from .backchannel_engine import BackchannelEngine
+        except ImportError:
+            from backchannel_engine import BackchannelEngine
     HAS_BACKCHANNEL = True
 except ImportError:
     HAS_BACKCHANNEL = False
 
 # Guided Dialog Engine (new approach)
-try:
+if TYPE_CHECKING:
     import sys
     from pathlib import Path  # noqa: F401
-
-    # Add parent directory to path for guided_dialog import
     from resource_path import get_bundle_root
-
-    _voice_agent_root = get_bundle_root()
-    if str(_voice_agent_root) not in sys.path:
-        sys.path.insert(0, str(_voice_agent_root))
     from guided_dialog import GuidedDialogEngine, DialogState as GuidedDialogState
+else:
+    try:
+        import sys
+        from pathlib import Path  # noqa: F401
 
-    HAS_GUIDED_DIALOG = True
-except ImportError as e:
-    print(f"[INFO] Guided Dialog not available: {e}")
-    HAS_GUIDED_DIALOG = False
+        # Add parent directory to path for guided_dialog import
+        from resource_path import get_bundle_root
+
+        _voice_agent_root = get_bundle_root()
+        if str(_voice_agent_root) not in sys.path:
+            sys.path.insert(0, str(_voice_agent_root))
+        from guided_dialog import GuidedDialogEngine, DialogState as GuidedDialogState
+
+        HAS_GUIDED_DIALOG = True
+    except ImportError as e:
+        print(f"[INFO] Guided Dialog not available: {e}")
+        HAS_GUIDED_DIALOG = False
 
 # Legacy Advanced NLU removed (S83) — LLM NLU is now primary
 HAS_ADVANCED_NLU = False
 
 # C1: Caller Memory — cross-call persistence for returning callers
 try:
-    try:
+    if TYPE_CHECKING:
         from .caller_memory import CallerMemory, get_caller_memory, CallerProfile
-    except ImportError:
-        from caller_memory import CallerMemory, get_caller_memory, CallerProfile  # noqa: F401
+    else:
+        try:
+            from .caller_memory import CallerMemory, get_caller_memory, CallerProfile
+        except ImportError:
+            from caller_memory import CallerMemory, get_caller_memory, CallerProfile  # noqa: F401
     HAS_CALLER_MEMORY = True
 except ImportError:
     HAS_CALLER_MEMORY = False
 
 # F1: EOU (End-of-Utterance) detection — adaptive silence + sentence completion
 try:
-    try:
+    if TYPE_CHECKING:
         from .eou import get_adaptive_silence_ms, sentence_complete_probability
-    except ImportError:
-        from eou import get_adaptive_silence_ms, sentence_complete_probability
+    else:
+        try:
+            from .eou import get_adaptive_silence_ms, sentence_complete_probability
+        except ImportError:
+            from eou import get_adaptive_silence_ms, sentence_complete_probability
     HAS_EOU = True
 except ImportError:
     HAS_EOU = False
 
 # F2: Acoustic frustration detection — numpy DSP
 try:
-    try:
+    if TYPE_CHECKING:
         from .acoustic_frustration import AcousticFrustrationDetector
-    except ImportError:
-        from acoustic_frustration import AcousticFrustrationDetector
+    else:
+        try:
+            from .acoustic_frustration import AcousticFrustrationDetector
+        except ImportError:
+            from acoustic_frustration import AcousticFrustrationDetector
     HAS_ACOUSTIC_FRUSTRATION = True
 except ImportError:
     HAS_ACOUSTIC_FRUSTRATION = False
 
 # WhatsApp client (optional)
 try:
-    try:
+    if TYPE_CHECKING:
         from .whatsapp import WhatsAppClient, WhatsAppTemplates
-    except ImportError:
-        from whatsapp import WhatsAppClient, WhatsAppTemplates
+    else:
+        try:
+            from .whatsapp import WhatsAppClient, WhatsAppTemplates
+        except ImportError:
+            from whatsapp import WhatsAppClient, WhatsAppTemplates
     HAS_WHATSAPP = True
 except ImportError:
     HAS_WHATSAPP = False
@@ -445,10 +585,13 @@ class OrchestratorResult:
 # LLM NLU → IntentResult adapter (2026 architecture)
 # ═══════════════════════════════════════════════════════════════════
 try:
-    try:
+    if TYPE_CHECKING:
         from .nlu.schemas import SaraIntent, NLUResult
-    except ImportError:
-        from nlu.schemas import SaraIntent, NLUResult
+    else:
+        try:
+            from .nlu.schemas import SaraIntent, NLUResult
+        except ImportError:
+            from nlu.schemas import SaraIntent, NLUResult
 
     _SARA_TO_INTENT = {
         SaraIntent.PRENOTAZIONE: IntentCategory.PRENOTAZIONE,
@@ -477,10 +620,13 @@ def _nlu_to_intent_result(nlu_result: "NLUResult", user_input: str) -> "IntentRe
     # S142 FIX-4: CHIUSURA always gets a goodbye intent name and guaranteed response
     # This ensures should_exit fires even when exact_match_intent finds no match
     if HAS_NLU_SCHEMAS:
-        try:
+        if TYPE_CHECKING:
             from .nlu.schemas import SaraIntent as _SI
-        except ImportError:
-            from nlu.schemas import SaraIntent as _SI
+        else:
+            try:
+                from .nlu.schemas import SaraIntent as _SI
+            except ImportError:
+                from nlu.schemas import SaraIntent as _SI
         if nlu_result.intent == _SI.CHIUSURA:
             return IntentResult(
                 intent="llm_chiusura_goodbye",  # contains both keywords for should_exit
@@ -498,10 +644,13 @@ def _nlu_to_intent_result(nlu_result: "NLUResult", user_input: str) -> "IntentRe
         IntentCategory.OPERATORE,
     ):
         try:
-            try:
+            if TYPE_CHECKING:
                 from .intent_classifier import exact_match_intent
-            except ImportError:
-                from intent_classifier import exact_match_intent
+            else:
+                try:
+                    from .intent_classifier import exact_match_intent
+                except ImportError:
+                    from intent_classifier import exact_match_intent
             cortesia_match = exact_match_intent(user_input)
             if cortesia_match and cortesia_match.response:
                 response_text = cortesia_match.response
@@ -1480,10 +1629,13 @@ class VoiceOrchestrator:
             # Fires BEFORE any other routing to guarantee should_exit even at first turn
             _is_standalone_goodbye = False
             try:
-                try:
+                if TYPE_CHECKING:
                     from .intent_classifier import exact_match_intent as _emi
-                except ImportError:
-                    from intent_classifier import exact_match_intent as _emi
+                else:
+                    try:
+                        from .intent_classifier import exact_match_intent as _emi
+                    except ImportError:
+                        from intent_classifier import exact_match_intent as _emi
                 _emi_result = _emi(user_input)
                 if (
                     _emi_result
@@ -1495,10 +1647,13 @@ class VoiceOrchestrator:
                 pass
             # Also check LLM NLU result
             if HAS_NLU_SCHEMAS and _llm_nlu_result:
-                try:
+                if TYPE_CHECKING:
                     from .nlu.schemas import SaraIntent as _SI2
-                except ImportError:
-                    from nlu.schemas import SaraIntent as _SI2
+                else:
+                    try:
+                        from .nlu.schemas import SaraIntent as _SI2
+                    except ImportError:
+                        from nlu.schemas import SaraIntent as _SI2
                 if _llm_nlu_result.intent == _SI2.CHIUSURA:
                     _is_standalone_goodbye = True
             # Also check intent_result
@@ -1842,6 +1997,8 @@ class VoiceOrchestrator:
             if disamb_result.success:
                 # Client resolved
                 client = disamb_result.client
+                assert client is not None
+                assert self._current_session is not None
                 self.session_manager.update_client(
                     self._current_session.session_id,
                     client.get("id", ""),
@@ -1944,10 +2101,8 @@ class VoiceOrchestrator:
                 ]
             )
             # Name provision = likely wants to book ("sono Marco Rossi")
-            _has_name = bool(
-                getattr(intent_result, "entities", None)
-                and intent_result.entities.get("name")
-            )
+            intent_entities = getattr(intent_result, "entities", None)
+            _has_name = bool(intent_entities and intent_entities.get("name"))
             if not _has_name:
                 # Also check entity extraction for names like "Sono Valeria Greco"
                 _has_name = bool(
@@ -2157,6 +2312,7 @@ class VoiceOrchestrator:
                 response = sm_result.response
                 # B2: Handle follow_up_response (split registration messages)
                 if sm_result.has_follow_up():
+                    assert sm_result.follow_up_response is not None
                     response = response + "\n\n" + sm_result.follow_up_response
                 intent = f"booking_{sm_result.next_state.value}"
                 layer = ProcessingLayer.L2_SLOT
@@ -2207,8 +2363,8 @@ class VoiceOrchestrator:
                             f"[DEBUG] Checking slot availability: {booking_data.get('date')} {booking_data.get('time')} services={multi_services}"
                         )
                         avail_check = await self._check_slot_availability(
-                            date=booking_data.get("date"),
-                            time=booking_data.get("time"),
+                            date=str(booking_data.get("date") or ""),
+                            time=str(booking_data.get("time") or ""),
                             operator_id=booking_data.get("operator_id"),
                             service=booking_data.get("service"),
                             services=multi_services,
@@ -2231,16 +2387,22 @@ class VoiceOrchestrator:
                             and time_constraint_anchor
                         ):
                             try:
-                                try:
+                                if TYPE_CHECKING:
                                     from .entity_extractor import (
                                         TimeConstraint as TC,
                                         TimeConstraintType as TCT,
                                     )
-                                except ImportError:
-                                    from entity_extractor import (
-                                        TimeConstraint as TC,
-                                        TimeConstraintType as TCT,
-                                    )
+                                else:
+                                    try:
+                                        from .entity_extractor import (
+                                            TimeConstraint as TC,
+                                            TimeConstraintType as TCT,
+                                        )
+                                    except ImportError:
+                                        from entity_extractor import (
+                                            TimeConstraint as TC,
+                                            TimeConstraintType as TCT,
+                                        )
                                 from datetime import time as dt_time
 
                                 anchor_parts = time_constraint_anchor.split(":")
@@ -2272,16 +2434,22 @@ class VoiceOrchestrator:
                             and not slot_available
                         ):
                             try:
-                                try:
+                                if TYPE_CHECKING:
                                     from .entity_extractor import (
                                         TimeConstraint as TC,
                                         TimeConstraintType as TCT,
                                     )
-                                except ImportError:
-                                    from entity_extractor import (
-                                        TimeConstraint as TC,
-                                        TimeConstraintType as TCT,
-                                    )
+                                else:
+                                    try:
+                                        from .entity_extractor import (
+                                            TimeConstraint as TC,
+                                            TimeConstraintType as TCT,
+                                        )
+                                    except ImportError:
+                                        from entity_extractor import (
+                                            TimeConstraint as TC,
+                                            TimeConstraintType as TCT,
+                                        )
                                 from datetime import time as dt_time
 
                                 # Ricostruisci constraint da stringhe in context
@@ -2301,7 +2469,10 @@ class VoiceOrchestrator:
                                     for s in all_slots
                                     if s.get("time")
                                     and tc.matches(
-                                        dt_time(*map(int, s["time"][:5].split(":")))
+                                        dt_time(
+                                            int(s["time"][:5].split(":")[0]),
+                                            int(s["time"][:5].split(":")[1]),
+                                        )
                                     )
                                 ]
                                 if matching:
@@ -2975,6 +3146,8 @@ class VoiceOrchestrator:
                     elif sm_result.lookup_type == "solito":
                         # P0-4: "Il solito" — query last bookings for this client
                         client_id = sm_result.lookup_params.get("client_id")
+                        if not client_id:
+                            raise ValueError("client_id required for solito lookup")
                         solito_result = await self._lookup_solito(client_id)
                         response, _ = self._apply_solito_to_context(solito_result)
                         if response is None:
@@ -3185,10 +3358,13 @@ class VoiceOrchestrator:
                     self._find_vertical_db_path(_cur_vert) or self._find_db_path()
                 )
                 if self.guided_engine.vertical_id != _cur_vert:
-                    try:
+                    if TYPE_CHECKING:
                         from guided_dialog import VerticalConfigLoader
-                    except ImportError:
-                        from voice_agent.guided_dialog import VerticalConfigLoader  # type: ignore
+                    else:
+                        try:
+                            from guided_dialog import VerticalConfigLoader
+                        except ImportError:
+                            from voice_agent.guided_dialog import VerticalConfigLoader  # type: ignore
                     self.guided_engine.vertical_id = _cur_vert
                     self.guided_engine.config_loader = VerticalConfigLoader(_cur_vert)
                     # Drop stale context so dialog restarts cleanly under new vertical
@@ -3424,6 +3600,7 @@ class VoiceOrchestrator:
             if self.booking_sm.context.state
             else None
         )
+        assert self._current_session is not None
         self.session_manager.add_turn(
             session_id=self._current_session.session_id,
             user_input=user_input,
@@ -3681,12 +3858,13 @@ class VoiceOrchestrator:
 
         # Exact match
         if text_lower in SPECIAL_COMMANDS:
-            return SPECIAL_COMMANDS[text_lower]
+            action, response = SPECIAL_COMMANDS[text_lower]
+            return (action, response or "")
 
         # Partial match (whole word boundary)
         for cmd, (action, response) in SPECIAL_COMMANDS.items():
             if re.search(r"\b" + re.escape(cmd) + r"\b", text_lower):
-                return (action, response)
+                return (action, response or "")
 
         return None
 
@@ -4246,10 +4424,13 @@ class VoiceOrchestrator:
             print(f"[VERTICAL] Warning: could not reload business context: {e}")
 
         # H5: Update availability checker with vertical-specific business hours
-        try:
+        if TYPE_CHECKING:
             from .availability_checker import AvailabilityConfig
-        except ImportError:
-            from availability_checker import AvailabilityConfig
+        else:
+            try:
+                from .availability_checker import AvailabilityConfig
+            except ImportError:
+                from availability_checker import AvailabilityConfig
         self.availability.config = AvailabilityConfig.for_vertical(vertical)
 
         # Reload FAQs with fresh config (needs _service_prices from business context)
@@ -4623,10 +4804,13 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         """
         import sqlite3
 
-        try:
+        if TYPE_CHECKING:
             from .disambiguation_handler import PHONETIC_VARIANTS
-        except ImportError:
-            from disambiguation_handler import PHONETIC_VARIANTS
+        else:
+            try:
+                from .disambiguation_handler import PHONETIC_VARIANTS
+            except ImportError:
+                from disambiguation_handler import PHONETIC_VARIANTS
 
         db_path = self._find_db_path()
         if not db_path:
@@ -4721,7 +4905,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
                 # Transform field names to match HTTP Bridge API
                 # Use service_display for multi-service (e.g. "Taglio e Barba")
                 servizio = booking.get("service_display") or booking.get("service", "")
-                payload = {
+                payload: Dict[str, Any] = {
                     "cliente_id": client_id,
                     "servizio": servizio,
                     "data": booking.get("date", ""),
@@ -5178,7 +5362,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/clienti/create"
-                payload = {
+                payload: Dict[str, Any] = {
                     "nome": client_data.get("nome", ""),
                     "cognome": client_data.get("cognome"),
                     "telefono": client_data.get("telefono"),
@@ -5340,7 +5524,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         try:
             async with shared_session() as session:
                 url = f"{self.http_bridge_url}/api/appuntamenti/disponibilita"
-                payload = {
+                payload: Dict[str, Any] = {
                     "data": date,
                     "ora": time,
                     "operatore_id": operator_id,
@@ -5910,7 +6094,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         return {"success": False, "error": "Bridge not available"}
 
     async def _add_to_waitlist(
-        self, client_id: str, service: str, preferred_date: str = None
+        self, client_id: str, service: str, preferred_date: str | None = None
     ) -> Dict[str, Any]:
         """Add client to waitlist via HTTP Bridge, with SQLite fallback (F19-FIX5)."""
         # F19-FIX5: Get VIP priority from DB
@@ -5939,7 +6123,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         # F19-FIX5: SQLite fallback
         print("[F19] HTTP Bridge offline, SQLite fallback for waitlist")
         return self._add_to_waitlist_sqlite_fallback(
-            client_id, service, preferred_date, priorita
+            client_id, service, preferred_date or "", priorita
         )
 
     def _get_client_vip_priority(self, client_id: str) -> str:
@@ -6704,7 +6888,7 @@ Hai passione genuina per far sentire le persone benvenute dal primo secondo.
         fsm_state = None
         if self.booking_sm:
             try:
-                fsm_state = self.booking_sm.current_state
+                fsm_state = self.booking_sm.context.state
             except Exception:
                 pass
 

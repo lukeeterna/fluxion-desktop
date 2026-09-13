@@ -332,8 +332,8 @@ class VoIPManager:
 
         if self.sip.active_call and self.sip.active_call.state == CallState.RINGING:
             self.sip.active_call.state = CallState.CONNECTED
-            if self.on_call_connected:
-                self._on_call_connected(self.sip.active_call)
+            if self.sip.on_call_connected:
+                self.sip.on_call_connected(self.sip.active_call)
 
             # Play greeting
             if self.pipeline:

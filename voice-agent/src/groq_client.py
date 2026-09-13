@@ -9,28 +9,34 @@ E7-S2: Added streaming LLM support (2026-02-11) - Best Practice Reddit r/LLMDevs
 import os
 import time
 import asyncio
-from typing import Optional, List, Dict, Any, AsyncGenerator
+from typing import TYPE_CHECKING, Optional, List, Dict, Any, AsyncGenerator
 from groq import Groq, AsyncGroq
 
 # F03: Groq key pool for rate limit resilience (round-robin on 429)
+if TYPE_CHECKING:
+    from .groq_key_pool import GroqKeyPool
+
+_HAS_KEY_POOL: bool
 try:
-    try:
-        from .groq_key_pool import GroqKeyPool
+    from importlib import import_module
 
-        _HAS_KEY_POOL = True
-    except ImportError:
-        from groq_key_pool import GroqKeyPool
+    _groq_key_pool_module = import_module(
+        ".groq_key_pool" if __package__ else "groq_key_pool", package=__package__
+    )
 
-        _HAS_KEY_POOL = True
+    _HAS_KEY_POOL = True
 except ImportError:
     _HAS_KEY_POOL = False
 
 # Import hybrid STT engine
 try:
-    try:
+    if TYPE_CHECKING:
         from .stt import get_stt_engine, STTEngine
-    except ImportError:
-        from stt import get_stt_engine, STTEngine
+    else:
+        try:
+            from .stt import get_stt_engine, STTEngine
+        except ImportError:
+            from stt import get_stt_engine, STTEngine
     HAS_HYBRID_STT = True
 except ImportError:
     HAS_HYBRID_STT = False
@@ -71,9 +77,10 @@ class GroqClient:
             )
 
         # F03: Key pool for 429 rotation (falls back gracefully if only 1 key or no key)
+        self._key_pool: Optional[GroqKeyPool]
         if _HAS_KEY_POOL:
             try:
-                self._key_pool = GroqKeyPool()
+                self._key_pool = _groq_key_pool_module.GroqKeyPool()
             except (ValueError, Exception):
                 self._key_pool = None
         else:
@@ -210,6 +217,9 @@ class GroqClient:
 
         full_messages.extend(messages)
 
+        if self.client is None:
+            raise RuntimeError("Groq LLM client unavailable without API key")
+
         semaphore = self._get_llm_semaphore()
         async with semaphore:
             for attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
@@ -246,6 +256,7 @@ class GroqClient:
                             self.async_client = AsyncGroq(api_key=new_key)
                         continue
                     raise RuntimeError(f"LLM failed: {e}")
+        raise RuntimeError("LLM retry budget exhausted")
 
     async def transcribe_and_respond(
         self,
@@ -377,6 +388,8 @@ class GroqClient:
         sentence_delimiters = [".", "!", "?", ";", ":", "\n"]
 
         try:
+            if self.async_client is None:
+                raise RuntimeError("Groq async client unavailable without API key")
             semaphore = self._get_llm_semaphore()
             stream = None
             for _attempt in range(len(_GROQ_BACKOFF_DELAYS) + 1):
@@ -409,6 +422,8 @@ class GroqClient:
                         continue
                     raise
 
+            if stream is None:
+                raise RuntimeError("Streaming LLM retry budget exhausted")
             async for chunk in stream:
                 delta = chunk.choices[0].delta.content or ""
 
@@ -492,6 +507,7 @@ class GroqClient:
                 raise
             except Exception as e2:
                 raise RuntimeError(f"LLM streaming failed: {e2}")
+        return
 
     async def generate_with_model_selection(
         self,
@@ -547,6 +563,7 @@ class GroqClient:
                     if self._is_retriable(e) and attempt < len(_GROQ_BACKOFF_DELAYS):
                         continue
                     raise RuntimeError(f"LLM failed: {e}")
+        raise RuntimeError("LLM retry budget exhausted")
 
 
 # Test function

@@ -7,7 +7,7 @@ Target: >90% precision on frustration detection
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 import re
 
 
@@ -450,7 +450,7 @@ class SentimentAnalyzer:
         """Get cumulative frustration score from history."""
         return sum(score for _, score in self._conversation_history)
 
-    def analyze_simple(self, text: str) -> Dict[str, any]:
+    def analyze_simple(self, text: str) -> Dict[str, Any]:
         """
         Simplified analysis returning a dict (for pipeline integration).
 

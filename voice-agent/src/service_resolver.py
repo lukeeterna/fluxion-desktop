@@ -3,7 +3,7 @@ FLUXION Voice Agent - Service & Operator Resolver
 Collega le entità estratte dai regex agli ID del database
 """
 
-from typing import Optional, Dict, List, Tuple
+from typing import Any, Optional, Dict, List, Tuple
 from difflib import SequenceMatcher
 
 
@@ -382,12 +382,14 @@ class EntityResolverPipeline:
 
         # Risolvi operatore
         if operator_text:
+            service_result = result["service"]
+            service_data: Any = (
+                service_result["data"] if isinstance(service_result, dict) else None
+            )
             success, data, msg = self.operator_resolver.resolve(
                 operator_text,
                 business_id,
-                service_id=result["service"]["data"]["id"]
-                if result["service"]["data"]
-                else None,
+                service_id=service_data["id"] if service_data else None,
             )
             result["operator"]["resolved"] = success
             result["operator"]["data"] = data

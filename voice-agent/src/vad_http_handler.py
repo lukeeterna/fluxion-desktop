@@ -12,6 +12,8 @@ Endpoints:
 - GET  /api/voice/vad/status - Get VAD state
 """
 
+from typing import TYPE_CHECKING
+
 import audioop
 import struct
 import time
@@ -20,10 +22,16 @@ from dataclasses import dataclass, field
 from aiohttp import web
 import logging
 
-try:
+if TYPE_CHECKING:
     from .vad import FluxionVAD, VADConfig, VADState  # noqa: F401
-except ImportError:
-    from vad import FluxionVAD, VADConfig
+else:
+    if TYPE_CHECKING:
+        from .vad import FluxionVAD, VADConfig, VADState  # noqa: F401
+    else:
+        try:
+            from .vad import FluxionVAD, VADConfig, VADState  # noqa: F401
+        except ImportError:
+            from vad import FluxionVAD, VADConfig
 
 logger = logging.getLogger(__name__)
 

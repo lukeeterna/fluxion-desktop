@@ -16,6 +16,8 @@ Features:
 Note: File retains original name for import compatibility.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import os
 import tempfile
@@ -24,6 +26,9 @@ from dataclasses import dataclass
 from typing import Optional, Callable, List
 import logging
 import collections
+
+HAS_WEBRTC = False
+HAS_ONNX = False
 
 logger = logging.getLogger(__name__)
 
@@ -42,19 +47,25 @@ WEBRTC_CHUNK_SAMPLES = 480  # 30ms at 16kHz
 WEBRTC_CHUNK_BYTES = WEBRTC_CHUNK_SAMPLES * BYTES_PER_SAMPLE  # 960
 
 # Try to import VAD backends
-try:
+if TYPE_CHECKING:
     import onnxruntime  # noqa: F401
+else:
+    try:
+        import onnxruntime  # noqa: F401
 
-    HAS_ONNX = True
-except ImportError:
-    HAS_ONNX = False
+        HAS_ONNX = True
+    except ImportError:
+        HAS_ONNX = False
 
-try:
+if TYPE_CHECKING:
     import webrtcvad
+else:
+    try:
+        import webrtcvad
 
-    HAS_WEBRTC = True
-except ImportError:
-    HAS_WEBRTC = False
+        HAS_WEBRTC = True
+    except ImportError:
+        HAS_WEBRTC = False
 
 logger.info(
     "VAD backends available: webrtcvad=%s, onnxruntime=%s", HAS_WEBRTC, HAS_ONNX
@@ -134,7 +145,7 @@ class FluxionVAD:
         # webrtcvad state
         self._webrtc_vad = None
         self._webrtc_buffer = bytearray()
-        self._webrtc_probs = collections.deque(
+        self._webrtc_probs: collections.deque[float] = collections.deque(
             maxlen=8
         )  # ~240ms (was 30/~1s — too sticky)
 
@@ -328,7 +339,7 @@ class FluxionVAD:
         self.audio_buffer = self.audio_buffer[SILERO_CHUNK_BYTES:]
 
         # Convert int16 PCM to float32 normalized [-1.0, 1.0]
-        samples_int16 = np.frombuffer(audio_chunk, dtype=np.int16)
+        samples_int16: np.ndarray = np.frombuffer(audio_chunk, dtype=np.int16)
         samples_float = samples_int16.astype(np.float32) / 32768.0
 
         # Run Silero model: input [1, 512], state [2, 1, 128], sr scalar
@@ -338,6 +349,7 @@ class FluxionVAD:
             "sr": self._sr_tensor,
         }
 
+        assert self._session is not None
         ort_outputs = self._session.run(None, ort_inputs)
         prob = float(ort_outputs[0].item())
         self._h_state = ort_outputs[1]  # Updated hidden state
@@ -369,6 +381,7 @@ class FluxionVAD:
             self._webrtc_buffer = self._webrtc_buffer[WEBRTC_CHUNK_BYTES:]
 
             # webrtcvad expects bytes, returns bool
+            assert self._webrtc_vad is not None
             is_speech = self._webrtc_vad.is_speech(audio_chunk, SAMPLE_RATE)
             # Convert to probability (webrtcvad is binary)
             prob = 0.9 if is_speech else 0.1

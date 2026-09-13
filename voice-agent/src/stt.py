@@ -159,7 +159,10 @@ class WhisperOfflineSTT(STTEngine):
         return None
 
     async def transcribe(
-        self, audio_data: bytes, language: str = None
+        self,
+        audio_data: bytes,
+        language: str = "it",
+        stt_prompt: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Transcribe audio using whisper.cpp.
@@ -170,6 +173,10 @@ class WhisperOfflineSTT(STTEngine):
 
         start_time = time.time()
         lang = language or self.language
+        if self.whisper_exe is None or self.model_path is None:
+            raise RuntimeError("whisper.cpp executable or model not available")
+        whisper_exe = self.whisper_exe
+        model_path = self.model_path
 
         # Write audio to temp file
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
@@ -182,9 +189,9 @@ class WhisperOfflineSTT(STTEngine):
                 None,
                 lambda: subprocess.run(
                     [
-                        self.whisper_exe,
+                        whisper_exe,
                         "-m",
-                        self.model_path,
+                        model_path,
                         "-l",
                         lang,
                         "-f",
@@ -258,7 +265,7 @@ class FasterWhisperSTT(STTEngine):
         Set WHISPER_MODEL env var to "tiny", "base" (default), or "small".
     """
 
-    def __init__(self, model_size: str = None):
+    def __init__(self, model_size: str | None = None):
         # S135: Default to tiny for VoIP latency (~3.8s vs 4.7s for base)
         self.model_size = model_size or os.environ.get("WHISPER_MODEL", "tiny")
         self._model = None  # lazy init on first transcribe

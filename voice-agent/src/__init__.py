@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 # FLUXION Voice Agent
 # Italian voice assistant for automatic bookings
 
@@ -34,7 +35,7 @@ from .booking_state_machine import (
 )
 
 # FAQ Retriever (optional - requires sentence-transformers and faiss)
-try:
+if TYPE_CHECKING:
     from .faq_retriever import (
         FAISSFAQRetriever,
         HybridFAQRetriever,
@@ -42,13 +43,22 @@ try:
         RetrievalResult,
         create_faq_retriever,
     )
+else:
+    try:
+        from .faq_retriever import (
+            FAISSFAQRetriever,
+            HybridFAQRetriever,
+            FAQEntry,
+            RetrievalResult,
+            create_faq_retriever,
+        )
 
-    HAS_FAQ_RETRIEVER = True
-except ImportError:
-    HAS_FAQ_RETRIEVER = False
+        HAS_FAQ_RETRIEVER = True
+    except ImportError:
+        HAS_FAQ_RETRIEVER = False
 
 # FAQ Manager (hybrid keyword + semantic retrieval)
-try:
+if TYPE_CHECKING:
     from .faq_manager import (
         FAQManager,
         FAQConfig,
@@ -56,10 +66,19 @@ try:
         create_faq_manager,
         find_keyword_match,
     )
+else:
+    try:
+        from .faq_manager import (
+            FAQManager,
+            FAQConfig,
+            FAQMatch,
+            create_faq_manager,
+            find_keyword_match,
+        )
 
-    HAS_FAQ_MANAGER = True
-except ImportError:
-    HAS_FAQ_MANAGER = False
+        HAS_FAQ_MANAGER = True
+    except ImportError:
+        HAS_FAQ_MANAGER = False
 
 # Sentiment Analysis (Week 3 Day 1-2)
 from .sentiment import (
@@ -101,7 +120,7 @@ from .analytics import (
 )
 
 # VoIP (Week 4)
-try:
+if TYPE_CHECKING:
     from .voip import (
         VoIPManager,
         SIPClient,
@@ -111,13 +130,24 @@ try:
         CallState,
         CallDirection,
     )
+else:
+    try:
+        from .voip import (
+            VoIPManager,
+            SIPClient,
+            SIPConfig,
+            RTPTransport,
+            CallSession,
+            CallState,
+            CallDirection,
+        )
 
-    HAS_VOIP = True
-except ImportError:
-    HAS_VOIP = False
+        HAS_VOIP = True
+    except ImportError:
+        HAS_VOIP = False
 
 # WhatsApp (Week 5)
-try:
+if TYPE_CHECKING:
     from .whatsapp import (
         WhatsAppManager,
         WhatsAppClient,
@@ -129,10 +159,23 @@ try:
         MessageDirection,
         PendingQuestion,
     )
+else:
+    try:
+        from .whatsapp import (
+            WhatsAppManager,
+            WhatsAppClient,
+            WhatsAppConfig,
+            WhatsAppMessage,
+            WhatsAppRateLimiter,
+            WhatsAppTemplates,
+            ConnectionStatus,
+            MessageDirection,
+            PendingQuestion,
+        )
 
-    HAS_WHATSAPP = True
-except ImportError:
-    HAS_WHATSAPP = False
+        HAS_WHATSAPP = True
+    except ImportError:
+        HAS_WHATSAPP = False
 
 __all__ = [
     "classify_intent",

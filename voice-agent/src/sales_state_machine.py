@@ -12,6 +12,8 @@ States:
 Zero coupling with BookingStateMachine — completely independent module.
 """
 
+from typing import TYPE_CHECKING
+
 import logging
 from enum import Enum
 from dataclasses import dataclass
@@ -19,7 +21,7 @@ from typing import Optional, Dict, Any
 
 logger = logging.getLogger("fluxion.sales.fsm")
 
-try:
+if TYPE_CHECKING:
     from .sales_kb_loader import (
         get_pitch,
         get_objection_response,
@@ -32,16 +34,44 @@ try:
         sanitize_sales_text,
         get_personality_rules,  # noqa: F401
     )
-except ImportError:
-    from sales_kb_loader import (
-        get_pitch,
-        get_objection_response,
-        get_qualification_question,
-        get_closing_message,
-        get_competitive_response,
-        resolve_vertical,
-        sanitize_sales_text,
-    )
+else:
+    if TYPE_CHECKING:
+        from .sales_kb_loader import (
+            get_pitch,
+            get_objection_response,
+            get_qualification_question,
+            get_qualification_count,  # noqa: F401
+            get_closing_message,
+            get_pain_points,  # noqa: F401
+            get_competitive_response,
+            resolve_vertical,
+            sanitize_sales_text,
+            get_personality_rules,  # noqa: F401
+        )
+    else:
+        try:
+            from .sales_kb_loader import (
+                get_pitch,
+                get_objection_response,
+                get_qualification_question,
+                get_qualification_count,  # noqa: F401
+                get_closing_message,
+                get_pain_points,  # noqa: F401
+                get_competitive_response,
+                resolve_vertical,
+                sanitize_sales_text,
+                get_personality_rules,  # noqa: F401
+            )
+        except ImportError:
+            from sales_kb_loader import (
+                get_pitch,
+                get_objection_response,
+                get_qualification_question,
+                get_closing_message,
+                get_competitive_response,
+                resolve_vertical,
+                sanitize_sales_text,
+            )
 
 
 class SalesState(Enum):

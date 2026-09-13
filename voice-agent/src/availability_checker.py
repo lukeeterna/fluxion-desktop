@@ -13,13 +13,21 @@ Features:
 - Slot duration by service type
 """
 
+from typing import TYPE_CHECKING
+
 import asyncio
 import aiohttp
 
-try:
+if TYPE_CHECKING:
     from .http_client import shared_session
-except ImportError:
-    from http_client import shared_session
+else:
+    if TYPE_CHECKING:
+        from .http_client import shared_session
+    else:
+        try:
+            from .http_client import shared_session
+        except ImportError:
+            from http_client import shared_session
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, date, timedelta
@@ -682,7 +690,7 @@ class AvailabilityChecker:
 
     def _suggest_alternative_dates(self, from_date: date, count: int) -> List[str]:
         """Suggest next available dates."""
-        alternatives = []
+        alternatives: List[str] = []
         check = from_date + timedelta(days=1)
         attempts = 0
         max_attempts = 14  # Look up to 2 weeks ahead

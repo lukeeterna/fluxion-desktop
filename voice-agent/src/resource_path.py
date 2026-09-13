@@ -22,7 +22,7 @@ def get_bundle_root() -> Path:
     - Source: voice-agent/ directory
     """
     if _frozen:
-        return Path(sys._MEIPASS)
+        return Path(getattr(sys, "_MEIPASS"))
     return Path(__file__).parent.parent
 
 

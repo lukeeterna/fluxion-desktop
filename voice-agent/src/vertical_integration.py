@@ -9,22 +9,32 @@ and the existing orchestrator, enabling:
 - FAQ retrieval from vertical configs
 """
 
+from typing import TYPE_CHECKING
+
 import sys
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from enum import Enum
 
+HAS_VERTICAL_MANAGER = False
+
 # Add verticals directory to path — PyInstaller-aware
-try:
+if TYPE_CHECKING:
     from .resource_path import get_bundle_root
-except ImportError:
-    from resource_path import get_bundle_root
+else:
+    if TYPE_CHECKING:
+        from .resource_path import get_bundle_root
+    else:
+        try:
+            from .resource_path import get_bundle_root
+        except ImportError:
+            from resource_path import get_bundle_root
 _verticals_path = get_bundle_root() / "verticals"
 if str(_verticals_path) not in sys.path:
     sys.path.insert(0, str(_verticals_path))
 
-try:
+if TYPE_CHECKING:
     from vertical_manager import (
         VerticalManager,
         VerticalConfig,
@@ -34,11 +44,22 @@ try:
         VerticalType,  # noqa: F401
         get_vertical_manager,  # noqa: F401
     )
+else:
+    try:
+        from vertical_manager import (
+            VerticalManager,
+            VerticalConfig,
+            Intent,  # noqa: F401
+            Slot,  # noqa: F401
+            FAQ,  # noqa: F401
+            VerticalType,  # noqa: F401
+            get_vertical_manager,  # noqa: F401
+        )
 
-    HAS_VERTICAL_MANAGER = True
-except ImportError as e:
-    print(f"[VERTICAL] VerticalManager not available: {e}")
-    HAS_VERTICAL_MANAGER = False
+        HAS_VERTICAL_MANAGER = True
+    except ImportError as e:
+        print(f"[VERTICAL] VerticalManager not available: {e}")
+        HAS_VERTICAL_MANAGER = False
 
 
 class VerticalIntentMatch(Enum):
@@ -105,11 +126,16 @@ class VerticalIntegration:
         """Check if vertical manager is available."""
         return HAS_VERTICAL_MANAGER and self.manager is not None
 
+    def _get_manager(self) -> "VerticalManager":
+        if self.manager is None:
+            raise RuntimeError("Vertical manager is not available")
+        return self.manager
+
     def get_available_verticals(self) -> List[str]:
         """Get list of available verticals."""
         if not self.is_available():
             return []
-        return self.manager.list_available_verticals()
+        return self._get_manager().list_available_verticals()
 
     def set_vertical(self, vertical_name: str) -> bool:
         """
@@ -125,7 +151,7 @@ class VerticalIntegration:
             return False
 
         try:
-            self.config = self.manager.load_vertical(vertical_name)
+            self.config = self._get_manager().load_vertical(vertical_name)
             self.current_vertical = vertical_name
             self._intent_cache.clear()  # Clear cache for new vertical
             return True
@@ -196,7 +222,9 @@ class VerticalIntegration:
         if not self.config:
             return "Buongiorno, come posso aiutarla?"
 
-        return self.manager.render_response(self.current_vertical, "greeting", context)
+        return self._get_manager().render_response(
+            self.current_vertical, "greeting", context
+        )
 
     def get_response(
         self, response_key: str, context: Optional[Dict[str, Any]] = None
@@ -214,7 +242,7 @@ class VerticalIntegration:
         if not self.config:
             return ""
 
-        return self.manager.render_response(
+        return self._get_manager().render_response(
             self.current_vertical, response_key, context
         )
 
@@ -300,7 +328,7 @@ class VerticalIntegration:
         """Get all intent examples for training/matching."""
         if not self.config:
             return {}
-        return self.manager.get_intent_examples(self.current_vertical)
+        return self._get_manager().get_intent_examples(self.current_vertical)
 
     # =========================================================================
     # SLOT MANAGEMENT
@@ -320,7 +348,7 @@ class VerticalIntegration:
             return f"Mi puo' dire {slot_name}?"
 
         return (
-            self.manager.get_slot_prompt(self.current_vertical, slot_name)
+            self._get_manager().get_slot_prompt(self.current_vertical, slot_name)
             or f"Mi puo' dire {slot_name}?"
         )
 
@@ -336,7 +364,7 @@ class VerticalIntegration:
         """
         if not self.config:
             return None
-        return self.manager.get_slot_values(self.current_vertical, slot_name)
+        return self._get_manager().get_slot_values(self.current_vertical, slot_name)
 
     def validate_slot(self, slot_name: str, value: Any) -> bool:
         """
@@ -351,19 +379,21 @@ class VerticalIntegration:
         """
         if not self.config:
             return True
-        return self.manager.validate_slot_value(self.current_vertical, slot_name, value)
+        return self._get_manager().validate_slot_value(
+            self.current_vertical, slot_name, value
+        )
 
     def get_required_slots(self, intent_id: str) -> List[str]:
         """Get required slots for an intent."""
         if not self.config:
             return []
-        return self.manager.get_required_slots(self.current_vertical, intent_id)
+        return self._get_manager().get_required_slots(self.current_vertical, intent_id)
 
     def get_optional_slots(self, intent_id: str) -> List[str]:
         """Get optional slots for an intent."""
         if not self.config:
             return []
-        return self.manager.get_optional_slots(self.current_vertical, intent_id)
+        return self._get_manager().get_optional_slots(self.current_vertical, intent_id)
 
     # =========================================================================
     # FAQ RETRIEVAL
@@ -382,11 +412,13 @@ class VerticalIntegration:
         if not self.config:
             return []
 
-        matches = self.manager.search_faq(self.current_vertical, query)
+        matches = self._get_manager().search_faq(self.current_vertical, query)
 
         results = []
         for faq in matches:
-            rendered_answer = self.manager.render_faq_answer(self.current_vertical, faq)
+            rendered_answer = self._get_manager().render_faq_answer(
+                self.current_vertical, faq
+            )
             results.append(
                 FAQMatchResult(
                     faq_id=faq.id,
@@ -429,7 +461,7 @@ class VerticalIntegration:
         """
         if not self.config or self.current_vertical != "medical":
             return None
-        return self.manager.check_triage_urgency(self.current_vertical, symptoms)
+        return self._get_manager().check_triage_urgency(self.current_vertical, symptoms)
 
     # =========================================================================
     # TRAINING DATA EXPORT
@@ -444,7 +476,7 @@ class VerticalIntegration:
         """
         if not self.config:
             return {}
-        return self.manager.export_training_data(self.current_vertical)
+        return self._get_manager().export_training_data(self.current_vertical)
 
     # =========================================================================
     # VARIABLE MANAGEMENT

@@ -19,6 +19,8 @@ FAQ files are stored in voice-agent/data/ with naming:
 - faq_altro.json (generic fallback)
 """
 
+from typing import TYPE_CHECKING
+
 import json
 import re
 from pathlib import Path
@@ -50,10 +52,16 @@ VERTICAL_FAQ_MAP = {
 }
 
 # Default data directory — PyInstaller-aware
-try:
+if TYPE_CHECKING:
     from .resource_path import get_bundle_root
-except ImportError:
-    from resource_path import get_bundle_root
+else:
+    if TYPE_CHECKING:
+        from .resource_path import get_bundle_root
+    else:
+        try:
+            from .resource_path import get_bundle_root
+        except ImportError:
+            from resource_path import get_bundle_root
 DATA_DIR = get_bundle_root() / "data"
 
 

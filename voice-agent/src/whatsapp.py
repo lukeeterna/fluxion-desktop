@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from .analytics import ConversationLogger, get_logger
 
@@ -876,7 +876,7 @@ class WhatsAppClient:
         passed_to_operator: bool = False,
     ):
         """Log message to analytics."""
-        self.analytics.log_whatsapp_message(
+        cast(Any, self.analytics).log_whatsapp_message(
             phone=phone,
             name=name,
             body=body,
@@ -1037,7 +1037,7 @@ def _add_whatsapp_logging_to_analytics():
                     COUNT(DISTINCT phone) as unique_contacts
                 FROM whatsapp_messages
             """
-            params = []
+            params: List[str] = []
             if start_date and end_date:
                 query += " WHERE timestamp >= ? AND timestamp <= ?"
                 params.extend((start_date.isoformat(), end_date.isoformat()))
@@ -1266,7 +1266,7 @@ class WhatsAppManager:
 
     def get_metrics(self) -> Dict[str, Any]:
         """Get WhatsApp metrics."""
-        return self.client.analytics.get_whatsapp_metrics()
+        return cast(Any, self.client.analytics).get_whatsapp_metrics()
 
 
 # =============================================================================

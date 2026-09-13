@@ -7,6 +7,8 @@ Handles NAT traversal, SIP registration, and audio bridging to Sara pipeline.
 Replaces the hand-rolled voip.py with a battle-tested SIP stack.
 """
 
+from typing import TYPE_CHECKING
+
 import asyncio
 import audioop
 import io
@@ -17,16 +19,21 @@ import time
 import wave
 from typing import Any, Dict, Optional
 
+PYVOIP_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # Lazy import pyVoIP (not available on MacBook dev, only on iMac/client)
-try:
+if TYPE_CHECKING:
     from pyVoIP.VoIP import CallState, VoIPCall, VoIPPhone
+else:
+    try:
+        from pyVoIP.VoIP import CallState, VoIPCall, VoIPPhone
 
-    PYVOIP_AVAILABLE = True
-except ImportError:
-    PYVOIP_AVAILABLE = False
-    logger.info("pyVoIP not installed — VoIP disabled")
+        PYVOIP_AVAILABLE = True
+    except ImportError:
+        PYVOIP_AVAILABLE = False
+        logger.info("pyVoIP not installed — VoIP disabled")
 
 
 class SaraVoIPBridge:

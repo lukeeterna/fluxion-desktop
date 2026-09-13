@@ -177,7 +177,7 @@ class FluxionStreamingLLM:
         connection_pool: FluxionConnectionPool,
         min_chunk_size: int = 30,
         max_chunk_size: int = 100,
-        sentence_delimiters: List[str] = None,
+        sentence_delimiters: List[str] | None = None,
     ):
         self.pool = connection_pool
         self.min_chunk_size = min_chunk_size
@@ -292,7 +292,7 @@ class FluxionStreamingLLM:
             logger.info(
                 f"[FluxionStreamingLLM] Stream completo: "
                 f"tokens={total_tokens}, time={total_time:.2f}s, "
-                f"tps={tps:.1f}, first_token={first_token_time * 1000:.1f}ms"
+                f"tps={tps:.1f}, first_token={(first_token_time or 0.0) * 1000:.1f}ms"
             )
 
         except Exception as e:
@@ -453,6 +453,8 @@ class FluxionLatencyOptimizer:
             # Euristiche per determinare complessità
             use_fast = self._is_simple_query(prompt, context)
 
+        if self.streaming is None:
+            raise RuntimeError("Streaming LLM not initialized")
         async for chunk in self.streaming.stream_response(
             prompt=prompt, context=context, use_fast_model=use_fast
         ):
@@ -496,6 +498,8 @@ async def get_optimizer(api_key: Optional[str] = None) -> FluxionLatencyOptimize
             import os
 
             api_key = os.getenv("GROQ_API_KEY")
+        if api_key is None:
+            raise ValueError("GROQ_API_KEY not set")
         _optimizer = FluxionLatencyOptimizer(api_key)
         await _optimizer.setup()
     return _optimizer

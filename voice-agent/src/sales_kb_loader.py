@@ -5,16 +5,24 @@ Loads and serves the sales knowledge base from JSON.
 Used by SalesStateMachine for pitch, objection handling, and closing.
 """
 
+from typing import TYPE_CHECKING
+
 import json
 import logging
 from typing import Optional, Dict, List
 
 logger = logging.getLogger("fluxion.sales.kb")
 
-try:
+if TYPE_CHECKING:
     from .resource_path import get_bundle_root
-except ImportError:
-    from resource_path import get_bundle_root
+else:
+    if TYPE_CHECKING:
+        from .resource_path import get_bundle_root
+    else:
+        try:
+            from .resource_path import get_bundle_root
+        except ImportError:
+            from resource_path import get_bundle_root
 
 _KB_PATH = get_bundle_root() / "data" / "sales_knowledge_base.json"
 

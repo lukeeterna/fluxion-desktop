@@ -236,6 +236,7 @@ class SIPClient:
 
     def __init__(self, config: Optional[SIPConfig] = None):
         self.config = config or SIPConfig.from_env()
+        self._cached_public_ip: str
         self._socket: Optional[socket.socket] = None
         self._registered = False
         self._register_task: Optional[asyncio.Task] = None

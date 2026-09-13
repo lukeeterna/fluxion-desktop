@@ -18,9 +18,11 @@ Features:
 - Context-aware prompts
 """
 
+from typing import TYPE_CHECKING
+
 from enum import Enum
 from dataclasses import dataclass, field, asdict
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Callable, cast
 from datetime import datetime, date, timedelta
 import json
 import re
@@ -42,15 +44,27 @@ def _strip_accents_lower(s: str) -> str:
     ).casefold()
 
 
-try:
+if TYPE_CHECKING:
     from .escalation_manager import build_escalation_summary, build_caller_message
-except ImportError:
-    from escalation_manager import build_escalation_summary, build_caller_message
+else:
+    if TYPE_CHECKING:
+        from .escalation_manager import build_escalation_summary, build_caller_message
+    else:
+        try:
+            from .escalation_manager import (
+                build_escalation_summary,
+                build_caller_message,
+            )
+        except ImportError:
+            from escalation_manager import (
+                build_escalation_summary,
+                build_caller_message,
+            )
 
 logger = logging.getLogger(__name__)
 
 # Handle both package import and direct import
-try:
+if TYPE_CHECKING:
     from .entity_extractor import (
         extract_date,
         extract_time,
@@ -65,23 +79,55 @@ try:
         extract_time_constraint,  # noqa: F401
     )
     from .disambiguation_handler import DisambiguationHandler, name_similarity  # noqa: F401
-except ImportError:
-    from entity_extractor import (
-        extract_date,
-        extract_time,
-        extract_name,
-        extract_service,
-        extract_services,
-        extract_operator,
-        extract_all,
-        ExtractionResult,
-        TimeConstraintType,
-    )
-    from disambiguation_handler import DisambiguationHandler
+else:
+    if TYPE_CHECKING:
+        from .entity_extractor import (
+            extract_date,
+            extract_time,
+            extract_name,
+            extract_service,
+            extract_services,
+            extract_operator,
+            extract_all,
+            ExtractionResult,
+            TimeConstraint,  # noqa: F401
+            TimeConstraintType,
+            extract_time_constraint,  # noqa: F401
+        )
+        from .disambiguation_handler import DisambiguationHandler, name_similarity  # noqa: F401
+    else:
+        try:
+            from .entity_extractor import (
+                extract_date,
+                extract_time,
+                extract_name,
+                extract_service,
+                extract_services,
+                extract_operator,
+                extract_all,
+                ExtractionResult,
+                TimeConstraint,  # noqa: F401
+                TimeConstraintType,
+                extract_time_constraint,  # noqa: F401
+            )
+            from .disambiguation_handler import DisambiguationHandler, name_similarity  # noqa: F401
+        except ImportError:
+            from entity_extractor import (
+                extract_date,
+                extract_time,
+                extract_name,
+                extract_service,
+                extract_services,
+                extract_operator,
+                extract_all,
+                ExtractionResult,
+                TimeConstraintType,
+            )
+            from disambiguation_handler import DisambiguationHandler
 
 # Italian regex module for ambiguous date detection
 try:
-    try:
+    if TYPE_CHECKING:
         from .italian_regex import (
             is_ambiguous_date,
             strip_fillers,
@@ -89,14 +135,23 @@ try:
             is_flexible_scheduling,
             is_rifiuto,
         )
-    except ImportError:
-        from italian_regex import (
-            is_ambiguous_date,
-            strip_fillers,  # noqa: F401
-            extract_multi_services,
-            is_flexible_scheduling,
-            is_rifiuto,
-        )  # noqa: F401
+    else:
+        try:
+            from .italian_regex import (
+                is_ambiguous_date,
+                strip_fillers,
+                extract_multi_services,
+                is_flexible_scheduling,
+                is_rifiuto,
+            )
+        except ImportError:
+            from italian_regex import (
+                is_ambiguous_date,
+                strip_fillers,  # noqa: F401
+                extract_multi_services,
+                is_flexible_scheduling,
+                is_rifiuto,
+            )  # noqa: F401
     HAS_ITALIAN_REGEX = True
 except ImportError:
     HAS_ITALIAN_REGEX = False
@@ -203,6 +258,9 @@ class BookingContext:
     clarifications_asked: int = 0
     operator_gender_preference: Optional[str] = None  # "F" or "M"
     urgency: bool = False
+    booking_confirmed: bool = False
+    last_booking: Optional[Dict[str, Any]] = None
+    extra_entities: Dict[str, Any] = field(default_factory=dict)
 
     # P0-4: "Il solito" — repeat last booking
     is_solito: bool = False
@@ -274,9 +332,11 @@ class BookingContext:
 
     def get_summary(self) -> str:
         """Get human-readable booking summary."""
-        parts = []
+        parts: List[str] = []
         if self.service_display or self.service:
-            parts.append(self.service_display or self.service)
+            service_summary = self.service_display or self.service
+            assert service_summary is not None
+            parts.append(service_summary)
         if self.date_display:
             parts.append(self.date_display)
         elif self.date:
@@ -321,7 +381,7 @@ class StateMachineResult:
     booking: Optional[Dict[str, Any]] = None
     needs_db_lookup: bool = False
     lookup_type: Optional[str] = None  # "client", "availability", "operator"
-    lookup_params: Optional[Dict] = None
+    lookup_params: Dict[str, Any] = field(default_factory=dict)
     should_exit: bool = False
     follow_up_response: Optional[str] = None
     context_updates: Optional[Dict[str, Any]] = None
@@ -775,7 +835,7 @@ class BookingStateMachine:
         self._business_name: str = ""
 
         # CoVe 2026: Injectable db_lookup for testing (dependency injection pattern)
-        self.db_lookup: Optional[callable] = None
+        self.db_lookup: Optional[Callable[..., Any]] = None
         # F19: Valid operator names from DB (set by orchestrator)
         self._valid_operator_names: set = set()
 
@@ -809,10 +869,13 @@ class BookingStateMachine:
 
                 normalized = normalized_date.strftime("%Y-%m-%d")
 
-                try:
+                if TYPE_CHECKING:
                     from .availability_checker import AvailabilityConfig
-                except ImportError:
-                    from availability_checker import AvailabilityConfig
+                else:
+                    try:
+                        from .availability_checker import AvailabilityConfig
+                    except ImportError:
+                        from availability_checker import AvailabilityConfig
 
                 availability_config = AvailabilityConfig.for_vertical(
                     self.context.vertical
@@ -1280,6 +1343,7 @@ class BookingStateMachine:
             new_service = (
                 extracted.services[0] if extracted.services else extracted.service
             )
+            assert new_service is not None
             self.context.service = new_service
             self.context.services = extracted.services or [new_service]
             self.context.service_display = self._normalize_service_display(new_service)
@@ -1387,6 +1451,7 @@ class BookingStateMachine:
                     origin="context_extraction_without_ambiguity_check",
                 )
                 if date_update_result:
+                    assert self.context.date is not None
                     self.context.date_display = extracted.date.to_italian()
 
         if extracted.time and (force_update or not self.context.time):
@@ -1536,6 +1601,7 @@ class BookingStateMachine:
                     origin="context_dict_date_correction",
                 )
                 if date_update_result:
+                    assert self.context.date is not None
                     self.context.date_display = self._format_date_display(
                         self.context.date
                     )
@@ -2217,27 +2283,27 @@ class BookingStateMachine:
                 r"^([A-ZÀ-Ö][a-zàèéìòù]+\s+[A-ZÀ-Ö][a-zàèéìòù]+)[.!?,;:\s]*$",
             ]
             for _pat in _EX_PATTERNS:
-                _m = re.search(_pat, text, re.IGNORECASE)
-                if _m:
-                    _full = _m.group(1).strip()
+                _name_match = re.search(_pat, text, re.IGNORECASE)
+                if _name_match:
+                    _full = _name_match.group(1).strip()
                     _parts = _full.split()
-                    _clean = [
+                    _clean_parts = [
                         w
                         for w in _parts
                         if w.lower() not in _NON_NAMES_EX and len(w) >= 2
                     ]
-                    if len(_clean) >= 2:
+                    if len(_clean_parts) >= 2:
                         # Only overwrite name if not already set (or set to same value)
-                        _new_name = sanitize_name(_clean[0])
-                        _new_surname = sanitize_name(_clean[1], is_surname=True)
+                        _new_name = sanitize_name(_clean_parts[0])
+                        _new_surname = sanitize_name(_clean_parts[1], is_surname=True)
                         if (
                             not self.context.client_name
                             or self.context.client_name.lower() == _new_name.lower()
                         ):
                             self.context.client_name = _new_name
                         self.context.client_surname = _new_surname
-                    elif len(_clean) == 1 and not self.context.client_name:
-                        self.context.client_name = sanitize_name(_clean[0])
+                    elif len(_clean_parts) == 1 and not self.context.client_name:
+                        self.context.client_name = sanitize_name(_clean_parts[0])
                     if self.context.client_name:
                         break
             # Also try entity extractor fallback
@@ -2776,7 +2842,7 @@ class BookingStateMachine:
         """
         # Clienti di test noti con soprannome
         # CoVe 2026: Aggiunti Mario/Maria per test disambiguazione fonetica
-        test_clients = {
+        test_clients: Dict[str, List[Dict[str, Any]]] = {
             "peruzzi": [
                 {
                     "id": "test-gigio",
@@ -2826,7 +2892,7 @@ class BookingStateMachine:
         input_name_lower = input_name.lower()
 
         # Cerca per cognome o soprannome
-        all_matches = []
+        all_matches: List[Dict[str, Any]] = []
         if input_surname_lower in test_clients:
             all_matches.extend(test_clients[input_surname_lower])
         if input_name_lower in test_clients:
@@ -2856,10 +2922,13 @@ class BookingStateMachine:
         🔒 CRITICAL FIX: Valuta sia NOME che COGNOME insieme.
         Se il cognome non corrisponde, NON è un match valido.
         """
-        try:
+        if TYPE_CHECKING:
             from disambiguation_handler import PHONETIC_VARIANTS, name_similarity
-        except ImportError:
-            from .disambiguation_handler import PHONETIC_VARIANTS, name_similarity
+        else:
+            try:
+                from disambiguation_handler import PHONETIC_VARIANTS, name_similarity
+            except ImportError:
+                from .disambiguation_handler import PHONETIC_VARIANTS, name_similarity
 
         candidates = []
         input_name_lower = input_name.lower() if input_name else ""
@@ -2981,10 +3050,13 @@ class BookingStateMachine:
         # CoVe 2026: Check for phonetic ambiguity (e.g., Mario vs Maria with same surname)
         # If multiple candidates with phonetically similar names, require disambiguation
         if len(candidates) >= 2:
-            try:
+            if TYPE_CHECKING:
                 from disambiguation_handler import is_phonetically_similar
-            except ImportError:
-                from .disambiguation_handler import is_phonetically_similar
+            else:
+                try:
+                    from disambiguation_handler import is_phonetically_similar
+                except ImportError:
+                    from .disambiguation_handler import is_phonetically_similar
 
             top_name = candidates[0]["nome"].lower()
             second_name = candidates[1]["nome"].lower()
@@ -3577,15 +3649,25 @@ class BookingStateMachine:
             )
 
         # P1-13: Extract negative day constraints ("non il lunedì", "tranne il sabato")
+        from importlib import import_module
+
+        exclude_days_extractor: Optional[Callable[[str], List[str]]] = None
         try:
-            from .entity_extractor import extract_exclude_days
+            extractor_module = import_module(
+                ".entity_extractor" if __package__ else "entity_extractor",
+                package=__package__,
+            )
         except ImportError:
             try:
-                from entity_extractor import extract_exclude_days
+                extractor_module = import_module("entity_extractor")
             except ImportError:
-                extract_exclude_days = None
-        if extract_exclude_days:
-            excluded = extract_exclude_days(text)
+                extractor_module = None
+        if extractor_module is not None:
+            exclude_days_extractor = cast(
+                Callable[[str], List[str]], extractor_module.extract_exclude_days
+            )
+        if exclude_days_extractor:
+            excluded = exclude_days_extractor(text)
             if excluded:
                 for day in excluded:
                     if day not in self.context.exclude_days:
@@ -4582,7 +4664,7 @@ class BookingStateMachine:
                                 response=TEMPLATES["date_not_understood"],
                             )
                         self.context.date_display = self._format_date_display(
-                            self.context.date
+                            self.context.date or date_result.to_string("%Y-%m-%d")
                         )
                         self.context.corrections_made += 1
                         return StateMachineResult(
@@ -5637,12 +5719,12 @@ class BookingStateMachine:
             )
 
         # Ask again
-        candidate = (
+        retry_candidate = (
             self.context.disambiguation_candidates[0]
             if self.context.disambiguation_candidates
             else None
         )
-        if candidate:
+        if retry_candidate:
             return StateMachineResult(
                 next_state=BookingState.DISAMBIGUATING_NAME,
                 response=TEMPLATES["disambiguation_retry"],

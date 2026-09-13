@@ -31,7 +31,7 @@ def levenshtein_distance(s1: str, s2: str) -> int:
     if len(s2) == 0:
         return len(s1)
 
-    previous_row = range(len(s2) + 1)
+    previous_row = list(range(len(s2) + 1))
     for i, c1 in enumerate(s1):
         current_row = [i + 1]
         for j, c2 in enumerate(s2):
@@ -849,7 +849,7 @@ if __name__ == "__main__":
     # Test 1: Birth date resolves immediately
     print("Test 1: Birth date match - risolve subito")
     print("-" * 40)
-    clients = [
+    clients: List[Dict[str, Any]] = [
         {
             "id": "1",
             "nome": "Mario",

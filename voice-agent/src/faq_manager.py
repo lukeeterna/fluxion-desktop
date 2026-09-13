@@ -17,38 +17,50 @@ Performance targets:
     - Overall accuracy: >90%
 """
 
+from typing import TYPE_CHECKING
+
 import json
 import re
 from pathlib import Path
-from typing import Optional, Dict, List, Any, Tuple
+from typing import Optional, Dict, List, Any, Tuple, cast
 from dataclasses import dataclass
 import time
 
+HAS_SEMANTIC = False
+
 # Try to import semantic retriever (optional dependency)
-try:
+if TYPE_CHECKING:
     from .faq_retriever import (
         FAISSFAQRetriever,
         HybridFAQRetriever,
         create_faq_retriever,
         RetrievalResult,
     )
-
-    HAS_SEMANTIC = True
-except ImportError:
+else:
     try:
-        from faq_retriever import (
-            FAISSFAQRetriever,  # noqa: F401
-            HybridFAQRetriever,  # noqa: F401
+        from .faq_retriever import (
+            FAISSFAQRetriever,
+            HybridFAQRetriever,
             create_faq_retriever,
-            RetrievalResult,  # noqa: F401
+            RetrievalResult,
         )
 
         HAS_SEMANTIC = True
     except ImportError:
-        HAS_SEMANTIC = False
-        print(
-            "[INFO] Semantic FAQ retrieval not available (missing sentence-transformers)"
-        )
+        try:
+            from faq_retriever import (
+                FAISSFAQRetriever,  # noqa: F401
+                HybridFAQRetriever,  # noqa: F401
+                create_faq_retriever,
+                RetrievalResult,  # noqa: F401
+            )
+
+            HAS_SEMANTIC = True
+        except ImportError:
+            HAS_SEMANTIC = False
+            print(
+                "[INFO] Semantic FAQ retrieval not available (missing sentence-transformers)"
+            )
 
 
 # =============================================================================
@@ -265,8 +277,8 @@ def keyword_match_score(
     matched_category = ""
 
     for category, config in KEYWORD_CATEGORIES.items():
-        keywords = config["keywords"]
-        boost = config["boost"]
+        keywords = cast(List[str], config["keywords"])
+        boost = float(cast(float, config["boost"]))
 
         # Count keyword matches in query
         query_matches = sum(1 for kw in keywords if kw in query_lower)
@@ -362,14 +374,14 @@ class FAQManager:
         """
         self.config = config or FAQConfig()
         self.faqs: List[Dict[str, Any]] = []
-        self._semantic_retriever = None
+        self._semantic_retriever: Optional[Any] = None
         self._semantic_ready = False
 
         # Stats
         self._keyword_hits = 0
         self._semantic_hits = 0
         self._total_queries = 0
-        self._last_query_time_ms = 0
+        self._last_query_time_ms: float = 0.0
 
     def load_faqs_from_json(self, path: str) -> int:
         """
@@ -531,6 +543,7 @@ class FAQManager:
                 self.faqs,
                 hybrid=True,
             )
+            assert self._semantic_retriever is not None
             self._semantic_retriever.build_index()
             self._semantic_ready = True
             return True
@@ -583,6 +596,7 @@ class FAQManager:
         semantic_result = None
         if self._ensure_semantic_ready():
             try:
+                assert self._semantic_retriever is not None
                 results = self._semantic_retriever.retrieve(
                     query,
                     top_k=self.config.max_semantic_results,

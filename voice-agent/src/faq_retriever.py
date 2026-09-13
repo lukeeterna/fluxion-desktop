@@ -161,7 +161,7 @@ class FAISSFAQRetriever:
 
         # Performance tracking
         self._load_time_ms = 0
-        self._last_query_time_ms = 0
+        self._last_query_time_ms: float = 0.0
 
     @property
     def model(self):
@@ -191,6 +191,8 @@ class FAISSFAQRetriever:
             Number of FAQs added
         """
         _lazy_import()
+        np_module = _np
+        assert np_module is not None
 
         added = 0
         for faq_dict in faqs:
@@ -254,6 +256,8 @@ class FAISSFAQRetriever:
             return
 
         _lazy_import()
+        np_module = _np
+        assert np_module is not None
 
         # Generate embeddings for all questions
         questions = [faq.question for faq in self._faqs]
@@ -265,7 +269,7 @@ class FAISSFAQRetriever:
         encode_time = (time.time() - start) * 1000
 
         # Store embeddings
-        self._embeddings = embeddings.astype(_np.float32)
+        self._embeddings = embeddings.astype(np_module.float32)
 
         # Create FAISS index
         if _faiss and _faiss is not False:
@@ -276,12 +280,13 @@ class FAISSFAQRetriever:
 
             # Normalize embeddings for cosine similarity
             _faiss.normalize_L2(self._embeddings)
+            assert self._index is not None
             self._index.add(self._embeddings)
         else:
             # Fallback: manual cosine similarity
             self._index = None
             # Normalize for cosine similarity
-            norms = _np.linalg.norm(self._embeddings, axis=1, keepdims=True)
+            norms = np_module.linalg.norm(self._embeddings, axis=1, keepdims=True)
             self._embeddings = self._embeddings / norms
 
         self._index_built = True
@@ -316,19 +321,22 @@ class FAISSFAQRetriever:
             self.build_index()
 
         _lazy_import()
+        np_module = _np
+        assert np_module is not None
 
         start = time.time()
 
         # Encode query
         query_embedding = self.model.encode(
             [query], convert_to_numpy=True, show_progress_bar=False
-        ).astype(_np.float32)
+        ).astype(np_module.float32)
 
         # Normalize for cosine similarity
         if _faiss and _faiss is not False:
             _faiss.normalize_L2(query_embedding)
 
             # Search
+            assert self._index is not None
             scores, indices = self._index.search(
                 query_embedding, min(top_k * 2, len(self._faqs))
             )
@@ -336,12 +344,12 @@ class FAISSFAQRetriever:
             indices = indices[0]
         else:
             # Fallback: manual cosine similarity
-            query_norm = query_embedding / _np.linalg.norm(query_embedding)
-            scores = _np.dot(self._embeddings, query_norm.T).flatten()
-            indices = _np.argsort(scores)[::-1][: top_k * 2]
+            query_norm = query_embedding / np_module.linalg.norm(query_embedding)
+            scores = np_module.dot(self._embeddings, query_norm.T).flatten()
+            indices = np_module.argsort(scores)[::-1][: top_k * 2]
             scores = scores[indices]
 
-        self._last_query_time_ms = (time.time() - start) * 1000
+        self._last_query_time_ms = float((time.time() - start) * 1000)
 
         # Build results
         results = []
@@ -469,6 +477,8 @@ class FAISSFAQRetriever:
         # Load embeddings
         embeddings_path = load_dir / "embeddings.npy"
         if embeddings_path.exists():
+            _lazy_import()
+            assert _np is not None
             self._embeddings = _np.load(embeddings_path)
 
         # Load FAISS index

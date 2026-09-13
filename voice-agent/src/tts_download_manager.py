@@ -5,6 +5,8 @@ mode persistence, and model presence checks.
 Mode persisted to: voice-agent/.tts_mode (plain text: "quality", "fast", or "auto")
 """
 
+from typing import TYPE_CHECKING
+
 import logging
 import os
 import urllib.error
@@ -15,10 +17,16 @@ from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
-try:
+if TYPE_CHECKING:
     from .resource_path import get_bundle_root, get_writable_root
-except ImportError:
-    from resource_path import get_bundle_root, get_writable_root
+else:
+    if TYPE_CHECKING:
+        from .resource_path import get_bundle_root, get_writable_root
+    else:
+        try:
+            from .resource_path import get_bundle_root, get_writable_root
+        except ImportError:
+            from resource_path import get_bundle_root, get_writable_root
 
 _BUNDLE_ROOT = get_bundle_root()
 _WRITABLE_ROOT = get_writable_root()

@@ -15,20 +15,27 @@ Performance targets:
 - Total: <20ms
 """
 
+from typing import TYPE_CHECKING
+
 import re
 from datetime import datetime, timedelta, time
 from typing import Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
-# Try to import dateparser for advanced date parsing
-try:
-    import dateparser
+HAS_DATEPARSER = False
 
-    HAS_DATEPARSER = True
-except ImportError:
-    HAS_DATEPARSER = False
-    print("[WARN] dateparser not installed, using fallback date parsing")
+# Try to import dateparser for advanced date parsing
+if TYPE_CHECKING:
+    import dateparser
+else:
+    try:
+        import dateparser
+
+        HAS_DATEPARSER = True
+    except ImportError:
+        HAS_DATEPARSER = False
+        print("[WARN] dateparser not installed, using fallback date parsing")
 
 
 # =============================================================================
@@ -81,16 +88,20 @@ class TimeConstraint:
         if self.constraint_type == TimeConstraintType.EXACT:
             return candidate == self.anchor_time
         elif self.constraint_type == TimeConstraintType.AFTER:
+            assert self.anchor_time is not None
             return candidate > self.anchor_time
         elif self.constraint_type == TimeConstraintType.BEFORE:
+            assert self.anchor_time is not None
             return candidate < self.anchor_time
         elif self.constraint_type == TimeConstraintType.AROUND:
+            assert self.anchor_time is not None
             delta = abs(
                 (candidate.hour * 60 + candidate.minute)
                 - (self.anchor_time.hour * 60 + self.anchor_time.minute)
             )
             return delta <= 30
         elif self.constraint_type == TimeConstraintType.RANGE:
+            assert self.range_start is not None and self.range_end is not None
             return self.range_start <= candidate <= self.range_end
         elif self.constraint_type in (
             TimeConstraintType.SLOT,
@@ -102,14 +113,19 @@ class TimeConstraint:
     def display(self) -> str:
         """Stringa display corretta per Sara — mai 'alle X' per constraint non-EXACT."""
         if self.constraint_type == TimeConstraintType.AFTER:
+            assert self.anchor_time is not None
             return f"dopo le {self.anchor_time.strftime('%H:%M')}"
         elif self.constraint_type == TimeConstraintType.BEFORE:
+            assert self.anchor_time is not None
             return f"prima delle {self.anchor_time.strftime('%H:%M')}"
         elif self.constraint_type == TimeConstraintType.AROUND:
+            assert self.anchor_time is not None
             return f"verso le {self.anchor_time.strftime('%H:%M')}"
         elif self.constraint_type == TimeConstraintType.RANGE:
+            assert self.range_start is not None and self.range_end is not None
             return f"tra le {self.range_start.strftime('%H:%M')} e le {self.range_end.strftime('%H:%M')}"
         elif self.constraint_type == TimeConstraintType.EXACT:
+            assert self.anchor_time is not None
             return f"alle {self.anchor_time.strftime('%H:%M')}"
         elif self.constraint_type == TimeConstraintType.FIRST_AVAILABLE:
             return "prima possibile"
@@ -1964,7 +1980,7 @@ def _levenshtein_ratio(s1: str, s2: str) -> float:
         s1, s2 = s2, s1
         len1, len2 = len2, len1
 
-    current_row = range(len1 + 1)
+    current_row = list(range(len1 + 1))
     for i in range(1, len2 + 1):
         previous_row, current_row = current_row, [i] + [0] * len1
         for j in range(1, len1 + 1):
@@ -2702,30 +2718,32 @@ if __name__ == "__main__":
         print(f'Input: "{text}"')
 
         if entity_type == "date":
-            result = extract_date(text)
-            if result:
-                print(f"  → Date: {result.to_italian()} ({result.to_string()})")
-                print(f"  → Confidence: {result.confidence:.2f}")
+            date_result = extract_date(text)
+            if date_result:
+                print(
+                    f"  → Date: {date_result.to_italian()} ({date_result.to_string()})"
+                )
+                print(f"  → Confidence: {date_result.confidence:.2f}")
         elif entity_type == "time":
-            result = extract_time(text)
-            if result:
-                print(f"  → Time: {result.to_string()}")
-                print(f"  → Approximate: {result.is_approximate}")
+            time_result = extract_time(text)
+            if time_result:
+                print(f"  → Time: {time_result.to_string()}")
+                print(f"  → Approximate: {time_result.is_approximate}")
         elif entity_type == "name":
-            result = extract_name(text)
-            if result:
-                print(f"  → Name: {result.name}")
+            name_result = extract_name(text)
+            if name_result:
+                print(f"  → Name: {name_result.name}")
         elif entity_type == "phone":
-            result = extract_phone(text)
-            if result:
-                print(f"  → Phone: {result}")
+            phone_result = extract_phone(text)
+            if phone_result:
+                print(f"  → Phone: {phone_result}")
         elif entity_type == "email":
-            result = extract_email(text)
-            if result:
-                print(f"  → Email: {result}")
+            email_result = extract_email(text)
+            if email_result:
+                print(f"  → Email: {email_result}")
         elif entity_type == "all":
-            result = extract_all(text)
-            print(f"  → {result.to_dict()}")
+            all_result = extract_all(text)
+            print(f"  → {all_result.to_dict()}")
 
         print()
 

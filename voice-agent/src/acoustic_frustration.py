@@ -251,7 +251,7 @@ class AcousticFrustrationDetector:
             return np.zeros(0, dtype=np.float32)
         # struct.unpack is faster than np.frombuffer for small buffers but
         # np.frombuffer avoids Python-level loops for large ones.
-        samples = np.frombuffer(pcm_bytes[: n_samples * 2], dtype=np.int16)
+        samples: np.ndarray = np.frombuffer(pcm_bytes[: n_samples * 2], dtype=np.int16)
         return samples.astype(np.float32) / 32768.0
 
     @staticmethod

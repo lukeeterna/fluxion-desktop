@@ -449,6 +449,7 @@ class ConversationLogger:
             if not session:
                 session_id = self.start_session("unknown")
                 session = self._active_sessions.get(session_id)
+            assert session is not None
             turn.turn_number = session.total_turns + 1
             session.add_turn(turn)
             return turn.id
@@ -460,6 +461,7 @@ class ConversationLogger:
             # Auto-create session if not exists
             session_id = self.start_session("unknown")
             session = self._active_sessions.get(session_id)
+        assert session is not None
 
         turn = ConversationTurn(
             conversation_id=session_id,

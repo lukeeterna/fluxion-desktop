@@ -3,14 +3,16 @@ FLUXION Voice Agent - Booking Manager
 Gestisce prenotazioni, annullamenti, spostamenti e lista d'attesa VIP
 """
 
-from typing import Optional, Dict, List, Tuple
+from typing import TYPE_CHECKING
+
+from typing import Any, Optional, Dict, List, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
 import uuid
 
-try:
+if TYPE_CHECKING:
     from .vertical_schemas import (
         CustomerTier,
         WaitlistEntry,
@@ -18,13 +20,31 @@ try:
         CustomerProfile,
         CustomerCardFactory,  # noqa: F401
     )
-except ImportError:
-    from vertical_schemas import (
-        CustomerTier,
-        WaitlistEntry,
-        WaitlistManager,
-        CustomerProfile,
-    )
+else:
+    if TYPE_CHECKING:
+        from .vertical_schemas import (
+            CustomerTier,
+            WaitlistEntry,
+            WaitlistManager,
+            CustomerProfile,
+            CustomerCardFactory,  # noqa: F401
+        )
+    else:
+        try:
+            from .vertical_schemas import (
+                CustomerTier,
+                WaitlistEntry,
+                WaitlistManager,
+                CustomerProfile,
+                CustomerCardFactory,  # noqa: F401
+            )
+        except ImportError:
+            from vertical_schemas import (
+                CustomerTier,
+                WaitlistEntry,
+                WaitlistManager,
+                CustomerProfile,
+            )
 
 
 class BookingStatus(Enum):
@@ -108,7 +128,7 @@ class BookingManager:
         time: str,
         operator_id: Optional[str] = None,
         notes: str = "",
-    ) -> Tuple[bool, Booking, str]:
+    ) -> Tuple[bool, Optional[Booking], Any]:
         """
         Crea nuova prenotazione.
 
@@ -262,7 +282,7 @@ class BookingManager:
         new_date: str,
         new_time: str,
         new_operator_id: Optional[str] = None,
-    ) -> Tuple[bool, Booking, str]:
+    ) -> Tuple[bool, Optional[Booking], str]:
         """
         Sposta prenotazione a nuovo slot.
         Mantiene lo stesso ID ma aggiorna data/ora.
@@ -618,7 +638,7 @@ class BookingManager:
         Trova slot alternativi quando quello preferito è occupato.
         Cerca nello stesso giorno prima, poi nei giorni successivi.
         """
-        alternatives = []
+        alternatives: List[Dict[str, Any]] = []
         service_info = self._get_service_info(service_id)
         service_info["duration"]
 

@@ -367,6 +367,7 @@ class WaitlistEntry:
     urgency: str = "normal"  # "low", "normal", "high", "urgent"
     notes: str = ""
     created_at: str = ""
+    notified_at: Optional[str] = None
 
     # Calcolo priorità (più alto = più priorità)
     @property
@@ -434,7 +435,11 @@ class WaitlistManager:
         return sorted(entries, key=lambda x: x.priority_score, reverse=True)
 
     def find_entries_for_slot(
-        self, service_id: str, date: str, time: str = None, business_id: str = None
+        self,
+        service_id: str,
+        date: str,
+        time: str | None = None,
+        business_id: str | None = None,
     ) -> List["WaitlistEntry"]:
         """Trova entry in lista d'attesa per uno slot specifico."""
         return self.get_priority_list(service_id, date)
@@ -554,7 +559,7 @@ class CompositeCustomerCard:
         """Serializza in dizionario."""
         from dataclasses import asdict
 
-        result = {
+        result: Dict[str, Any] = {
             "customer_id": self.customer_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,

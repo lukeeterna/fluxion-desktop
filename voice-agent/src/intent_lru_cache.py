@@ -9,14 +9,22 @@ Python 3.9 compatible: uses Optional[], List[], Dict[] from typing.
 lru_cache is thread-safe in CPython (GIL protects dict ops between await points).
 """
 
+from typing import TYPE_CHECKING
+
 import re
 from functools import lru_cache
 from typing import Any
 
-try:
+if TYPE_CHECKING:
     from .intent_classifier import classify_intent
-except ImportError:
-    from intent_classifier import classify_intent
+else:
+    if TYPE_CHECKING:
+        from .intent_classifier import classify_intent
+    else:
+        try:
+            from .intent_classifier import classify_intent
+        except ImportError:
+            from intent_classifier import classify_intent
 
 
 def _normalize_input(text: str) -> str:

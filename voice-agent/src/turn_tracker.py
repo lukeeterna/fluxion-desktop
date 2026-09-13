@@ -20,7 +20,7 @@ import sqlite3
 import uuid
 import time
 from datetime import datetime
-from typing import Dict, Any, Optional, List
+from typing import Any, Callable, Dict, List, Optional, Union
 from dataclasses import dataclass, asdict, field
 from enum import Enum
 from contextlib import contextmanager
@@ -271,8 +271,9 @@ class FluxionTurnTracker:
             from resource_path import get_writable_root
 
             base_dir = get_writable_root()
-            db_path = base_dir / "data" / "fluxion_turns.db"
-            db_path.parent.mkdir(parents=True, exist_ok=True)
+            resolved_path = base_dir / "data" / "fluxion_turns.db"
+            resolved_path.parent.mkdir(parents=True, exist_ok=True)
+            db_path = str(resolved_path)
 
         self.db_path = str(db_path)
         self._local = threading.local()
@@ -470,7 +471,7 @@ class FluxionTurnTracker:
             FROM turns 
             WHERE timestamp_start > ?
         """
-        params = [since]
+        params: List[Union[float, str]] = [since]
 
         if vertical_id:
             query += " AND vertical_id = ?"
@@ -510,7 +511,7 @@ class FluxionTurnTracker:
             return {row["intent_detected"]: row["count"] for row in rows}
 
     def replay_turn(
-        self, turn_id: str, callback: Optional[callable] = None
+        self, turn_id: str, callback: Optional[Callable[[TurnRecord], Any]] = None
     ) -> Optional[TurnRecord]:
         """
         Replay di un turno per debugging.

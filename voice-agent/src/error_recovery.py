@@ -10,7 +10,7 @@ import functools
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 T = TypeVar("T")
 
@@ -418,7 +418,7 @@ class CircuitBreaker:
                 breaker.record_failure()
     """
 
-    def __init__(self, name: str, config: CircuitBreakerConfig = None):
+    def __init__(self, name: str, config: CircuitBreakerConfig | None = None):
         self.name = name
         self.config = config or CircuitBreakerConfig()
         self._state = CircuitState.CLOSED
@@ -481,7 +481,7 @@ class CircuitBreaker:
 
 def with_recovery(
     config: RetryConfig = DEFAULT_RETRY_CONFIG,
-    fallback_value: Any = None,
+    fallback_value: Any | None = None,
     fallback_func: Optional[Callable] = None,
 ):
     """
@@ -499,25 +499,25 @@ def with_recovery(
             result = await retry_with_backoff(func, *args, config=config, **kwargs)
 
             if result.success:
-                return result.value
+                return cast(T, result.value)
             elif fallback_func:
                 return fallback_func(*args, **kwargs)
             else:
-                return fallback_value
+                return cast(T, fallback_value)
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs) -> T:
             result = retry_sync_with_backoff(func, *args, config=config, **kwargs)
 
             if result.success:
-                return result.value
+                return cast(T, result.value)
             elif fallback_func:
                 return fallback_func(*args, **kwargs)
             else:
-                return fallback_value
+                return cast(T, fallback_value)
 
         if asyncio.iscoroutinefunction(func):
-            return async_wrapper
+            return cast(Callable[..., T], async_wrapper)
         else:
             return sync_wrapper
 
@@ -541,7 +541,9 @@ class RecoveryManager:
     """
 
     def __init__(
-        self, retry_config: RetryConfig = None, timeout_config: TimeoutConfig = None
+        self,
+        retry_config: RetryConfig | None = None,
+        timeout_config: TimeoutConfig | None = None,
     ):
         self.retry_config = retry_config or DEFAULT_RETRY_CONFIG
         self.timeout_config = timeout_config or DEFAULT_TIMEOUT_CONFIG

@@ -343,7 +343,7 @@ class TFIDFVectorizer:
     def _extract_features(self, text: str) -> List[str]:
         """Extract all features from text."""
         normalized = normalize_text(text)
-        features = []
+        features: List[str] = []
 
         if self.use_char_ngrams:
             features.extend(
@@ -368,16 +368,18 @@ class TFIDFVectorizer:
             self
         """
         # Count document frequencies
-        df = Counter()
+        frequency_counts: Counter[str] = Counter()
         n_docs = len(documents)
 
         for doc in documents:
             features = set(self._extract_features(doc))
             for f in features:
-                df[f] += 1
+                frequency_counts[f] += 1
 
         # Filter by min_df
-        df = {f: count for f, count in df.items() if count >= self.min_df}
+        df: Dict[str, int] = {
+            f: count for f, count in frequency_counts.items() if count >= self.min_df
+        }
 
         # Limit to max_features (by frequency)
         if len(df) > self.max_features:
@@ -413,6 +415,7 @@ class TFIDFVectorizer:
 
         # Build TF matrix (sublinear: 1 + log(tf))
         tfidf = np.zeros((n_docs, n_features))
+        assert self.idf_ is not None
 
         for doc_idx, doc in enumerate(documents):
             features = self._extract_features(doc)
@@ -469,7 +472,7 @@ class SemanticIntentClassifier:
         self._fitted = False
 
     def fit(
-        self, intent_exemplars: Dict[str, List[str]] = None
+        self, intent_exemplars: Dict[str, List[str]] | None = None
     ) -> "SemanticIntentClassifier":
         """
         Fit classifier with intent exemplars.
