@@ -1,0 +1,164 @@
+name: VOS Fabric G2 Linux Codex Worker
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-worker
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 30
+    steps:
+      - name: Provision isolated vos-worker and pinned Codex
+        shell: bash
+        env:
+          FABRIC_SHA: 79cb3e56bfbdc3dfbe3dc04eec31d3cf2a54ff34
+          CODEX_VERSION: 0.154.0
+          CODEX_ARCHIVE_SHA256: d7e18b2597ae8f242f5f31ee9e90deef48dbc9edd634d9868fb6435d08c07f02
+          CODEX_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-x86_64-unknown-linux-musl.tar.gz
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' bash -s" <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          fail() { printf 'G2_PROVISION_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-30s %s\n' "$1" "${2:-}"; }
+
+          uid="$(id -u)"
+          [ "$(sysctl -n hw.model 2>/dev/null || true)" = "iMac13,1" ] || fail HOST_MODEL
+          case "$(sw_vers -productVersion 2>/dev/null || true)" in 12.*) ;; *) fail HOST_OS ;; esac
+
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+
+          launch_running com.zeroclaw.fall-detector || fail GUARDIAN_NOT_RUNNING
+          launch_running com.go2rtc || fail GO2RTC_NOT_RUNNING
+          launch_running com.mosquitto.broker || fail MQTT_NOT_RUNNING
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || fail FLUXION_HEALTH
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || fail FLUXION_3002
+          if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
+            fail FLUXION_5080
+          fi
+          mount | grep -q ' on /Volumes/NAS_LOCAL ' || fail NAS_LOCAL
+
+          logical_cpu="$(sysctl -n hw.logicalcpu)"
+          load5="$(sysctl -n vm.loadavg | awk '{print $3}')"
+          threshold="$(awk -v c="$logical_cpu" 'BEGIN {printf "%.1f", c*1.5}')"
+          awk -v l="$load5" -v t="$threshold" 'BEGIN {exit !(l <= t)}' || fail "HOST_LOAD5=$load5 threshold=$threshold"
+
+          vm="$(vm_stat)"
+          page_size="$(printf '%s\n' "$vm" | awk 'NR==1 {gsub(/[^0-9]/,"",$8); print $8}')"
+          [ -n "$page_size" ] || page_size=4096
+          pages_available="$(printf '%s\n' "$vm" | awk '
+            /Pages free:/ {gsub(/\./,"",$3); f=$3}
+            /Pages inactive:/ {gsub(/\./,"",$3); i=$3}
+            /Pages speculative:/ {gsub(/\./,"",$3); s=$3}
+            /Pages purgeable:/ {gsub(/\./,"",$3); p=$3}
+            END {printf "%.0f", f+i+s+p}')"
+          mem_available_gib="$(awk -v p="$pages_available" -v z="$page_size" 'BEGIN {printf "%.2f", (p*z)/(1024*1024*1024)}')"
+          awk -v x="$mem_available_gib" 'BEGIN {exit !(x >= 6.0)}' || fail "HOST_RECLAIMABLE_GIB=$mem_available_gib"
+          pass HOST_PREFLIGHT "load5=$load5 reclaimable_gib=$mem_available_gib"
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          "$MP" list >/dev/null 2>&1 || fail MULTIPASS_UNAVAILABLE
+
+          created_now=0
+          if "$MP" info vos-worker >/dev/null 2>&1; then
+            owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>/dev/null || true)"
+            [ "$owner" = "VOS_FABRIC_G2" ] || fail PREEXISTING_UNOWNED_VOS_WORKER
+            pass VOS_WORKER "existing workflow-owned instance"
+          else
+            "$MP" launch 24.04 --name vos-worker --cpus 2 --memory 4G --disk 30G
+            created_now=1
+            "$MP" exec vos-worker -- sudo sh -c 'mkdir -p /var/lib/vos-fabric && printf "%s\n" VOS_FABRIC_G2 > /var/lib/vos-fabric/worker-owner'
+            pass VOS_WORKER "created"
+          fi
+
+          rollback_new_worker() {
+            if [ "$created_now" -eq 1 ]; then
+              printf 'ROLLBACK=new vos-worker\n'
+              "$MP" delete --purge vos-worker >/dev/null 2>&1 || true
+            fi
+          }
+
+          "$MP" exec vos-worker -- bash -lc '
+            set -euo pipefail
+            sudo apt-get update
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates curl git jq python3 time tar
+          ' || { rollback_new_worker; fail VM_DEPENDENCIES; }
+
+          "$MP" exec vos-worker -- env \
+            CODEX_VERSION="$CODEX_VERSION" \
+            CODEX_ARCHIVE_SHA256="$CODEX_ARCHIVE_SHA256" \
+            CODEX_ARCHIVE_URL="$CODEX_ARCHIVE_URL" \
+            bash -lc '
+              set -euo pipefail
+              tmp="$(mktemp -d)"
+              trap "rm -rf \"$tmp\"" EXIT
+              curl -fsSL --retry 3 --retry-delay 2 "$CODEX_ARCHIVE_URL" -o "$tmp/codex.tar.gz"
+              printf "%s  %s\n" "$CODEX_ARCHIVE_SHA256" "$tmp/codex.tar.gz" | sha256sum -c -
+              mkdir "$tmp/out"
+              tar -xzf "$tmp/codex.tar.gz" -C "$tmp/out"
+              bin="$(find "$tmp/out" -type f -name "codex*" | head -1)"
+              [ -n "$bin" ]
+              sudo install -m 0755 "$bin" /usr/local/bin/codex
+              /usr/local/bin/codex --version | grep -F "$CODEX_VERSION"
+            ' || { rollback_new_worker; fail CODEX_INSTALL; }
+          pass CODEX_INSTALL "version=$CODEX_VERSION sha256=$CODEX_ARCHIVE_SHA256"
+
+          gate_url="https://raw.githubusercontent.com/lukeeterna/venture-os/$FABRIC_SHA/tools/fabric/codex_worker_gate.sh"
+          "$MP" exec vos-worker -- env GATE_URL="$gate_url" FABRIC_SHA="$FABRIC_SHA" bash -lc '
+            set -euo pipefail
+            sudo mkdir -p /usr/local/lib/vos-fabric
+            curl -fsSL --retry 3 --retry-delay 2 "$GATE_URL" -o /tmp/codex_worker_gate.sh
+            sudo install -m 0755 /tmp/codex_worker_gate.sh /usr/local/lib/vos-fabric/codex_worker_gate.sh
+            printf "%s\n" "$FABRIC_SHA" | sudo tee /usr/local/lib/vos-fabric/FABRIC_SHA >/dev/null
+            /usr/local/lib/vos-fabric/codex_worker_gate.sh preflight
+          ' || { rollback_new_worker; fail CODEX_GATE_PREFLIGHT; }
+          pass CODEX_GATE "fabric_sha=$FABRIC_SHA"
+
+          auth_rc=0
+          auth_out="$($MP exec vos-worker -- env VOS_CODEX_HOME=/home/ubuntu/.codex-vos-fabric bash -lc '/usr/local/lib/vos-fabric/codex_worker_gate.sh auth-status' 2>&1)" || auth_rc=$?
+          printf '%s\n' "$auth_out"
+          case "$auth_rc" in
+            0) auth_state=GREEN ;;
+            20) auth_state=REQUIRED ;;
+            *) rollback_new_worker; fail "CODEX_AUTH_STATUS_RC=$auth_rc" ;;
+          esac
+
+          # Production regression check after VM + Codex installation. Never restart services here.
+          post_fail=0
+          launch_running com.zeroclaw.fall-detector || post_fail=1
+          launch_running com.go2rtc || post_fail=1
+          launch_running com.mosquitto.broker || post_fail=1
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || post_fail=1
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || post_fail=1
+          if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then post_fail=1; fi
+          mount | grep -q ' on /Volumes/NAS_LOCAL ' || post_fail=1
+          if [ "$post_fail" -ne 0 ]; then
+            rollback_new_worker
+            fail PRODUCTION_REGRESSION_AFTER_WORKER
+          fi
+
+          pass PRODUCTION_REGRESSION_CHECK "Guardian/FLUXION/NAS unchanged"
+          printf 'G2_PROVISIONING=GREEN\n'
+          printf 'CODEX_CHATGPT_AUTH=%s\n' "$auth_state"
+          printf 'G2_FULL_CERTIFICATION=PENDING_AUTH_AND_QUALIFY\n'
+          REMOTE
