@@ -50,28 +50,65 @@ jobs:
           nas_free_gib="$(df -Pk /Volumes/NAS_LOCAL | awk 'NR==2 {printf "%.1f", $4/1048576}')"
           echo "NAS_LOCAL_FREE_GIB=$nas_free_gib"
 
-          # 2. Existing launch agents only. Never invent or rewrite service definitions.
+          # 2. Existing launch agents only. The SSH session has user/501 but no gui/501.
+          # Prefer gui when a logged-in Aqua session exists; otherwise use the active user domain.
+          if launchctl print "gui/$uid" >/dev/null 2>&1; then
+            launch_domain="gui/$uid"
+          elif launchctl print "user/$uid" >/dev/null 2>&1; then
+            launch_domain="user/$uid"
+          else
+            echo 'LAUNCHD_DOMAIN=BLOCKED_NO_USER_DOMAIN'
+            exit 72
+          fi
+          echo "LAUNCHD_DOMAIN=$launch_domain"
+
           load_agent() {
             label="$1"
             plist="$2"
-            [ -f "$plist" ] || { echo "$label=BLOCKED_PLIST_MISSING"; return 72; }
-            if launchctl print "gui/$uid/$label" >/dev/null 2>&1; then
+            [ -f "$plist" ] || { echo "$label=BLOCKED_PLIST_MISSING"; return 73; }
+            plutil -lint "$plist" >/dev/null || { echo "$label=BLOCKED_PLIST_INVALID"; return 74; }
+
+            if launchctl print "$launch_domain/$label" >/dev/null 2>&1; then
               echo "$label=ALREADY_LOADED"
             else
-              launchctl bootstrap "gui/$uid" "$plist"
-              echo "$label=BOOTSTRAPPED"
+              # Explicit enable is idempotent and print-disabled showed no true disable flags.
+              launchctl enable "$launch_domain/$label" >/dev/null 2>&1 || true
+              if launchctl bootstrap "$launch_domain" "$plist" >/tmp/vos-launchd-bootstrap.$$ 2>&1; then
+                echo "$label=BOOTSTRAPPED"
+              else
+                rc=$?
+                echo "$label=BOOTSTRAP_RC_$rc"
+                cat /tmp/vos-launchd-bootstrap.$$ || true
+                # Monterey still supports legacy load; use only the already-validated plist.
+                if launchctl load -w "$plist" >/tmp/vos-launchd-load.$$ 2>&1; then
+                  echo "$label=LEGACY_LOADED"
+                else
+                  rc2=$?
+                  echo "$label=LEGACY_LOAD_RC_$rc2"
+                  cat /tmp/vos-launchd-load.$$ || true
+                  rm -f /tmp/vos-launchd-bootstrap.$$ /tmp/vos-launchd-load.$$
+                  return 75
+                fi
+              fi
             fi
-            launchctl kickstart "gui/$uid/$label"
+            rm -f /tmp/vos-launchd-bootstrap.$$ /tmp/vos-launchd-load.$$ 2>/dev/null || true
+
+            # kickstart when addressable in the selected domain; legacy load may already start it.
+            launchctl kickstart "$launch_domain/$label" >/dev/null 2>&1 || true
             for _ in 1 2 3 4 5 6 7 8 9 10; do
-              if launchctl print "gui/$uid/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then
+              if launchctl print "$launch_domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then
                 echo "$label=RUNNING"
+                return 0
+              fi
+              if launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
+                echo "$label=RUNNING_LIST"
                 return 0
               fi
               sleep 1
             done
             echo "$label=FAILED_NOT_RUNNING"
-            launchctl print "gui/$uid/$label" 2>/dev/null | grep -E 'state =|pid =|last exit code =|program =' || true
-            return 73
+            launchctl print "$launch_domain/$label" 2>/dev/null | grep -E 'state =|pid =|last exit code =|program =' || true
+            return 76
           }
 
           load_agent com.mosquitto.broker "$home/Library/LaunchAgents/com.mosquitto.broker.plist"
@@ -83,7 +120,7 @@ jobs:
           PY='/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python'
           [ -d "$FLUXION_DIR" ] && [ -f "$FLUXION_DIR/main.py" ] && [ -f "$FLUXION_DIR/.env" ] && [ -x "$PY" ] || {
             echo 'FLUXION=BLOCKED_PREREQUISITE_MISSING'
-            exit 74
+            exit 77
           }
 
           if curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1; then
@@ -109,11 +146,10 @@ jobs:
           if [ "$health_ok" -ne 1 ]; then
             echo 'FLUXION_HEALTH=RED'
             tail -80 /tmp/sara_3002.log 2>/dev/null | sed -E 's/(pass(word)?|token|secret|key)=([^ ]+)/\1=[REDACTED]/Ig' || true
-            exit 75
+            exit 78
           fi
           echo 'FLUXION_HEALTH=GREEN'
 
-          # Wait for the production SIP registration endpoint without dumping credentials.
           sip_green=0
           for _ in $(seq 1 30); do
             status="$(curl -fsS --max-time 3 http://127.0.0.1:3002/api/voice/voip/status 2>/dev/null || true)"
@@ -127,12 +163,12 @@ jobs:
             echo 'FLUXION_SIP_REGISTERED=GREEN'
           else
             echo 'FLUXION_SIP_REGISTERED=RED'
-            exit 76
+            exit 79
           fi
 
           lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || {
             echo 'FLUXION_3002_LISTENER=RED'
-            exit 77
+            exit 80
           }
           echo 'FLUXION_3002_LISTENER=GREEN'
 
@@ -141,7 +177,7 @@ jobs:
           else
             echo 'FLUXION_5080_LISTENER=RED'
             ps -axo pid=,command= | grep -E 'goengine|engine_darwin|voice-agent' | grep -v grep || true
-            exit 78
+            exit 81
           fi
 
           echo 'RECOVERY=GREEN'
