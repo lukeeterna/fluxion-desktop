@@ -18,40 +18,40 @@ concurrency:
 jobs:
   certify:
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - name: Certify exact kernel on real self-hosted machine
         shell: bash
-        env:
-          GIT_TERMINAL_PROMPT: "0"
         run: |
           set -euo pipefail
           SRC="$RUNNER_TEMP/vos-g3-runtime-${GITHUB_RUN_ID}"
           rm -rf "$SRC"
-          export SRC
+          mkdir -p "$SRC/bin" "$SRC/tests" "$SRC/docs/judge"
+          trap 'rm -rf "$SRC"' EXIT INT TERM
 
-          python3 - "$GITHUB_SHA" <<'PY'
-          import os, subprocess, sys
-          src=os.environ['SRC']; sha=sys.argv[1]
-          phases=[
-              (["git","init","-q",src],20),
-              (["git","-C",src,"remote","add","origin","https://github.com/lukeeterna/fluxion-desktop.git"],10),
-              (["git","-C",src,"fetch","-q","--depth=1","origin",sha],90),
-              (["git","-C",src,"checkout","-q","--detach","FETCH_HEAD"],20),
-          ]
-          for cmd, seconds in phases:
-              subprocess.run(cmd, check=True, timeout=seconds, env=dict(os.environ, GIT_TERMINAL_PROMPT="0"))
-          PY
+          base="https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/${GITHUB_SHA}"
+          for path in \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_machine.py \
+            bin/vos_apply.sh \
+            bin/vos_check.sh \
+            docs/judge/MACHINES.json \
+            tests/test_vos_apply.py \
+            tests/test_vos_kernel_cert.py
+          do
+            mkdir -p "$SRC/$(dirname "$path")"
+            curl -4 -fsSL --connect-timeout 8 --max-time 30 \
+              --retry 4 --retry-delay 2 --retry-all-errors \
+              "$base/$path" -o "$SRC/$path"
+            test -s "$SRC/$path"
+          done
 
           cd "$SRC"
-          EXACT_SHA="$(git rev-parse HEAD)"
-          [ "$EXACT_SHA" = "$GITHUB_SHA" ]
-          echo "G3_EXACT_SHA=$EXACT_SHA"
+          echo "G3_EXACT_SHA=$GITHUB_SHA"
+          echo "G3_SOURCE_TRANSPORT=RAW_EXACT_SHA"
           echo "G3_RUNNER_HOST=$(hostname)"
           echo "G3_RUNNER_OS=$(uname -srm)"
-
-          cleanup() { rm -rf "$SRC"; }
-          trap cleanup EXIT INT TERM
 
           production_green() {
             local remote_file="$RUNNER_TEMP/vos-g3-prod-${GITHUB_RUN_ID}.sh"
@@ -87,11 +87,8 @@ jobs:
           echo 'G3_PRE_PRODUCTION_REGRESSION=GREEN'
 
           python3 -m py_compile \
-            bin/vos_common.py \
-            bin/vos_apply.py \
-            bin/vos_machine.py \
-            tests/test_vos_apply.py \
-            tests/test_vos_kernel_cert.py
+            bin/vos_common.py bin/vos_apply.py bin/vos_machine.py \
+            tests/test_vos_apply.py tests/test_vos_kernel_cert.py
           bash -n bin/vos_apply.sh bin/vos_check.sh
           python3 bin/vos_machine.py validate --registry docs/judge/MACHINES.json
 
