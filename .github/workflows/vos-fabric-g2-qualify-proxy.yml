@@ -22,7 +22,7 @@ jobs:
     env:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
-      FABRIC_SHA: a5b5a4aa97b70b5c8cdb90a7227bfa5999095ce8
+      FABRIC_SHA: fcfc331c5abe060ab373a0a9d4b05fe928b21a32
     steps:
       - name: Qualify exact ChatGPT Codex worker end to end
         shell: bash
