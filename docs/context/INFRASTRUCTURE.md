@@ -33,16 +33,19 @@ Windows PC:
 
 ## Environment Variables
 
+**Never commit credential values, account identifiers, personal phone numbers, SIP usernames/passwords, API tokens, or provider secrets.** Store them only in the local `.env` / OS secret store or GitHub Actions secrets as appropriate.
+
 ```bash
-GROQ_API_KEY=org_01k9jq26w4f2e8hfw9tmzmz556
-GITHUB_TOKEN=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
-KEYGEN_ACCOUNT_ID=b845d2ed-92a4-4048-b2d8-ee625206a5ae
-VOIP_SIP_USER=DXMULTISERVICE
+GROQ_API_KEY=<set-locally>
+GITHUB_TOKEN=<set-locally-or-use-gh-auth>
+KEYGEN_ACCOUNT_ID=<set-locally>
+VOIP_SIP_USER=<set-locally>
+VOIP_SIP_PASS=<set-locally>
 VOIP_SIP_SERVER=sip.ehiweb.it
 TTS_ENGINE=chatterbox
 TTS_FALLBACK=piper
 TTS_VOICE_NAME=Sara
-WHATSAPP_PHONE=393281536308
+WHATSAPP_PHONE=<set-locally>
 ```
 
 ## Sync Workflow
