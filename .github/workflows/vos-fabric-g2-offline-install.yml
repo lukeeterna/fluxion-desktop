@@ -27,6 +27,8 @@ jobs:
           CODEX_VERSION: 0.154.0
           CODEX_ARCHIVE_SHA256: d7e18b2597ae8f242f5f31ee9e90deef48dbc9edd634d9868fb6435d08c07f02
           CODEX_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-x86_64-unknown-linux-musl.tar.gz
+          CODEX_HOST_ARCHIVE_SHA256: a68df7cca23c6da7cde175677df7de61c73a234add1333a1254b86d641af01f7
+          CODEX_HOST_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz
         run: |
           set -euo pipefail
           SCRIPT="$RUNNER_TEMP/vos-g2-offline-${GITHUB_RUN_ID}.sh"
@@ -65,6 +67,21 @@ jobs:
           printf '%s\n' "$version" | grep -F "$CODEX_VERSION" >/dev/null || fail "CODEX_VERSION=$version"
           binary_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/codex | awk '{print $1}')"
           pass CODEX_BINARY "version=$version sha256=$binary_sha"
+
+          curl -fsSL --retry 3 --retry-delay 2 "$CODEX_HOST_ARCHIVE_URL" -o "$tmp/codex-host.tar.gz"
+          host_archive_sha="$(shasum -a 256 "$tmp/codex-host.tar.gz" | awk '{print $1}')"
+          [ "$host_archive_sha" = "$CODEX_HOST_ARCHIVE_SHA256" ] || fail "CODEX_HOST_ARCHIVE_SHA256=$host_archive_sha"
+          mkdir "$tmp/host-out"
+          tar -xzf "$tmp/codex-host.tar.gz" -C "$tmp/host-out"
+          host_bin="$(find "$tmp/host-out" -type f -name 'codex-code-mode-host*' | head -1)"
+          [ -n "$host_bin" ] || fail CODEX_CODE_MODE_HOST_NOT_FOUND
+          chmod 755 "$host_bin"
+          "$MP" transfer "$host_bin" vos-worker:/tmp/vos-codex-code-mode-host
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/vos-codex-code-mode-host /usr/local/bin/codex-code-mode-host
+          "$MP" exec vos-worker -- rm -f /tmp/vos-codex-code-mode-host
+          "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host || fail CODEX_CODE_MODE_HOST_NOT_EXECUTABLE
+          host_binary_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk '{print $1}')"
+          pass CODEX_CODE_MODE_HOST "archive_sha256=$host_archive_sha binary_sha256=$host_binary_sha"
 
           gate_url="https://raw.githubusercontent.com/lukeeterna/venture-os/$FABRIC_SHA/tools/fabric/codex_worker_gate.sh"
           curl -fsSL --retry 3 --retry-delay 2 "$gate_url" -o "$tmp/codex_worker_gate.sh"
@@ -110,4 +127,4 @@ jobs:
           chmod 700 "$SCRIPT"
           scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SCRIPT" imac:/tmp/vos-g2-offline.sh
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
-            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' bash /tmp/vos-g2-offline.sh; rc=\$?; rm -f /tmp/vos-g2-offline.sh; exit \$rc"
+            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' CODEX_HOST_ARCHIVE_SHA256='$CODEX_HOST_ARCHIVE_SHA256' CODEX_HOST_ARCHIVE_URL='$CODEX_HOST_ARCHIVE_URL' bash /tmp/vos-g2-offline.sh; rc=\$?; rm -f /tmp/vos-g2-offline.sh; exit \$rc"
