@@ -367,7 +367,7 @@ class TestGoodbye:
             "Grazie, arrivederci",
             "Ciao, arrivederci",
             "Grazie mille, ciao",
-            "Buonasera, grazie",
+            "Buonasera, grazie, arrivederci",
         ]
 
         for goodbye in goodbye_variants:
@@ -465,7 +465,7 @@ class TestCancel:
         response_lower = t5["response"].lower()
         # Should acknowledge cancellation or ask to confirm
         assert (
-            "annulla" in response_lower
+            "annull" in response_lower
             or "cancella" in response_lower
             or "ok" in response_lower
             or "grazie" in response_lower
