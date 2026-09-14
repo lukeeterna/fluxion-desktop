@@ -129,12 +129,12 @@ jobs:
             < "$work/prompt" > "$work/events.jsonl" 2> "$work/stderr.txt" || rc=$?
           echo "CODEX_EXEC_RC=$rc"
           python3 - "$work/events.jsonl" "$work/stderr.txt" "$nonce" <<'PY'
-          import hashlib, json, re, sys
+          import json, re, sys
           events, stderr, nonce = sys.argv[1:]
           def clean(s):
               s = re.sub(r'(?i)(bearer|token|authorization)[=: ]+[^ ,;]+', r'\1=<redacted>', s)
               s = re.sub(r'\b[A-Za-z0-9_-]{48,}\b', '<redacted-long>', s)
-              return s[:500]
+              return s[:700]
           counts={}; diag=[]
           try:
               for raw in open(events, encoding='utf-8'):
@@ -151,6 +151,8 @@ jobs:
                       diag.append('ITEM type=%s item_type=%s status=%s exit_code=%s nonce_seen=%s keys=%s' % (
                           typ, itype, item.get('status'), item.get('exit_code'), str(nonce in out).lower(),
                           ','.join(sorted(str(k) for k in item.keys()))))
+                      if itype == 'agent_message':
+                          diag.append('AGENT_TEXT='+clean(str(item.get('text') or '')))
                   if typ in ('error','turn.failed'):
                       err=obj.get('error') or obj.get('message') or obj
                       diag.append(f'{typ}='+clean(json.dumps(err,ensure_ascii=False)))
