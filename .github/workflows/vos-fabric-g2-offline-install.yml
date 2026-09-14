@@ -29,6 +29,8 @@ jobs:
           CODEX_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-x86_64-unknown-linux-musl.tar.gz
           CODEX_HOST_ARCHIVE_SHA256: a68df7cca23c6da7cde175677df7de61c73a234add1333a1254b86d641af01f7
           CODEX_HOST_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz
+          BWRAP_ARCHIVE_SHA256: 1e6a0f2802c4199f81e1d3d9a962d64dc274693d8391f02d1f4ab457e57c4c38
+          BWRAP_ARCHIVE_URL: https://github.com/openai/codex/releases/download/rust-v0.154.0/bwrap-x86_64-unknown-linux-musl.tar.gz
         run: |
           set -euo pipefail
           SCRIPT="$RUNNER_TEMP/vos-g2-offline-${GITHUB_RUN_ID}.sh"
@@ -52,6 +54,7 @@ jobs:
           # Host-side fetch: the VM NAT is not trusted/required for installation.
           tmp="$(mktemp -d -t vos-g2-offline.XXXXXX)"
           trap 'rm -rf "$tmp"' EXIT
+
           curl -fsSL --retry 3 --retry-delay 2 "$CODEX_ARCHIVE_URL" -o "$tmp/codex.tar.gz"
           actual_sha="$(shasum -a 256 "$tmp/codex.tar.gz" | awk '{print $1}')"
           [ "$actual_sha" = "$CODEX_ARCHIVE_SHA256" ] || fail "CODEX_ARCHIVE_SHA256=$actual_sha"
@@ -82,6 +85,22 @@ jobs:
           "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host || fail CODEX_CODE_MODE_HOST_NOT_EXECUTABLE
           host_binary_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk '{print $1}')"
           pass CODEX_CODE_MODE_HOST "archive_sha256=$host_archive_sha binary_sha256=$host_binary_sha"
+
+          curl -fsSL --retry 3 --retry-delay 2 "$BWRAP_ARCHIVE_URL" -o "$tmp/bwrap.tar.gz"
+          bwrap_archive_sha="$(shasum -a 256 "$tmp/bwrap.tar.gz" | awk '{print $1}')"
+          [ "$bwrap_archive_sha" = "$BWRAP_ARCHIVE_SHA256" ] || fail "BWRAP_ARCHIVE_SHA256=$bwrap_archive_sha"
+          mkdir "$tmp/bwrap-out"
+          tar -xzf "$tmp/bwrap.tar.gz" -C "$tmp/bwrap-out"
+          bwrap_bin="$(find "$tmp/bwrap-out" -type f -name 'bwrap*' | head -1)"
+          [ -n "$bwrap_bin" ] || fail BWRAP_BINARY_NOT_FOUND
+          chmod 755 "$bwrap_bin"
+          "$MP" transfer "$bwrap_bin" vos-worker:/tmp/vos-bwrap
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/vos-bwrap /usr/local/bin/bwrap
+          "$MP" exec vos-worker -- rm -f /tmp/vos-bwrap
+          "$MP" exec vos-worker -- test -x /usr/local/bin/bwrap || fail BWRAP_NOT_EXECUTABLE
+          bwrap_binary_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/bwrap | awk '{print $1}')"
+          bwrap_version="$($MP exec vos-worker -- /usr/local/bin/bwrap --version | head -1)"
+          pass BWRAP "version=$bwrap_version archive_sha256=$bwrap_archive_sha binary_sha256=$bwrap_binary_sha"
 
           gate_url="https://raw.githubusercontent.com/lukeeterna/venture-os/$FABRIC_SHA/tools/fabric/codex_worker_gate.sh"
           curl -fsSL --retry 3 --retry-delay 2 "$gate_url" -o "$tmp/codex_worker_gate.sh"
@@ -127,4 +146,4 @@ jobs:
           chmod 700 "$SCRIPT"
           scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SCRIPT" imac:/tmp/vos-g2-offline.sh
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
-            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' CODEX_HOST_ARCHIVE_SHA256='$CODEX_HOST_ARCHIVE_SHA256' CODEX_HOST_ARCHIVE_URL='$CODEX_HOST_ARCHIVE_URL' bash /tmp/vos-g2-offline.sh; rc=\$?; rm -f /tmp/vos-g2-offline.sh; exit \$rc"
+            "FABRIC_SHA='$FABRIC_SHA' CODEX_VERSION='$CODEX_VERSION' CODEX_ARCHIVE_SHA256='$CODEX_ARCHIVE_SHA256' CODEX_ARCHIVE_URL='$CODEX_ARCHIVE_URL' CODEX_HOST_ARCHIVE_SHA256='$CODEX_HOST_ARCHIVE_SHA256' CODEX_HOST_ARCHIVE_URL='$CODEX_HOST_ARCHIVE_URL' BWRAP_ARCHIVE_SHA256='$BWRAP_ARCHIVE_SHA256' BWRAP_ARCHIVE_URL='$BWRAP_ARCHIVE_URL' bash /tmp/vos-g2-offline.sh; rc=\$?; rm -f /tmp/vos-g2-offline.sh; exit \$rc"
