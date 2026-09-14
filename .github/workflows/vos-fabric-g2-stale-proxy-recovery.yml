@@ -1,0 +1,91 @@
+name: VOS Fabric G2 Stale Proxy Recovery
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-stale-proxy-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-proxy-recovery
+  cancel-in-progress: true
+
+jobs:
+  recover:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Remove only stale VOS G2 temporary proxy
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          production_green() {
+            uid="$(id -u)"
+            launch_running() {
+              label="$1"
+              for domain in "gui/$uid" "user/$uid" system; do
+                if launchctl print "$domain/$label" 2>/dev/null | grep -Eq "state = running|pid = [0-9]+"; then return 0; fi
+              done
+              launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+            }
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+
+          production_green || { echo 'RECOVERY_BLOCKED=PRE_PRODUCTION_REGRESSION'; exit 2; }
+          echo 'PRE_PRODUCTION=GREEN'
+
+          target='/tmp/vos-g2-qualify-proxy.py'
+          pids="$(ps -axo pid=,command= | awk -v t="$target" 'index($0,t)>0 && index($0,"awk -v")==0 {print $1}')"
+          count="$(printf '%s\n' "$pids" | awk 'NF{n++} END{print n+0}')"
+          if [ "$count" -gt 1 ]; then
+            echo "RECOVERY_BLOCKED=AMBIGUOUS_PROXY_PROCESSES_$count"
+            exit 2
+          fi
+          if [ "$count" -eq 1 ]; then
+            pid="$(printf '%s\n' "$pids" | awk 'NF{print; exit}')"
+            cmd="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+            case "$cmd" in
+              *"$target"*) ;;
+              *) echo 'RECOVERY_BLOCKED=PROCESS_IDENTITY_CHANGED'; exit 2 ;;
+            esac
+            echo "STALE_PROXY_FOUND=YES pid=$pid"
+            kill "$pid"
+            for _ in 1 2 3 4 5; do
+              kill -0 "$pid" 2>/dev/null || break
+              sleep 1
+            done
+            if kill -0 "$pid" 2>/dev/null; then
+              echo 'RECOVERY_BLOCKED=STALE_PROXY_DID_NOT_STOP'
+              exit 2
+            fi
+            echo 'STALE_PROXY_STOPPED=YES'
+          else
+            echo 'STALE_PROXY_FOUND=NO'
+          fi
+
+          rm -f /tmp/vos-g2-qualify-proxy.py /tmp/vos-g2-qualify-proxy.log /tmp/vos-g2-guest-qualify.sh /tmp/vos-g2-expected-gate.sh
+          if lsof -nP -iTCP:20189 -sTCP:LISTEN 2>/dev/null | grep -q ':20189'; then
+            echo 'RECOVERY_BLOCKED=PORT_20189_STILL_OCCUPIED'
+            exit 2
+          fi
+          echo 'PORT_20189=FREE'
+
+          production_green || { echo 'RECOVERY_BLOCKED=POST_PRODUCTION_REGRESSION'; exit 2; }
+          echo 'POST_PRODUCTION=GREEN'
+          echo 'G2_STALE_PROXY_RECOVERY=GREEN'
+          REMOTE
