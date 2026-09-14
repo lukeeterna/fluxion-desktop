@@ -1,0 +1,114 @@
+name: VOS Fabric Network Attribution
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-network-attribution.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-network-attribution
+  cancel-in-progress: true
+
+jobs:
+  attribute:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Attribute local VPN and tunnel ownership read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          probe_host() {
+            label="$1"
+            echo "=== ${label} NETWORK ATTRIBUTION ==="
+            echo "ATTRIBUTION_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo '--- VPN CLIENT APPLICATIONS (names only) ---'
+            find /Applications "$HOME/Applications" -maxdepth 2 -type d \( \
+              -iname '*tailscale*.app' -o -iname '*x-vpn*.app' -o -iname '*xvpn*.app' -o \
+              -iname '*wireguard*.app' -o -iname '*openvpn*.app' -o -iname '*tunnelblick*.app' \
+            \) -print 2>/dev/null | sed 's#.*/##' | sort -u || true
+
+            echo '--- VPN PROCESS NAMES ONLY ---'
+            ps -axo comm= 2>/dev/null | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnelblick|vpn' | sed 's#.*/##' | sort -u || true
+
+            echo '--- NETWORK EXTENSIONS MATCHING VPN/TUNNEL ---'
+            systemextensionsctl list 2>/dev/null | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' || true
+
+            echo '--- CONFIGURED NETWORK CONNECTIONS ---'
+            scutil --nc list 2>/dev/null | grep -Ei 'Connected|Connecting|Disconnected|tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' || true
+
+            echo '--- NETWORK INFORMATION ---'
+            scutil --nwi 2>/dev/null || true
+
+            echo '--- UTUN INTERFACES / ADDRESSES ---'
+            ifconfig -l 2>/dev/null | tr ' ' '\n' | grep '^utun[0-9][0-9]*$' | while read -r u; do
+              echo "[$u]"
+              ifconfig "$u" 2>/dev/null | grep -E '^[[:space:]]*(inet |inet6 |status:)|^[a-zA-Z0-9].*flags=' || true
+            done
+
+            echo '--- SELECTED ROUTE OWNERSHIP ---'
+            for target in 100.64.0.1 192.168.64.1 192.168.64.3; do
+              echo "ROUTE_TARGET=$target"
+              route -n get "$target" 2>/dev/null | grep -E 'destination:|gateway:|interface:' || true
+            done
+
+            echo '--- LAUNCH LABELS MATCHING VPN/TUNNEL ---'
+            launchctl list 2>/dev/null | awk '{print $3}' | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' | sort -u || true
+
+            printf 'IP_FORWARDING='; sysctl -n net.inet.ip.forwarding 2>/dev/null || true
+            printf 'APP_FIREWALL='; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true
+            printf 'STEALTH_MODE='; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true
+            echo "${label}_NETWORK_ATTRIBUTION_COMPLETE=1"
+          }
+
+          probe_host MACBOOK
+
+          REMOTE="$RUNNER_TEMP/vos-fabric-network-attribution-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'IMAC'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          echo '=== IMAC NETWORK ATTRIBUTION ==='
+          echo "ATTRIBUTION_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo '--- VPN CLIENT APPLICATIONS (names only) ---'
+          find /Applications "$HOME/Applications" -maxdepth 2 -type d \( \
+            -iname '*tailscale*.app' -o -iname '*x-vpn*.app' -o -iname '*xvpn*.app' -o \
+            -iname '*wireguard*.app' -o -iname '*openvpn*.app' -o -iname '*tunnelblick*.app' \
+          \) -print 2>/dev/null | sed 's#.*/##' | sort -u || true
+          echo '--- VPN PROCESS NAMES ONLY ---'
+          ps -axo comm= 2>/dev/null | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnelblick|vpn' | sed 's#.*/##' | sort -u || true
+          echo '--- NETWORK EXTENSIONS MATCHING VPN/TUNNEL ---'
+          systemextensionsctl list 2>/dev/null | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' || true
+          echo '--- CONFIGURED NETWORK CONNECTIONS ---'
+          scutil --nc list 2>/dev/null | grep -Ei 'Connected|Connecting|Disconnected|tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' || true
+          echo '--- NETWORK INFORMATION ---'
+          scutil --nwi 2>/dev/null || true
+          echo '--- UTUN INTERFACES / ADDRESSES ---'
+          ifconfig -l 2>/dev/null | tr ' ' '\n' | grep '^utun[0-9][0-9]*$' | while read -r u; do
+            echo "[$u]"
+            ifconfig "$u" 2>/dev/null | grep -E '^[[:space:]]*(inet |inet6 |status:)|^[a-zA-Z0-9].*flags=' || true
+          done
+          echo '--- SELECTED ROUTE OWNERSHIP ---'
+          for target in 100.64.0.1 192.168.64.1 192.168.64.3; do
+            echo "ROUTE_TARGET=$target"
+            route -n get "$target" 2>/dev/null | grep -E 'destination:|gateway:|interface:' || true
+          done
+          echo '--- LAUNCH LABELS MATCHING VPN/TUNNEL ---'
+          launchctl list 2>/dev/null | awk '{print $3}' | grep -Ei 'tailscale|x-vpn|xvpn|wireguard|openvpn|tunnel|vpn' | sort -u || true
+          printf 'IP_FORWARDING='; sysctl -n net.inet.ip.forwarding 2>/dev/null || true
+          printf 'APP_FIREWALL='; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true
+          printf 'STEALTH_MODE='; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true
+          echo 'IMAC_NETWORK_ATTRIBUTION_COMPLETE=1'
+          echo 'NETWORK_ATTRIBUTION_READ_ONLY=1'
+          IMAC
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-fabric-network-attribution.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-fabric-network-attribution.sh; rc=$?; rm -f /tmp/vos-fabric-network-attribution.sh; exit $rc'
