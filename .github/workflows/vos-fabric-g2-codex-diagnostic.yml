@@ -1,4 +1,4 @@
-# diagnostic-retrigger: 2026-09-14T21:27+02:00
+# diagnostic-revision: exact-gate-first-call 2026-09-14
 name: VOS Fabric G2 Codex Diagnostic
 
 on:
@@ -24,7 +24,7 @@ jobs:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
     steps:
-      - name: Diagnose one authenticated Codex tool call
+      - name: Diagnose exact G2 gate first Codex call
         shell: bash
         run: |
           set -euo pipefail
@@ -123,18 +123,29 @@ jobs:
           PY
           )"
           printf '%s\n' "$nonce" > "$work/probe.txt"
-          printf '%s\n' 'Use the shell/exec tool to run: cat ./probe.txt . You must execute the command. Then report completion.' > "$work/prompt"
+          cat > "$work/prompt" <<'PROMPT'
+          Use the shell tool to run exactly this command and no other command:
+          cat ./probe.txt
+          The command must exit with status 0. You must read the file; do not infer, guess, or skip the command. After it succeeds, reply with exactly VOS_FABRIC_PING= followed immediately by the exact stdout from that command, with no other text.
+          PROMPT
           rc=0
-          timeout 90s codex exec --json --sandbox read-only --model "$VOS_CODEX_MODEL" \
+          timeout 120s codex exec --json --sandbox read-only -c 'approval_policy="never"' --model "$VOS_CODEX_MODEL" \
             --skip-git-repo-check --cd "$work" --output-last-message "$work/last.txt" - \
             < "$work/prompt" > "$work/events.jsonl" 2> "$work/stderr.txt" || rc=$?
           echo "CODEX_EXEC_RC=$rc"
+          if [ -f "$work/last.txt" ]; then
+            last="$(cat "$work/last.txt")"
+            if [ "$last" = "VOS_FABRIC_PING=$nonce" ]; then echo 'LAST_MESSAGE_EXACT=GREEN'; else echo 'LAST_MESSAGE_EXACT=MISMATCH'; fi
+          else
+            echo 'LAST_MESSAGE_EXACT=MISSING'
+          fi
           python3 - "$work/events.jsonl" "$work/stderr.txt" "$nonce" <<'PY'
           import json, re, sys
           events, stderr, nonce = sys.argv[1:]
           def clean(s):
               s = re.sub(r'(?i)(bearer|token|authorization)[=: ]+[^ ,;]+', r'\1=<redacted>', s)
               s = re.sub(r'\b[A-Za-z0-9_-]{48,}\b', '<redacted-long>', s)
+              s = s.replace(nonce, '<nonce>')
               return s[:700]
           counts={}; diag=[]
           try:
