@@ -1,0 +1,184 @@
+name: VOS Fabric Recover iMac Production
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-recover-production.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-imac-production-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 12
+    steps:
+      - name: Restore documented production services on iMac
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          uid="$(id -u)"
+          home="$HOME"
+
+          echo 'RECOVERY=BEGIN'
+
+          # 1. NAS_LOCAL: preflight proved the exact local HFS volume is disk2s2.
+          if mount | grep -q ' on /Volumes/NAS_LOCAL '; then
+            echo 'NAS_LOCAL=ALREADY_MOUNTED'
+          else
+            diskutil info disk2s2 | grep -Eq 'Volume Name:[[:space:]]+NAS_LOCAL' || {
+              echo 'NAS_LOCAL=BLOCKED_IDENTITY_MISMATCH'
+              exit 70
+            }
+            diskutil mount disk2s2 >/dev/null
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || {
+              echo 'NAS_LOCAL=FAILED_TO_MOUNT'
+              exit 71
+            }
+            echo 'NAS_LOCAL=MOUNTED'
+          fi
+          nas_free_gib="$(df -Pk /Volumes/NAS_LOCAL | awk 'NR==2 {printf "%.1f", $4/1048576}')"
+          echo "NAS_LOCAL_FREE_GIB=$nas_free_gib"
+
+          # 2. Existing launch agents only. The SSH session has user/501 but no gui/501.
+          # Prefer gui when a logged-in Aqua session exists; otherwise use the active user domain.
+          if launchctl print "gui/$uid" >/dev/null 2>&1; then
+            launch_domain="gui/$uid"
+          elif launchctl print "user/$uid" >/dev/null 2>&1; then
+            launch_domain="user/$uid"
+          else
+            echo 'LAUNCHD_DOMAIN=BLOCKED_NO_USER_DOMAIN'
+            exit 72
+          fi
+          echo "LAUNCHD_DOMAIN=$launch_domain"
+
+          load_agent() {
+            label="$1"
+            plist="$2"
+            [ -f "$plist" ] || { echo "$label=BLOCKED_PLIST_MISSING"; return 73; }
+            plutil -lint "$plist" >/dev/null || { echo "$label=BLOCKED_PLIST_INVALID"; return 74; }
+
+            if launchctl print "$launch_domain/$label" >/dev/null 2>&1; then
+              echo "$label=ALREADY_LOADED"
+            else
+              # Explicit enable is idempotent and print-disabled showed no true disable flags.
+              launchctl enable "$launch_domain/$label" >/dev/null 2>&1 || true
+              if launchctl bootstrap "$launch_domain" "$plist" >/tmp/vos-launchd-bootstrap.$$ 2>&1; then
+                echo "$label=BOOTSTRAPPED"
+              else
+                rc=$?
+                echo "$label=BOOTSTRAP_RC_$rc"
+                cat /tmp/vos-launchd-bootstrap.$$ || true
+                # Monterey still supports legacy load; use only the already-validated plist.
+                if launchctl load -w "$plist" >/tmp/vos-launchd-load.$$ 2>&1; then
+                  echo "$label=LEGACY_LOADED"
+                else
+                  rc2=$?
+                  echo "$label=LEGACY_LOAD_RC_$rc2"
+                  cat /tmp/vos-launchd-load.$$ || true
+                  rm -f /tmp/vos-launchd-bootstrap.$$ /tmp/vos-launchd-load.$$
+                  return 75
+                fi
+              fi
+            fi
+            rm -f /tmp/vos-launchd-bootstrap.$$ /tmp/vos-launchd-load.$$ 2>/dev/null || true
+
+            # kickstart when addressable in the selected domain; legacy load may already start it.
+            launchctl kickstart "$launch_domain/$label" >/dev/null 2>&1 || true
+            for _ in 1 2 3 4 5 6 7 8 9 10; do
+              if launchctl print "$launch_domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then
+                echo "$label=RUNNING"
+                return 0
+              fi
+              if launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; then
+                echo "$label=RUNNING_LIST"
+                return 0
+              fi
+              sleep 1
+            done
+            echo "$label=FAILED_NOT_RUNNING"
+            launchctl print "$launch_domain/$label" 2>/dev/null | grep -E 'state =|pid =|last exit code =|program =' || true
+            return 76
+          }
+
+          load_agent com.mosquitto.broker "$home/Library/LaunchAgents/com.mosquitto.broker.plist"
+          load_agent com.go2rtc "$home/Library/LaunchAgents/com.go2rtc.plist"
+          load_agent com.zeroclaw.fall-detector "$home/Library/LaunchAgents/com.zeroclaw.fall-detector.plist"
+
+          # 3. FLUXION/Sara: exact startup contract from docs/judge/RUNBOOK-AVVIO.md.
+          FLUXION_DIR='/Volumes/MacSSD - Dati/fluxion/voice-agent'
+          PY='/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python'
+          [ -d "$FLUXION_DIR" ] && [ -f "$FLUXION_DIR/main.py" ] && [ -f "$FLUXION_DIR/.env" ] && [ -x "$PY" ] || {
+            echo 'FLUXION=BLOCKED_PREREQUISITE_MISSING'
+            exit 77
+          }
+
+          if curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1; then
+            echo 'FLUXION=ALREADY_HEALTHY'
+          else
+            cd "$FLUXION_DIR"
+            set -a
+            . ./.env
+            set +a
+            VOICE_ENGINE=go nohup "$PY" main.py --port 3002 >/tmp/sara_3002.log 2>&1 </dev/null &
+            sara_pid=$!
+            echo "FLUXION_STARTED_PID=$sara_pid"
+          fi
+
+          health_ok=0
+          for _ in $(seq 1 30); do
+            if curl -fsS --max-time 3 http://127.0.0.1:3002/health >/tmp/vos-fluxion-health.json 2>/dev/null; then
+              health_ok=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$health_ok" -ne 1 ]; then
+            echo 'FLUXION_HEALTH=RED'
+            tail -80 /tmp/sara_3002.log 2>/dev/null | sed -E 's/(pass(word)?|token|secret|key)=([^ ]+)/\1=[REDACTED]/Ig' || true
+            exit 78
+          fi
+          echo 'FLUXION_HEALTH=GREEN'
+
+          sip_green=0
+          for _ in $(seq 1 30); do
+            status="$(curl -fsS --max-time 3 http://127.0.0.1:3002/api/voice/voip/status 2>/dev/null || true)"
+            if printf '%s' "$status" | grep -Eq '"registered"[[:space:]]*:[[:space:]]*true'; then
+              sip_green=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$sip_green" -eq 1 ]; then
+            echo 'FLUXION_SIP_REGISTERED=GREEN'
+          else
+            echo 'FLUXION_SIP_REGISTERED=RED'
+            exit 79
+          fi
+
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || {
+            echo 'FLUXION_3002_LISTENER=RED'
+            exit 80
+          }
+          echo 'FLUXION_3002_LISTENER=GREEN'
+
+          if lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
+            echo 'FLUXION_5080_LISTENER=GREEN'
+          else
+            echo 'FLUXION_5080_LISTENER=RED'
+            ps -axo pid=,command= | grep -E 'goengine|engine_darwin|voice-agent' | grep -v grep || true
+            exit 81
+          fi
+
+          echo 'RECOVERY=GREEN'
+          REMOTE

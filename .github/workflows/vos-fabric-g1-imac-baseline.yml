@@ -1,0 +1,186 @@
+name: VOS Fabric G1 iMac Baseline
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-g1-imac-baseline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g1-imac-baseline
+  cancel-in-progress: false
+
+jobs:
+  baseline:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    steps:
+      - name: Preflight MacBook to iMac SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'printf "IMAC_SSH=PASS\n"'
+
+      - name: Read-only iMac production baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/vos-fabric-imac-baseline-${GITHUB_RUN_ID}.txt"
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE' | tee "$OUT"
+          set -u
+          export LC_ALL=C LANG=C
+          fail=0
+
+          pass() { printf 'PASS %-28s %s\n' "$1" "${2:-}"; }
+          red()  { printf 'FAIL %-28s %s\n' "$1" "${2:-}"; fail=1; }
+
+          uid="$(id -u)"
+          model="$(sysctl -n hw.model 2>/dev/null || true)"
+          os_version="$(sw_vers -productVersion 2>/dev/null || true)"
+          logical_cpu="$(sysctl -n hw.logicalcpu 2>/dev/null || true)"
+          mem_bytes="$(sysctl -n hw.memsize 2>/dev/null || true)"
+          printf 'OBSERVED model=%s os=%s logical_cpu=%s mem_bytes=%s uid=%s\n' "$model" "$os_version" "$logical_cpu" "$mem_bytes" "$uid"
+          printf 'OBSERVED remote_path=%s\n' "$PATH"
+
+          [ "$model" = "iMac13,1" ] && pass MODEL "$model" || red MODEL "unexpected:$model"
+          case "$os_version" in
+            12.*) pass OS "$os_version" ;;
+            *) red OS "expected Monterey 12.x, got:$os_version" ;;
+          esac
+          if [ -n "$mem_bytes" ] && awk -v b="$mem_bytes" 'BEGIN { exit !(b >= 16*1024*1024*1024) }'; then
+            pass RAM "bytes=$mem_bytes"
+          else
+            red RAM "expected >=16GiB"
+          fi
+
+          launch_label_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" >/tmp/vos-launchctl-probe.$$ 2>/dev/null; then
+                if grep -Eq 'state = running|pid = [0-9]+' /tmp/vos-launchctl-probe.$$; then
+                  rm -f /tmp/vos-launchctl-probe.$$
+                  return 0
+                fi
+              fi
+            done
+            rm -f /tmp/vos-launchctl-probe.$$
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+
+          launch_label_running com.zeroclaw.fall-detector && pass GUARDIAN_LAUNCHAGENT "running" || red GUARDIAN_LAUNCHAGENT "not running/visible"
+          launch_label_running com.go2rtc && pass GO2RTC "running" || red GO2RTC "not running/visible"
+          launch_label_running com.mosquitto.broker && pass MQTT "running" || red MQTT "not running/visible"
+
+          # Bind backend identity to the process that actually owns the production listener.
+          # The documented runbook starts Python `main.py --port 3002` from voice-agent root,
+          # so a hard-coded `voice-agent/backend/main.py` path is not a valid identity check.
+          backend_pid="$(lsof -nP -iTCP:3002 -sTCP:LISTEN -t 2>/dev/null | head -1 || true)"
+          if [ -n "$backend_pid" ]; then
+            backend_cmd="$(ps -p "$backend_pid" -o command= 2>/dev/null || true)"
+            if printf '%s\n' "$backend_cmd" | grep -Eq 'Python.*main\.py.*--port[ =]3002'; then
+              pass FLUXION_BACKEND_PROCESS "pid=$backend_pid"
+            else
+              red FLUXION_BACKEND_PROCESS "listener pid=$backend_pid unexpected command"
+            fi
+          else
+            red FLUXION_BACKEND_PROCESS "no TCP:3002 listener pid"
+          fi
+          pgrep -f 'voice-agent/engine/engine_darwin_amd64.*-port[ =]5080' >/dev/null 2>&1 && pass FLUXION_ENGINE_PROCESS "present" || red FLUXION_ENGINE_PROCESS "missing"
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && pass FLUXION_3002_LISTENER "listening" || red FLUXION_3002_LISTENER "missing"
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null 2>&1 && pass FLUXION_HEALTH "green" || red FLUXION_HEALTH "health endpoint failed"
+          if lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080'; then
+            pass FLUXION_5080_LISTENER "udp"
+          elif lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then
+            pass FLUXION_5080_LISTENER "tcp"
+          else
+            red FLUXION_5080_LISTENER "missing"
+          fi
+          printf '%s\n' '--- RUNTIME DIAGNOSTIC (read-only) ---'
+          ps -axo pid=,command= | grep -E 'voice-agent|engine_darwin|goengine|go2rtc|mosquitto|fall-detector|main.py' | grep -v grep || true
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null || true
+          lsof -nP -iUDP:5080 2>/dev/null || true
+          lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null || true
+
+          if mount | grep -q ' on /Volumes/NAS_LOCAL '; then
+            nas_free_gib="$(df -Pk /Volumes/NAS_LOCAL | awk 'NR==2 {printf "%.1f", $4/1048576}')"
+            pass NAS_LOCAL_MOUNT "free_gib=$nas_free_gib"
+            awk -v x="$nas_free_gib" 'BEGIN { exit !(x >= 100) }' && pass NAS_LOCAL_HEADROOM ">=100GiB" || red NAS_LOCAL_HEADROOM "free_gib=$nas_free_gib"
+          else
+            red NAS_LOCAL_MOUNT "not mounted"
+            printf 'OBSERVED volumes='; ls -1 /Volumes 2>/dev/null | tr '\n' ',' || true; printf '\n'
+          fi
+
+          root_free_gib="$(df -Pk / | awk 'NR==2 {printf "%.1f", $4/1048576}')"
+          printf 'OBSERVED root_free_gib=%s\n' "$root_free_gib"
+          awk -v x="$root_free_gib" 'BEGIN { exit !(x >= 60) }' && pass ROOT_DISK_HEADROOM ">=60GiB" || red ROOT_DISK_HEADROOM "free_gib=$root_free_gib"
+
+          vm="$(vm_stat 2>/dev/null || true)"
+          page_size="$(printf '%s\n' "$vm" | awk 'NR==1 {gsub(/[^0-9]/,"",$8); print $8}')"
+          [ -n "$page_size" ] || page_size=4096
+          pages_available="$(printf '%s\n' "$vm" | awk '
+            /Pages free:/ {gsub(/\./,"",$3); f=$3}
+            /Pages inactive:/ {gsub(/\./,"",$3); i=$3}
+            /Pages speculative:/ {gsub(/\./,"",$3); s=$3}
+            /Pages purgeable:/ {gsub(/\./,"",$3); p=$3}
+            END {printf "%.0f", f+i+s+p}')"
+          mem_available_gib="$(awk -v p="$pages_available" -v z="$page_size" 'BEGIN {printf "%.2f", (p*z)/(1024*1024*1024)}')"
+          printf 'OBSERVED reclaimable_mem_gib=%s page_size=%s\n' "$mem_available_gib" "$page_size"
+          awk -v x="$mem_available_gib" 'BEGIN { exit !(x >= 6.0) }' && pass MEMORY_HEADROOM ">=6GiB reclaimable" || red MEMORY_HEADROOM "reclaimable_gib=$mem_available_gib"
+
+          # A 5-minute load average is intentionally conservative but can remain elevated
+          # for several minutes after a desktop login. Keep the exact original threshold
+          # (1.5x logical CPUs) and allow only a bounded stabilization window; never pass
+          # unless an actual 5-minute sample is at or below that same threshold.
+          load_threshold="$(awk -v c="$logical_cpu" 'BEGIN {printf "%.1f", c*1.5}')"
+          load_ok=0
+          load5=""
+          for sample in 1 2 3 4 5 6 7 8 9 10; do
+            load5="$(sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
+            printf 'OBSERVED load5_sample_%s=%s threshold=%s\n' "$sample" "$load5" "$load_threshold"
+            if [ -n "$load5" ] && awk -v l="$load5" -v t="$load_threshold" 'BEGIN { exit !(l <= t) }'; then
+              load_ok=1
+              break
+            fi
+            [ "$sample" -eq 10 ] || sleep 30
+          done
+          if [ "$load_ok" -eq 1 ]; then
+            pass LOAD_HEADROOM "5m=$load5 threshold=$load_threshold"
+          else
+            red LOAD_HEADROOM "5m=$load5 threshold=$load_threshold after bounded stabilization"
+          fi
+
+          multipass_bin=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then multipass_bin="$candidate"; break; fi
+          done
+          if [ -n "$multipass_bin" ]; then
+            mp_ver="$($multipass_bin version 2>/dev/null | head -1 || true)"
+            pass MULTIPASS_PRESENT "$mp_ver path=$multipass_bin"
+            if "$multipass_bin" list >/dev/null 2>&1; then
+              pass MULTIPASS_LIST "query ok"
+            else
+              red MULTIPASS_LIST "query failed"
+            fi
+            if "$multipass_bin" info vos-worker >/dev/null 2>&1; then
+              red VOS_WORKER_FRESHNESS "pre-existing vos-worker requires explicit inspection"
+            else
+              pass VOS_WORKER_FRESHNESS "absent"
+            fi
+          else
+            red MULTIPASS_PRESENT "command missing"
+          fi
+
+          if [ "$fail" -eq 0 ]; then
+            echo 'IMAC_PRODUCTION_BASELINE=GREEN'
+            exit 0
+          fi
+          echo 'IMAC_PRODUCTION_BASELINE=RED'
+          exit 2
+          REMOTE
+
+          shasum -a 256 "$OUT" | awk '{print "BASELINE_SHA256=" $1}'

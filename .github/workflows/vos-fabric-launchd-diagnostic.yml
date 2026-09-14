@@ -1,0 +1,62 @@
+name: VOS Fabric Launchd Diagnostic
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g1-imac-baseline-*"
+    paths:
+      - ".github/workflows/vos-fabric-launchd-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Inspect launchd domains and existing plists
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -u
+          export LC_ALL=C LANG=C
+          uid="$(id -u)"
+          echo "UID=$uid"
+          echo '--- DOMAINS ---'
+          if launchctl print "gui/$uid" >/dev/null 2>&1; then echo 'GUI_DOMAIN=PRESENT'; else echo 'GUI_DOMAIN=ABSENT'; fi
+          if launchctl print "user/$uid" >/dev/null 2>&1; then echo 'USER_DOMAIN=PRESENT'; else echo 'USER_DOMAIN=ABSENT'; fi
+          echo '--- DISABLED GUI ---'
+          launchctl print-disabled "gui/$uid" 2>&1 | grep -E 'zeroclaw|go2rtc|mosquitto|disabled services|^[[:space:]]*\{' || true
+          echo '--- DISABLED USER ---'
+          launchctl print-disabled "user/$uid" 2>&1 | grep -E 'zeroclaw|go2rtc|mosquitto|disabled services|^[[:space:]]*\{' || true
+
+          for plist in \
+            "$HOME/Library/LaunchAgents/com.mosquitto.broker.plist" \
+            "$HOME/Library/LaunchAgents/com.go2rtc.plist" \
+            "$HOME/Library/LaunchAgents/com.zeroclaw.fall-detector.plist"; do
+            echo "--- PLIST=$plist ---"
+            stat -f 'OWNER=%Su GROUP=%Sg MODE=%Sp SIZE=%z' "$plist" 2>&1 || true
+            plutil -lint "$plist" 2>&1 || true
+            label="$(/usr/libexec/PlistBuddy -c 'Print :Label' "$plist" 2>/dev/null || true)"
+            program="$(/usr/libexec/PlistBuddy -c 'Print :Program' "$plist" 2>/dev/null || true)"
+            arg0="$(/usr/libexec/PlistBuddy -c 'Print :ProgramArguments:0' "$plist" 2>/dev/null || true)"
+            working="$(/usr/libexec/PlistBuddy -c 'Print :WorkingDirectory' "$plist" 2>/dev/null || true)"
+            echo "LABEL=$label"
+            [ -n "$program" ] && echo "PROGRAM=$program"
+            [ -n "$arg0" ] && echo "ARG0=$arg0"
+            [ -n "$working" ] && echo "WORKING_DIR=$working"
+            exe="$program"; [ -n "$exe" ] || exe="$arg0"
+            if [ -n "$exe" ]; then
+              [ -e "$exe" ] && echo 'EXECUTABLE_EXISTS=1' || echo 'EXECUTABLE_EXISTS=0'
+              [ -x "$exe" ] && echo 'EXECUTABLE_X=1' || echo 'EXECUTABLE_X=0'
+            fi
+            if [ -n "$working" ]; then [ -d "$working" ] && echo 'WORKING_DIR_EXISTS=1' || echo 'WORKING_DIR_EXISTS=0'; fi
+          done
+
+          echo '--- LEGACY LOAD HELP/STATUS ---'
+          launchctl help load 2>&1 | head -20 || true
+          echo 'LAUNCHD_DIAGNOSTIC=COMPLETE'
+          REMOTE
