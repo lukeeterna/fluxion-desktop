@@ -12,10 +12,8 @@ Features:
 - Integration with VoicePipeline.process_audio()
 """
 
-import asyncio
-import numpy as np
 from typing import Optional, Callable, Dict, Any, List
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import logging
 import time
 
@@ -30,23 +28,25 @@ BYTES_PER_SAMPLE = 2
 @dataclass
 class TurnConfig:
     """Configuration for turn-based conversation."""
+
     # VAD settings
     vad_threshold: float = 0.5
-    prefix_padding_ms: int = 300    # Keep 300ms before speech start
+    prefix_padding_ms: int = 300  # Keep 300ms before speech start
     silence_duration_ms: int = 700  # End turn after 700ms silence
 
     # Turn limits
-    max_turn_duration_s: float = 30.0   # Max turn length
-    min_turn_duration_ms: int = 500     # Min speech to process
+    max_turn_duration_s: float = 30.0  # Max turn length
+    min_turn_duration_ms: int = 500  # Min speech to process
 
     # Barge-in settings
     allow_barge_in: bool = True
-    barge_in_threshold_ms: int = 200    # Min speech to interrupt TTS
+    barge_in_threshold_ms: int = 200  # Min speech to interrupt TTS
 
 
 @dataclass
 class TurnResult:
     """Result from a conversation turn."""
+
     audio_data: bytes
     duration_ms: int
     was_interrupted: bool = False
@@ -75,7 +75,7 @@ class VADPipelineManager:
     def __init__(
         self,
         pipeline,  # VoicePipeline instance
-        config: Optional[TurnConfig] = None
+        config: Optional[TurnConfig] = None,
     ):
         self.pipeline = pipeline
         self.config = config or TurnConfig()
@@ -84,7 +84,7 @@ class VADPipelineManager:
         vad_config = VADConfig(
             vad_threshold=self.config.vad_threshold,
             prefix_padding_ms=self.config.prefix_padding_ms,
-            silence_duration_ms=self.config.silence_duration_ms
+            silence_duration_ms=self.config.silence_duration_ms,
         )
         self.vad = FluxionVAD(vad_config)
 
@@ -104,13 +104,11 @@ class VADPipelineManager:
         self._on_barge_in: Optional[Callable] = None
 
         # Stats
-        self.stats = {
-            "turns_processed": 0,
-            "barge_ins": 0,
-            "avg_turn_duration_ms": 0.0
-        }
+        self.stats = {"turns_processed": 0, "barge_ins": 0, "avg_turn_duration_ms": 0.0}
 
-        logger.info(f"VADPipelineManager initialized: threshold={self.config.vad_threshold}")
+        logger.info(
+            f"VADPipelineManager initialized: threshold={self.config.vad_threshold}"
+        )
 
     async def start(self) -> None:
         """Start the VAD pipeline manager."""
@@ -163,7 +161,9 @@ class VADPipelineManager:
 
         # Always buffer recent audio for prefix
         self.prefix_buffer.append(audio_chunk)
-        max_prefix_frames = (self.config.prefix_padding_ms * SAMPLE_RATE) // (1000 * len(audio_chunk) // BYTES_PER_SAMPLE)
+        max_prefix_frames = (self.config.prefix_padding_ms * SAMPLE_RATE) // (
+            1000 * len(audio_chunk) // BYTES_PER_SAMPLE
+        )
         if len(self.prefix_buffer) > max(1, max_prefix_frames):
             self.prefix_buffer.pop(0)
 
@@ -174,7 +174,7 @@ class VADPipelineManager:
             "state": result.state.name,
             "probability": result.probability,
             "event": result.event,
-            "should_process": False
+            "should_process": False,
         }
 
         # Handle speech start
@@ -206,14 +206,18 @@ class VADPipelineManager:
             if self.turn_start_time:
                 elapsed = time.time() - self.turn_start_time
                 if elapsed > self.config.max_turn_duration_s:
-                    logger.warning(f"Turn exceeded max duration ({elapsed:.1f}s), forcing end")
+                    logger.warning(
+                        f"Turn exceeded max duration ({elapsed:.1f}s), forcing end"
+                    )
                     result.event = "end_of_speech"
                     response["event"] = "end_of_speech"
 
         # Handle speech end
         if result.event == "end_of_speech":
             turn_audio = b"".join(self.speech_buffer)
-            turn_duration_ms = len(turn_audio) * 1000 // (SAMPLE_RATE * BYTES_PER_SAMPLE)
+            turn_duration_ms = (
+                len(turn_audio) * 1000 // (SAMPLE_RATE * BYTES_PER_SAMPLE)
+            )
 
             # Check minimum duration
             if turn_duration_ms >= self.config.min_turn_duration_ms:
@@ -226,7 +230,9 @@ class VADPipelineManager:
                 self.stats["turns_processed"] += 1
                 n = self.stats["turns_processed"]
                 old_avg = self.stats["avg_turn_duration_ms"]
-                self.stats["avg_turn_duration_ms"] = old_avg + (turn_duration_ms - old_avg) / n
+                self.stats["avg_turn_duration_ms"] = (
+                    old_avg + (turn_duration_ms - old_avg) / n
+                )
 
                 logger.info(f"Turn complete: {turn_duration_ms}ms")
 
@@ -254,7 +260,9 @@ class VADPipelineManager:
         """
         return await self.pipeline.process_audio(audio_data)
 
-    async def handle_turn_complete(self, result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    async def handle_turn_complete(
+        self, result: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
         """
         Handle a complete turn from process_frame.
 
@@ -277,7 +285,7 @@ class VADPipelineManager:
         """Get pipeline statistics."""
         return {
             **self.stats,
-            "vad_state": self.vad.state.name if self.vad else "stopped"
+            "vad_state": self.vad.state.name if self.vad else "stopped",
         }
 
 
@@ -285,12 +293,12 @@ def create_vad_pipeline_manager(
     pipeline,
     vad_threshold: float = 0.5,
     silence_ms: int = 700,
-    allow_barge_in: bool = True
+    allow_barge_in: bool = True,
 ) -> VADPipelineManager:
     """Create a configured VADPipelineManager."""
     config = TurnConfig(
         vad_threshold=vad_threshold,
         silence_duration_ms=silence_ms,
-        allow_barge_in=allow_barge_in
+        allow_barge_in=allow_barge_in,
     )
     return VADPipelineManager(pipeline, config)

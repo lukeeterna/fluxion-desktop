@@ -92,6 +92,9 @@ export const Clienti: FC = () => {
         // Create
         await createMutation.mutateAsync(data as CreateClienteInput);
       }
+      toast.success('Cliente salvato', {
+        description: 'I dati del cliente sono stati aggiornati correttamente.',
+      });
       setDialogOpen(false);
     } catch (error) {
       console.error('Failed to save cliente:', error);
@@ -106,6 +109,7 @@ export const Clienti: FC = () => {
       await deleteMutation.mutateAsync(clienteToDelete.id);
       setDeleteDialogOpen(false);
       setClienteToDelete(undefined);
+      toast.success('Cliente eliminato');
     } catch (error) {
       console.error('Failed to delete cliente:', error);
       toast.error('Errore eliminazione cliente', { description: String(error) });
@@ -150,7 +154,7 @@ export const Clienti: FC = () => {
         <Button
           data-testid="new-client"
           onClick={handleNewCliente}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white"
+          className="bg-cyan-700 hover:bg-cyan-600 text-white"
         >
           <Plus className="w-5 h-5 mr-2" />
           Nuovo Cliente
@@ -193,6 +197,7 @@ export const Clienti: FC = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
         <input
           type="text"
+          aria-label="Cerca clienti"
           placeholder="Cerca per nome, telefono, email..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}

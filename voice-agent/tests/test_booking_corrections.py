@@ -4,22 +4,24 @@ Validates 3-level correction logic, name sanitization, slot pre-fill skip,
 generic operator extraction, and follow-up responses.
 """
 
-import pytest
 import sys
 import os
 from datetime import datetime, timedelta
 
 # Add parent src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from booking_state_machine import (
-    BookingStateMachine, BookingState, StateMachineResult,
-    sanitize_name, sanitize_name_pair,
+    BookingStateMachine,
+    BookingState,
+    sanitize_name,
+    sanitize_name_pair,
 )
 from entity_extractor import extract_generic_operator
 
 
 # ========== B1: PUNCTUATION IN NAMES ==========
+
 
 class TestB1PunctuationInNames:
     def test_trailing_period_removed(self):
@@ -54,11 +56,12 @@ class TestB1PunctuationInNames:
         sm = BookingStateMachine(vertical="salone")
         sm.context.state = BookingState.REGISTERING_SURNAME
         sm.context.client_name = "Gianluca"
-        result = sm.process_message("Distasi.")
+        sm.process_message("Distasi.")
         assert sm.context.client_surname == "Distasi"
 
 
 # ========== B2: SPLIT REGISTRATION RESPONSE ==========
+
 
 class TestB2SplitRegistration:
     def test_registration_via_confirming_phone_has_follow_up(self):
@@ -72,7 +75,10 @@ class TestB2SplitRegistration:
         sm.context.is_new_client = True
         result = sm.process_message("sì confermo")
         # After phone confirmation, should transition to WAITING_SERVICE with follow-up
-        assert result.follow_up_response is not None or result.next_state == BookingState.WAITING_SERVICE
+        assert (
+            result.follow_up_response is not None
+            or result.next_state == BookingState.WAITING_SERVICE
+        )
 
     def test_registration_via_confirming_phone_has_name(self):
         """E1: Registration confirmation via CONFIRMING_PHONE includes client name."""
@@ -83,7 +89,10 @@ class TestB2SplitRegistration:
         sm.context.client_phone = "3331234567"
         sm.context.is_new_client = True
         result = sm.process_message("sì")
-        assert "Mario" in result.response or result.next_state == BookingState.WAITING_SERVICE
+        assert (
+            "Mario" in result.response
+            or result.next_state == BookingState.WAITING_SERVICE
+        )
 
     def test_no_follow_up_in_other_states(self):
         """Follow-up should NOT appear in non-registration states"""
@@ -94,6 +103,7 @@ class TestB2SplitRegistration:
 
 
 # ========== B3: GENERIC OPERATOR ==========
+
 
 class TestB3GenericOperator:
     def test_generic_female_operator(self):
@@ -123,13 +133,11 @@ class TestB3GenericOperator:
 
 # ========== B4: CONFIRMING CORRECTIONS ==========
 
+
 class TestB4ConfirmingCorrections:
     def test_niente_meglio_venerdi_is_correction_not_cancel(self):
         """'niente, meglio venerdì' → date updated, NOT cancelled"""
-        sm = BookingStateMachine(
-            vertical="salone",
-            reference_date=datetime.now()
-        )
+        sm = BookingStateMachine(vertical="salone", reference_date=datetime.now())
         sm.context.state = BookingState.CONFIRMING
         sm.context.service = "taglio"
         sm.context.date = "2026-01-28"
@@ -192,25 +200,20 @@ class TestB4ConfirmingCorrections:
 
 # ========== B5: FORCE UPDATE ==========
 
+
 class TestB5ForceUpdate:
     def test_force_update_overwrites_time(self):
         """force_update=True overwrites existing time"""
         sm = BookingStateMachine(vertical="salone")
         sm.context.time = "10:00"
-        sm._update_context_from_extraction(
-            {"time": "17:00"},
-            force_update=True
-        )
+        sm._update_context_from_extraction({"time": "17:00"}, force_update=True)
         assert sm.context.time == "17:00"
 
     def test_no_force_update_preserves(self):
         """force_update=False does NOT overwrite"""
         sm = BookingStateMachine(vertical="salone")
         sm.context.time = "10:00"
-        sm._update_context_from_extraction(
-            {"time": "17:00"},
-            force_update=False
-        )
+        sm._update_context_from_extraction({"time": "17:00"}, force_update=False)
         assert sm.context.time == "10:00"
 
     def test_force_update_all_fields(self):
@@ -222,9 +225,9 @@ class TestB5ForceUpdate:
                 "service": "colore",
                 "date": future_date,
                 "time": "15:00",
-                "operator": "Marco"
+                "operator": "Marco",
             },
-            force_update=True
+            force_update=True,
         )
         assert sm.context.service == "colore"
         assert sm.context.date == future_date
@@ -233,6 +236,7 @@ class TestB5ForceUpdate:
 
 
 # ========== B6: SLOT PRE-FILL SKIP ==========
+
 
 class TestB6SlotPreFillSkip:
     def test_skip_service_if_provided(self):
@@ -262,6 +266,7 @@ class TestB6SlotPreFillSkip:
 
 # ========== B7: SURNAME DUPLICATION ==========
 
+
 class TestB7SurnameDuplication:
     def test_auto_split_full_name(self):
         """'Gianluca Distasi' → name=Gianluca, surname=Distasi"""
@@ -285,6 +290,7 @@ class TestB7SurnameDuplication:
 
 # ========== HELPER METHOD TESTS ==========
 
+
 class TestHelperMethods:
     def test_handle_timeout(self):
         """Timeout returns a valid response"""
@@ -293,7 +299,10 @@ class TestHelperMethods:
         result = sm.handle_timeout()
         assert result.response is not None
         assert result.should_exit is True
-        assert any(w in result.response.lower() for w in ["richiamar", "quando vuole", "a presto"])
+        assert any(
+            w in result.response.lower()
+            for w in ["richiamar", "quando vuole", "a presto"]
+        )
 
     def test_format_correction_summary(self):
         """Correction summary formats correctly"""

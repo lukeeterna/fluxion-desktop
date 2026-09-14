@@ -8,6 +8,7 @@ These patterns detect field corrections during CONFIRMING state.
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import re
@@ -35,6 +36,7 @@ def match_pattern(patterns_dict: dict, field: str, text: str):
 # SALONE corrections
 # ============================================================================
 
+
 class TestSaloneCorrections:
     """Test CORRECTION_PATTERNS_SALONE patterns."""
 
@@ -45,7 +47,9 @@ class TestSaloneCorrections:
         assert match_pattern(self.patterns, "servizio", "aggiungi una piega") == "piega"
 
     def test_metti_colore(self):
-        assert match_pattern(self.patterns, "servizio", "metti anche colore") == "colore"
+        assert (
+            match_pattern(self.patterns, "servizio", "metti anche colore") == "colore"
+        )
 
     def test_senza_barba(self):
         assert match_pattern(self.patterns, "servizio", "senza la barba") == "barba"
@@ -54,7 +58,9 @@ class TestSaloneCorrections:
         assert match_pattern(self.patterns, "servizio", "meglio taglio") == "taglio"
 
     def test_invece_extension(self):
-        assert match_pattern(self.patterns, "servizio", "invece extension") == "extension"
+        assert (
+            match_pattern(self.patterns, "servizio", "invece extension") == "extension"
+        )
 
     # --- operatore ---
     def test_con_marco(self):
@@ -100,6 +106,7 @@ class TestSaloneCorrections:
 # PALESTRA corrections
 # ============================================================================
 
+
 class TestPalestraCorrections:
     """Test CORRECTION_PATTERNS_PALESTRA patterns."""
 
@@ -141,6 +148,7 @@ class TestPalestraCorrections:
 # ============================================================================
 # MEDICAL corrections
 # ============================================================================
+
 
 class TestMedicalCorrections:
     """Test CORRECTION_PATTERNS_MEDICAL patterns."""
@@ -192,6 +200,7 @@ class TestMedicalCorrections:
 # AUTO corrections
 # ============================================================================
 
+
 class TestAutoCorrections:
     """Test CORRECTION_PATTERNS_AUTO patterns."""
 
@@ -230,26 +239,33 @@ class TestAutoCorrections:
 # Cross-vertical tests
 # ============================================================================
 
+
 class TestCrossVertical:
     """Test that common patterns work across verticals."""
 
-    @pytest.mark.parametrize("patterns", [
-        CORRECTION_PATTERNS_SALONE,
-        CORRECTION_PATTERNS_PALESTRA,
-        CORRECTION_PATTERNS_MEDICAL,
-        CORRECTION_PATTERNS_AUTO,
-    ])
+    @pytest.mark.parametrize(
+        "patterns",
+        [
+            CORRECTION_PATTERNS_SALONE,
+            CORRECTION_PATTERNS_PALESTRA,
+            CORRECTION_PATTERNS_MEDICAL,
+            CORRECTION_PATTERNS_AUTO,
+        ],
+    )
     def test_data_meglio_domani(self, patterns):
         """All verticals should match 'meglio domani' for date."""
         result = match_pattern(patterns, "data", "meglio domani")
         assert result == "domani"
 
-    @pytest.mark.parametrize("patterns,field", [
-        (CORRECTION_PATTERNS_SALONE, "ora"),
-        (CORRECTION_PATTERNS_PALESTRA, "ora"),
-        (CORRECTION_PATTERNS_MEDICAL, "ora"),
-        (CORRECTION_PATTERNS_AUTO, "ora"),
-    ])
+    @pytest.mark.parametrize(
+        "patterns,field",
+        [
+            (CORRECTION_PATTERNS_SALONE, "ora"),
+            (CORRECTION_PATTERNS_PALESTRA, "ora"),
+            (CORRECTION_PATTERNS_MEDICAL, "ora"),
+            (CORRECTION_PATTERNS_AUTO, "ora"),
+        ],
+    )
     def test_ora_alle_15(self, patterns, field):
         """All verticals should match 'alle 15' for time."""
         result = match_pattern(patterns, field, "alle 15")
@@ -258,8 +274,10 @@ class TestCrossVertical:
     def test_no_false_positives_on_greeting(self):
         """Greeting should not match any correction pattern."""
         for patterns in [
-            CORRECTION_PATTERNS_SALONE, CORRECTION_PATTERNS_PALESTRA,
-            CORRECTION_PATTERNS_MEDICAL, CORRECTION_PATTERNS_AUTO,
+            CORRECTION_PATTERNS_SALONE,
+            CORRECTION_PATTERNS_PALESTRA,
+            CORRECTION_PATTERNS_MEDICAL,
+            CORRECTION_PATTERNS_AUTO,
         ]:
             for field in patterns:
                 assert match_pattern(patterns, field, "buongiorno come stai") is None
@@ -268,6 +286,7 @@ class TestCrossVertical:
 # ============================================================================
 # Pattern completeness checks
 # ============================================================================
+
 
 class TestPatternCompleteness:
     """Verify each vertical has required fields."""

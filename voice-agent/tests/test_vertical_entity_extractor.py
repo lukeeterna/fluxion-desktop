@@ -19,22 +19,28 @@ from entity_extractor import extract_vertical_entities, VerticalEntities
 # MEDICAL -- SPECIALTY
 # =============================================================================
 
-class TestMedicalSpecialty:
 
+class TestMedicalSpecialty:
     def test_cardiologo_detected(self):
         r = extract_vertical_entities("vorrei una visita dal cardiologo", "medical")
         assert r.specialty == "cardiologia"
 
     def test_dermatologo_detected(self):
-        r = extract_vertical_entities("devo fare il controllo dei nei dal dermatologo", "medical")
+        r = extract_vertical_entities(
+            "devo fare il controllo dei nei dal dermatologo", "medical"
+        )
         assert r.specialty == "dermatologia"
 
     def test_pediatra_detected(self):
-        r = extract_vertical_entities("bilancio di salute per il mio bambino", "medical")
+        r = extract_vertical_entities(
+            "bilancio di salute per il mio bambino", "medical"
+        )
         assert r.specialty == "pediatria"
 
     def test_oculista_detected(self):
-        r = extract_vertical_entities("voglio controllare la vista dall'oculista", "medical")
+        r = extract_vertical_entities(
+            "voglio controllare la vista dall'oculista", "medical"
+        )
         assert r.specialty == "oculistica"
 
     def test_ginecologa_detected(self):
@@ -54,43 +60,48 @@ class TestMedicalSpecialty:
 # self-keywords l'utente che dice "visita {adjective}" otteneva specialty=None
 # e il FSM degradava in waiting_service infinito (vedi S217-S218 bug compound).
 
-class TestMedicalSpecialtySelfKeywords:
 
-    @pytest.mark.parametrize("expected,phrase", [
-        ("cardiologia",    "visita cardiologica"),
-        ("cardiologia",    "visita cardiologa"),
-        ("dermatologia",   "visita dermatologica"),
-        ("dermatologia",   "visita dermatologa"),
-        ("ortopedia",      "visita ortopedica"),
-        ("ginecologia",    "visita ginecologica"),
-        ("pediatria",      "visita pediatrica"),
-        ("oculistica",     "visita oculistica"),
-        ("odontoiatria",   "visita odontoiatrica"),
-        ("neurologia",     "visita neurologica"),
-        ("endocrinologia", "visita endocrinologica"),
-        ("reumatologia",   "visita reumatologica"),
-        ("fisioterapia",   "seduta fisioterapica"),
-        ("fisioterapia",   "seduta di fisioterapia"),
-        ("osteopata",      "seduta osteopatica"),
-        ("osteopata",      "visita osteopatica"),
-        ("psicologo",      "consulenza psicologica"),
-        ("psicologo",      "seduta psicologa"),
-        ("nutrizionista",  "visita nutrizionistica"),
-        ("nutrizionista",  "visita dal nutrizionista"),
-        ("podologo",       "visita podologica"),
-        ("podologo",       "cura podologica"),
-    ])
+class TestMedicalSpecialtySelfKeywords:
+    @pytest.mark.parametrize(
+        "expected,phrase",
+        [
+            ("cardiologia", "visita cardiologica"),
+            ("cardiologia", "visita cardiologa"),
+            ("dermatologia", "visita dermatologica"),
+            ("dermatologia", "visita dermatologa"),
+            ("ortopedia", "visita ortopedica"),
+            ("ginecologia", "visita ginecologica"),
+            ("pediatria", "visita pediatrica"),
+            ("oculistica", "visita oculistica"),
+            ("odontoiatria", "visita odontoiatrica"),
+            ("neurologia", "visita neurologica"),
+            ("endocrinologia", "visita endocrinologica"),
+            ("reumatologia", "visita reumatologica"),
+            ("fisioterapia", "seduta fisioterapica"),
+            ("fisioterapia", "seduta di fisioterapia"),
+            ("osteopata", "seduta osteopatica"),
+            ("osteopata", "visita osteopatica"),
+            ("psicologo", "consulenza psicologica"),
+            ("psicologo", "seduta psicologa"),
+            ("nutrizionista", "visita nutrizionistica"),
+            ("nutrizionista", "visita dal nutrizionista"),
+            ("podologo", "visita podologica"),
+            ("podologo", "cura podologica"),
+        ],
+    )
     def test_adjective_form_matches_specialty(self, expected, phrase):
         r = extract_vertical_entities(phrase, "medical")
-        assert r.specialty == expected, f"phrase={phrase!r} expected={expected} got={r.specialty}"
+        assert r.specialty == expected, (
+            f"phrase={phrase!r} expected={expected} got={r.specialty}"
+        )
 
 
 # =============================================================================
 # MEDICAL -- URGENCY
 # =============================================================================
 
-class TestMedicalUrgency:
 
+class TestMedicalUrgency:
     def test_urgente_detected(self):
         r = extract_vertical_entities("ho bisogno urgente di una visita", "medical")
         assert r.urgency == "urgente"
@@ -116,8 +127,8 @@ class TestMedicalUrgency:
 # MEDICAL -- VISIT TYPE
 # =============================================================================
 
-class TestMedicalVisitType:
 
+class TestMedicalVisitType:
     def test_prima_visita_detected(self):
         r = extract_vertical_entities("e la prima volta che vengo", "medical")
         assert r.visit_type == "prima_visita"
@@ -127,7 +138,9 @@ class TestMedicalVisitType:
         assert r.visit_type == "controllo"
 
     def test_vaccino_detected(self):
-        r = extract_vertical_entities("devo fare la vaccinazione antinfluenzale", "medical")
+        r = extract_vertical_entities(
+            "devo fare la vaccinazione antinfluenzale", "medical"
+        )
         assert r.visit_type == "vaccino"
 
 
@@ -135,8 +148,8 @@ class TestMedicalVisitType:
 # AUTO -- PLATE
 # =============================================================================
 
-class TestAutoPlate:
 
+class TestAutoPlate:
     def test_targa_standard_detected(self):
         r = extract_vertical_entities("la mia targa e AB123CD", "auto")
         assert r.vehicle_plate == "AB123CD"
@@ -158,8 +171,8 @@ class TestAutoPlate:
 # AUTO -- BRAND
 # =============================================================================
 
-class TestAutoBrand:
 
+class TestAutoBrand:
     def test_fiat_detected(self):
         r = extract_vertical_entities("ho una Fiat Punto da portare", "auto")
         assert r.vehicle_brand == "fiat"
@@ -181,8 +194,8 @@ class TestAutoBrand:
 # CROSS-VERTICAL ISOLATION
 # =============================================================================
 
-class TestVerticalIsolation:
 
+class TestVerticalIsolation:
     def test_salone_returns_empty_entities(self):
         r = extract_vertical_entities("voglio un taglio", "salone")
         assert r.specialty is None

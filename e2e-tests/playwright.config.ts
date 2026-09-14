@@ -14,6 +14,7 @@ import path from 'path';
 // Environment detection
 const isCI = !!process.env.CI;
 const baseURL = process.env.TAURI_DEV_URL || 'http://localhost:1420';
+const storageState = path.join(__dirname, '.auth/user.json');
 
 export default defineConfig({
   // =============================================================================
@@ -133,6 +134,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
+        storageState,
       },
       dependencies: ['setup'],
     },
@@ -147,7 +149,7 @@ export default defineConfig({
     command: 'npm run dev',
     cwd: path.join(__dirname, '..'), // Run from project root
     url: baseURL,
-    reuseExistingServer: !isCI,
+    reuseExistingServer: true,
     timeout: 30_000, // 30s for Vite startup
     stdout: 'pipe',
     stderr: 'pipe',

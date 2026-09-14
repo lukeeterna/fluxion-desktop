@@ -1,10 +1,11 @@
 """Tests for ProsodyInjector — text-level prosody for TTS."""
+
 import sys
 import os
 import pytest
 
 # Ensure src is importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from prosody_injector import ProsodyInjector
 
 
@@ -16,10 +17,12 @@ def pi():
 class TestBreathingPauses:
     def test_long_sentence_gets_pause(self, pi):
         """Sentences >60 chars should get a comma at a logical break."""
-        text = "Ho trovato uno slot disponibile per lei domani dopo le quindici e trenta"
+        text = (
+            "Ho trovato uno slot disponibile per lei domani dopo le quindici e trenta"
+        )
         result = pi.inject(text)
         # Should have more commas than original (which has zero)
-        assert result.count(',') > text.count(',')
+        assert result.count(",") > text.count(",")
 
     def test_short_sentence_unchanged(self, pi):
         """Short sentences (<30 chars) pass through unchanged."""
@@ -32,7 +35,7 @@ class TestBreathingPauses:
         text = "Perfetto, ho registrato la sua email qui."
         result = pi.inject(text, context="default")
         # No extra commas added (sentence is under 60 chars)
-        assert result.count(',') == text.count(',')
+        assert result.count(",") == text.count(",")
 
 
 class TestListRhythm:
@@ -119,7 +122,8 @@ class TestEdgeCases:
         result = pi.inject(text)
         # No ".." that isn't part of "..."
         import re
-        non_ellipsis_double = re.findall(r'(?<!\.)\.\.(?!\.)', result)
+
+        non_ellipsis_double = re.findall(r"(?<!\.)\.\.(?!\.)", result)
         assert len(non_ellipsis_double) == 0
 
     def test_semantic_content_preserved(self, pi):
@@ -128,8 +132,9 @@ class TestEdgeCases:
         result = pi.inject(text, context="confirmation")
         # Strip all punctuation and compare words
         import re
-        words_orig = re.findall(r'\w+', text)
-        words_result = re.findall(r'\w+', result)
+
+        words_orig = re.findall(r"\w+", text)
+        words_result = re.findall(r"\w+", result)
         assert words_orig == words_result
 
 

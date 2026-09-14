@@ -11,7 +11,6 @@ Run with: pytest voice-agent/tests/test_phase_d_audit.py -v
 import sys
 import re
 from pathlib import Path
-from unittest.mock import MagicMock
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any
 
@@ -35,14 +34,29 @@ _AVAILABILITY_HALLUCINATION_PATTERNS = [
 ]
 
 _COMMON_WORDS = {
-    "Sara", "Ciao", "Buongiorno", "Buonasera", "Grazie", "Perfetto",
-    "Certo", "Ecco", "Guardi", "Dunque", "Scusa", "Prenoto",
-    "Confermo", "Aspetti", "Verifico", "Salve", "Prego",
+    "Sara",
+    "Ciao",
+    "Buongiorno",
+    "Buonasera",
+    "Grazie",
+    "Perfetto",
+    "Certo",
+    "Ecco",
+    "Guardi",
+    "Dunque",
+    "Scusa",
+    "Prenoto",
+    "Confermo",
+    "Aspetti",
+    "Verifico",
+    "Salve",
+    "Prego",
 }
 
 
-def _validate_l4_response(response, service_prices, valid_operator_names,
-                           business_services, client_name=None):
+def _validate_l4_response(
+    response, service_prices, valid_operator_names, business_services, client_name=None
+):
     """Standalone guardrail validator (mirrors orchestrator method)."""
     if not response:
         return None
@@ -57,7 +71,9 @@ def _validate_l4_response(response, service_prices, valid_operator_names,
             if k.startswith("PREZZO_"):
                 known_prices.add(v)
 
-    price_matches = re.findall(r'€\s*(\d+)', response) + re.findall(r'(\d+)\s*euro', resp_lower)
+    price_matches = re.findall(r"€\s*(\d+)", response) + re.findall(
+        r"(\d+)\s*euro", resp_lower
+    )
     for price in price_matches:
         if known_prices and price not in known_prices:
             issues.append(f"price_{price}")
@@ -70,9 +86,11 @@ def _validate_l4_response(response, service_prices, valid_operator_names,
 
     # 3. Operator name hallucination
     if valid_operator_names:
-        name_candidates = re.findall(r'\b([A-Z][a-z]{2,})\b', response)
+        name_candidates = re.findall(r"\b([A-Z][a-z]{2,})\b", response)
         for name in name_candidates:
-            if name not in _COMMON_WORDS and name.lower() not in {n.lower() for n in valid_operator_names}:
+            if name not in _COMMON_WORDS and name.lower() not in {
+                n.lower() for n in valid_operator_names
+            }:
                 if client_name and name.lower() in client_name.lower():
                     continue
                 issues.append(f"operator_{name}")
@@ -184,7 +202,9 @@ class TestAntiHallucinationGuardrail:
 
     def test_allows_client_name_in_response(self, db_data):
         """Allows client name even if not an operator."""
-        result = self._validate("Ciao Roberto, come posso aiutarti?", db_data, client_name="Roberto Bianchi")
+        result = self._validate(
+            "Ciao Roberto, come posso aiutarti?", db_data, client_name="Roberto Bianchi"
+        )
         assert result is None
 
     def test_allows_sara_and_common_words(self, db_data):
@@ -215,6 +235,7 @@ class TestAntiHallucinationGuardrail:
 # D2: Conversation history tests
 # =============================================================================
 
+
 @dataclass
 class MockSessionTurn:
     user_input: str
@@ -234,6 +255,7 @@ class TestConversationHistory:
 
     def test_history_empty_when_no_turns(self):
         """First turn: only current user input, no history."""
+
         @dataclass
         class MockSession:
             turns: List[MockSessionTurn] = field(default_factory=list)
@@ -253,8 +275,13 @@ class TestConversationHistory:
     def test_history_with_2_turns(self):
         """2 previous turns → 5 messages (2 user + 2 assistant + 1 current)."""
         turns = [
-            MockSessionTurn(user_input="Ciao", response="Buongiorno! Come posso aiutarla?"),
-            MockSessionTurn(user_input="Quanto costa il taglio?", response="Il taglio costa venticinque euro."),
+            MockSessionTurn(
+                user_input="Ciao", response="Buongiorno! Come posso aiutarla?"
+            ),
+            MockSessionTurn(
+                user_input="Quanto costa il taglio?",
+                response="Il taglio costa venticinque euro.",
+            ),
         ]
 
         l4_messages = []
@@ -291,15 +318,16 @@ class TestConversationHistory:
 # D3: FAQ unresolved variables tests
 # =============================================================================
 
+
 class TestFAQUnresolvedVariables:
     """D3: Verify unresolved FAQ variables are logged and filtered."""
 
     def test_substitute_variables_resolves_known(self):
         """Known variables are substituted correctly."""
         from vertical_loader import substitute_variables
+
         result = substitute_variables(
-            "Il taglio costa [PREZZO_TAGLIO] euro.",
-            {"PREZZO_TAGLIO": "25"}
+            "Il taglio costa [PREZZO_TAGLIO] euro.", {"PREZZO_TAGLIO": "25"}
         )
         assert result == "Il taglio costa 25 euro."
         assert "[" not in result
@@ -307,25 +335,26 @@ class TestFAQUnresolvedVariables:
     def test_substitute_variables_leaves_unknown(self):
         """Unknown variables remain as [VARIABLE]."""
         from vertical_loader import substitute_variables
+
         result = substitute_variables(
-            "Costa [PREZZO_MASSAGGIO] euro.",
-            {"PREZZO_TAGLIO": "25"}
+            "Costa [PREZZO_MASSAGGIO] euro.", {"PREZZO_TAGLIO": "25"}
         )
         assert "[PREZZO_MASSAGGIO]" in result
 
     def test_substitute_variables_handles_curly_braces(self):
         """Old {{VARIABLE}} format is also substituted."""
         from vertical_loader import substitute_variables
+
         result = substitute_variables(
-            "Benvenuti a {{NOME_ATTIVITA}}!",
-            {"NOME_ATTIVITA": "Salone Bella"}
+            "Benvenuti a {{NOME_ATTIVITA}}!", {"NOME_ATTIVITA": "Salone Bella"}
         )
         assert result == "Benvenuti a Salone Bella!"
 
     def test_faq_manager_skips_unresolved(self):
         """FAQs with unresolved variables are skipped during markdown loading."""
         from faq_manager import FAQManager
-        import tempfile, os
+        import tempfile
+        import os
 
         # Create temp FAQ file with some resolved and some unresolved
         content = """# Test
@@ -333,7 +362,9 @@ class TestFAQUnresolvedVariables:
 - Quanto costa il colore: Il colore costa [PREZZO_COLORE] euro
 - Orari: Siamo aperti dal lunedì al sabato
 """
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".md", delete=False, encoding="utf-8"
+        ) as f:
             f.write(content)
             temp_path = f.name
 
@@ -350,7 +381,7 @@ class TestFAQUnresolvedVariables:
 
     def test_unresolved_variable_detection_regex(self):
         """The unresolved variable regex matches expected patterns."""
-        pattern = r'\[([A-Z][A-Z0-9_]+)\]'
+        pattern = r"\[([A-Z][A-Z0-9_]+)\]"
         assert re.findall(pattern, "Costa [PREZZO_TAGLIO] euro") == ["PREZZO_TAGLIO"]
         assert re.findall(pattern, "Orari [ORARI_APERTURA]") == ["ORARI_APERTURA"]
         assert re.findall(pattern, "No variables here") == []
@@ -361,6 +392,7 @@ class TestFAQUnresolvedVariables:
 # =============================================================================
 # D1+D2 Integration: Guardrail patterns compilation
 # =============================================================================
+
 
 class TestGuardrailPatterns:
     """Verify anti-hallucination regex patterns compile and match correctly."""
@@ -404,6 +436,7 @@ class TestGuardrailPatterns:
 # D4: TURN server configuration tests
 # =============================================================================
 
+
 class TestTURNConfig:
     """D4: Verify TURN server configuration in SIPConfig."""
 
@@ -415,9 +448,9 @@ class TestTURNConfig:
             pytest.skip("pjsua2 not available on this machine")
 
         config = SIPConfig()
-        assert hasattr(config, 'turn_server')
-        assert hasattr(config, 'turn_username')
-        assert hasattr(config, 'turn_password')
+        assert hasattr(config, "turn_server")
+        assert hasattr(config, "turn_username")
+        assert hasattr(config, "turn_password")
         assert config.turn_server == ""  # Disabled by default
 
     def test_sip_config_from_env_turn(self, monkeypatch):

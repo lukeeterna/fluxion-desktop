@@ -30,6 +30,7 @@ class _SharedSessionContext:
     a `async with aiohttp.ClientSession() as session:` ma senza creare
     una nuova connessione TCP ogni volta.
     """
+
     async def __aenter__(self) -> aiohttp.ClientSession:
         return await get_http_session()
 
@@ -47,6 +48,7 @@ def shared_session() -> _SharedSessionContext:
                 ...
     """
     return _SharedSessionContext()
+
 
 _connector: Optional[aiohttp.TCPConnector] = None
 _session: Optional[aiohttp.ClientSession] = None

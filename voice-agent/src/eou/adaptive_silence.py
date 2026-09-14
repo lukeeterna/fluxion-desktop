@@ -37,13 +37,13 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 # Word-count thresholds
-_SHORT_WORD_THRESHOLD: int = 2   # ≤ this → SHORT bucket
+_SHORT_WORD_THRESHOLD: int = 2  # ≤ this → SHORT bucket
 _MEDIUM_WORD_THRESHOLD: int = 6  # ≤ this → MEDIUM bucket
 
 # Base silence durations (ms)
-SILENCE_SHORT_MS: int = 400    # ≤2 words
-SILENCE_MEDIUM_MS: int = 600   # 3-6 words
-SILENCE_LONG_MS: int = 900     # >6 words
+SILENCE_SHORT_MS: int = 400  # ≤2 words
+SILENCE_MEDIUM_MS: int = 600  # 3-6 words
+SILENCE_LONG_MS: int = 900  # >6 words
 SILENCE_DEFAULT_MS: int = 700  # no transcript available
 
 # FSM states that require longer patience
@@ -55,7 +55,7 @@ SILENCE_THINKING_STATE_MS: int = 800  # minimum when in a thinking-state
 # Completion-probability adjustments
 _COMPLETION_INCOMPLETE_THRESHOLD: float = 0.3
 _COMPLETION_COMPLETE_THRESHOLD: float = 0.8
-SILENCE_INCOMPLETE_BONUS_MS: int = 300   # added when prob < 0.3
+SILENCE_INCOMPLETE_BONUS_MS: int = 300  # added when prob < 0.3
 SILENCE_COMPLETE_REDUCTION_MS: int = 100  # subtracted when prob > 0.8
 
 # Hard limits

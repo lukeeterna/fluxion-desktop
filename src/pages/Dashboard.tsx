@@ -130,7 +130,7 @@ const QuickSetupBanner: FC = () => {
         <button
           type="button"
           onClick={handleDismiss}
-          className="text-slate-500 hover:text-slate-300 transition-colors shrink-0"
+          className="text-slate-400 hover:text-slate-300 transition-colors shrink-0"
           aria-label="Chiudi banner"
         >
           <X className="h-4 w-4" />
@@ -199,7 +199,7 @@ const StatCard: FC<{
           <p className="text-sm font-medium text-slate-400 mb-1.5">{title}</p>
           <p className={`text-3xl font-bold tracking-tight ${color}`}>{value}</p>
           {subtitle && (
-            <p className="text-sm text-slate-500 mt-1.5">{subtitle}</p>
+            <p className="text-sm text-slate-400 mt-1.5">{subtitle}</p>
           )}
         </div>
         <div className={`p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/50 ${color}`}>
@@ -207,7 +207,7 @@ const StatCard: FC<{
         </div>
       </div>
       {link && (
-        <div className="flex items-center gap-1 mt-3 text-xs text-slate-500 group-hover:text-slate-400 transition-colors">
+        <div className="flex items-center gap-1 mt-3 text-xs text-slate-400 group-hover:text-slate-400 transition-colors">
           <span>Vedi dettagli</span>
           <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
         </div>
@@ -253,7 +253,7 @@ const CompeanniCard: FC<{ compleanni: ClienteCompleanno[] }> = ({ compleanni }) 
             <Cake className="h-7 w-7 text-slate-600" />
           </div>
           <p className="text-slate-400 font-medium mb-1">Nessun compleanno in vista</p>
-          <p className="text-sm text-slate-500">I prossimi 7 giorni sono tranquilli</p>
+          <p className="text-sm text-slate-400">I prossimi 7 giorni sono tranquilli</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -317,7 +317,7 @@ const TopOperatoriCard: FC<{ operatori: TopOperatoreKpi[] }> = ({ operatori }) =
             <Trophy className="h-7 w-7 text-slate-600" />
           </div>
           <p className="text-slate-400 font-medium mb-1">Nessuna classifica</p>
-          <p className="text-sm text-slate-500">I dati appariranno dopo il primo mese di attività</p>
+          <p className="text-sm text-slate-400">I dati appariranno dopo il primo mese di attività</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -358,7 +358,7 @@ const StatoAppuntamento: FC<{ stato: string }> = ({ stato }) => {
     case 'no_show':
       return <XCircle className="h-4 w-4 text-red-500" />
     default:
-      return <Clock className="h-4 w-4 text-slate-500" />
+      return <Clock className="h-4 w-4 text-slate-400" />
   }
 }
 
@@ -408,7 +408,7 @@ export const Dashboard: FC = () => {
               <div className="flex flex-wrap gap-3">
                 <Link
                   to="/clienti"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-medium rounded-lg transition-colors"
                   data-testid="welcome-add-client"
                 >
                   <UserPlus className="h-4 w-4" />
@@ -501,7 +501,7 @@ export const Dashboard: FC = () => {
                 <Calendar className="h-7 w-7 text-slate-600" />
               </div>
               <p className="text-slate-400 font-medium mb-1">Giornata libera!</p>
-              <p className="text-sm text-slate-500">Non ci sono appuntamenti per oggi</p>
+              <p className="text-sm text-slate-400">Non ci sono appuntamenti per oggi</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -519,7 +519,7 @@ export const Dashboard: FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-white font-mono">{app.ora?.slice(0, 5) || '-'}</p>
-                    <p className="text-xs text-slate-500 capitalize">
+                    <p className="text-xs text-slate-400 capitalize">
                       {app.stato === 'confermato' ? 'In attesa' : app.stato}
                     </p>
                   </div>
@@ -579,7 +579,7 @@ export const Dashboard: FC = () => {
             </Link>
             <Link
               to="/calendario"
-              className="flex-1 py-2 px-4 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-center text-sm text-white transition-colors"
+              className="flex-1 py-2 px-4 bg-cyan-700 hover:bg-cyan-600 rounded-lg text-center text-sm text-white transition-colors"
               data-testid="btn-vai-calendario"
             >
               Calendario

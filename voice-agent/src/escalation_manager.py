@@ -6,12 +6,14 @@ Provides the operator with a summary of what Sara collected so far.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 
-def build_escalation_summary(context: Any, reason: str = "richiesta utente") -> Dict[str, Any]:
+def build_escalation_summary(
+    context: Any, reason: str = "richiesta utente"
+) -> Dict[str, Any]:
     """
     Build a structured escalation summary from booking context.
 

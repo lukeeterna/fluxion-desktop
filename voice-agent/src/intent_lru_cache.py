@@ -8,19 +8,28 @@ string — this eliminates 3 redundant TF-IDF + regex scans per turn (~10-15ms).
 Python 3.9 compatible: uses Optional[], List[], Dict[] from typing.
 lru_cache is thread-safe in CPython (GIL protects dict ops between await points).
 """
+
+from typing import TYPE_CHECKING
+
 import re
 from functools import lru_cache
 from typing import Any
 
-try:
+if TYPE_CHECKING:
     from .intent_classifier import classify_intent
-except ImportError:
-    from intent_classifier import classify_intent
+else:
+    if TYPE_CHECKING:
+        from .intent_classifier import classify_intent
+    else:
+        try:
+            from .intent_classifier import classify_intent
+        except ImportError:
+            from intent_classifier import classify_intent
 
 
 def _normalize_input(text: str) -> str:
     """Normalize for cache key: strip + lowercase + collapse whitespace."""
-    return re.sub(r'\s+', ' ', text.strip().lower())
+    return re.sub(r"\s+", " ", text.strip().lower())
 
 
 @lru_cache(maxsize=100)

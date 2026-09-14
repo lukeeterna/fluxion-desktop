@@ -81,7 +81,7 @@ export const Sidebar: FC<SidebarProps> = ({ className }) => {
     <aside
       data-testid="sidebar"
       className={cn(
-        'flex flex-col h-screen bg-slate-900/80 border-r border-slate-700/50 transition-all duration-200',
+        'hidden md:flex flex-col h-screen bg-slate-900/80 border-r border-slate-700/50 transition-all duration-200',
         isExpanded ? 'w-60' : 'w-16',
         className
       )}

@@ -13,12 +13,11 @@ Features:
 
 import logging
 import sqlite3
-import json
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 
 logger = logging.getLogger(__name__)
 
@@ -30,16 +29,17 @@ DEFAULT_CALLER_DB = str(_FLUXION_DIR / "caller_memory.db")
 @dataclass
 class CallerProfile:
     """Profile for a returning caller."""
+
     phone_number: str
     client_name: str = ""
     call_count: int = 0
     last_service: str = ""
     last_operator: str = ""
-    preferred_day: str = ""       # e.g. "martedi"
-    preferred_time: str = ""      # e.g. "10:00"
+    preferred_day: str = ""  # e.g. "martedi"
+    preferred_time: str = ""  # e.g. "10:00"
     last_call_at: str = ""
     created_at: str = ""
-    notes: str = ""               # JSON string for extra data
+    notes: str = ""  # JSON string for extra data
 
     @property
     def is_returning(self) -> bool:
@@ -132,8 +132,7 @@ class CallerMemory:
         try:
             with self._connect() as conn:
                 row = conn.execute(
-                    "SELECT * FROM caller_profiles WHERE phone_number = ?",
-                    (phone,)
+                    "SELECT * FROM caller_profiles WHERE phone_number = ?", (phone,)
                 ).fetchone()
                 if row:
                     return CallerProfile(
@@ -184,13 +183,15 @@ class CallerMemory:
             with self._connect() as conn:
                 # Upsert caller profile
                 existing = conn.execute(
-                    "SELECT * FROM caller_profiles WHERE phone_number = ?",
-                    (phone,)
+                    "SELECT * FROM caller_profiles WHERE phone_number = ?", (phone,)
                 ).fetchone()
 
                 if existing:
                     # Update existing
-                    updates = {"last_call_at": now, "call_count": existing["call_count"] + 1}
+                    updates = {
+                        "last_call_at": now,
+                        "call_count": existing["call_count"] + 1,
+                    }
                     if client_name:
                         updates["client_name"] = client_name
                     if service:
@@ -201,8 +202,8 @@ class CallerMemory:
                     set_clause = ", ".join(f"{k} = ?" for k in updates)
                     values = list(updates.values()) + [phone]
                     conn.execute(
-                        f"UPDATE caller_profiles SET {set_clause} WHERE phone_number = ?",
-                        values
+                        f"UPDATE caller_profiles SET {set_clause} WHERE phone_number = ?",  # nosec B608 - allowlisted keys
+                        values,
                     )
                 else:
                     # Insert new
@@ -211,7 +212,7 @@ class CallerMemory:
                         (phone_number, client_name, call_count, last_service,
                          last_operator, last_call_at, created_at)
                         VALUES (?, ?, 1, ?, ?, ?, ?)""",
-                        (phone, client_name, service, operator, now, now)
+                        (phone, client_name, service, operator, now, now),
                     )
 
                 # Record booking history (for preferred slot calculation)
@@ -220,7 +221,7 @@ class CallerMemory:
                         """INSERT INTO caller_bookings
                         (phone_number, service, operator, day_of_week, time_slot, booked_at)
                         VALUES (?, ?, ?, ?, ?, ?)""",
-                        (phone, service, operator, day_of_week, time_slot, now)
+                        (phone, service, operator, day_of_week, time_slot, now),
                     )
 
                 conn.commit()
@@ -238,7 +239,7 @@ class CallerMemory:
         """Recalculate preferred day and time from booking history."""
         rows = conn.execute(
             "SELECT day_of_week, time_slot FROM caller_bookings WHERE phone_number = ? ORDER BY booked_at DESC LIMIT 20",
-            (phone,)
+            (phone,),
         ).fetchall()
 
         if not rows:
@@ -263,11 +264,13 @@ class CallerMemory:
         if preferred_day or preferred_time:
             conn.execute(
                 "UPDATE caller_profiles SET preferred_day = ?, preferred_time = ? WHERE phone_number = ?",
-                (preferred_day, preferred_time, phone)
+                (preferred_day, preferred_time, phone),
             )
             conn.commit()
 
-    def get_booking_history(self, phone_number: str, limit: int = 10) -> List[Dict[str, str]]:
+    def get_booking_history(
+        self, phone_number: str, limit: int = 10
+    ) -> List[Dict[str, str]]:
         """Get recent booking history for a caller."""
         if not phone_number:
             return []
@@ -277,7 +280,7 @@ class CallerMemory:
             with self._connect() as conn:
                 rows = conn.execute(
                     "SELECT service, operator, day_of_week, time_slot, booked_at FROM caller_bookings WHERE phone_number = ? ORDER BY booked_at DESC LIMIT ?",
-                    (phone, limit)
+                    (phone, limit),
                 ).fetchall()
                 return [dict(r) for r in rows]
         except Exception as e:

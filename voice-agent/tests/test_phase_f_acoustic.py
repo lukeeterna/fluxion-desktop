@@ -7,9 +7,7 @@ Follows existing test patterns in voice-agent/tests/.
 
 import math
 import os
-import struct
 import sys
-from collections import deque
 from typing import List
 
 import numpy as np
@@ -21,11 +19,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from acoustic_frustration import (
     AcousticFrustrationDetector,
-    FrustrationResult,
     _MIN_PITCH_HZ,
     _MAX_PITCH_HZ,
-    _RMS_RATIO_THRESHOLD,
-    _ZCR_HIGH_THRESHOLD,
 )
 
 # ── Audio generation helpers ─────────────────────────────────────────────────
@@ -35,7 +30,9 @@ CHUNK_DURATION = 0.1  # 100 ms
 CHUNK_SAMPLES = int(SAMPLE_RATE * CHUNK_DURATION)
 
 
-def _make_sine(freq_hz: float, amplitude: float, n_samples: int = CHUNK_SAMPLES) -> bytes:
+def _make_sine(
+    freq_hz: float, amplitude: float, n_samples: int = CHUNK_SAMPLES
+) -> bytes:
     """Pure sine wave at freq_hz, float amplitude, 16-bit LE PCM bytes."""
     t = np.arange(n_samples, dtype=np.float32) / SAMPLE_RATE
     wave = amplitude * np.sin(2 * np.pi * freq_hz * t)
@@ -63,6 +60,7 @@ def _float32_to_bytes(samples: np.ndarray) -> bytes:
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def detector() -> AcousticFrustrationDetector:
     return AcousticFrustrationDetector(sample_rate=SAMPLE_RATE, calibration_frames=5)
@@ -80,6 +78,7 @@ def calibrated_detector() -> AcousticFrustrationDetector:
 
 
 # ── 1. RMS from known samples ─────────────────────────────────────────────────
+
 
 class TestRMS:
     def test_silence_rms_is_zero(self, detector):
@@ -105,6 +104,7 @@ class TestRMS:
 
 
 # ── 2. Calibration sets baseline correctly ────────────────────────────────────
+
 
 class TestCalibration:
     def test_not_calibrated_before_enough_frames(self, detector):
@@ -144,6 +144,7 @@ class TestCalibration:
 
 # ── 3. Frustration rises on loud audio ────────────────────────────────────────
 
+
 class TestFrustrationRises:
     def test_frustration_higher_on_loud_audio(self, calibrated_detector):
         """Audio at 3× baseline RMS must produce a higher score than normal audio."""
@@ -171,6 +172,7 @@ class TestFrustrationRises:
 
 # ── 4. Frustration stays low on normal volume ─────────────────────────────────
 
+
 class TestFrustrationLow:
     def test_normal_volume_low_score(self, calibrated_detector):
         """Normal speech volume should produce a score below 0.4."""
@@ -187,6 +189,7 @@ class TestFrustrationLow:
 
 
 # ── 5. Anti-echo: score=0 when is_tts_playing ─────────────────────────────────
+
 
 class TestAntiEchoTTS:
     def test_tts_playing_returns_zero_score(self, calibrated_detector):
@@ -218,6 +221,7 @@ class TestAntiEchoTTS:
 
 # ── 6. Anti-echo: no history update when is_speech=False ─────────────────────
 
+
 class TestAntiEchoSpeech:
     def test_non_speech_does_not_update_history(self, calibrated_detector):
         """When is_speech=False, the rolling history must not grow."""
@@ -246,6 +250,7 @@ class TestAntiEchoSpeech:
 
 
 # ── 7. Reset clears state ─────────────────────────────────────────────────────
+
 
 class TestReset:
     def test_reset_clears_calibration(self, calibrated_detector):
@@ -283,6 +288,7 @@ class TestReset:
 
 # ── 8. Pitch estimation from sine wave ────────────────────────────────────────
 
+
 class TestPitchEstimation:
     @pytest.mark.parametrize("freq_hz", [100.0, 150.0, 200.0, 300.0])
     def test_pitch_sine_wave_accurate(self, detector, freq_hz: float):
@@ -310,6 +316,7 @@ class TestPitchEstimation:
 
 
 # ── 9. Score clipping ─────────────────────────────────────────────────────────
+
 
 class TestScoreClipping:
     def test_score_never_above_one(self, calibrated_detector):
@@ -341,6 +348,7 @@ class TestScoreClipping:
 
 # ── 10. Integration: full calibration + detection cycle ──────────────────────
 
+
 class TestIntegration:
     def test_full_call_cycle(self):
         """Simulate a full call: calibrate → normal speech → raised voice → detect."""
@@ -357,7 +365,9 @@ class TestIntegration:
             r = d.analyze_audio(_make_sine(150.0, 0.04), is_speech=True)
             scores_normal.append(r.frustration_score)
         avg_normal = sum(scores_normal) / len(scores_normal)
-        assert avg_normal < 0.45, f"Expected low score during normal speech, got {avg_normal:.2f}"
+        assert avg_normal < 0.45, (
+            f"Expected low score during normal speech, got {avg_normal:.2f}"
+        )
 
         # Phase 3: raised voice (3× baseline amplitude)
         scores_loud: List[float] = []

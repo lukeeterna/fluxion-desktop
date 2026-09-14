@@ -102,6 +102,28 @@
     },
     get_cliente: (args) => CLIENTI.find((c) => c.id === args?.id) || CLIENTI[0],
     get_clienti_count: () => ({ total: 187, vip: 28, nuovi_mese: 12 }),
+    create_cliente: (args) => {
+      const created = {
+        id: String(Date.now()),
+        loyalty_visits: 0,
+        loyalty_threshold: 10,
+        is_vip: 0,
+        ...args.input
+      };
+      CLIENTI.push(created);
+      return created;
+    },
+    update_cliente: (args) => {
+      const index = CLIENTI.findIndex((cliente) => String(cliente.id) === String(args.input.id));
+      if (index < 0) throw new Error(`Cliente non trovato: ${args.input.id}`);
+      CLIENTI[index] = { ...CLIENTI[index], ...args.input };
+      return CLIENTI[index];
+    },
+    delete_cliente: (args) => {
+      const index = CLIENTI.findIndex((cliente) => String(cliente.id) === String(args.id));
+      if (index >= 0) CLIENTI.splice(index, 1);
+      return null;
+    },
     // Servizi
     get_servizi: () => SERVIZI,
     // Operatori

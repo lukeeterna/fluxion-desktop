@@ -11,18 +11,24 @@ from pathlib import Path
 # Ensure src is importable
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import pytest
 from sales_state_machine import SalesStateMachine, SalesState
 from sales_kb_loader import (
-    load_sales_kb, get_pitch, get_objection_response,
-    get_closing_message, resolve_vertical, sanitize_sales_text,
-    get_qualification_question, get_pain_points, get_competitive_response,
+    load_sales_kb,
+    get_pitch,
+    get_objection_response,
+    get_closing_message,
+    resolve_vertical,
+    sanitize_sales_text,
+    get_qualification_question,
+    get_pain_points,
+    get_competitive_response,
 )
 
 
 # ═══════════════════════════════════════════════════════════════
 # KB Loader Tests
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestKBLoader:
     """Test sales knowledge base loading."""
@@ -40,7 +46,10 @@ class TestKBLoader:
         assert "headline" in pitch
         assert "pitch" in pitch
         assert "key_number" in pitch
-        assert "telefonate" in pitch["headline"].lower() or "tagli" in pitch["headline"].lower()
+        assert (
+            "telefonate" in pitch["headline"].lower()
+            or "tagli" in pitch["headline"].lower()
+        )
 
     def test_get_pitch_unknown_vertical(self):
         assert get_pitch("gelateria") is None
@@ -109,6 +118,7 @@ class TestKBLoader:
 # ═══════════════════════════════════════════════════════════════
 # Sales FSM Tests
 # ═══════════════════════════════════════════════════════════════
+
 
 class TestSalesFSM:
     """Test sales state machine transitions."""
@@ -185,7 +195,7 @@ class TestSalesFSM:
         self.fsm.process("5 persone")
         self.fsm.process("30 pazienti")
         self.fsm.process("Agenda cartacea")
-        r = self.fsm.process("10 chiamate perse")
+        self.fsm.process("10 chiamate perse")
         assert self.fsm.ctx.recommended_tier == "tier_clinic"
 
     def test_solo_operator_gets_base_tier(self):
@@ -196,7 +206,7 @@ class TestSalesFSM:
         assert self.fsm.ctx.employees == 1
         self.fsm.process("8 al giorno")
         self.fsm.process("WhatsApp")
-        r = self.fsm.process("3 chiamate")
+        self.fsm.process("3 chiamate")
         assert self.fsm.ctx.recommended_tier == "tier_base"
 
     # ─── Objection Handling ───────────────────────────────────
@@ -228,7 +238,10 @@ class TestSalesFSM:
         r = self.fsm.process("troppo caro davvero")
         assert r.state == SalesState.DECLINED
         assert r.is_terminal
-        assert "bocca al lupo" in r.response.lower() or "nessun problema" in r.response.lower()
+        assert (
+            "bocca al lupo" in r.response.lower()
+            or "nessun problema" in r.response.lower()
+        )
 
     def test_objection_then_interest(self):
         """Objection → positive signal → closing."""
@@ -274,26 +287,26 @@ class TestSalesFSM:
 
     def test_name_extraction_sono(self):
         """'Sono Marco' extracts name."""
-        r = self.fsm.process("Ciao, sono Marco")
+        self.fsm.process("Ciao, sono Marco")
         assert self.fsm.ctx.lead_name == "Marco"
 
     def test_name_extraction_mi_chiamo(self):
         """'Mi chiamo Luca' extracts name."""
-        r = self.fsm.process("Mi chiamo Luca, ho bisogno di info")
+        self.fsm.process("Mi chiamo Luca, ho bisogno di info")
         assert self.fsm.ctx.lead_name == "Luca"
 
     def test_number_extraction_italian_words(self):
         """Italian number words are extracted correctly."""
         self.fsm.state = SalesState.QUALIFYING_EMPLOYEES
         self.fsm.ctx.vertical = "parrucchiere"
-        r = self.fsm.process("Siamo in cinque")
+        self.fsm.process("Siamo in cinque")
         assert self.fsm.ctx.employees == 5
 
     def test_employee_guess_solo_io(self):
         """'Solo io' → 1 employee."""
         self.fsm.state = SalesState.QUALIFYING_EMPLOYEES
         self.fsm.ctx.vertical = "estetista"
-        r = self.fsm.process("Solo io")
+        self.fsm.process("Solo io")
         assert self.fsm.ctx.employees == 1
 
     def test_followup_return_positive(self):
@@ -319,8 +332,14 @@ class TestSalesFSM:
         """All 8 KB verticals are reachable via aliases."""
         verticals_reached = set()
         test_inputs = [
-            "parrucchiere", "meccanico", "gommista", "carrozziere",
-            "estetista", "palestra", "clinica", "avvocato",
+            "parrucchiere",
+            "meccanico",
+            "gommista",
+            "carrozziere",
+            "estetista",
+            "palestra",
+            "clinica",
+            "avvocato",
         ]
         for inp in test_inputs:
             v = resolve_vertical(inp)

@@ -15,16 +15,20 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from availability_checker import AvailabilityChecker, AvailabilityConfig, UnavailabilityReason
+from availability_checker import (
+    AvailabilityChecker,
+    AvailabilityConfig,
+    UnavailabilityReason,
+)
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def run(coro):
     """Sync wrapper for async coroutines (Python 3.9 compatible)."""
@@ -40,7 +44,9 @@ def _near_holiday(days_ahead: int = 5) -> str:
     return (date.today() + timedelta(days=days_ahead)).strftime("%Y-%m-%d")
 
 
-def _checker_with_holiday(holiday_date_str: str, max_advance_days: int = 90) -> AvailabilityChecker:
+def _checker_with_holiday(
+    holiday_date_str: str, max_advance_days: int = 90
+) -> AvailabilityChecker:
     """Return an AvailabilityChecker whose config includes one holiday."""
     config = AvailabilityConfig(
         opening_time="09:00",
@@ -55,6 +61,7 @@ def _checker_with_holiday(holiday_date_str: str, max_advance_days: int = 90) -> 
 # ---------------------------------------------------------------------------
 # GAP-P0-3: holidays respected by check_date
 # ---------------------------------------------------------------------------
+
 
 class TestHolidayRespected:
     """check_date() returns HOLIDAY reason when date is in config.holidays."""
@@ -98,13 +105,16 @@ class TestHolidayRespected:
         """AvailabilityConfig.holidays is accessible after construction."""
         holidays = [_near_holiday(5), _near_holiday(6)]
         config = AvailabilityConfig(holidays=holidays)
-        checker = AvailabilityChecker(config=config, http_bridge_url="http://127.0.0.1:19999")
+        checker = AvailabilityChecker(
+            config=config, http_bridge_url="http://127.0.0.1:19999"
+        )
         assert checker.config.holidays == holidays
 
 
 # ---------------------------------------------------------------------------
 # GAP-P0-4: holiday response includes 3 non-holiday alternatives
 # ---------------------------------------------------------------------------
+
 
 class TestHolidayAlternatives:
     """Holiday response must include at least 1 alternative; alternatives are not holidays."""
@@ -114,7 +124,9 @@ class TestHolidayAlternatives:
         hday = _near_holiday(5)
         checker = _checker_with_holiday(hday)
         result = run(checker.check_date(hday))
-        assert len(result.suggestions) >= 1, "Expected at least 1 suggestion for holiday"
+        assert len(result.suggestions) >= 1, (
+            "Expected at least 1 suggestion for holiday"
+        )
 
     def test_holiday_message_includes_alternative_date(self):
         """The message string contains at least one day/month word as alternative."""
@@ -122,9 +134,24 @@ class TestHolidayAlternatives:
         checker = _checker_with_holiday(hday)
         result = run(checker.check_date(hday))
         day_or_month = [
-            "lunedi", "martedi", "mercoledi", "giovedi", "venerdi", "sabato",
-            "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
-            "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre",
+            "lunedi",
+            "martedi",
+            "mercoledi",
+            "giovedi",
+            "venerdi",
+            "sabato",
+            "gennaio",
+            "febbraio",
+            "marzo",
+            "aprile",
+            "maggio",
+            "giugno",
+            "luglio",
+            "agosto",
+            "settembre",
+            "ottobre",
+            "novembre",
+            "dicembre",
         ]
         msg_lower = result.message.lower()
         found = any(w in msg_lower for w in day_or_month)
@@ -140,10 +167,10 @@ class TestHolidayAlternatives:
             holidays=[hday, next_day],
             max_advance_days=90,
         )
-        checker = AvailabilityChecker(config=config, http_bridge_url="http://127.0.0.1:19999")
-        alts = checker._suggest_alternative_dates(
-            date.today() + timedelta(days=5), 3
+        checker = AvailabilityChecker(
+            config=config, http_bridge_url="http://127.0.0.1:19999"
         )
+        alts = checker._suggest_alternative_dates(date.today() + timedelta(days=5), 3)
         # None of the alternative date strings should appear in holidays formatted list
         # (alts are Italian-formatted, not YYYY-MM-DD, so we verify hday is not a valid alt)
         # Simpler: verify at least one alt exists and checker skipped the second holiday
@@ -153,9 +180,7 @@ class TestHolidayAlternatives:
         """_suggest_alternative_dates returns up to 3 alternatives."""
         hday = _near_holiday(5)
         checker = _checker_with_holiday(hday)
-        alts = checker._suggest_alternative_dates(
-            date.today() + timedelta(days=5), 3
-        )
+        alts = checker._suggest_alternative_dates(date.today() + timedelta(days=5), 3)
         assert 1 <= len(alts) <= 3, f"Expected 1-3 alternatives, got {len(alts)}"
 
     def test_message_contains_o_separator_for_multiple_alts(self):

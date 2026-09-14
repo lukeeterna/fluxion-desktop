@@ -14,6 +14,8 @@ Selection:
 Python 3.9 compatible. No torch/transformers/psutil at module load time.
 """
 
+from typing import TYPE_CHECKING
+
 import asyncio
 import io
 import logging
@@ -24,36 +26,54 @@ import sys
 import tempfile
 import time
 import wave
+from collections import OrderedDict
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
+_PSUTIL_AVAILABLE = False
+_EDGE_TTS_AVAILABLE = False
+_PIPER_PY_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 # ─── Optional psutil (graceful fallback) ──────────────────────────────────────
-try:
+if TYPE_CHECKING:
     import psutil
-    _PSUTIL_AVAILABLE = True
-except ImportError:
-    _PSUTIL_AVAILABLE = False
+else:
+    try:
+        import psutil
+
+        _PSUTIL_AVAILABLE = True
+    except ImportError:
+        _PSUTIL_AVAILABLE = False
 
 # ─── Optional edge_tts (graceful fallback to Piper/SystemTTS) ─────────────────
-try:
+if TYPE_CHECKING:
     import edge_tts
-    _EDGE_TTS_AVAILABLE = True
-except ImportError:
-    _EDGE_TTS_AVAILABLE = False
+else:
+    try:
+        import edge_tts
+
+        _EDGE_TTS_AVAILABLE = True
+    except ImportError:
+        edge_tts = None  # type: ignore
+        _EDGE_TTS_AVAILABLE = False
 
 # ─── Optional Piper Python API (preferred over subprocess in frozen mode) ─────
 # Subprocess approach fails in distribution because piper CLI is a shebang script
 # pointing to system Python 3.9 — end-users won't have it. Python API works
 # anywhere PiperVoice + onnxruntime are bundled.
-try:
+if TYPE_CHECKING:
     from piper.voice import PiperVoice  # type: ignore
-    _PIPER_PY_AVAILABLE = True
-except ImportError:
-    PiperVoice = None  # type: ignore
-    _PIPER_PY_AVAILABLE = False
+else:
+    try:
+        from piper.voice import PiperVoice  # type: ignore
+
+        _PIPER_PY_AVAILABLE = True
+    except ImportError:
+        PiperVoice = None  # type: ignore
+        _PIPER_PY_AVAILABLE = False
 
 # ─── Piper model name (mirrors tts.py) ────────────────────────────────────────
 _PIPER_MODEL = "it_IT-paola-medium"
@@ -63,16 +83,19 @@ _PIPER_MODEL = "it_IT-paola-medium"
 # TTSMode — engine selection preference
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TTSMode(str, Enum):
     """TTS engine selection mode."""
-    AUTO = "auto"       # Hardware-based selection
+
+    AUTO = "auto"  # Hardware-based selection
     QUALITY = "quality"  # Edge-TTS IsabellaNeural (high quality, ~500ms)
-    FAST = "fast"       # Piper (low latency, ~50ms)
+    FAST = "fast"  # Piper (low latency, ~50ms)
 
 
 # ═══════════════════════════════════════════════════════════════════
 # TTSEngineSelector — hardware detection + engine factory
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TTSEngineSelector:
     """
@@ -186,6 +209,7 @@ class TTSEngineSelector:
 # EdgeTTSEngine — Microsoft Edge Neural TTS (quality, cloud free)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class EdgeTTSEngine:
     """
     Microsoft Edge Neural TTS via edge-tts library.
@@ -230,17 +254,38 @@ class EdgeTTSEngine:
         """Convert MP3 to WAV 16kHz 16-bit mono."""
         if self._converter == "afconvert":
             subprocess.run(
-                ["afconvert", "-f", "WAVE", "-d", "LEI16@16000",
-                 "-c", "1", mp3_path, wav_path],
-                check=True, timeout=10,
+                [
+                    "afconvert",
+                    "-f",
+                    "WAVE",
+                    "-d",
+                    "LEI16@16000",
+                    "-c",
+                    "1",
+                    mp3_path,
+                    wav_path,
+                ],
+                check=True,
+                timeout=10,
                 capture_output=True,
             )
         elif self._converter == "ffmpeg":
             subprocess.run(
-                ["ffmpeg", "-y", "-i", mp3_path,
-                 "-ar", "16000", "-ac", "1", "-sample_fmt", "s16",
-                 wav_path],
-                check=True, timeout=10,
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    mp3_path,
+                    "-ar",
+                    "16000",
+                    "-ac",
+                    "1",
+                    "-sample_fmt",
+                    "s16",
+                    wav_path,
+                ],
+                check=True,
+                timeout=10,
                 capture_output=True,
             )
 
@@ -268,7 +313,8 @@ class EdgeTTSEngine:
         if len(text) >= 160:
             logger.warning(
                 "[EdgeTTSEngine] testo lungo ≥160ch (%d chars): %r…",
-                len(text), text[:50],
+                len(text),
+                text[:50],
             )
         try:
             communicate = edge_tts.Communicate(text, self.voice)
@@ -309,7 +355,9 @@ class EdgeTTSEngine:
             logger.info(
                 "[EdgeTTSEngine] TTS done: TTFB=%.0fms download=%.0fms total=%.0fms "
                 "method=%s text='%s'",
-                ttfb or 0, t_download, t_total,
+                ttfb or 0,
+                t_download,
+                t_total,
                 "stream" if stream_ok else "save_fallback",
                 text[:160],
             )
@@ -345,6 +393,7 @@ class EdgeTTSEngine:
 # PiperTTSEngine — Piper subprocess wrapper (fast, guaranteed fallback)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class PiperTTSEngine:
     """
     Piper TTS subprocess wrapper — fast, lightweight, always-available fallback.
@@ -364,6 +413,10 @@ class PiperTTSEngine:
         self.model_name = _PIPER_MODEL
         self.sample_rate = 22050
         self._py_voice: Optional[Any] = None  # PiperVoice instance (lazy-loaded)
+        # Repeated greetings and fillers are common in a voice session. Keep a
+        # small bounded cache here as callers may use the engine without TTSCache.
+        self._wav_cache: "OrderedDict[str, bytes]" = OrderedDict()
+        self._wav_cache_size = 32
 
         if piper_binary:
             self.piper_binary: Optional[Path] = Path(piper_binary)
@@ -381,9 +434,14 @@ class PiperTTSEngine:
         if _PIPER_PY_AVAILABLE and self.model_path and self.model_path.exists():
             try:
                 self._py_voice = PiperVoice.load(str(self.model_path))
-                logger.info("PiperTTS: Python API voice loaded (model=%s)", self.model_path)
+                logger.info(
+                    "PiperTTS: Python API voice loaded (model=%s)", self.model_path
+                )
             except Exception as e:
-                logger.warning("PiperTTS: PiperVoice.load failed, falling back to subprocess: %s", e)
+                logger.warning(
+                    "PiperTTS: PiperVoice.load failed, falling back to subprocess: %s",
+                    e,
+                )
                 self._py_voice = None
 
     def _find_piper_binary(self) -> Optional[Path]:
@@ -434,16 +492,24 @@ class PiperTTSEngine:
           4. ~/.local/share/piper/voices (older layout, kept for backwards compat)
           5. S211 P4: auto-download from Hugging Face into writable dir if missing
         """
-        try:
+        if TYPE_CHECKING:
             from .resource_path import get_writable_root, get_bundle_root
-        except ImportError:
-            from resource_path import get_writable_root, get_bundle_root
+        else:
+            try:
+                from .resource_path import get_writable_root, get_bundle_root
+            except ImportError:
+                from resource_path import get_writable_root, get_bundle_root
 
         candidates = [
             get_writable_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
             get_bundle_root() / "models" / "tts" / f"{_PIPER_MODEL}.onnx",
             Path.home() / ".local" / "share" / "piper-voices" / f"{_PIPER_MODEL}.onnx",
-            Path.home() / ".local" / "share" / "piper" / "voices" / f"{_PIPER_MODEL}.onnx",
+            Path.home()
+            / ".local"
+            / "share"
+            / "piper"
+            / "voices"
+            / f"{_PIPER_MODEL}.onnx",
         ]
         for candidate in candidates:
             if candidate.exists():
@@ -454,13 +520,17 @@ class PiperTTSEngine:
         # ~63 MB Piper voice so the very first booking call sounds like Sara
         # rather than the macOS `say` system voice (or Windows SAPI default).
         try:
-            try:
+            if TYPE_CHECKING:
                 from .tts_download_manager import TTSDownloadManager
-            except ImportError:
-                from tts_download_manager import TTSDownloadManager
+            else:
+                try:
+                    from .tts_download_manager import TTSDownloadManager
+                except ImportError:
+                    from tts_download_manager import TTSDownloadManager
             logger.info(
                 "[PiperTTSEngine] Piper voice missing — attempting first-run "
-                "download (writable=%s)", get_writable_root() / "models" / "tts",
+                "download (writable=%s)",
+                get_writable_root() / "models" / "tts",
             )
             if TTSDownloadManager.download_piper_model_sync():
                 downloaded = TTSDownloadManager.get_piper_model_path()
@@ -469,7 +539,8 @@ class PiperTTSEngine:
         except Exception as exc:  # network failure, no internet, etc.
             logger.warning(
                 "[PiperTTSEngine] Auto-download failed (%s) — caller will "
-                "fall back to SystemTTS via TTSCache", exc,
+                "fall back to SystemTTS via TTSCache",
+                exc,
             )
 
         # Nothing found and no download possible — return primary writable
@@ -508,15 +579,29 @@ class PiperTTSEngine:
         if len(text) >= 160:
             logger.warning(
                 "[PiperTTSEngine] testo lungo ≥160ch (%d chars): %r…",
-                len(text), text[:50],
+                len(text),
+                text[:50],
             )
+        cached = self._wav_cache.get(text)
+        if cached is not None:
+            self._wav_cache.move_to_end(text)
+            return cached
+
         if self._py_voice is not None:
-            return await asyncio.to_thread(self._synthesize_python, text)
-        return await self._synthesize_subprocess(text)
+            wav = await asyncio.to_thread(self._synthesize_python, text)
+        else:
+            wav = await self._synthesize_subprocess(text)
+
+        self._wav_cache[text] = wav
+        self._wav_cache.move_to_end(text)
+        while len(self._wav_cache) > self._wav_cache_size:
+            self._wav_cache.popitem(last=False)
+        return wav
 
     def _synthesize_python(self, text: str) -> bytes:
         """Run PiperVoice.synthesize_wav in a worker thread → WAV bytes."""
         buf = io.BytesIO()
+        assert self._py_voice is not None
         with wave.open(buf, "wb") as wav_file:
             self._py_voice.synthesize_wav(text, wav_file)
         return buf.getvalue()
@@ -533,8 +618,10 @@ class PiperTTSEngine:
         try:
             process = await asyncio.create_subprocess_exec(
                 str(self.piper_binary),
-                "--model", str(self.model_path),
-                "--output_file", output_path,
+                "--model",
+                str(self.model_path),
+                "--output_file",
+                output_path,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
@@ -563,6 +650,7 @@ class PiperTTSEngine:
 # ═══════════════════════════════════════════════════════════════════
 # Public factory
 # ═══════════════════════════════════════════════════════════════════
+
 
 def create_tts_engine(
     user_pref: TTSMode = TTSMode.AUTO,

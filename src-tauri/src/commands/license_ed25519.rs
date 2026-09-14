@@ -807,9 +807,8 @@ pub async fn activate_license_v1(
     match verify_and_derive_v1(&input)? {
         None => Ok(ActivationResult {
             success: false,
-            message:
-                "Firma licenza non valida. Verifica di aver incollato la licenza corretta."
-                    .to_string(),
+            message: "Firma licenza non valida. Verifica di aver incollato la licenza corretta."
+                .to_string(),
             tier: None,
             expiry_date: None,
         }),
@@ -1269,8 +1268,7 @@ mod activate_v1_tests {
             serde_json::to_string(REAL_PAYLOAD).unwrap(),
             serde_json::to_string(REAL_SIG).unwrap(),
         );
-        let input: ActivateLicenseV1Input =
-            serde_json::from_str(&json).expect("alias JSON parse");
+        let input: ActivateLicenseV1Input = serde_json::from_str(&json).expect("alias JSON parse");
         let license = verify_and_derive_v1(&input)
             .expect("no structural error")
             .expect("valid signature via alias format");

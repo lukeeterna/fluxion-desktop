@@ -1,8 +1,8 @@
 """Tests for GAP-P1-4: Operator gender preference extraction and filtering."""
+
 import sys
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -26,23 +26,37 @@ class TestExtractOperatorGenderPreference:
         assert extract_operator_gender_preference("preferisco femmina") == "F"
 
     def test_femminile(self):
-        assert extract_operator_gender_preference("un operatore femminile per favore") == "F"
+        assert (
+            extract_operator_gender_preference("un operatore femminile per favore")
+            == "F"
+        )
 
     def test_con_operatrice(self):
-        assert extract_operator_gender_preference("vorrei prenotare con un'operatrice") == "F"
+        assert (
+            extract_operator_gender_preference("vorrei prenotare con un'operatrice")
+            == "F"
+        )
 
     def test_con_una_donna(self):
-        assert extract_operator_gender_preference("mi trovo meglio con una donna") == "F"
+        assert (
+            extract_operator_gender_preference("mi trovo meglio con una donna") == "F"
+        )
 
     def test_preferisco_donna(self):
-        assert extract_operator_gender_preference("preferisco una donna se possibile") == "F"
+        assert (
+            extract_operator_gender_preference("preferisco una donna se possibile")
+            == "F"
+        )
 
     # ── Masculine ────────────────────────────────────────────────
     def test_un_uomo(self):
         assert extract_operator_gender_preference("vorrei un uomo") == "M"
 
     def test_uomo_solo(self):
-        assert extract_operator_gender_preference("mi serve un uomo per il trattamento") == "M"
+        assert (
+            extract_operator_gender_preference("mi serve un uomo per il trattamento")
+            == "M"
+        )
 
     def test_maschio(self):
         assert extract_operator_gender_preference("preferirei un maschio") == "M"

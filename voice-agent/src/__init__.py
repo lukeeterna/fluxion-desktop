@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 # FLUXION Voice Agent
 # Italian voice assistant for automatic bookings
 
@@ -34,7 +35,7 @@ from .booking_state_machine import (
 )
 
 # FAQ Retriever (optional - requires sentence-transformers and faiss)
-try:
+if TYPE_CHECKING:
     from .faq_retriever import (
         FAISSFAQRetriever,
         HybridFAQRetriever,
@@ -42,12 +43,22 @@ try:
         RetrievalResult,
         create_faq_retriever,
     )
-    HAS_FAQ_RETRIEVER = True
-except ImportError:
-    HAS_FAQ_RETRIEVER = False
+else:
+    try:
+        from .faq_retriever import (
+            FAISSFAQRetriever,
+            HybridFAQRetriever,
+            FAQEntry,
+            RetrievalResult,
+            create_faq_retriever,
+        )
+
+        HAS_FAQ_RETRIEVER = True
+    except ImportError:
+        HAS_FAQ_RETRIEVER = False
 
 # FAQ Manager (hybrid keyword + semantic retrieval)
-try:
+if TYPE_CHECKING:
     from .faq_manager import (
         FAQManager,
         FAQConfig,
@@ -55,9 +66,19 @@ try:
         create_faq_manager,
         find_keyword_match,
     )
-    HAS_FAQ_MANAGER = True
-except ImportError:
-    HAS_FAQ_MANAGER = False
+else:
+    try:
+        from .faq_manager import (
+            FAQManager,
+            FAQConfig,
+            FAQMatch,
+            create_faq_manager,
+            find_keyword_match,
+        )
+
+        HAS_FAQ_MANAGER = True
+    except ImportError:
+        HAS_FAQ_MANAGER = False
 
 # Sentiment Analysis (Week 3 Day 1-2)
 from .sentiment import (
@@ -99,7 +120,7 @@ from .analytics import (
 )
 
 # VoIP (Week 4)
-try:
+if TYPE_CHECKING:
     from .voip import (
         VoIPManager,
         SIPClient,
@@ -109,12 +130,24 @@ try:
         CallState,
         CallDirection,
     )
-    HAS_VOIP = True
-except ImportError:
-    HAS_VOIP = False
+else:
+    try:
+        from .voip import (
+            VoIPManager,
+            SIPClient,
+            SIPConfig,
+            RTPTransport,
+            CallSession,
+            CallState,
+            CallDirection,
+        )
+
+        HAS_VOIP = True
+    except ImportError:
+        HAS_VOIP = False
 
 # WhatsApp (Week 5)
-try:
+if TYPE_CHECKING:
     from .whatsapp import (
         WhatsAppManager,
         WhatsAppClient,
@@ -126,6 +159,97 @@ try:
         MessageDirection,
         PendingQuestion,
     )
-    HAS_WHATSAPP = True
-except ImportError:
-    HAS_WHATSAPP = False
+else:
+    try:
+        from .whatsapp import (
+            WhatsAppManager,
+            WhatsAppClient,
+            WhatsAppConfig,
+            WhatsAppMessage,
+            WhatsAppRateLimiter,
+            WhatsAppTemplates,
+            ConnectionStatus,
+            MessageDirection,
+            PendingQuestion,
+        )
+
+        HAS_WHATSAPP = True
+    except ImportError:
+        HAS_WHATSAPP = False
+
+__all__ = [
+    "classify_intent",
+    "exact_match_intent",
+    "pattern_based_intent",
+    "normalize_input",
+    "IntentResult",
+    "IntentCategory",
+    "extract_date",
+    "extract_time",
+    "extract_name",
+    "extract_service",
+    "extract_phone",
+    "extract_email",
+    "extract_all",
+    "ExtractedDate",
+    "ExtractedTime",
+    "ExtractedName",
+    "ExtractionResult",
+    "BookingStateMachine",
+    "BookingState",
+    "BookingContext",
+    "StateMachineResult",
+    "FAISSFAQRetriever",
+    "HybridFAQRetriever",
+    "FAQEntry",
+    "RetrievalResult",
+    "create_faq_retriever",
+    "FAQManager",
+    "FAQConfig",
+    "FAQMatch",
+    "create_faq_manager",
+    "find_keyword_match",
+    "SentimentAnalyzer",
+    "Sentiment",
+    "FrustrationLevel",
+    "SentimentResult",
+    "analyze_sentiment",
+    "detect_frustration",
+    "get_analyzer",
+    "RecoveryManager",
+    "RetryConfig",
+    "TimeoutConfig",
+    "RecoveryResult",
+    "CircuitBreaker",
+    "CircuitState",
+    "ErrorCategory",
+    "RecoveryAction",
+    "retry_with_backoff",
+    "retry_sync_with_backoff",
+    "with_timeout",
+    "with_recovery",
+    "get_fallback_response",
+    "get_recovery_manager",
+    "ConversationLogger",
+    "ConversationOutcome",
+    "ConversationTurn",
+    "ConversationSession",
+    "AnalyticsMetrics",
+    "get_logger",
+    "VoIPManager",
+    "SIPClient",
+    "SIPConfig",
+    "RTPTransport",
+    "CallSession",
+    "CallState",
+    "CallDirection",
+    "WhatsAppManager",
+    "WhatsAppClient",
+    "WhatsAppConfig",
+    "WhatsAppMessage",
+    "WhatsAppRateLimiter",
+    "WhatsAppTemplates",
+    "ConnectionStatus",
+    "MessageDirection",
+    "PendingQuestion",
+]

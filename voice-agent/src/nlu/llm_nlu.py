@@ -18,13 +18,15 @@ The LLM naturally handles:
 import time
 import json
 import logging
-import asyncio
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 from .schemas import (
-    NLUResult, NLUEntities, SaraIntent, Sentiment,
-    SARA_NLU_JSON_MODE, SARA_NLU_JSON_INSTRUCTION,
+    NLUResult,
+    NLUEntities,
+    SaraIntent,
+    Sentiment,
+    SARA_NLU_JSON_INSTRUCTION,
 )
 from .providers import ProviderRotation
 from .template_fallback import classify_template, check_profanity
@@ -149,7 +151,11 @@ class LLMNlu:
         # ─── Layer 1: LLM Structured Output ─────────────────────
         if self._providers.has_providers:
             llm_result = await self._call_llm(
-                text, current_state, filled_slots or {}, vertical, services or [],
+                text,
+                current_state,
+                filled_slots or {},
+                vertical,
+                services or [],
             )
             if llm_result is not None:
                 latency = (time.perf_counter() - t0) * 1000
@@ -208,7 +214,9 @@ class LLMNlu:
         }.get(vertical, "attività commerciale")
 
         # Format filled slots
-        slots_str = json.dumps(filled_slots, ensure_ascii=False) if filled_slots else "nessuno"
+        slots_str = (
+            json.dumps(filled_slots, ensure_ascii=False) if filled_slots else "nessuno"
+        )
         services_str = ", ".join(services[:20]) if services else "non specificati"
         today = datetime.now().strftime("%Y-%m-%d (%A)")
 
@@ -237,6 +245,7 @@ class LLMNlu:
 # ─────────────────────────────────────────────────────────────────
 # Factory
 # ─────────────────────────────────────────────────────────────────
+
 
 def create_llm_nlu() -> LLMNlu:
     """Create LLM NLU engine with default provider rotation."""

@@ -17,6 +17,7 @@ from src.analytics import ConversationTurn, ConversationLogger
 # Test ConversationTurn Dataclass
 # =============================================================================
 
+
 class TestConversationTurnFSMState:
     """Test that ConversationTurn has the fsm_state field."""
 
@@ -45,6 +46,7 @@ class TestConversationTurnFSMState:
 # =============================================================================
 # Test DB Schema
 # =============================================================================
+
 
 class TestAnalyticsDBSchema:
     """Test that the conversation_turns table has fsm_state column."""
@@ -77,6 +79,7 @@ class TestAnalyticsDBSchema:
 # Test Persistence
 # =============================================================================
 
+
 class TestFSMStatePersistence:
     """Test that fsm_state is correctly saved and read from DB."""
 
@@ -95,13 +98,12 @@ class TestFSMStatePersistence:
             response="Certo! Per quale servizio?",
             latency_ms=50.0,
             layer_used="L2_fsm",
-            fsm_state="waiting_service"
+            fsm_state="waiting_service",
         )
 
         with logger._get_connection() as conn:
             row = conn.execute(
-                "SELECT fsm_state FROM conversation_turns WHERE id = ?",
-                (turn_id,)
+                "SELECT fsm_state FROM conversation_turns WHERE id = ?", (turn_id,)
             ).fetchone()
 
         assert row is not None
@@ -116,13 +118,12 @@ class TestFSMStatePersistence:
             intent="CORTESIA",
             response="Buongiorno!",
             latency_ms=5.0,
-            layer_used="L1_intent"
+            layer_used="L1_intent",
         )
 
         with logger._get_connection() as conn:
             row = conn.execute(
-                "SELECT fsm_state FROM conversation_turns WHERE id = ?",
-                (turn_id,)
+                "SELECT fsm_state FROM conversation_turns WHERE id = ?", (turn_id,)
             ).fetchone()
 
         assert row is not None
@@ -142,7 +143,7 @@ class TestFSMStatePersistence:
             response="Confermo domani alle 15?",
             latency_ms=30.0,
             layer_used="L2_fsm",
-            fsm_state="confirming"
+            fsm_state="confirming",
         )
         turn_id = logger.log_turn(turn)
 
@@ -164,15 +165,14 @@ class TestFSMStatePersistence:
                 response=f"response {i}",
                 latency_ms=10.0,
                 layer_used="L2_fsm",
-                fsm_state=state
+                fsm_state=state,
             )
             turn_ids.append(tid)
 
         with logger._get_connection() as conn:
             for tid, expected_state in zip(turn_ids, states):
                 row = conn.execute(
-                    "SELECT fsm_state FROM conversation_turns WHERE id = ?",
-                    (tid,)
+                    "SELECT fsm_state FROM conversation_turns WHERE id = ?", (tid,)
                 ).fetchone()
                 assert row["fsm_state"] == expected_state
 
@@ -189,7 +189,7 @@ class TestFSMStatePersistence:
                 response="test",
                 latency_ms=10.0,
                 layer_used="L2_fsm",
-                fsm_state="waiting_service"
+                fsm_state="waiting_service",
             )
         logger.log_turn(
             session_id,
@@ -198,13 +198,13 @@ class TestFSMStatePersistence:
             response="test",
             latency_ms=10.0,
             layer_used="L2_fsm",
-            fsm_state="confirming"
+            fsm_state="confirming",
         )
 
         with logger._get_connection() as conn:
             count = conn.execute(
                 "SELECT COUNT(*) FROM conversation_turns WHERE fsm_state = ?",
-                ("waiting_service",)
+                ("waiting_service",),
             ).fetchone()[0]
 
         assert count == 2
@@ -213,6 +213,7 @@ class TestFSMStatePersistence:
 # =============================================================================
 # Test Migration (ALTER TABLE on existing DB)
 # =============================================================================
+
 
 class TestFSMStateMigration:
     """Test that existing DBs without fsm_state get the column added."""
@@ -263,7 +264,7 @@ class TestFSMStateMigration:
             conn.close()
 
             # Now open with ConversationLogger — should add fsm_state
-            logger = ConversationLogger(db_path=db_path)
+            ConversationLogger(db_path=db_path)
 
             # Verify column exists
             conn2 = sqlite3.connect(db_path)

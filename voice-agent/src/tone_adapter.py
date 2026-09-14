@@ -16,14 +16,13 @@ Design:
 """
 
 import re
-import random
 from enum import Enum
 from typing import List, Optional
 
 
 class ToneMode(str, Enum):
-    EMPATHETIC = "empathetic"      # For frustrated callers
-    NEUTRAL = "neutral"            # Default
+    EMPATHETIC = "empathetic"  # For frustrated callers
+    NEUTRAL = "neutral"  # Default
     ENTHUSIASTIC = "enthusiastic"  # For happy callers
 
 
@@ -46,22 +45,22 @@ _ENTHUSIASTIC_PREFIXES: List[str] = [
 
 # Filler words to strip in empathetic mode (case-insensitive, at sentence start)
 _FILLER_PATTERNS: List[re.Pattern] = [
-    re.compile(r'^Allora,?\s*', re.IGNORECASE),
-    re.compile(r'^Dunque,?\s*', re.IGNORECASE),
-    re.compile(r'^Ecco,?\s*', re.IGNORECASE),
-    re.compile(r'^Bene,?\s*', re.IGNORECASE),
+    re.compile(r"^Allora,?\s*", re.IGNORECASE),
+    re.compile(r"^Dunque,?\s*", re.IGNORECASE),
+    re.compile(r"^Ecco,?\s*", re.IGNORECASE),
+    re.compile(r"^Bene,?\s*", re.IGNORECASE),
 ]
 
 # Backchannel phrases to suppress in empathetic mode
 _BACKCHANNEL_PATTERNS: List[re.Pattern] = [
-    re.compile(r'^Perfetto!\s*', re.IGNORECASE),
-    re.compile(r'^Grande!\s*', re.IGNORECASE),
-    re.compile(r'^Fantastico!\s*', re.IGNORECASE),
-    re.compile(r'^Benissimo!\s*', re.IGNORECASE),
-    re.compile(r'^Ottimo!\s*', re.IGNORECASE),
-    re.compile(r'^Che bello!\s*', re.IGNORECASE),
-    re.compile(r'^Splendido!\s*', re.IGNORECASE),
-    re.compile(r'^Meraviglioso!\s*', re.IGNORECASE),
+    re.compile(r"^Perfetto!\s*", re.IGNORECASE),
+    re.compile(r"^Grande!\s*", re.IGNORECASE),
+    re.compile(r"^Fantastico!\s*", re.IGNORECASE),
+    re.compile(r"^Benissimo!\s*", re.IGNORECASE),
+    re.compile(r"^Ottimo!\s*", re.IGNORECASE),
+    re.compile(r"^Che bello!\s*", re.IGNORECASE),
+    re.compile(r"^Splendido!\s*", re.IGNORECASE),
+    re.compile(r"^Meraviglioso!\s*", re.IGNORECASE),
 ]
 
 
@@ -97,7 +96,6 @@ class ToneAdapter:
         Returns:
             The new ToneMode after this update.
         """
-        previous_tone = self._current_tone
 
         # Frustrated/negative -> EMPATHETIC (sticky until positive)
         if sentiment == "negative" or frustration_level >= 2:
@@ -157,17 +155,17 @@ class ToneAdapter:
 
         # 1. Strip backchannel exclamations at the start
         for pattern in _BACKCHANNEL_PATTERNS:
-            text = pattern.sub('', text)
+            text = pattern.sub("", text)
 
         # 2. Strip filler words at the start
         for pattern in _FILLER_PATTERNS:
-            text = pattern.sub('', text)
+            text = pattern.sub("", text)
 
         # 3. Strip trailing exclamation marks (replace with periods)
         # But preserve "?" for questions
-        text = re.sub(r'!(\s|$)', r'.\1', text)
+        text = re.sub(r"!(\s|$)", r".\1", text)
         # Clean up double periods
-        text = text.replace('..', '.')
+        text = text.replace("..", ".")
 
         # 4. Re-capitalize first letter after stripping
         text = text.strip()
@@ -176,7 +174,9 @@ class ToneAdapter:
 
         # 5. Add empathy prefix (rotate through pool)
         if text:
-            prefix = _EMPATHY_PREFIXES[self._empathy_prefix_index % len(_EMPATHY_PREFIXES)]
+            prefix = _EMPATHY_PREFIXES[
+                self._empathy_prefix_index % len(_EMPATHY_PREFIXES)
+            ]
             self._empathy_prefix_index += 1
             text = f"{prefix} {text}"
 
@@ -190,15 +190,22 @@ class ToneAdapter:
         if self._enthusiastic_prefix_index % 2 == 0 and text:
             # Don't add prefix if the response already starts with an exclamation
             first_sentence_end = min(
-                text.find('.') if text.find('.') > 0 else len(text),
-                text.find('!') if text.find('!') > 0 else len(text),
-                text.find('?') if text.find('?') > 0 else len(text),
+                text.find(".") if text.find(".") > 0 else len(text),
+                text.find("!") if text.find("!") > 0 else len(text),
+                text.find("?") if text.find("?") > 0 else len(text),
             )
             first_part = text[:first_sentence_end].lower()
             # Skip if already enthusiastic
             already_enthusiastic = any(
                 kw in first_part
-                for kw in ["fantastico", "ottimo", "bello", "benissimo", "splendido", "grande"]
+                for kw in [
+                    "fantastico",
+                    "ottimo",
+                    "bello",
+                    "benissimo",
+                    "splendido",
+                    "grande",
+                ]
             )
             if not already_enthusiastic:
                 prefix = _ENTHUSIASTIC_PREFIXES[

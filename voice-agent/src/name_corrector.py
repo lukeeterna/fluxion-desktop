@@ -14,6 +14,7 @@ Layer 2 — Phonetic Fast-Path (1-5ms):
 
 Dipendenza opzionale: pip install jellyfish
 """
+
 import re
 import sqlite3
 import logging
@@ -24,9 +25,22 @@ logger = logging.getLogger(__name__)
 
 # Prefissi nobiliari/geografici italiani da ignorare nel confronto fonico
 _NOBLE_PREFIXES = {
-    'de', 'di', 'del', 'della', 'degli', 'dei',
-    'lo', 'la', 'le', "d", 'da', 'dall', 'dell',
-    'al', 'il', 'un'
+    "de",
+    "di",
+    "del",
+    "della",
+    "degli",
+    "dei",
+    "lo",
+    "la",
+    "le",
+    "d",
+    "da",
+    "dall",
+    "dell",
+    "al",
+    "il",
+    "un",
 }
 
 # S205 BUG-006: Top Italian surnames (ISTAT sample) used as STT bias and
@@ -36,22 +50,106 @@ _NOBLE_PREFIXES = {
 # Kept under ~700 chars so it fits the Whisper prompt budget alongside DB
 # client names. Names chosen for phonetic diversity, not pure frequency.
 TOP_ITALIAN_SURNAMES = [
-    "Rossi", "Russo", "Ferrari", "Esposito", "Bianchi", "Romano", "Colombo",
-    "Ricci", "Marino", "Greco", "Bruno", "Gallo", "Conti", "De Luca",
-    "Mancini", "Costa", "Giordano", "Rizzo", "Lombardi", "Moretti",
-    "Barbieri", "Fontana", "Santoro", "Mariani", "Rinaldi", "Caruso",
-    "Ferrara", "Galli", "Martini", "Leone", "Longo", "Gentile", "Martinelli",
-    "Vitale", "Lombardo", "Serra", "Coppola", "De Santis", "D'Angelo",
-    "Marchetti", "Parisi", "Villa", "Conte", "Ferraro", "Ferri", "Fabbri",
-    "Bianco", "Marini", "Grasso", "Valentini", "Messina", "Sala", "De Angelis",
-    "Gatti", "Pellegrini", "Palumbo", "Sanna", "Farina", "Rizzi", "Monti",
-    "Cattaneo", "Morelli", "Amato", "Silvestri", "Mazza", "Testa", "Grassi",
-    "Pellegrino", "Carbone", "Giuliani", "Benedetti", "Barone", "Rossetti",
-    "Caputo", "Montanari", "Guerra", "Palmieri", "Bernardi", "Martino",
-    "Fiore", "De Rosa", "Marrone", "Marra", "Marotta", "Marchi", "Marchesi",
-    "Marsico", "Mariotti", "Mazzola", "Mazzoni", "Manzoni", "Pastore",
-    "Sorrentino", "Basile", "Vitali", "Battaglia", "Donati", "Ruggiero",
-    "Castelli", "Riva",
+    "Rossi",
+    "Russo",
+    "Ferrari",
+    "Esposito",
+    "Bianchi",
+    "Romano",
+    "Colombo",
+    "Ricci",
+    "Marino",
+    "Greco",
+    "Bruno",
+    "Gallo",
+    "Conti",
+    "De Luca",
+    "Mancini",
+    "Costa",
+    "Giordano",
+    "Rizzo",
+    "Lombardi",
+    "Moretti",
+    "Barbieri",
+    "Fontana",
+    "Santoro",
+    "Mariani",
+    "Rinaldi",
+    "Caruso",
+    "Ferrara",
+    "Galli",
+    "Martini",
+    "Leone",
+    "Longo",
+    "Gentile",
+    "Martinelli",
+    "Vitale",
+    "Lombardo",
+    "Serra",
+    "Coppola",
+    "De Santis",
+    "D'Angelo",
+    "Marchetti",
+    "Parisi",
+    "Villa",
+    "Conte",
+    "Ferraro",
+    "Ferri",
+    "Fabbri",
+    "Bianco",
+    "Marini",
+    "Grasso",
+    "Valentini",
+    "Messina",
+    "Sala",
+    "De Angelis",
+    "Gatti",
+    "Pellegrini",
+    "Palumbo",
+    "Sanna",
+    "Farina",
+    "Rizzi",
+    "Monti",
+    "Cattaneo",
+    "Morelli",
+    "Amato",
+    "Silvestri",
+    "Mazza",
+    "Testa",
+    "Grassi",
+    "Pellegrino",
+    "Carbone",
+    "Giuliani",
+    "Benedetti",
+    "Barone",
+    "Rossetti",
+    "Caputo",
+    "Montanari",
+    "Guerra",
+    "Palmieri",
+    "Bernardi",
+    "Martino",
+    "Fiore",
+    "De Rosa",
+    "Marrone",
+    "Marra",
+    "Marotta",
+    "Marchi",
+    "Marchesi",
+    "Marsico",
+    "Mariotti",
+    "Mazzola",
+    "Mazzoni",
+    "Manzoni",
+    "Pastore",
+    "Sorrentino",
+    "Basile",
+    "Vitali",
+    "Battaglia",
+    "Donati",
+    "Ruggiero",
+    "Castelli",
+    "Riva",
 ]
 
 
@@ -75,21 +173,27 @@ def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
             "SELECT name FROM sqlite_master WHERE type='table' AND name='appuntamenti'"
         ).fetchone()
         if apt_check:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT c.cognome || ' ' || c.nome AS full_name, COUNT(a.id) AS freq
                 FROM clienti c
                 LEFT JOIN appuntamenti a ON a.cliente_id = c.id AND a.data_ora_inizio >= ?
                 GROUP BY c.id
                 ORDER BY freq DESC
                 LIMIT ?
-            """, (cutoff, limit))
+            """,
+                (cutoff, limit),
+            )
         else:
-            cursor = conn.execute("""
+            cursor = conn.execute(
+                """
                 SELECT cognome || ' ' || nome AS full_name
                 FROM clienti
                 ORDER BY created_at DESC
                 LIMIT ?
-            """, (limit,))
+            """,
+                (limit,),
+            )
         names = [row[0] for row in cursor.fetchall() if row[0] and row[0].strip()]
         conn.close()
         return names
@@ -98,9 +202,9 @@ def get_frequent_client_names(db_path: str, limit: int = 40) -> List[str]:
         return []
 
 
-def build_whisper_prompt(client_names: List[str],
-                        business_owner: str = "",
-                        max_chars: int = 800) -> str:
+def build_whisper_prompt(
+    client_names: List[str], business_owner: str = "", max_chars: int = 800
+) -> str:
     """
     S140: Costruisce prompt ottimale per Groq Whisper (max ~224 token = ~800 char).
 
@@ -163,8 +267,11 @@ class STTNameCorrector:
 
         try:
             import jellyfish  # noqa: F401
+
             self._jellyfish_ok = True
-            logger.info("[NameCorrector] jellyfish disponibile — phonetic fast-path attivo")
+            logger.info(
+                "[NameCorrector] jellyfish disponibile — phonetic fast-path attivo"
+            )
         except ImportError:
             logger.warning(
                 "[NameCorrector] jellyfish non trovato — phonetic fast-path disabilitato. "
@@ -178,7 +285,9 @@ class STTNameCorrector:
             self._names = get_frequent_client_names(self.db_path)
             self._cache_ts = now
             if self._names:
-                logger.debug(f"[NameCorrector] Cache aggiornata: {len(self._names)} clienti")
+                logger.debug(
+                    f"[NameCorrector] Cache aggiornata: {len(self._names)} clienti"
+                )
 
     def get_prompt(self, fsm_state: Optional[str] = None) -> str:
         """Layer 1 — Restituisce prompt STT aggiornato con lista clienti.
@@ -189,7 +298,10 @@ class STTNameCorrector:
         as more frequent first names ("Marco").
         """
         self._refresh_cache()
-        if fsm_state and fsm_state.upper() in {"WAITING_SURNAME", "REGISTERING_SURNAME"}:
+        if fsm_state and fsm_state.upper() in {
+            "WAITING_SURNAME",
+            "REGISTERING_SURNAME",
+        }:
             # Merge DB names + surname lexicon (DB first → higher recency weight)
             merged = list(self._names) + TOP_ITALIAN_SURNAMES
             return build_whisper_prompt(merged)
@@ -209,7 +321,10 @@ class STTNameCorrector:
 
         # Build the candidate name pool for this turn
         candidate_pool: List[str] = list(self._names)
-        if fsm_state and fsm_state.upper() in {"WAITING_SURNAME", "REGISTERING_SURNAME"}:
+        if fsm_state and fsm_state.upper() in {
+            "WAITING_SURNAME",
+            "REGISTERING_SURNAME",
+        }:
             candidate_pool.extend(TOP_ITALIAN_SURNAMES)
         if not candidate_pool:
             return transcript

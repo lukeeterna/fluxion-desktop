@@ -15,13 +15,8 @@ Run on iMac for full Silero integration tests.
 """
 
 import sys
-import os
-import asyncio
-import time
 import json
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
-from dataclasses import dataclass, field
-from typing import Optional
+from unittest.mock import AsyncMock, MagicMock
 from pathlib import Path
 
 # Add both project root and src/ to path (for vad subpackage)
@@ -29,16 +24,19 @@ _ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(_ROOT))
 sys.path.insert(0, str(_ROOT / "src"))
 
-import pytest
+import pytest  # noqa: E402
 
 # Skip tests that require the vad package (ONNX + Silero model) if not available
 try:
     from vad import FluxionVAD, VADConfig  # noqa: F401
+
     HAS_VAD = True
 except ImportError:
     HAS_VAD = False
 
-requires_vad = pytest.mark.skipif(not HAS_VAD, reason="vad package not available (run on iMac)")
+requires_vad = pytest.mark.skipif(
+    not HAS_VAD, reason="vad package not available (run on iMac)"
+)
 
 # ─────────────────────────────────────────────────────────────
 # Fixtures & Helpers
@@ -50,26 +48,27 @@ CHUNK_SAMPLES = 512  # Silero chunk size
 
 def make_pcm_silence(duration_ms: int = 500) -> bytes:
     """Generate silence PCM bytes."""
-    import struct
     samples = int(SAMPLE_RATE * duration_ms / 1000)
-    return b'\x00\x00' * samples
+    return b"\x00\x00" * samples
 
 
 def make_pcm_speech(duration_ms: int = 1000, amplitude: int = 8000) -> bytes:
     """Generate synthetic speech-like PCM (sine wave with amplitude)."""
     import math
+
     samples = int(SAMPLE_RATE * duration_ms / 1000)
     result = bytearray()
     freq = 440  # Hz
     for i in range(samples):
         value = int(amplitude * math.sin(2 * math.pi * freq * i / SAMPLE_RATE))
-        result += value.to_bytes(2, byteorder='little', signed=True)
+        result += value.to_bytes(2, byteorder="little", signed=True)
     return bytes(result)
 
 
 # ─────────────────────────────────────────────────────────────
 # T1 — VAD Session: is_tts_playing flag
 # ─────────────────────────────────────────────────────────────
+
 
 @requires_vad
 class TestVADSessionTTSFlag:
@@ -82,7 +81,9 @@ class TestVADSessionTTSFlag:
         mock_vad = MagicMock()
         session = VADSession(session_id="test_001", vad=mock_vad)
 
-        assert hasattr(session, 'is_tts_playing'), "VADSession missing is_tts_playing field"
+        assert hasattr(session, "is_tts_playing"), (
+            "VADSession missing is_tts_playing field"
+        )
         assert session.is_tts_playing is False, "is_tts_playing should default to False"
 
     def test_vad_session_tts_flag_mutable(self):
@@ -102,6 +103,7 @@ class TestVADSessionTTSFlag:
 # ─────────────────────────────────────────────────────────────
 # T2 — VAD Chunk Handler: echo suppression during TTS
 # ─────────────────────────────────────────────────────────────
+
 
 @requires_vad
 class TestVADEchoSuppression:
@@ -130,18 +132,21 @@ class TestVADEchoSuppression:
 
         # Mock aiohttp request
         request = MagicMock()
-        request.json = AsyncMock(return_value={
-            "session_id": "test_echo",
-            "audio_hex": make_pcm_speech(100).hex()
-        })
+        request.json = AsyncMock(
+            return_value={
+                "session_id": "test_echo",
+                "audio_hex": make_pcm_speech(100).hex(),
+            }
+        )
 
-        from aiohttp.web import Response
         response = await handler.vad_chunk_handler(request)
         data = json.loads(response.body)
 
         assert data["success"] is True
         assert data["tts_suppressed"] is True
-        assert data["turn_ready"] is False, "turn_ready must be False when TTS is playing"
+        assert data["turn_ready"] is False, (
+            "turn_ready must be False when TTS is playing"
+        )
 
     @pytest.mark.asyncio
     async def test_chunk_not_suppressed_when_tts_off(self):
@@ -164,10 +169,12 @@ class TestVADEchoSuppression:
         handler._sessions["test_noecho"] = session
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={
-            "session_id": "test_noecho",
-            "audio_hex": make_pcm_silence(100).hex()
-        })
+        request.json = AsyncMock(
+            return_value={
+                "session_id": "test_noecho",
+                "audio_hex": make_pcm_silence(100).hex(),
+            }
+        )
 
         response = await handler.vad_chunk_handler(request)
         data = json.loads(response.body)
@@ -181,6 +188,7 @@ class TestVADEchoSuppression:
 # ─────────────────────────────────────────────────────────────
 # T3 — VAD Speaking Endpoint
 # ─────────────────────────────────────────────────────────────
+
 
 @requires_vad
 class TestVADSpeakingEndpoint:
@@ -198,7 +206,9 @@ class TestVADSpeakingEndpoint:
         handler._sessions["spk_001"] = session
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={"session_id": "spk_001", "speaking": True})
+        request.json = AsyncMock(
+            return_value={"session_id": "spk_001", "speaking": True}
+        )
 
         response = await handler.vad_speaking_handler(request)
         data = json.loads(response.body)
@@ -220,7 +230,9 @@ class TestVADSpeakingEndpoint:
         handler._sessions["spk_002"] = session
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={"session_id": "spk_002", "speaking": False})
+        request.json = AsyncMock(
+            return_value={"session_id": "spk_002", "speaking": False}
+        )
 
         response = await handler.vad_speaking_handler(request)
         data = json.loads(response.body)
@@ -238,7 +250,9 @@ class TestVADSpeakingEndpoint:
         handler = VADHTTPHandler(MagicMock(), MagicMock())
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={"session_id": "nonexistent", "speaking": True})
+        request.json = AsyncMock(
+            return_value={"session_id": "nonexistent", "speaking": True}
+        )
 
         response = await handler.vad_speaking_handler(request)
         data = json.loads(response.body)
@@ -250,6 +264,7 @@ class TestVADSpeakingEndpoint:
 # ─────────────────────────────────────────────────────────────
 # T4 — Silero Hidden State Reset Between Turns
 # ─────────────────────────────────────────────────────────────
+
 
 @requires_vad
 class TestSileroResetBetweenTurns:
@@ -276,16 +291,21 @@ class TestSileroResetBetweenTurns:
         handler._sessions["reset_001"] = session
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={
-            "session_id": "reset_001",
-            "audio_hex": make_pcm_silence(32).hex()
-        })
+        request.json = AsyncMock(
+            return_value={
+                "session_id": "reset_001",
+                "audio_hex": make_pcm_silence(32).hex(),
+            }
+        )
 
         response = await handler.vad_chunk_handler(request)
         data = json.loads(response.body)
 
         assert data["turn_ready"] is True, "Expected turn_ready after end_of_speech"
-        mock_vad.reset.assert_called_once(), "vad.reset() must be called after turn completes"
+        (
+            mock_vad.reset.assert_called_once(),
+            "vad.reset() must be called after turn completes",
+        )
 
     @pytest.mark.asyncio
     async def test_vad_reset_not_called_on_start_of_speech(self):
@@ -305,18 +325,24 @@ class TestSileroResetBetweenTurns:
         handler._sessions["reset_002"] = session
 
         request = MagicMock()
-        request.json = AsyncMock(return_value={
-            "session_id": "reset_002",
-            "audio_hex": make_pcm_speech(32).hex()
-        })
+        request.json = AsyncMock(
+            return_value={
+                "session_id": "reset_002",
+                "audio_hex": make_pcm_speech(32).hex(),
+            }
+        )
 
         await handler.vad_chunk_handler(request)
-        mock_vad.reset.assert_not_called(), "vad.reset() must NOT be called on start_of_speech"
+        (
+            mock_vad.reset.assert_not_called(),
+            "vad.reset() must NOT be called on start_of_speech",
+        )
 
 
 # ─────────────────────────────────────────────────────────────
 # T5 — Open-Mic Loop: should_exit terminates loop
 # ─────────────────────────────────────────────────────────────
+
 
 class TestOpenMicLoopExit:
     """Test that the open-mic loop terminates correctly on should_exit."""
@@ -326,6 +352,7 @@ class TestOpenMicLoopExit:
         Verify the loop exit condition: openMicActiveRef.current = False on should_exit.
         This is a pure logic test (no browser/React needed).
         """
+
         # Simulated loop state
         class LoopState:
             open_mic_active = True
@@ -364,11 +391,13 @@ class TestOpenMicLoopExit:
                     active = False
                 i += 1
 
-        simulate_loop([
-            {"should_exit": False},
-            {"should_exit": False},
-            {"should_exit": True},
-        ])
+        simulate_loop(
+            [
+                {"should_exit": False},
+                {"should_exit": False},
+                {"should_exit": True},
+            ]
+        )
 
         assert len(results) == 3, "Loop should process exactly 3 turns before exiting"
         assert results == ["processed_0", "processed_1", "processed_2"]
