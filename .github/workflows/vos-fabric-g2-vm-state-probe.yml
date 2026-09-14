@@ -1,0 +1,100 @@
+name: VOS Fabric G2 VM State Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-vm-state-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-vm-state-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    steps:
+      - name: Inspect Multipass and vos-worker state read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE="$RUNNER_TEMP/vos-g2-vm-state-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail() { printf 'G2_VM_STATE_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          production_green() {
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION "Guardian/FLUXION/NAS green"
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          echo "MULTIPASS_BINARY=$MP"
+          "$MP" version 2>/dev/null | head -20 || true
+          printf 'MULTIPASS_DRIVER='; "$MP" get local.driver 2>/dev/null || true
+          echo '--- MULTIPASS LIST ---'
+          "$MP" list 2>&1 || true
+          echo '--- MULTIPASS LIST JSON ---'
+          "$MP" list --format json 2>&1 || true
+          echo '--- MULTIPASS DAEMON ---'
+          launchctl print system/com.canonical.multipassd 2>/dev/null | grep -E '^[[:space:]]*(state|pid|path) =' | head -20 || true
+          ps -axo pid=,ppid=,comm= 2>/dev/null | grep -E 'multipass|qemu-system' || true
+
+          if "$MP" info vos-worker >/dev/null 2>&1; then
+            echo 'VOS_WORKER_PRESENT=1'
+            "$MP" info vos-worker 2>&1 | sed -n '1,80p'
+            owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>/dev/null || true)"
+            echo "VOS_WORKER_OWNER=${owner:-MISSING}"
+            [ "$owner" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER_MISMATCH
+            auth_rc=0
+            "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
+            echo "VOS_WORKER_AUTH_STATUS_RC=$auth_rc"
+          else
+            echo 'VOS_WORKER_PRESENT=0'
+          fi
+
+          echo '--- ACCESSIBLE MULTIPASS STORAGE HINTS ---'
+          for root in "$HOME/Library/Application Support/multipassd" "/Library/Application Support/com.canonical.multipass" "/var/root/Library/Application Support/multipassd"; do
+            if [ -e "$root" ]; then
+              echo "STORAGE_ROOT=$root"
+              find "$root" -maxdepth 7 -iname '*vos-worker*' -print 2>/dev/null | head -50 || true
+            fi
+          done
+          echo '--- RECOVER CAPABILITY ---'
+          "$MP" recover --help 2>&1 | sed -n '1,80p' || true
+
+          production_green || fail POST_PRODUCTION_REGRESSION
+          pass POST_PRODUCTION "Guardian/FLUXION/NAS green"
+          echo 'VM_STATE_PROBE_READ_ONLY=1'
+          REMOTE
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-g2-vm-state-probe.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-vm-state-probe.sh; rc=$?; rm -f /tmp/vos-g2-vm-state-probe.sh; exit $rc'
