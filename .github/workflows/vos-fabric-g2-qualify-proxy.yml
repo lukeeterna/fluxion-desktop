@@ -233,13 +233,12 @@ jobs:
           msg="$work/tool.txt"
           tm="$work/tool.time"
           prompt="$work/tool.prompt"
-          printf '%s\n' 'Use the shell tool to run exactly: cat ./probe.txt . Do not infer or skip the command. After the command succeeds, reply exactly: VOS_FABRIC_TOOL_EXECUTION=OK' > "$prompt"
+          printf '%s\n' 'Use the shell tool to run exactly: cat ./probe.txt . Do not infer or skip the command. After the command succeeds, report that the tool execution completed.' > "$prompt"
           /usr/bin/time -v -o "$tm" \
             codex exec --json --sandbox read-only --model "$model" \
               --skip-git-repo-check --cd "$work" \
               --output-last-message "$msg" - \
               < "$prompt" > "$json"
-          [ "$(cat "$msg")" = 'VOS_FABRIC_TOOL_EXECUTION=OK' ] || { echo 'G2_GUEST_BLOCKED=TOOL_LAST_MESSAGE'; exit 2; }
           python3 - "$json" "$nonce" <<'PY'
           import json, sys
           path, nonce = sys.argv[1:]
@@ -263,7 +262,9 @@ jobs:
           if not (ok and turn_done):
               raise SystemExit(2)
           PY
+          [ -s "$msg" ] || { echo 'G2_GUEST_BLOCKED=EMPTY_TOOL_LAST_MESSAGE'; exit 2; }
           echo "CODEX_TOOL_EVENTS_SHA256=$(sha256sum "$json" | awk '{print $1}')"
+          echo "CODEX_TOOL_LAST_MESSAGE_SHA256=$(sha256sum "$msg" | awk '{print $1}')"
           echo 'CODEX_TOOL_EXECUTION=GREEN'
           awk -F: '/Maximum resident set size/ {gsub(/^[ \t]+/,"",$2); print "CODEX_TOOL_MAX_RSS_KIB=" $2}' "$tm"
           awk -F: '/User time \(seconds\)/ {gsub(/^[ \t]+/,"",$2); print "CODEX_TOOL_USER_TIME_SEC=" $2}' "$tm"
