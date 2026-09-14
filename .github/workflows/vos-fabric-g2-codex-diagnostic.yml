@@ -23,7 +23,7 @@ jobs:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
     steps:
-      - name: Diagnose Multipass and one authenticated Codex call
+      - name: Diagnose one authenticated Codex tool call
         shell: bash
         run: |
           set -euo pipefail
@@ -37,8 +37,7 @@ jobs:
           ALLOWED_SOURCE = "192.168.64.3"
           class Handler(socketserver.StreamRequestHandler):
               def handle(self):
-                  if self.client_address[0] != ALLOWED_SOURCE:
-                      return
+                  if self.client_address[0] != ALLOWED_SOURCE: return
                   self.connection.settimeout(20)
                   line = self.rfile.readline(8192).decode("ascii", "replace").strip()
                   parts = line.split()
@@ -90,27 +89,8 @@ jobs:
             if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
           done
           [ -n "$MP" ]
-          echo "MULTIPASS_VERSION=$($MP version | head -1)"
-          "$MP" list || true
-
-          # Avoid `multipass info`: 1.12 may itself block while sampling /proc/loadavg.
-          # Probe a trivial guest command through the control plane with a hard local timeout.
-          /usr/bin/python3 - "$MP" <<'PY'
-          import subprocess, sys
-          mp = sys.argv[1]
-          cmd = [mp, 'exec', 'vos-worker', '--', 'sh', '-lc',
-                 "printf 'GUEST_PING=OK\\n'; printf 'OWNER='; cat /var/lib/vos-fabric/worker-owner; printf 'LOAD='; cat /proc/loadavg; printf 'MEM='; awk '/MemAvailable:/ {print $2}' /proc/meminfo; pgrep -af 'codex|vos-g2' || true"]
-          try:
-              p = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=12)
-          except subprocess.TimeoutExpired:
-              print('MULTIPASS_EXEC=TIMEOUT')
-              raise SystemExit(72)
-          print('MULTIPASS_EXEC_RC=%d' % p.returncode)
-          print(p.stdout, end='')
-          if p.stderr:
-              print('MULTIPASS_EXEC_STDERR=' + p.stderr[-1200:].replace('\n',' | '))
-          raise SystemExit(p.returncode)
-          PY
+          "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host
+          echo "CODE_MODE_HOST_SHA256=$($MP exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk '{print $1}')"
 
           proxy_pid=""
           cleanup() {
@@ -136,36 +116,52 @@ jobs:
           auth_rc=0; timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
           echo "CODEX_AUTH_RC=$auth_rc"; [ "$auth_rc" -eq 0 ] || exit 20
           work="$(mktemp -d -t vos-g2-diag.XXXXXX)"; trap 'rm -rf "$work"' EXIT
-          printf '%s\n' 'Do not execute commands and do not modify files. Reply exactly: VOS_FABRIC_PING=OK' > "$work/prompt"
+          nonce="VOS_TOOL_NONCE_$(python3 - <<'PY'
+          import secrets
+          print(secrets.token_hex(12))
+          PY
+          )"
+          printf '%s\n' "$nonce" > "$work/probe.txt"
+          printf '%s\n' 'Use the shell/exec tool to run: cat ./probe.txt . You must execute the command. Then report completion.' > "$work/prompt"
           rc=0
           timeout 90s codex exec --json --sandbox read-only --model "$VOS_CODEX_MODEL" \
             --skip-git-repo-check --cd "$work" --output-last-message "$work/last.txt" - \
             < "$work/prompt" > "$work/events.jsonl" 2> "$work/stderr.txt" || rc=$?
           echo "CODEX_EXEC_RC=$rc"
-          python3 - "$work/events.jsonl" "$work/stderr.txt" <<'PY'
-          import json, re, sys
+          python3 - "$work/events.jsonl" "$work/stderr.txt" "$nonce" <<'PY'
+          import hashlib, json, re, sys
+          events, stderr, nonce = sys.argv[1:]
           def clean(s):
               s = re.sub(r'(?i)(bearer|token|authorization)[=: ]+[^ ,;]+', r'\1=<redacted>', s)
               s = re.sub(r'\b[A-Za-z0-9_-]{48,}\b', '<redacted-long>', s)
-              return s[:700]
-          events, stderr = sys.argv[1:]; counts={}; messages=[]
+              return s[:500]
+          counts={}; diag=[]
           try:
               for raw in open(events, encoding='utf-8'):
                   raw=raw.strip()
                   if not raw: continue
                   try: obj=json.loads(raw)
-                  except Exception: messages.append('NON_JSON_EVENT='+clean(raw)); continue
+                  except Exception:
+                      diag.append('NON_JSON_EVENT'); continue
                   typ=str(obj.get('type','UNKNOWN')); counts[typ]=counts.get(typ,0)+1
+                  item=obj.get('item') or {}
+                  itype=str(item.get('type',''))
+                  if typ in ('item.started','item.completed'):
+                      out=str(item.get('aggregated_output') or '')
+                      diag.append('ITEM type=%s item_type=%s status=%s exit_code=%s nonce_seen=%s keys=%s' % (
+                          typ, itype, item.get('status'), item.get('exit_code'), str(nonce in out).lower(),
+                          ','.join(sorted(str(k) for k in item.keys()))))
                   if typ in ('error','turn.failed'):
                       err=obj.get('error') or obj.get('message') or obj
-                      messages.append(f'{typ}='+clean(json.dumps(err,ensure_ascii=False)))
+                      diag.append(f'{typ}='+clean(json.dumps(err,ensure_ascii=False)))
           except FileNotFoundError: pass
           print('EVENT_COUNTS='+','.join(f'{k}:{counts[k]}' for k in sorted(counts)))
-          for m in messages[:8]: print(m)
+          for line in diag[:30]: print('EVENT_DIAG='+clean(line))
           try:
-              for line in open(stderr,encoding='utf-8',errors='replace').read().splitlines()[-12:]: print('STDERR='+clean(line))
+              for line in open(stderr,encoding='utf-8',errors='replace').read().splitlines()[-20:]: print('STDERR='+clean(line))
           except FileNotFoundError: pass
           PY
+          if [ -f "$work/events.jsonl" ]; then printf 'EVENTS_SHA256='; sha256sum "$work/events.jsonl" | awk '{print $1}'; fi
           if [ -f "$work/last.txt" ]; then printf 'LAST_MESSAGE_SHA256='; sha256sum "$work/last.txt" | awk '{print $1}'; fi
           exit "$rc"
           GUEST
