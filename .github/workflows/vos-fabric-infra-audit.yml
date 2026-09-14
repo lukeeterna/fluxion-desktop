@@ -1,0 +1,147 @@
+name: VOS Fabric Infra Audit
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-infra-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-infra-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    steps:
+      - name: Read-only MacBook and iMac hardware/network baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          echo '=== MACBOOK READ-ONLY BASELINE ==='
+          echo "AUDIT_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sw_vers 2>/dev/null || true
+          printf 'HW_MODEL='; sysctl -n hw.model 2>/dev/null || true
+          printf 'PHYSICAL_CPU='; sysctl -n hw.physicalcpu 2>/dev/null || true
+          printf 'LOGICAL_CPU='; sysctl -n hw.logicalcpu 2>/dev/null || true
+          printf 'MEM_BYTES='; sysctl -n hw.memsize 2>/dev/null || true
+          uptime || true
+          vm_stat 2>/dev/null | head -20 || true
+          memory_pressure -Q 2>/dev/null || true
+          df -k / 2>/dev/null || true
+          diskutil info / 2>/dev/null | grep -E 'Device Identifier|Device Node|File System Personality|Total Size|Volume Free Space|Solid State|SMART Status' || true
+          printf 'APP_FIREWALL='; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true
+          printf 'STEALTH_MODE='; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true
+          echo '--- MACBOOK DEFAULT ROUTE ---'
+          route -n get default 2>/dev/null | grep -E 'gateway:|interface:' || true
+          echo '--- MACBOOK VPN INDICATORS (process names only) ---'
+          if ps -axo comm= 2>/dev/null | grep -Eiq 'tailscale'; then echo 'TAILSCALE_PROCESS=YES'; else echo 'TAILSCALE_PROCESS=NO'; fi
+          if ps -axo comm= 2>/dev/null | grep -Eiq 'x-vpn|xvpn'; then echo 'XVPN_PROCESS=YES'; else echo 'XVPN_PROCESS=NO'; fi
+          printf 'SELF_HOSTED_RUNNER_PROCESSES='; ps -axo comm= 2>/dev/null | grep -Ec 'Runner.Listener|Runner.Worker' || true
+          echo 'MACBOOK_AUDIT_COMPLETE=1'
+
+          REMOTE="$RUNNER_TEMP/vos-fabric-infra-audit-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'IMAC'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+
+          echo '=== IMAC READ-ONLY BASELINE ==='
+          echo "AUDIT_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          sw_vers 2>/dev/null || true
+          system_profiler SPHardwareDataType 2>/dev/null | grep -E 'Model Name:|Model Identifier:|Processor Name:|Processor Speed:|Number of Processors:|Total Number of Cores:|Memory:' || true
+          printf 'HW_MODEL='; sysctl -n hw.model 2>/dev/null || true
+          printf 'PHYSICAL_CPU='; sysctl -n hw.physicalcpu 2>/dev/null || true
+          printf 'LOGICAL_CPU='; sysctl -n hw.logicalcpu 2>/dev/null || true
+          printf 'MEM_BYTES='; sysctl -n hw.memsize 2>/dev/null || true
+          uptime || true
+          vm_stat 2>/dev/null | head -20 || true
+          memory_pressure -Q 2>/dev/null || true
+          pmset -g therm 2>/dev/null || true
+          df -k / 2>/dev/null || true
+          if mount | grep -q ' on /Volumes/NAS_LOCAL '; then
+            echo 'NAS_LOCAL_MOUNTED=YES'
+            df -k /Volumes/NAS_LOCAL 2>/dev/null || true
+          else
+            echo 'NAS_LOCAL_MOUNTED=NO'
+          fi
+          diskutil info / 2>/dev/null | grep -E 'Device Identifier|Device Node|File System Personality|Total Size|Volume Free Space|Solid State|SMART Status' || true
+
+          echo '--- OCLP / BOOT / EFI READ-ONLY ---'
+          csrutil status 2>/dev/null || true
+          nvram boot-args 2>/dev/null || true
+          if find /Applications -maxdepth 1 -iname '*OpenCore*' -print -quit 2>/dev/null | grep -q .; then echo 'OCLP_APP_PRESENT=YES'; else echo 'OCLP_APP_PRESENT=NO'; fi
+          diskutil list 2>/dev/null | grep -E 'EFI|GUID_partition_scheme' || true
+
+          echo '--- MULTIPASS / WORKER ---'
+          MP=''
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          if [ -n "$MP" ]; then
+            "$MP" version 2>/dev/null || true
+            printf 'MULTIPASS_DRIVER='; "$MP" get local.driver 2>/dev/null || true
+            "$MP" info vos-worker 2>/dev/null || true
+          else
+            echo 'MULTIPASS_PRESENT=NO'
+          fi
+
+          echo '--- NETWORK / TRUST-ZONE BASELINE ---'
+          route -n get default 2>/dev/null | grep -E 'gateway:|interface:' || true
+          ifconfig bridge100 2>/dev/null || true
+          netstat -rn -f inet 2>/dev/null || true
+          printf 'IP_FORWARDING='; sysctl -n net.inet.ip.forwarding 2>/dev/null || true
+          printf 'APP_FIREWALL='; /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true
+          printf 'STEALTH_MODE='; /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true
+          if sudo -n true 2>/dev/null; then
+            echo 'PF_READONLY_AVAILABLE=YES'
+            sudo -n pfctl -s info 2>/dev/null || true
+            sudo -n pfctl -sn 2>/dev/null || true
+          else
+            echo 'PF_READONLY_AVAILABLE=NO'
+          fi
+          if ps -axo comm= 2>/dev/null | grep -Eiq 'tailscale'; then echo 'TAILSCALE_PROCESS=YES'; else echo 'TAILSCALE_PROCESS=NO'; fi
+          if ps -axo comm= 2>/dev/null | grep -Eiq 'x-vpn|xvpn'; then echo 'XVPN_PROCESS=YES'; else echo 'XVPN_PROCESS=NO'; fi
+          printf 'ACTIVE_UTUN_COUNT='; ifconfig 2>/dev/null | awk '/^utun[0-9]+:/{n++} END{print n+0}'
+          curl -4 -fsSI --connect-timeout 5 --max-time 10 https://github.com/ | head -5 || true
+
+          echo '--- PROTECTED PRODUCTION SERVICES ---'
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          production_green=1
+          launch_running com.zeroclaw.fall-detector || production_green=0
+          launch_running com.go2rtc || production_green=0
+          launch_running com.mosquitto.broker || production_green=0
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || production_green=0
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || production_green=0
+          if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then production_green=0; fi
+          mount | grep -q ' on /Volumes/NAS_LOCAL ' || production_green=0
+          if [ "$production_green" -eq 1 ]; then
+            echo 'PROTECTED_SERVICES=GREEN'
+          else
+            echo 'PROTECTED_SERVICES=REGRESSION'
+            exit 2
+          fi
+
+          echo 'IMAC_AUDIT_COMPLETE=1'
+          echo 'INFRA_BASELINE_CAPTURED=1'
+          echo 'NETWORK_SECURITY_VERDICT=PENDING_DESIGN_REVIEW'
+          echo 'INFRA_AUDIT_READ_ONLY=1'
+          IMAC
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-fabric-infra-audit.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-fabric-infra-audit.sh; rc=$?; rm -f /tmp/vos-fabric-infra-audit.sh; exit $rc'
