@@ -13,16 +13,16 @@ permissions:
 
 concurrency:
   group: vos-fabric-g2-qualify
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   qualify:
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       VOS_CODEX_MODEL: gpt-5.6-terra
       CODEX_VERSION: 0.154.0
-      FABRIC_SHA: d294dbcda1e2538f43127b2f5c6cc897a5ef0d0c
+      FABRIC_SHA: b2840b3caceb09d83f890adf3d7939a61450d938
     steps:
       - name: Qualify exact ChatGPT Codex worker end to end
         shell: bash
@@ -183,7 +183,7 @@ jobs:
           timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
           [ "$auth_rc" -eq 0 ] || { echo "G2_GUEST_BLOCKED=AUTH_NOT_PERSISTED_RC_$auth_rc"; exit 20; }
           echo 'CODEX_CHATGPT_AUTH=GREEN'
-          VOS_CODEX_MODEL="$model" "$gate" qualify
+          VOS_CODEX_MODEL="$model" VOS_CODEX_TURN_TIMEOUT_SECONDS=120 "$gate" qualify
           GUEST
           chmod 700 /tmp/vos-g2-guest-qualify.sh
           "$MP" transfer /tmp/vos-g2-guest-qualify.sh vos-worker:/tmp/vos-g2-guest-qualify.sh
