@@ -21,7 +21,7 @@ jobs:
     runs-on: [self-hosted, fluxion-imac-physical]
     timeout-minutes: 10
     env:
-      EXPECTED_SHA: 8b860800987a957409c9a47c21eaa66fcbbad885
+      EXPECTED_SHA: ${{ github.sha }}
       FLUXION_ROOT: /Volumes/MacSSD - Dati/FLUXION
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -94,14 +94,14 @@ jobs:
           {
             echo '## iMac read-only attestation'
             echo
-            echo '```text'
+            echo '~~~text'
             cat "${REPORT}"
-            echo '```'
+            echo '~~~'
             echo
             if [ "${RESULT}" -eq 0 ]; then
-              echo '`IMAC_READONLY_ATTESTATION=GREEN`'
+              echo 'IMAC_READONLY_ATTESTATION=GREEN'
             else
-              echo "\`IMAC_READONLY_ATTESTATION=RED exit=${RESULT}\`"
+              echo "IMAC_READONLY_ATTESTATION=RED exit=${RESULT}"
             fi
           } >"${BODY_FILE}"
 
