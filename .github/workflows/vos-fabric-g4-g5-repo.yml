@@ -1,0 +1,62 @@
+name: VOS Fabric G4 G5 Repo
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g4-g5-runtime-*"
+    paths:
+      - "tests/vos_fabric_live_codex_worker.py"
+      - "tests/vos_fabric_g4_g5_runtime.py"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
+      - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+  pull_request:
+    paths:
+      - "tests/vos_fabric_live_codex_worker.py"
+      - "tests/vos_fabric_g4_g5_runtime.py"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
+      - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  repo-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile runtime harness
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tests/vos_fabric_live_codex_worker.py tests/vos_fabric_g4_g5_runtime.py
+      - name: Verify sealed founder-confirmed mandate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          md = Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.md')
+          manifest = json.loads(Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.json').read_text())
+          actual = hashlib.sha256(md.read_bytes()).hexdigest()
+          assert actual == manifest['mandate_sha256']
+          assert manifest['founder_go'] is True
+          assert manifest['label'] == 'CONFIRM_FIRST'
+          assert manifest['risk'] == 'B'
+          assert manifest['max_cost_usd'] == 0
+          assert manifest['paid_api_fallback'] is False
+          assert manifest['quota_circumvention'] is False
+          assert manifest['production_mutation'] is False
+          assert manifest['base_certified_g3_sha'] == '1f16ab2505480adab67b20411cf0b5819179a2b2'
+          print('G4_G5_MANDATE_REPO=GREEN')
+          PY
+      - name: Verify no paid-key fallback in certification code
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'OPENAI_API_KEY|ANTHROPIC_API_KEY|GOOGLE_API_KEY|sk-[A-Za-z0-9]' \
+            tests/vos_fabric_live_codex_worker.py tests/vos_fabric_g4_g5_runtime.py; then
+            echo 'paid/API-key fallback marker found' >&2
+            exit 1
+          fi
+          echo 'G4_G5_PAID_API_FALLBACK_REPO=0'
