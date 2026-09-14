@@ -18,7 +18,7 @@ concurrency:
 jobs:
   probe:
     runs-on: [self-hosted, macbook, fluxion]
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
       - name: Inspect Multipass and vos-worker state read-only
         shell: bash
@@ -31,6 +31,23 @@ jobs:
           export LC_ALL=C LANG=C
           fail() { printf 'G2_VM_STATE_BLOCKED=%s\n' "$*"; exit 2; }
           pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+          bounded() {
+            /usr/bin/python3 - "$@" <<'PY'
+          import subprocess, sys
+          try:
+              p = subprocess.run(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                 text=True, timeout=8)
+              if p.stdout:
+                  print(p.stdout, end="")
+              raise SystemExit(p.returncode)
+          except subprocess.TimeoutExpired as exc:
+              out = exc.stdout or ""
+              if isinstance(out, bytes): out = out.decode("utf-8", "replace")
+              if out: print(out, end="")
+              print("BOUNDED_COMMAND_TIMEOUT=1")
+              raise SystemExit(124)
+          PY
+          }
 
           uid="$(id -u)"
           launch_running() {
@@ -58,28 +75,10 @@ jobs:
           done
           [ -n "$MP" ] || fail MULTIPASS_MISSING
           echo "MULTIPASS_BINARY=$MP"
-          "$MP" version 2>/dev/null | head -20 || true
-          printf 'MULTIPASS_DRIVER='; "$MP" get local.driver 2>/dev/null || true
-          echo '--- MULTIPASS LIST ---'
-          "$MP" list 2>&1 || true
-          echo '--- MULTIPASS LIST JSON ---'
-          "$MP" list --format json 2>&1 || true
-          echo '--- MULTIPASS DAEMON ---'
+
+          echo '--- MULTIPASS DAEMON / QEMU PROCESSES ---'
           launchctl print system/com.canonical.multipassd 2>/dev/null | grep -E '^[[:space:]]*(state|pid|path) =' | head -20 || true
           ps -axo pid=,ppid=,comm= 2>/dev/null | grep -E 'multipass|qemu-system' || true
-
-          if "$MP" info vos-worker >/dev/null 2>&1; then
-            echo 'VOS_WORKER_PRESENT=1'
-            "$MP" info vos-worker 2>&1 | sed -n '1,80p'
-            owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>/dev/null || true)"
-            echo "VOS_WORKER_OWNER=${owner:-MISSING}"
-            [ "$owner" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER_MISMATCH
-            auth_rc=0
-            "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
-            echo "VOS_WORKER_AUTH_STATUS_RC=$auth_rc"
-          else
-            echo 'VOS_WORKER_PRESENT=0'
-          fi
 
           echo '--- ACCESSIBLE MULTIPASS STORAGE HINTS ---'
           for root in "$HOME/Library/Application Support/multipassd" "/Library/Application Support/com.canonical.multipass" "/var/root/Library/Application Support/multipassd"; do
@@ -88,9 +87,34 @@ jobs:
               find "$root" -maxdepth 7 -iname '*vos-worker*' -print 2>/dev/null | head -50 || true
             fi
           done
-          echo '--- RECOVER CAPABILITY ---'
-          "$MP" recover --help 2>&1 | sed -n '1,80p' || true
 
+          echo '--- BOUNDED MULTIPASS VERSION ---'
+          bounded "$MP" version || echo "MULTIPASS_VERSION_RC=$?"
+          echo '--- BOUNDED MULTIPASS DRIVER ---'
+          bounded "$MP" get local.driver || echo "MULTIPASS_DRIVER_RC=$?"
+          echo '--- BOUNDED MULTIPASS LIST ---'
+          bounded "$MP" list || echo "MULTIPASS_LIST_RC=$?"
+          echo '--- BOUNDED VOS-WORKER INFO ---'
+          info_rc=0
+          info_out="$(bounded "$MP" info vos-worker 2>&1)" || info_rc=$?
+          printf '%s\n' "$info_out"
+          echo "VOS_WORKER_INFO_RC=$info_rc"
+          if [ "$info_rc" -eq 0 ]; then
+            echo 'VOS_WORKER_PRESENT=1'
+            owner_rc=0
+            owner="$(bounded "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>&1)" || owner_rc=$?
+            echo "VOS_WORKER_OWNER_RC=$owner_rc"
+            echo "VOS_WORKER_OWNER=${owner:-MISSING}"
+            [ "$owner_rc" -eq 0 ] && [ "$owner" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER_MISMATCH
+            auth_rc=0
+            bounded "$MP" exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
+            echo "VOS_WORKER_AUTH_STATUS_RC=$auth_rc"
+          else
+            echo 'VOS_WORKER_PRESENT=0'
+          fi
+
+          echo '--- RECOVER CAPABILITY ---'
+          bounded "$MP" recover --help | sed -n '1,80p' || true
           production_green || fail POST_PRODUCTION_REGRESSION
           pass POST_PRODUCTION "Guardian/FLUXION/NAS green"
           echo 'VM_STATE_PROBE_READ_ONLY=1'
