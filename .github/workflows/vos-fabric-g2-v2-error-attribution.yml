@@ -1,0 +1,125 @@
+name: VOS Fabric G2 V2 Error Attribution
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-v2-error-attribution.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 4
+    env:
+      VOS_CODEX_MODEL: gpt-5.6-terra
+    steps:
+      - name: One public read-only Codex call with sanitized error evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT=$((24000 + GITHUB_RUN_ID % 9000))
+          REMOTE="$RUNNER_TEMP/g2-error-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${PORT:?}"; : "${VOS_CODEX_MODEL:?}"
+          fail(){ echo "G2_DIAG_BLOCKED=$*"; exit 2; }
+          production_green(){
+            uid="$(id -u)"
+            launch_running(){ label="$1"; for d in "gui/$uid" "user/$uid" system; do launchctl print "$d/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0; done; launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; }
+            launch_running com.zeroclaw.fall-detector && launch_running com.go2rtc && launch_running com.mosquitto.broker && curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && mount | grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          production_green || fail PRE_PRODUCTION
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }; done
+          [ -n "$MP" ] || fail MULTIPASS
+          guest_ip="$($MP exec vos-worker -- sh -c "hostname -I | awk '{print \$1}'" | tail -1)"
+          [ -n "$guest_ip" ] || fail GUEST_IP
+          $MP exec vos-worker -- sh -c 'test -z "${OPENAI_API_KEY:-}"' || fail PAID_API_ENV
+          $MP exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null || fail AUTH
+
+          PROXY=/tmp/g2-error-proxy-${PORT}.py; LOG=/tmp/g2-error-proxy-${PORT}.log
+          cat > "$PROXY" <<'PY'
+          import os,select,socket,socketserver
+          bind=('192.168.64.1',int(os.environ['PORT'])); allowed=os.environ['GUEST_IP']
+          class H(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0]!=allowed:return
+                  p=self.rfile.readline(8192).decode('ascii','replace').strip().split()
+                  if len(p)!=3 or p[0].upper()!='CONNECT' or ':' not in p[1]:return
+                  host,ps=p[1].rsplit(':',1)
+                  try: port=int(ps)
+                  except ValueError:return
+                  if port!=443:return
+                  print('CONNECT_HOST=%s:443'%host,flush=True)
+                  while True:
+                      h=self.rfile.readline(8192)
+                      if h in (b'\r\n',b'\n',b''):break
+                  try:u=socket.create_connection((host,443),timeout=20)
+                  except OSError:return
+                  with u:
+                      u.setblocking(False);self.connection.setblocking(False);self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n')
+                      ss=[self.connection,u]
+                      while True:
+                          r,_,x=select.select(ss,[],ss,60)
+                          if x or not r:return
+                          for s in r:
+                              d=u if s is self.connection else self.connection
+                              try:b=s.recv(65536)
+                              except OSError:return
+                              if not b:return
+                              try:d.sendall(b)
+                              except OSError:return
+          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
+          with S(bind,H) as s:print('READY=%s:%d'%bind,flush=True);s.serve_forever()
+          PY
+          pid=''; cleanup(){ [ -z "$pid" ] || kill "$pid" >/dev/null 2>&1 || true; rm -f "$PROXY" "$LOG" /tmp/g2-error.jsonl /tmp/g2-error.stderr; }; trap cleanup EXIT
+          PORT="$PORT" GUEST_IP="$guest_ip" /usr/bin/python3 "$PROXY" >"$LOG" 2>&1 & pid=$!
+          for _ in 1 2 3 4 5; do grep -q '^READY=' "$LOG" 2>/dev/null && break; sleep 1; done
+          grep -q '^READY=' "$LOG" || fail PROXY
+          proxy="http://192.168.64.1:${PORT}"
+          set +e
+          $MP exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric HTTPS_PROXY="$proxy" HTTP_PROXY="$proxy" https_proxy="$proxy" http_proxy="$proxy" \
+            /usr/local/bin/codex exec --json --sandbox read-only -c 'approval_policy="never"' --model "$VOS_CODEX_MODEL" --skip-git-repo-check \
+            'This is a PUBLIC certification diagnostic. Do not use tools. Reply exactly G2_DIAG=OK.' > /tmp/g2-error.jsonl 2>/tmp/g2-error.stderr
+          rc=$?
+          set -e
+          echo "G2_DIAG_CODEX_RC=$rc"
+          python3 - /tmp/g2-error.jsonl <<'PY'
+          import json,sys
+          seen=[]
+          for raw in open(sys.argv[1],encoding='utf-8',errors='replace'):
+              raw=raw.strip()
+              if not raw: continue
+              try:o=json.loads(raw)
+              except Exception: continue
+              t=o.get('type')
+              if t and t not in seen:
+                  seen.append(t); print('G2_DIAG_EVENT_TYPE='+str(t))
+              def walk(x):
+                  if isinstance(x,dict):
+                      for k,v in x.items():
+                          lk=str(k).lower()
+                          if lk in {'message','code','type'} and isinstance(v,(str,int,float,bool)):
+                              s=str(v).replace('\n',' ')[:500]
+                              if any(w in s.lower() for w in ['limit','quota','usage','retry','auth','error','failed','unavailable','rate']):
+                                  print('G2_DIAG_DETAIL_%s=%s'%(str(k).upper(),s))
+                          walk(v)
+                  elif isinstance(x,list):
+                      for v in x: walk(v)
+              walk(o)
+          PY
+          stderr_sha="$(shasum -a 256 /tmp/g2-error.stderr | awk '{print $1}')"
+          events_sha="$(shasum -a 256 /tmp/g2-error.jsonl | awk '{print $1}')"
+          echo "G2_DIAG_EVENTS_SHA256=$events_sha"
+          echo "G2_DIAG_STDERR_SHA256=$stderr_sha"
+          grep -E '^(READY|CONNECT_HOST)=' "$LOG" || true
+          production_green || fail POST_PRODUCTION
+          echo 'G2_DIAG_PRODUCTION_REGRESSION=0'
+          exit "$rc"
+          REMOTE
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac "PORT='$PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' bash -s" < "$REMOTE"
