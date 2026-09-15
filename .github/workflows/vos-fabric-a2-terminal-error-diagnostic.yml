@@ -1,0 +1,148 @@
+name: VOS Fabric A2 Terminal Error Diagnostic
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g4-g5-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a2-terminal-error-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 15
+    env:
+      A2_MODEL: gemini-3.8-flash-high
+      A2_BINARY_SHA256: c4c8a6722f9b570e370941b0953ba29051336307d7999ec842bdf7500b0ca7c8
+    steps:
+      - name: Classify terminal error and step types under exact minimal environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail(){ echo "A2_TERMINAL_DIAGNOSTIC_BLOCKED=$*" >&2; exit 2; }
+          prod(){
+            uid="$(id -u)"
+            lr(){ l="$1"; for d in "gui/$uid" "user/$uid" system; do launchctl print "$d/$l" 2>/dev/null|grep -Eq 'state = running|pid = [0-9]+'&&return 0; done; launchctl list 2>/dev/null|awk -v l="$l" '$3==l&&$1~/^[0-9]+$/{ok=1}END{exit ok?0:1}'; }
+            lr com.zeroclaw.fall-detector && lr com.go2rtc && lr com.mosquitto.broker && curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null|grep -q ':3002' && { lsof -nP -iUDP:5080 2>/dev/null|grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null|grep -q ':5080'; } && mount|grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          prod || fail PRE_PRODUCTION
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null||true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -z "$c" ]||[ ! -x "$c" ]||{ MP="$c";break; }; done
+          [ -n "$MP" ] || fail MULTIPASS
+          "$MP" info vos-worker|grep -q 'State:[[:space:]]*Running' || fail VM_NOT_RUNNING
+          guest_ip="$($MP exec vos-worker -- sh -c "hostname -I|awk '{print \$1}'")"
+          [ "$($MP exec vos-worker -- sha256sum /home/ubuntu/.local/bin/agy|awk '{print $1}')" = "$A2_BINARY_SHA256" ] || fail BINARY_SHA
+          "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail HOST_MOUNT
+          "$MP" exec vos-worker -- python3 - <<'PY' || fail ZERO_COST_SETTINGS
+          import json
+          p='/home/ubuntu/.gemini/antigravity-cli/settings.json'
+          d=json.load(open(p))
+          assert d.get('useG1Credits') is False
+          assert d.get('modelProvider') != 'gemini'
+          PY
+
+          tmp="$RUNNER_TEMP/a2-terminal-${GITHUB_RUN_ID}"; mkdir -p "$tmp"
+          root="/tmp/vos-a2-terminal-${GITHUB_RUN_ID}"
+          cat > "$tmp/proxy.py" <<'PY'
+          import os,select,socket,socketserver
+          bind=('192.168.64.1',int(os.environ['PORT'])); allowed=os.environ['GUEST']
+          class H(socketserver.StreamRequestHandler):
+            def handle(self):
+              if self.client_address[0]!=allowed:return
+              p=self.rfile.readline(8192).decode('ascii','replace').strip().split()
+              if len(p)!=3 or p[0].upper()!='CONNECT' or ':' not in p[1]:return
+              host,ps=p[1].rsplit(':',1)
+              try:port=int(ps)
+              except ValueError:return
+              if port!=443:return
+              while True:
+                x=self.rfile.readline(8192)
+                if x in (b'\r\n',b'\n',b''):break
+              try:up=socket.create_connection((host,443),timeout=20)
+              except OSError:return
+              with up:
+                up.setblocking(False);self.connection.setblocking(False);self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n');s=[self.connection,up]
+                while True:
+                  r,_,e=select.select(s,[],s,120)
+                  if e or not r:return
+                  for src in r:
+                    dst=up if src is self.connection else self.connection
+                    try:data=src.recv(65536)
+                    except OSError:return
+                    if not data:return
+                    try:dst.sendall(data)
+                    except OSError:return
+          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
+          with S(bind,H) as s:print('READY',flush=True);s.serve_forever()
+          PY
+          cat > "$tmp/classify.py" <<'PY'
+          import collections,json,sys
+          path,expected=sys.argv[1:]
+          event_counts=collections.Counter(); step_counts=collections.Counter(); state_counts=collections.Counter(); tools=collections.Counter(); result=None; init=False; invalid=0
+          for raw in open(path,encoding='utf-8',errors='replace'):
+              raw=raw.strip()
+              if not raw: continue
+              try:e=json.loads(raw)
+              except Exception: invalid+=1; continue
+              if not isinstance(e,dict): continue
+              et=e.get('event'); event_counts[str(et)]+=1
+              if et=='init': init=True
+              elif et=='step_update':
+                  s=e.get('step_update') or {}
+                  if isinstance(s,dict):
+                      step_counts[str(s.get('step_type'))]+=1
+                      state_counts[str(s.get('state'))]+=1
+                      if isinstance(s.get('tool_name'),str): tools[s['tool_name']]+=1
+              elif et=='result' and isinstance(e.get('result'),dict): result=e['result']
+          if result is None: raise SystemExit('missing terminal result')
+          structured=result.get('structured_output')
+          error=result.get('error')
+          if error is None or error=='': error_class='NONE'
+          elif error=='context canceled': error_class='CONTEXT_CANCELED_EXACT'
+          elif isinstance(error,str) and 'cancel' in error.lower(): error_class='CANCELLATION_OTHER'
+          else: error_class='OTHER'
+          cid=result.get('conversation_id')
+          print('A2_TERMINAL_INVALID_JSON_LINES='+str(invalid))
+          print('A2_TERMINAL_EVENT_COUNTS='+','.join('%s:%d'%(k,event_counts[k]) for k in sorted(event_counts)))
+          print('A2_TERMINAL_STEP_TYPES='+','.join('%s:%d'%(k,step_counts[k]) for k in sorted(step_counts)))
+          print('A2_TERMINAL_STEP_STATES='+','.join('%s:%d'%(k,state_counts[k]) for k in sorted(state_counts)))
+          print('A2_TERMINAL_TOOL_NAMES='+','.join('%s:%d'%(k,tools[k]) for k in sorted(tools)))
+          print('A2_TERMINAL_HAS_INIT='+str(int(init)))
+          print('A2_TERMINAL_STATUS='+str(result.get('status')))
+          print('A2_TERMINAL_ERROR_CLASS='+error_class)
+          print('A2_TERMINAL_STRUCTURED_OBJECT='+str(int(isinstance(structured,dict))))
+          print('A2_TERMINAL_PROOF_MATCH='+str(int(isinstance(structured,dict) and structured.get('proof')==expected)))
+          print('A2_TERMINAL_CONVERSATION_ID_PRESENT='+str(int(isinstance(cid,str) and bool(cid))))
+          print('A2_TERMINAL_CONTENT_EXPOSED=0')
+          PY
+          port=$((31000 + GITHUB_RUN_ID % 7000))
+          PORT="$port" GUEST="$guest_ip" /usr/bin/python3 "$tmp/proxy.py" >"$tmp/proxy.log" 2>&1 & pp=$!
+          cleanup(){ kill "$pp" >/dev/null 2>&1||true; "$MP" exec vos-worker -- rm -rf "$root" >/dev/null 2>&1||true; rm -rf "$tmp"; }
+          trap cleanup EXIT INT TERM
+          for _ in 1 2 3 4 5; do grep -q '^READY$' "$tmp/proxy.log"&&break;sleep 1;done
+          grep -q '^READY$' "$tmp/proxy.log" || fail PROXY
+          "$MP" exec vos-worker -- rm -rf "$root"; "$MP" exec vos-worker -- mkdir -p "$root"
+          "$MP" transfer "$tmp/classify.py" "vos-worker:$root/classify.py" >/dev/null
+          schema='{"type":"object","properties":{"proof":{"type":"string"}},"required":["proof"],"additionalProperties":false}'
+          prompt='PUBLIC VOS Fabric certification objective. Your structured output field named proof must be exactly: VOS_G4_A2_RUNTIME=OK'
+          set +e
+          "$MP" exec vos-worker -- env -i HOME=/home/ubuntu USER=ubuntu LOGNAME=ubuntu PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin HTTPS_PROXY="http://192.168.64.1:$port" HTTP_PROXY="http://192.168.64.1:$port" https_proxy="http://192.168.64.1:$port" http_proxy="http://192.168.64.1:$port" LC_ALL=C LANG=C /home/ubuntu/.local/bin/agy -p "$prompt" --model "$A2_MODEL" --output-format stream-json --json-schema "$schema" --sandbox --print-timeout 2m >"$tmp/events.jsonl" 2>"$tmp/stderr.txt"
+          agy_rc=$?
+          set -e
+          "$MP" transfer "$tmp/events.jsonl" "vos-worker:$root/events.jsonl" >/dev/null
+          "$MP" exec vos-worker -- /usr/bin/python3 "$root/classify.py" "$root/events.jsonl" VOS_G4_A2_RUNTIME=OK
+          echo "A2_TERMINAL_PROCESS_RC=$agy_rc"
+          echo "A2_TERMINAL_EVENTS_SHA256=$(shasum -a 256 "$tmp/events.jsonl"|awk '{print $1}')"
+          echo "A2_TERMINAL_STDERR_SHA256=$(shasum -a 256 "$tmp/stderr.txt"|awk '{print $1}')"
+          echo MAX_COST_USD=0
+          echo API_KEY_FALLBACK=0
+          echo CREDIT_FALLBACK=0
+          echo PAID_API_FALLBACK=0
+          echo PRODUCTION_MUTATIONS=0
+          prod || fail POST_PRODUCTION
+          "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail HOST_MOUNT_AFTER
+          echo A2_TERMINAL_ERROR_DIAGNOSTIC=COMPLETE
