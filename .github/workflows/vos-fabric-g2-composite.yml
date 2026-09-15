@@ -48,7 +48,7 @@ jobs:
             -o "$LOG"
           test -s "$LOG"
 
-          require_line() {
+          require_marker() {
             local literal="$1"
             grep -F -- "$literal" "$LOG" >/dev/null || {
               printf 'G2_COMPOSITE_BLOCKED=PARENT_MARKER_MISSING:%s\n' "$literal" >&2
@@ -56,24 +56,28 @@ jobs:
             }
           }
 
-          require_line "PASS FABRIC_GATE                        fabric_sha=${FABRIC_SHA} gate_sha256=${GATE_SHA256}"
-          require_line 'CODEX_CHATGPT_AUTH=GREEN'
-          require_line "CODEX_VERSION=codex-cli ${CODEX_VERSION}"
-          require_line "CODEX_CODE_MODE_HOST_SHA256=${CODEX_HOST_SHA256}"
-          require_line "CODEX_BWRAP_SHA256=${BWRAP_SHA256}"
-          require_line 'CODEX_MODEL_REQUESTED=gpt-5.6-terra'
-          require_line "CODEX_SOURCE_THREAD_ID=${SOURCE_THREAD_ID}"
-          require_line "CODEX_FORK_THREAD_ID=${FORK_THREAD_ID}"
-          require_line "CODEX_FIRST_EVENTS_SHA256=${FIRST_EVENTS_SHA256}"
-          require_line "CODEX_RESUME_EVENTS_SHA256=${RESUME_EVENTS_SHA256}"
-          require_line "CODEX_FORK_EVENTS_SHA256=${FORK_EVENTS_SHA256}"
-          require_line 'CODEX_EXEC_JSON=GREEN'
-          require_line 'CODEX_TOOL_EXECUTION=GREEN'
-          require_line 'CODEX_EXACT_RESUME=GREEN'
-          require_line 'CODEX_EXACT_FORK=GREEN'
-          require_line 'LINUX_CODEX_WORKER_LOCAL_QUALIFICATION=GREEN'
-          require_line 'PASS CODEX_RUNTIME                      tool/exec/resume/fork verified in three calls'
-          require_line 'PASS CLEAN_STOP                         vos-worker stopped; production unchanged'
+          require_marker 'PASS FABRIC_GATE'
+          require_marker "fabric_sha=${FABRIC_SHA}"
+          require_marker "gate_sha256=${GATE_SHA256}"
+          require_marker 'CODEX_CHATGPT_AUTH=GREEN'
+          require_marker "CODEX_VERSION=codex-cli ${CODEX_VERSION}"
+          require_marker "CODEX_CODE_MODE_HOST_SHA256=${CODEX_HOST_SHA256}"
+          require_marker "CODEX_BWRAP_SHA256=${BWRAP_SHA256}"
+          require_marker 'CODEX_MODEL_REQUESTED=gpt-5.6-terra'
+          require_marker "CODEX_SOURCE_THREAD_ID=${SOURCE_THREAD_ID}"
+          require_marker "CODEX_FORK_THREAD_ID=${FORK_THREAD_ID}"
+          require_marker "CODEX_FIRST_EVENTS_SHA256=${FIRST_EVENTS_SHA256}"
+          require_marker "CODEX_RESUME_EVENTS_SHA256=${RESUME_EVENTS_SHA256}"
+          require_marker "CODEX_FORK_EVENTS_SHA256=${FORK_EVENTS_SHA256}"
+          require_marker 'CODEX_EXEC_JSON=GREEN'
+          require_marker 'CODEX_TOOL_EXECUTION=GREEN'
+          require_marker 'CODEX_EXACT_RESUME=GREEN'
+          require_marker 'CODEX_EXACT_FORK=GREEN'
+          require_marker 'LINUX_CODEX_WORKER_LOCAL_QUALIFICATION=GREEN'
+          require_marker 'PASS CODEX_RUNTIME'
+          require_marker 'tool/exec/resume/fork verified in three calls'
+          require_marker 'PASS CLEAN_STOP'
+          require_marker 'vos-worker stopped; production unchanged'
 
           PARENT_LOG_SHA256="$(shasum -a 256 "$LOG" | awk '{print $1}')"
           printf 'G2_PARENT_RUN=%s\n' "$PARENT_RUN"
