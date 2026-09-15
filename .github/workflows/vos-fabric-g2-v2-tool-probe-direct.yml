@@ -1,0 +1,34 @@
+name: VOS Fabric G2 V2 Tool Probe Direct
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-v2-tool-probe-direct.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-v2-tool-probe-direct
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 4
+    steps:
+      - name: Run exact pinned isolated-worker tool diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROBE="$RUNNER_TEMP/vos_fabric_g2_tool_probe.sh"
+          curl -4 -fsSL --connect-timeout 8 --max-time 30 --retry 4 --retry-delay 2 --retry-all-errors \
+            "https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/d81f16cb1f746dff30295624833e8a8dd49dc775/tools/vos_fabric_g2_tool_probe.sh" \
+            -o "$PROBE"
+          test -s "$PROBE"
+          bash -n "$PROBE"
+          echo "G2_TOOL_PROBE_SCRIPT_SHA256=$(shasum -a 256 "$PROBE" | awk '{print $1}')"
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "VOS_CODEX_MODEL='gpt-5.6-terra' bash -s" < "$PROBE"
