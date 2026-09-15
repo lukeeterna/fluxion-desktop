@@ -14,11 +14,11 @@ permissions:
 
 concurrency:
   group: vos-fabric-a2-antigravity-runtime
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   qualify:
-    runs-on: [self-hosted, macbook, fluxion]
+    runs-on: [self-hosted, fluxion-imac-physical]
     timeout-minutes: 30
     env:
       FABRIC_A2_SHA: afdaf1a29d8e82d565081ccce34517943a505f90
@@ -39,61 +39,15 @@ jobs:
           echo "FABRIC_A2_GATE_SHA256=$(shasum -a 256 "$GATE"|awk '{print $1}')"
           echo "ANTIGRAVITY_PACKAGE_SHA256=$(shasum -a 256 "$PKG"|awk '{print $1}')"
           chmod 755 "$GATE"
-          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$GATE" imac:/tmp/vos-a2-gate.sh
-          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PKG" imac:/tmp/vos-a2-package.tar.gz
 
-      - name: Real A2 qualification in isolated vos-worker
+      - name: Real A2 qualification on iMac isolated vos-worker
         shell: bash
         run: |
           set -euo pipefail
-          PROXY_PORT=$((25000 + GITHUB_RUN_ID % 10000))
-          PROXY="$RUNNER_TEMP/vos-a2-runtime-proxy-${GITHUB_RUN_ID}.py"
-          cat > "$PROXY" <<'PY'
-          #!/usr/bin/env python3
-          import os,select,socket,socketserver
-          bind=("192.168.64.1",int(os.environ["VOS_PROXY_PORT"])); allowed="192.168.64.3"
-          class H(socketserver.StreamRequestHandler):
-              def handle(self):
-                  if self.client_address[0]!=allowed:return
-                  self.connection.settimeout(30)
-                  p=self.rfile.readline(8192).decode("ascii","replace").strip().split()
-                  if len(p)!=3 or p[0].upper()!="CONNECT" or ":" not in p[1]:return
-                  host,ps=p[1].rsplit(":",1)
-                  try:port=int(ps)
-                  except ValueError:return
-                  if port!=443:return
-                  while True:
-                      h=self.rfile.readline(8192)
-                      if h in (b"\r\n",b"\n",b""):break
-                  try:up=socket.create_connection((host,port),timeout=20)
-                  except OSError:return
-                  with up:
-                      up.setblocking(False);self.connection.setblocking(False)
-                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
-                      socks=[self.connection,up]
-                      while True:
-                          r,_,x=select.select(socks,[],socks,120)
-                          if x or not r:return
-                          for src in r:
-                              dst=up if src is self.connection else self.connection
-                              try:data=src.recv(65536)
-                              except OSError:return
-                              if not data:return
-                              try:dst.sendall(data)
-                              except OSError:return
-          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
-          with S(bind,H) as s:
-              print("READY",flush=True);s.serve_forever()
-          PY
-          chmod 700 "$PROXY"
-          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-a2-runtime-proxy.py
-
-          HOST="$RUNNER_TEMP/vos-a2-runtime-host-${GITHUB_RUN_ID}.sh"
-          cat > "$HOST" <<'REMOTE'
-          #!/usr/bin/env bash
-          set -euo pipefail
           export LC_ALL=C LANG=C
-          : "${VOS_PROXY_PORT:?}" "${FABRIC_A2_SHA:?}" "${AGY_VERSION:?}"
+          PROXY_PORT=$((25000 + GITHUB_RUN_ID % 10000))
+          GATE="$RUNNER_TEMP/antigravity-worker-gate-${FABRIC_A2_SHA}.sh"
+          PKG="$RUNNER_TEMP/cli_linux_x64-${AGY_VERSION}.tar.gz"
           fail(){ printf 'A2_RUNTIME_BLOCKED=%s\n' "$*"; exit 2; }
 
           MP=""
@@ -102,6 +56,9 @@ jobs:
           done
           [ -n "$MP" ] || fail MULTIPASS_MISSING
 
+          # Bound every macOS Multipass client call. Long work is detached inside
+          # vos-worker and commits an RC file, so a client-return bug cannot hide
+          # the real guest result.
           mpb(){
             local secs="$1"; shift
             /usr/bin/python3 - "$secs" "$MP" "$@" <<'PY'
@@ -143,24 +100,65 @@ jobs:
 
           prod || fail PRE_PRODUCTION_REGRESSION
           echo A2_PRE_PRODUCTION=GREEN
-          mpb 30 transfer /tmp/vos-a2-gate.sh vos-worker:/tmp/vos-a2-gate.sh >/dev/null || fail GATE_TRANSFER
-          mpb 30 transfer /tmp/vos-a2-package.tar.gz vos-worker:/tmp/vos-a2-package.tar.gz >/dev/null || fail PACKAGE_TRANSFER
+          mpb 30 transfer "$GATE" vos-worker:/tmp/vos-a2-gate.sh >/dev/null || fail GATE_TRANSFER
+          mpb 30 transfer "$PKG" vos-worker:/tmp/vos-a2-package.tar.gz >/dev/null || fail PACKAGE_TRANSFER
 
-          pid=''
-          cleanup(){ [ -z "$pid" ] || kill "$pid" >/dev/null 2>&1 || true; rm -f /tmp/vos-a2-runtime-proxy.py /tmp/vos-a2-runtime-proxy.log /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh /tmp/vos-a2-systemd-smoke.sh /tmp/vos-a2-gate.sh /tmp/vos-a2-package.tar.gz; }
+          PROXY="$RUNNER_TEMP/vos-a2-runtime-proxy-${GITHUB_RUN_ID}.py"
+          PROXY_LOG="$RUNNER_TEMP/vos-a2-runtime-proxy-${GITHUB_RUN_ID}.log"
+          cat > "$PROXY" <<PY
+          #!/usr/bin/env python3
+          import select,socket,socketserver
+          BIND=("192.168.64.1",$PROXY_PORT); ALLOWED="192.168.64.3"
+          class H(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0]!=ALLOWED:return
+                  self.connection.settimeout(30)
+                  p=self.rfile.readline(8192).decode("ascii","replace").strip().split()
+                  if len(p)!=3 or p[0].upper()!="CONNECT" or ":" not in p[1]:return
+                  host,ps=p[1].rsplit(":",1)
+                  try:port=int(ps)
+                  except ValueError:return
+                  if port!=443:return
+                  while True:
+                      h=self.rfile.readline(8192)
+                      if h in (b"\r\n",b"\n",b""):break
+                  try:up=socket.create_connection((host,port),timeout=20)
+                  except OSError:return
+                  with up:
+                      up.setblocking(False);self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      socks=[self.connection,up]
+                      while True:
+                          r,_,x=select.select(socks,[],socks,120)
+                          if x or not r:return
+                          for src in r:
+                              dst=up if src is self.connection else self.connection
+                              try:data=src.recv(65536)
+                              except OSError:return
+                              if not data:return
+                              try:dst.sendall(data)
+                              except OSError:return
+          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
+          with S(BIND,H) as s:
+              print("READY",flush=True);s.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          /usr/bin/python3 "$PROXY" >"$PROXY_LOG" 2>&1 & PROXY_PID=$!
+          cleanup(){ kill "$PROXY_PID" >/dev/null 2>&1 || true; rm -f "$PROXY" "$PROXY_LOG" "$RUNNER_TEMP/vos-a2-systemd-smoke.sh" "$RUNNER_TEMP/vos-a2-runtime-guest.sh" "$RUNNER_TEMP/vos-a2-runtime-unit.sh" "$RUNNER_TEMP/vos-a2-persist-unit.sh"; }
           trap cleanup EXIT INT TERM
-          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-a2-runtime-proxy.py >/tmp/vos-a2-runtime-proxy.log 2>&1 & pid=$!
-          for _ in 1 2 3 4 5; do grep -q '^READY$' /tmp/vos-a2-runtime-proxy.log 2>/dev/null && break; sleep 1; done
-          grep -q '^READY$' /tmp/vos-a2-runtime-proxy.log || fail PROXY_NOT_READY
+          for _ in 1 2 3 4 5; do grep -q '^READY$' "$PROXY_LOG" 2>/dev/null && break; sleep 1; done
+          grep -q '^READY$' "$PROXY_LOG" || fail PROXY_NOT_READY
 
-          cat >/tmp/vos-a2-systemd-smoke.sh <<'SMOKE'
+          SMOKE="$RUNNER_TEMP/vos-a2-systemd-smoke.sh"
+          cat >"$SMOKE" <<'SMOKE'
           #!/usr/bin/env bash
           printf '0\n' >/tmp/vos-a2-systemd-smoke.rc.tmp
           mv /tmp/vos-a2-systemd-smoke.rc.tmp /tmp/vos-a2-systemd-smoke.rc
           SMOKE
-          chmod 700 /tmp/vos-a2-systemd-smoke.sh
+          chmod 700 "$SMOKE"
 
-          cat >/tmp/vos-a2-runtime-guest.sh <<'GUEST'
+          GUEST="$RUNNER_TEMP/vos-a2-runtime-guest.sh"
+          cat >"$GUEST" <<'GUEST'
           #!/usr/bin/env bash
           set -euo pipefail
           export LC_ALL=C LANG=C
@@ -187,28 +185,30 @@ jobs:
           chmod 755 /tmp/vos-a2-gate.sh
           timeout -k 15s 480s env VOS_AGY_MODEL="$model" VOS_AGY_ZERO_COST_EVIDENCE_REF=firstparty:antigravity-individual-zero-dollar:2026-09-15 VOS_AGY_TURN_TIMEOUT_SECONDS=180 /tmp/vos-a2-gate.sh qualify
           GUEST
-          chmod 700 /tmp/vos-a2-runtime-guest.sh
+          chmod 700 "$GUEST"
 
-          cat >/tmp/vos-a2-runtime-unit.sh <<UNIT
+          UNIT="$RUNNER_TEMP/vos-a2-runtime-unit.sh"
+          cat >"$UNIT" <<UNIT
           #!/usr/bin/env bash
           set +e
           export HOME=/home/ubuntu
           export PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-          export VOS_PROXY_PORT="$VOS_PROXY_PORT" AGY_VERSION="$AGY_VERSION"
+          export VOS_PROXY_PORT="$PROXY_PORT" AGY_VERSION="$AGY_VERSION"
           /tmp/vos-a2-runtime-guest.sh >/tmp/vos-a2-runtime.result 2>&1
           rc=\$?
           printf '%s\n' "\$rc" >/tmp/vos-a2-runtime.rc.tmp
           mv /tmp/vos-a2-runtime.rc.tmp /tmp/vos-a2-runtime.rc
           exit "\$rc"
           UNIT
-          chmod 700 /tmp/vos-a2-runtime-unit.sh
+          chmod 700 "$UNIT"
 
-          cat >/tmp/vos-a2-persist-unit.sh <<UNIT
+          PERSIST="$RUNNER_TEMP/vos-a2-persist-unit.sh"
+          cat >"$PERSIST" <<UNIT
           #!/usr/bin/env bash
           set +e
           export HOME=/home/ubuntu
           export PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
-          export HTTPS_PROXY="http://192.168.64.1:$VOS_PROXY_PORT" HTTP_PROXY="http://192.168.64.1:$VOS_PROXY_PORT"
+          export HTTPS_PROXY="http://192.168.64.1:$PROXY_PORT" HTTP_PROXY="http://192.168.64.1:$PROXY_PORT"
           export https_proxy="\$HTTPS_PROXY" http_proxy="\$HTTP_PROXY" SSH_CONNECTION='127.0.0.1 22000 127.0.0.1 22'
           timeout -k 10s 60s /home/ubuntu/.local/bin/agy models >/tmp/vos-a2-persist.result 2>&1
           rc=\$?
@@ -216,23 +216,20 @@ jobs:
           mv /tmp/vos-a2-persist.rc.tmp /tmp/vos-a2-persist.rc
           exit "\$rc"
           UNIT
-          chmod 700 /tmp/vos-a2-persist-unit.sh
+          chmod 700 "$PERSIST"
 
-          mpb 30 transfer /tmp/vos-a2-systemd-smoke.sh vos-worker:/tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_TRANSFER
-          mpb 30 transfer /tmp/vos-a2-runtime-guest.sh vos-worker:/tmp/vos-a2-runtime-guest.sh >/dev/null || fail GUEST_TRANSFER
-          mpb 30 transfer /tmp/vos-a2-runtime-unit.sh vos-worker:/tmp/vos-a2-runtime-unit.sh >/dev/null || fail UNIT_TRANSFER
-          mpb 30 transfer /tmp/vos-a2-persist-unit.sh vos-worker:/tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_TRANSFER
+          mpb 30 transfer "$SMOKE" vos-worker:/tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_TRANSFER
+          mpb 30 transfer "$GUEST" vos-worker:/tmp/vos-a2-runtime-guest.sh >/dev/null || fail GUEST_TRANSFER
+          mpb 30 transfer "$UNIT" vos-worker:/tmp/vos-a2-runtime-unit.sh >/dev/null || fail UNIT_TRANSFER
+          mpb 30 transfer "$PERSIST" vos-worker:/tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_TRANSFER
           mpb 15 exec vos-worker -- chmod 700 /tmp/vos-a2-systemd-smoke.sh /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh || fail GUEST_CHMOD
 
-          # Prove the detached systemd execution mechanism before spending a model turn.
+          # Cheap detach smoke: no model turn until this passes.
           mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-systemd-smoke.rc*; sudo systemctl stop vos-a2-systemd-smoke.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-systemd-smoke.service >/dev/null 2>&1 || true' || fail SMOKE_RESET
           mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-systemd-smoke --property=Type=exec --property=User=ubuntu -- /tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_LAUNCH
           smoke=''
           for _ in $(seq 1 10); do smoke="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-systemd-smoke.rc 2>/dev/null || true' || true)"; [ -n "$smoke" ] && break; sleep 1; done
-          if [ "$smoke" != 0 ]; then
-            mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-systemd-smoke.service 2>/dev/null || true
-            fail SYSTEMD_DETACH_SMOKE_FAILED
-          fi
+          if [ "$smoke" != 0 ]; then mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-systemd-smoke.service 2>/dev/null || true; fail SYSTEMD_DETACH_SMOKE_FAILED; fi
           echo A2_SYSTEMD_DETACH_SMOKE=GREEN
 
           mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.rc.tmp /tmp/vos-a2-runtime.result; sudo systemctl stop vos-a2-runtime.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-runtime.service >/dev/null 2>&1 || true' || fail QUALIFIER_RESET
@@ -240,24 +237,17 @@ jobs:
           sleep 2
           unit_state="$(mpb 10 exec vos-worker -- sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainStatus 2>/dev/null || true)"
           printf '%s\n' "$unit_state" | sed 's/^/A2_QUALIFIER_UNIT_/'
-          if printf '%s\n' "$unit_state" | grep -q '^ActiveState=failed$'; then
-            mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-runtime.service 2>/dev/null || true
-            fail QUALIFIER_UNIT_FAILED_EARLY
-          fi
+          if printf '%s\n' "$unit_state" | grep -q '^ActiveState=failed$'; then mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-runtime.service 2>/dev/null || true; fail QUALIFIER_UNIT_FAILED_EARLY; fi
 
           grc=''
           for _ in $(seq 1 180); do
-            poll_rc=0
-            candidate="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-runtime.rc 2>/dev/null || true')" || poll_rc=$?
+            poll_rc=0; candidate="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-runtime.rc 2>/dev/null || true')" || poll_rc=$?
             if [ "$poll_rc" -eq 124 ]; then sleep 3; continue; fi
             [ "$poll_rc" -eq 0 ] || fail "QUALIFIER_POLL_RC_$poll_rc"
             if [ -n "$candidate" ]; then grc="$candidate"; break; fi
             sleep 3
           done
-          [ -n "$grc" ] || {
-            mpb 10 exec vos-worker -- sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
-            fail QUALIFIER_NO_RESULT_AFTER_540S
-          }
+          [ -n "$grc" ] || { mpb 10 exec vos-worker -- sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true; fail QUALIFIER_NO_RESULT_AFTER_540S; }
           case "$grc" in ''|*[!0-9]*) fail "QUALIFIER_BAD_RC_$grc";; esac
           qout="$(mpb 15 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-runtime.result 2>/dev/null || true')" || fail QUALIFIER_RESULT_READ
           printf '%s\n' "$qout"
@@ -304,13 +294,6 @@ jobs:
           echo PAID_API_FALLBACK=0
           echo ANTIGRAVITY_CREDIT_FALLBACK=0
           echo PRODUCTION_MUTATIONS=0
-          REMOTE
-          chmod 700 "$HOST"
-          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-a2-runtime-host.sh
-          rc=0
-          ssh -o BatchMode=yes -o ConnectTimeout=8 imac "env VOS_PROXY_PORT='$PROXY_PORT' FABRIC_A2_SHA='$FABRIC_A2_SHA' AGY_VERSION='$AGY_VERSION' bash /tmp/vos-a2-runtime-host.sh" || rc=$?
-          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'rm -f /tmp/vos-a2-runtime-host.sh' || true
-          exit "$rc"
 
       - name: Collect sanitized A2 terminal evidence
         if: always()
@@ -318,26 +301,21 @@ jobs:
         run: |
           set -u
           OUT="$RUNNER_TEMP/a2-terminal-evidence.txt"
+          MP=""
+          for c in "$(command -v multipass 2>/dev/null||true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -z "$c" ] || [ ! -x "$c" ] || { MP="$c"; break; }; done
           {
             echo "RUN_ID=$GITHUB_RUN_ID"
             echo "HEAD_SHA=$GITHUB_SHA"
             echo "FABRIC_A2_SHA=$FABRIC_A2_SHA"
-            ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
-          set -u
-          MP=""
-          for c in "$(command -v multipass 2>/dev/null||true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -z "$c" ] || [ ! -x "$c" ] || { MP="$c"; break; }; done
-          [ -n "$MP" ] || { echo DIAG_MULTIPASS_MISSING; exit 0; }
-          /usr/bin/python3 - "$MP" <<'PY'
+            if [ -z "$MP" ]; then
+              echo DIAG_MULTIPASS_MISSING
+            else
+              /usr/bin/python3 - "$MP" <<'PY'
           import subprocess,sys
           mp=sys.argv[1]
           script=r'''
           for f in /tmp/vos-a2-systemd-smoke.rc /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.result /tmp/vos-a2-persist.rc; do
-            if [ -f "$f" ]; then
-              echo "=== $f ==="
-              cat "$f"
-            else
-              echo "=== $f MISSING ==="
-            fi
+            if [ -f "$f" ]; then echo "=== $f ==="; cat "$f"; else echo "=== $f MISSING ==="; fi
           done
           echo '=== runtime unit ==='
           sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
@@ -352,7 +330,7 @@ jobs:
           except subprocess.TimeoutExpired:
               print('DIAG_MP_RC=124')
           PY
-          REMOTE
+            fi
           } >"$OUT" 2>&1 || true
           cat "$OUT"
 
