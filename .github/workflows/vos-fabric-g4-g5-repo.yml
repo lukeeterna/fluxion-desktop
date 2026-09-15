@@ -10,6 +10,7 @@ on:
       - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
       - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
       - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+      - ".github/workflows/vos-fabric-g4-g5-runtime.yml"
   pull_request:
     paths:
       - "tests/vos_fabric_live_codex_worker.py"
@@ -17,6 +18,7 @@ on:
       - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
       - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
       - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+      - ".github/workflows/vos-fabric-g4-g5-runtime.yml"
 
 permissions:
   contents: read
@@ -27,6 +29,7 @@ jobs:
     timeout-minutes: 5
     env:
       FABRIC_SHA: 18752fb147f6700d4dc0633a55b9367d00ef0d91
+      MANDATE_SHA256: 9a7785af557da76405dfd2b28f9a9b481603f51a8e6bd77057132722a36ad46c
     steps:
       - uses: actions/checkout@v4
       - name: Compile runtime harness
@@ -37,12 +40,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import hashlib, json
+          import hashlib, json, os
           from pathlib import Path
           md = Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.md')
           manifest = json.loads(Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.json').read_text())
           actual = hashlib.sha256(md.read_bytes()).hexdigest()
-          assert actual == manifest['mandate_sha256']
+          assert actual == manifest['mandate_sha256'] == os.environ['MANDATE_SHA256']
           assert manifest['founder_go'] is True
           assert manifest['label'] == 'CONFIRM_FIRST'
           assert manifest['risk'] == 'B'
@@ -96,11 +99,31 @@ jobs:
           print('G4_G5_DATA_CLASS_REPO=PUBLIC')
           print('G4_G5_DATA_POLICY_REPO=PUBLIC_ONLY')
           PY
+      - name: Verify staged runtime workflow boundaries
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          p = Path('.github/workflows/vos-fabric-g4-g5-runtime.yml')
+          text = p.read_text()
+          assert os.environ['FABRIC_SHA'] in text
+          assert os.environ['MANDATE_SHA256'] in text
+          assert 'runs-on: [self-hosted, macbook, fluxion]' in text
+          assert 'PUBLIC' in text and 'PUBLIC_ONLY' in Path('tests/vos_fabric_g4_g5_runtime.py').read_text()
+          assert 'G5_DUPLICATED_EFFECTS=0' in text
+          assert 'PRODUCTION_MUTATIONS=0' in text
+          assert 'G2_QUALIFICATION_REF' in text and 'G2_SOURCE_THREAD_ID' in text
+          forbidden = ('OPENAI_API_KEY','ANTHROPIC_API_KEY','GOOGLE_API_KEY')
+          assert not any(x in text for x in forbidden)
+          print('G4_G5_RUNTIME_WORKFLOW_REPO=GREEN')
+          PY
       - name: Verify no paid-key fallback in certification code
         run: |
           set -euo pipefail
           if grep -R -n -E 'OPENAI_API_KEY|ANTHROPIC_API_KEY|GOOGLE_API_KEY|sk-[A-Za-z0-9]' \
-            tests/vos_fabric_live_codex_worker.py tests/vos_fabric_g4_g5_runtime.py; then
+            tests/vos_fabric_live_codex_worker.py tests/vos_fabric_g4_g5_runtime.py \
+            .github/workflows/vos-fabric-g4-g5-runtime.yml; then
             echo 'paid/API-key fallback marker found' >&2
             exit 1
           fi
