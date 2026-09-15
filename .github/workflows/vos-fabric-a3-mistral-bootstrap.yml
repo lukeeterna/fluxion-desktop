@@ -1,0 +1,168 @@
+name: VOS Fabric A3 Mistral Bootstrap
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a3-mistral-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a3-mistral-bootstrap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-a3-mistral-bootstrap
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 15
+    env:
+      UV_VERSION: "0.11.26"
+      UV_INSTALLER_SHA256: "92fa9085d24c214bb4445cc1da8c15ca9cca8cffb34726240fa08c5302e94ccc"
+      VIBE_VERSION: "2.25.4"
+      VIBE_WHEEL_SHA256: "d43aa028e1931f3d05d735111384eadc937b4d47b7a05eb2ee04313fd860662f"
+    steps:
+      - name: Install exact toolchain in isolated vos-worker without inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail(){ printf 'A3_BOOTSTRAP_BLOCKED=%s\n' "$*"; exit 2; }
+          bounded(){
+            local seconds="$1"; shift
+            /usr/bin/python3 - "$seconds" "$@" <<'PY'
+          import subprocess,sys
+          secs=float(sys.argv[1]); cmd=sys.argv[2:]
+          try:
+              p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=secs)
+          except subprocess.TimeoutExpired as exc:
+              out=exc.stdout or ''
+              if isinstance(out,bytes): out=out.decode('utf-8','replace')
+              if out: print(out,end='')
+              raise SystemExit(124)
+          if p.stdout: print(p.stdout,end='')
+          raise SystemExit(p.returncode)
+          PY
+          }
+          production_green(){
+            uid="$(id -u)"
+            launch_running(){ label="$1"; for domain in "gui/$uid" "user/$uid" system; do launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0; done; launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'; }
+            launch_running com.zeroclaw.fall-detector && launch_running com.go2rtc && launch_running com.mosquitto.broker && curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && { lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; } && mount | grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          echo A3_BOOTSTRAP_PRE_PRODUCTION=GREEN
+
+          MP=''; for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }; done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          bounded 15 "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          if ! bounded 15 "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running'; then bounded 35 "$MP" start vos-worker >/dev/null 2>&1 || true; fi
+          for _ in 1 2 3 4 5 6 7 8 9 10; do bounded 10 "$MP" info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running' && break; sleep 2; done
+          guest_ip="$(bounded 20 "$MP" exec vos-worker -- sh -c "hostname -I | awk '{print \$1}'" | tail -1)"
+          [ "$(bounded 20 "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' | tail -1)" = VOS_FABRIC_G2 ] || fail VOS_WORKER_OWNER
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT
+          echo "A3_BOOTSTRAP_BOUNDARY=GREEN guest=$guest_ip"
+
+          PROXY_PORT=$((27000 + GITHUB_RUN_ID % 10000))
+          PROXY="$RUNNER_TEMP/vos-a3-bootstrap-proxy-${GITHUB_RUN_ID}.py"
+          PROXY_LOG="$RUNNER_TEMP/vos-a3-bootstrap-proxy-${GITHUB_RUN_ID}.log"
+          cat >"$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import os,select,socket,socketserver
+          bind=("192.168.64.1",int(os.environ["VOS_PROXY_PORT"])); allowed=os.environ["VOS_GUEST_IP"]
+          class H(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0]!=allowed:return
+                  line=self.rfile.readline(8192).decode('ascii','replace').strip().split()
+                  if len(line)!=3 or line[0].upper()!='CONNECT' or ':' not in line[1]:return
+                  host,ps=line[1].rsplit(':',1)
+                  try:port=int(ps)
+                  except ValueError:return
+                  if port!=443:self.wfile.write(b'HTTP/1.1 403 Forbidden\r\n\r\n');return
+                  print('CONNECT_HOST=%s:443'%host,flush=True)
+                  while True:
+                      x=self.rfile.readline(8192)
+                      if x in (b'\r\n',b'\n',b''):break
+                  try:up=socket.create_connection((host,443),timeout=20)
+                  except OSError:self.wfile.write(b'HTTP/1.1 502 Bad Gateway\r\n\r\n');return
+                  with up:
+                      up.setblocking(False);self.connection.setblocking(False);self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n');s=[self.connection,up]
+                      while True:
+                          r,_,e=select.select(s,[],s,120)
+                          if e or not r:return
+                          for src in r:
+                              dst=up if src is self.connection else self.connection
+                              try:data=src.recv(65536)
+                              except OSError:return
+                              if not data:return
+                              try:dst.sendall(data)
+                              except OSError:return
+          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
+          with S(bind,H) as server: print('READY',flush=True);server.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          VOS_PROXY_PORT="$PROXY_PORT" VOS_GUEST_IP="$guest_ip" /usr/bin/python3 "$PROXY" >"$PROXY_LOG" 2>&1 & proxy_pid=$!
+          cleanup(){ kill "$proxy_pid" >/dev/null 2>&1 || true; rm -f "$PROXY" "$PROXY_LOG" "$RUNNER_TEMP/vos-a3-bootstrap-guest-${GITHUB_RUN_ID}.sh"; }
+          trap cleanup EXIT INT TERM
+          for _ in 1 2 3 4 5; do grep -q '^READY$' "$PROXY_LOG" 2>/dev/null && break; sleep 1; done
+          grep -q '^READY$' "$PROXY_LOG" || fail PROXY_NOT_READY
+
+          GUEST="$RUNNER_TEMP/vos-a3-bootstrap-guest-${GITHUB_RUN_ID}.sh"
+          cat >"$GUEST" <<'GUEST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" HTTP_PROXY="$HTTPS_PROXY" https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY"
+          export PATH="$HOME/.local/bin:$PATH"
+          : "${UV_VERSION:?}" "${UV_INSTALLER_SHA256:?}" "${VIBE_VERSION:?}" "${VIBE_WHEEL_SHA256:?}"
+          echo A3_INFERENCE_CALLS=0
+          tmp="$(mktemp -d -t vos-a3-bootstrap.XXXXXX)"; trap 'rm -rf "$tmp"' EXIT INT TERM
+          curl -LsSf --retry 4 --retry-delay 2 "https://astral.sh/uv/${UV_VERSION}/install.sh" -o "$tmp/uv-install.sh"
+          [ "$(sha256sum "$tmp/uv-install.sh" | awk '{print $1}')" = "$UV_INSTALLER_SHA256" ] || { echo A3_BOOTSTRAP_BLOCKED=UV_INSTALLER_SHA_MISMATCH; exit 2; }
+          sh "$tmp/uv-install.sh" >/dev/null
+          export PATH="$HOME/.local/bin:$PATH"
+          uv --version | grep -F "uv ${UV_VERSION}" >/dev/null || { echo A3_BOOTSTRAP_BLOCKED=UV_VERSION_DRIFT; exit 2; }
+          echo "A3_UV_VERSION=$(uv --version | head -1)"
+          echo "A3_UV_BINARY_SHA256=$(sha256sum "$(command -v uv)" | awk '{print $1}')"
+
+          curl -LsSf --retry 4 --retry-delay 2 "https://pypi.org/pypi/mistral-vibe/${VIBE_VERSION}/json" -o "$tmp/pypi.json"
+          python3 - "$tmp/pypi.json" "$VIBE_WHEEL_SHA256" "$tmp/wheel-url" <<'PY'
+          import json,sys
+          p,expected,out=sys.argv[1:]
+          d=json.load(open(p,encoding='utf-8')); hits=[]
+          for x in d.get('urls',[]):
+              if x.get('packagetype')=='bdist_wheel' and x.get('filename')==f"mistral_vibe-{d['info']['version']}-py3-none-any.whl": hits.append(x)
+          if len(hits)!=1: raise SystemExit('wheel metadata not unique')
+          x=hits[0]
+          if x.get('digests',{}).get('sha256')!=expected: raise SystemExit('PyPI digest mismatch')
+          if x.get('yanked'): raise SystemExit('wheel is yanked')
+          open(out,'w',encoding='utf-8').write(x['url'])
+          print('A3_PYPI_VERSION='+d['info']['version']); print('A3_PYPI_WHEEL_DIGEST=GREEN')
+          PY
+          curl -LsSf --retry 4 --retry-delay 2 "$(cat "$tmp/wheel-url")" -o "$tmp/mistral_vibe-${VIBE_VERSION}-py3-none-any.whl"
+          [ "$(sha256sum "$tmp/mistral_vibe-${VIBE_VERSION}-py3-none-any.whl" | awk '{print $1}')" = "$VIBE_WHEEL_SHA256" ] || { echo A3_BOOTSTRAP_BLOCKED=VIBE_WHEEL_SHA_MISMATCH; exit 2; }
+          echo A3_VIBE_WHEEL_SHA256=GREEN
+          uv tool install "$tmp/mistral_vibe-${VIBE_VERSION}-py3-none-any.whl" --python 3.12 --force >/dev/null
+          vibe --version | grep -F "$VIBE_VERSION" >/dev/null || { echo A3_BOOTSTRAP_BLOCKED=VIBE_VERSION_DRIFT; exit 2; }
+          echo "A3_VIBE_VERSION=$(vibe --version | head -1)"
+          echo "A3_VIBE_ENTRYPOINT_SHA256=$(sha256sum "$(command -v vibe)" | awk '{print $1}')"
+          echo "A3_VIBE_PYTHON_SHEBANG=$(head -1 "$(command -v vibe)")"
+          help="$(vibe --help 2>&1 || true)"
+          for flag in --prompt --resume --max-turns --enabled-tools --output --trust; do printf '%s\n' "$help" | grep -F -- "$flag" >/dev/null || { echo "A3_BOOTSTRAP_BLOCKED=MISSING_FLAG_${flag#--}"; exit 2; }; done
+          echo A3_PROGRAMMATIC_SURFACE=GREEN
+          echo A3_ACCOUNT_PLAN=UNKNOWN
+          echo A3_PAYG_OFF_PROVEN=0
+          echo A3_INFERENCE_CALLS=0
+          echo A3_BOOTSTRAP=GREEN
+          echo A3=BLOCKED_ACCOUNT_PLAN_EVIDENCE
+          GUEST
+          chmod 700 "$GUEST"
+          bounded 30 "$MP" transfer "$GUEST" vos-worker:/tmp/vos-a3-bootstrap.sh >/dev/null || fail GUEST_SCRIPT_TRANSFER
+          bounded 420 "$MP" exec vos-worker -- env VOS_PROXY_PORT="$PROXY_PORT" UV_VERSION="$UV_VERSION" UV_INSTALLER_SHA256="$UV_INSTALLER_SHA256" VIBE_VERSION="$VIBE_VERSION" VIBE_WHEEL_SHA256="$VIBE_WHEEL_SHA256" bash /tmp/vos-a3-bootstrap.sh
+          bounded 20 "$MP" exec vos-worker -- rm -f /tmp/vos-a3-bootstrap.sh >/dev/null || true
+          production_green || fail POST_PRODUCTION_REGRESSION
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT_AFTER
+          echo A3_BOOTSTRAP_POST_PRODUCTION=GREEN
+          echo PRODUCTION_MUTATIONS=0
