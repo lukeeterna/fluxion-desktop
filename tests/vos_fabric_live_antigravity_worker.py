@@ -21,6 +21,7 @@ AGY_VERSION = "1.2.3"
 AGY_BINARY_SHA256 = "c4c8a6722f9b570e370941b0953ba29051336307d7999ec842bdf7500b0ca7c8"
 AGY_MODEL = "gemini-3.8-flash-high"
 BANNED_ENV = ("GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_BASE_URL")
+KNOWN_FINALIZATION_ERROR = "context canceled"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -157,9 +158,18 @@ def parse_stream(
     expected_proof: str,
     expected_conversation: Optional[str],
 ) -> Tuple[str, Dict[str, Any]]:
+    """Validate the official stream envelope and exact structured result.
+
+    Antigravity issue #848 documents a print-mode finalization defect where a valid
+    finish() is followed by terminal ``status=ERROR`` / ``error=context canceled``.
+    That defect is accepted only after all success payload invariants are proven.
+    Every other non-SUCCESS status remains fail-closed.
+    """
     init_event = None
     result = None
     event_count = 0
+    init_count = 0
+    result_count = 0
     for raw in payload.decode("utf-8", "replace").splitlines():
         raw = raw.strip()
         if not raw:
@@ -169,22 +179,50 @@ def parse_stream(
             raise RuntimeError("Antigravity stream event must be an object")
         event_count += 1
         if event.get("event") == "init":
+            init_count += 1
             init_event = event
         elif event.get("event") == "result":
+            result_count += 1
             result = event.get("result")
+    if init_count != 1 or result_count != 1:
+        raise RuntimeError("Antigravity stream requires exactly one init and one result")
     if not isinstance(init_event, dict) or not isinstance(result, dict):
         raise RuntimeError("Antigravity stream missing init/result")
-    if result.get("status") != "SUCCESS":
-        raise RuntimeError("Antigravity terminal status is not SUCCESS")
+
     structured = result.get("structured_output")
-    if not isinstance(structured, dict) or structured.get("proof") != expected_proof:
+    if (
+        not isinstance(structured, dict)
+        or set(structured.keys()) != {"proof"}
+        or structured.get("proof") != expected_proof
+    ):
         raise RuntimeError("Antigravity structured proof mismatch")
     conversation = result.get("conversation_id") or init_event.get("conversation_id")
     if not isinstance(conversation, str) or not conversation:
         raise RuntimeError("Antigravity conversation id missing")
     if expected_conversation is not None and conversation != expected_conversation:
         raise RuntimeError("Antigravity exact resume changed conversation id")
-    return conversation, {"event_count": event_count}
+
+    terminal_status = result.get("status")
+    terminal_error = result.get("error")
+    accepted_known_bug = False
+    terminal_error_class = "NONE"
+    if terminal_status == "SUCCESS":
+        if terminal_error not in (None, ""):
+            raise RuntimeError("Antigravity SUCCESS carried unexpected terminal error")
+    elif terminal_status == "ERROR" and terminal_error == KNOWN_FINALIZATION_ERROR:
+        accepted_known_bug = True
+        terminal_error_class = "KNOWN_AGY_CONTEXT_CANCELED_AFTER_VALID_FINISH"
+    else:
+        raise RuntimeError("Antigravity terminal status/error is not an accepted completion")
+
+    return conversation, {
+        "event_count": event_count,
+        "init_count": init_count,
+        "result_count": result_count,
+        "terminal_status": terminal_status,
+        "terminal_error_class": terminal_error_class,
+        "accepted_known_cli_finalization_bug": accepted_known_bug,
+    }
 
 
 def main() -> int:
@@ -363,6 +401,11 @@ def main() -> int:
         "settings_before_sha256": settings_before,
         "settings_after_sha256": settings_after,
         "event_count": parsed["event_count"],
+        "init_count": parsed["init_count"],
+        "result_count": parsed["result_count"],
+        "terminal_status": parsed["terminal_status"],
+        "terminal_error_class": parsed["terminal_error_class"],
+        "accepted_known_cli_finalization_bug": parsed["accepted_known_cli_finalization_bug"],
         "structured_output_verified": True,
         "api_key_fallback": 0,
         "credit_fallback": 0,
@@ -373,6 +416,10 @@ def main() -> int:
     print("A2_G4_G5_MODEL_PREFLIGHT=GREEN")
     print("A2_G4_G5_DIRECT_OFFICIAL=GREEN")
     print("A2_G4_G5_STRUCTURED_OUTPUT=GREEN")
+    print(
+        "A2_G4_G5_KNOWN_CLI_FINALIZATION_BUG=%d"
+        % (1 if parsed["accepted_known_cli_finalization_bug"] else 0)
+    )
     print("A2_G4_G5_API_KEY_FALLBACK=0")
     print("A2_G4_G5_CREDIT_FALLBACK=0")
     print("A2_G4_G5_PRODUCTION_MUTATIONS=0")
