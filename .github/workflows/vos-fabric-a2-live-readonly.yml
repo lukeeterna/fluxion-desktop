@@ -1,0 +1,49 @@
+name: VOS Fabric A2 Live Readonly Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a2-antigravity-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a2-live-readonly.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Read A2 guest state without invoking provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          MP="$(command -v multipass 2>/dev/null || printf "%s" "/Library/Application Support/com.canonical.multipass/bin/multipass")"
+          /usr/bin/python3 - "$MP" <<'PY'
+          import subprocess,sys
+          mp=sys.argv[1]
+          script=r'''
+          echo A2_LIVE_READONLY=1
+          for f in /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.result /tmp/vos-a2-persist.rc; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+            else
+              echo "=== $f MISSING ==="
+            fi
+          done
+          echo '=== runtime unit ==='
+          sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
+          pgrep -af 'agy|vos-a2-runtime' || true
+          '''
+          try:
+              p=subprocess.run([mp,'exec','vos-worker','--','sh','-lc',script],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15)
+          except subprocess.TimeoutExpired:
+              print('A2_LIVE_MP_RC=124'); raise SystemExit(0)
+          print(p.stdout,end='')
+          print('A2_LIVE_MP_RC='+str(p.returncode))
+          PY
+          REMOTE
