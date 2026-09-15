@@ -1,0 +1,188 @@
+name: VOS Fabric G2 Composite Certification
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-composite.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vos-fabric-g2-composite-certification
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 8
+    env:
+      PARENT_RUN: "34888246045"
+      PARENT_JOB: "104321135055"
+      FABRIC_SHA: "18752fb147f6700d4dc0633a55b9367d00ef0d91"
+      GATE_SHA256: "7f706698bf7a7eb11ba11bd71fd80c2cfbc485ff8e436c3ad2ecceb952a95780"
+      CODEX_VERSION: "0.154.0"
+      CODEX_HOST_SHA256: "0c57be435e73b70d9106c850d751cd259a7f04da958a453d7ef59090d82b70f1"
+      BWRAP_SHA256: "01fb705f067bd5365b63d8ad2323a61c8d007733ca5e649437e086f3fb9935d8"
+      SOURCE_THREAD_ID: "01a0a453-c93a-71c0-a3b9-3a579a7510b1"
+      FORK_THREAD_ID: "01a0a454-5ef8-7421-aab9-bd27261c339d"
+      FIRST_EVENTS_SHA256: "0801452fe0c4b990eba6651002c934ab20325468e0921aa8b3b80658396191b2"
+      RESUME_EVENTS_SHA256: "8bb6802a27141f5545cdf384d1a7239d949205148293d9bf67ce6db6dd253805"
+      FORK_EVENTS_SHA256: "920b6ad2aebfec8876216edfaf61835940d0d71a0e97b0a50e30a474a97bd2f9"
+    steps:
+      - name: Verify exact parent runtime evidence from GitHub
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          LOG="$RUNNER_TEMP/g2-parent-${PARENT_JOB}.log"
+          curl -fsSL --retry 4 --retry-delay 2 \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H 'Accept: application/vnd.github+json' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/jobs/${PARENT_JOB}/logs" \
+            -o "$LOG"
+          test -s "$LOG"
+
+          require_line() {
+            local literal="$1"
+            grep -F -- "$literal" "$LOG" >/dev/null || {
+              printf 'G2_COMPOSITE_BLOCKED=PARENT_MARKER_MISSING:%s\n' "$literal" >&2
+              exit 2
+            }
+          }
+
+          require_line "PASS FABRIC_GATE                        fabric_sha=${FABRIC_SHA} gate_sha256=${GATE_SHA256}"
+          require_line 'CODEX_CHATGPT_AUTH=GREEN'
+          require_line "CODEX_VERSION=codex-cli ${CODEX_VERSION}"
+          require_line "CODEX_CODE_MODE_HOST_SHA256=${CODEX_HOST_SHA256}"
+          require_line "CODEX_BWRAP_SHA256=${BWRAP_SHA256}"
+          require_line 'CODEX_MODEL_REQUESTED=gpt-5.6-terra'
+          require_line "CODEX_SOURCE_THREAD_ID=${SOURCE_THREAD_ID}"
+          require_line "CODEX_FORK_THREAD_ID=${FORK_THREAD_ID}"
+          require_line "CODEX_FIRST_EVENTS_SHA256=${FIRST_EVENTS_SHA256}"
+          require_line "CODEX_RESUME_EVENTS_SHA256=${RESUME_EVENTS_SHA256}"
+          require_line "CODEX_FORK_EVENTS_SHA256=${FORK_EVENTS_SHA256}"
+          require_line 'CODEX_EXEC_JSON=GREEN'
+          require_line 'CODEX_TOOL_EXECUTION=GREEN'
+          require_line 'CODEX_EXACT_RESUME=GREEN'
+          require_line 'CODEX_EXACT_FORK=GREEN'
+          require_line 'LINUX_CODEX_WORKER_LOCAL_QUALIFICATION=GREEN'
+          require_line 'PASS CODEX_RUNTIME                      tool/exec/resume/fork verified in three calls'
+          require_line 'PASS CLEAN_STOP                         vos-worker stopped; production unchanged'
+
+          PARENT_LOG_SHA256="$(shasum -a 256 "$LOG" | awk '{print $1}')"
+          printf 'G2_PARENT_RUN=%s\n' "$PARENT_RUN"
+          printf 'G2_PARENT_JOB=%s\n' "$PARENT_JOB"
+          printf 'G2_PARENT_LOG_SHA256=%s\n' "$PARENT_LOG_SHA256"
+          printf 'G2_PARENT_CODEX_RUNTIME=GREEN\n'
+          printf 'G2_PARENT_CLEAN_STOP=GREEN\n'
+
+      - name: Verify current post-restart worker read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE="$RUNNER_TEMP/g2-composite-post-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${FABRIC_SHA:?}"; : "${GATE_SHA256:?}"; : "${CODEX_VERSION:?}"
+          : "${CODEX_HOST_SHA256:?}"; : "${BWRAP_SHA256:?}"
+          fail(){ printf 'G2_COMPOSITE_BLOCKED=%s\n' "$*"; exit 2; }
+          pass(){ printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+          bounded(){
+            /usr/bin/python3 - "$@" <<'PY'
+          import subprocess, sys
+          try:
+              p=subprocess.run(sys.argv[1:],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=12)
+              if p.stdout: print(p.stdout,end='')
+              raise SystemExit(p.returncode)
+          except subprocess.TimeoutExpired as exc:
+              out=exc.stdout or ''
+              if isinstance(out,bytes): out=out.decode('utf-8','replace')
+              if out: print(out,end='')
+              print('BOUNDED_COMMAND_TIMEOUT=1')
+              raise SystemExit(124)
+          PY
+          }
+
+          uid="$(id -u)"
+          launch_running(){
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          production_green(){
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION 'Guardian/FLUXION/NAS green'
+
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$c" ] && [ -x "$c" ]; then MP="$c"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+
+          info="$(bounded "$MP" info vos-worker)" || fail VOS_WORKER_INFO
+          printf '%s\n' "$info"
+          printf '%s\n' "$info" | grep -q 'State:[[:space:]]*Running' || fail VOS_WORKER_NOT_RUNNING
+          mounts="$(printf '%s\n' "$info" | awk '/Mounts:/ {print $2}')"
+          [ -z "$mounts" ] || [ "$mounts" = '--' ] || fail "UNEXPECTED_VM_MOUNTS=$mounts"
+          [ "$(bounded "$MP" exec vos-worker -- uname -m | tail -1)" = x86_64 ] || fail GUEST_ARCH
+          [ "$(bounded "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner' | tail -1)" = VOS_FABRIC_G2 ] || fail VOS_WORKER_OWNER
+          [ "$(bounded "$MP" exec vos-worker -- /usr/local/bin/codex --version | tail -1)" = "codex-cli ${CODEX_VERSION}" ] || fail CODEX_VERSION
+
+          host_sha="$(bounded "$MP" exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk 'NF>=1 {v=$1} END{print v}')"
+          bwrap_sha="$(bounded "$MP" exec vos-worker -- sha256sum /usr/local/bin/bwrap | awk 'NF>=1 {v=$1} END{print v}')"
+          gate_sha="$(bounded "$MP" exec vos-worker -- sha256sum /usr/local/lib/vos-fabric/codex_worker_gate.sh | awk 'NF>=1 {v=$1} END{print v}')"
+          [ "$host_sha" = "$CODEX_HOST_SHA256" ] || fail CODEX_HOST_SHA_CHANGED
+          [ "$bwrap_sha" = "$BWRAP_SHA256" ] || fail BWRAP_SHA_CHANGED
+          [ "$gate_sha" = "$GATE_SHA256" ] || fail FABRIC_GATE_SHA_CHANGED
+          bounded "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null || fail AUTH_AFTER_RESTART
+
+          pass POST_RESTART_RUNTIME "fabric=$FABRIC_SHA gate=$gate_sha host=$host_sha bwrap=$bwrap_sha"
+          pass POST_RESTART_AUTH 'ChatGPT auth persisted'
+          pass ROLLBACK_BOUNDARY 'owned vos-worker; no host mounts'
+
+          production_green || fail POST_PRODUCTION_REGRESSION
+          pass POST_PRODUCTION 'Guardian/FLUXION/NAS green'
+          echo 'G2_POST_RESTART=GREEN'
+          echo 'G2_PAID_API_FALLBACK=0'
+          echo 'PRODUCTION_REGRESSION=0'
+          REMOTE
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-g2-composite-post.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "FABRIC_SHA='$FABRIC_SHA' GATE_SHA256='$GATE_SHA256' CODEX_VERSION='$CODEX_VERSION' CODEX_HOST_SHA256='$CODEX_HOST_SHA256' BWRAP_SHA256='$BWRAP_SHA256' bash /tmp/vos-g2-composite-post.sh; rc=\$?; rm -f /tmp/vos-g2-composite-post.sh; exit \$rc"
+
+      - name: Emit exact composite certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "$SOURCE_THREAD_ID" != "$FORK_THREAD_ID" ]
+          echo "FABRIC_SHA=$FABRIC_SHA"
+          echo "G2_SOURCE_THREAD_ID=$SOURCE_THREAD_ID"
+          echo "G2_FORK_THREAD_ID=$FORK_THREAD_ID"
+          echo "G2_PARENT_RUN=$PARENT_RUN"
+          echo "G2_PARENT_JOB=$PARENT_JOB"
+          echo 'G2_PARENT_CODEX_RUNTIME=GREEN'
+          echo 'G2_PARENT_CLEAN_STOP=GREEN'
+          echo 'G2_POST_RESTART=GREEN'
+          echo 'G2_PAID_API_FALLBACK=0'
+          echo 'PRODUCTION_REGRESSION=0'
+          echo 'G2=GREEN'
