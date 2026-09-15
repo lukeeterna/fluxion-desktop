@@ -1,0 +1,204 @@
+name: VOS Fabric G2 Guest Recovery
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-guest-recovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-guest-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    steps:
+      - name: Restart only owned vos-worker and verify persisted auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE="$RUNNER_TEMP/vos-g2-guest-recovery-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail() { printf 'G2_GUEST_RECOVERY_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+
+          bounded() {
+            timeout_s="$1"; shift
+            /usr/bin/python3 - "$timeout_s" "$@" <<'PY'
+          import subprocess, sys
+          timeout=float(sys.argv[1]); argv=sys.argv[2:]
+          try:
+              p=subprocess.run(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, timeout=timeout)
+              if p.stdout: print(p.stdout, end="")
+              raise SystemExit(p.returncode)
+          except subprocess.TimeoutExpired as exc:
+              out=exc.stdout or ""
+              if isinstance(out, bytes): out=out.decode("utf-8", "replace")
+              if out: print(out, end="")
+              print("BOUNDED_COMMAND_TIMEOUT=1")
+              raise SystemExit(124)
+          PY
+          }
+
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          production_green() {
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION 'Guardian/FLUXION/NAS green'
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+
+          before="$({ bounded 12 "$MP" list --format json || true; } 2>&1)"
+          printf '%s\n' "$before"
+          [ -n "$before" ] || fail MULTIPASS_LIST_EMPTY
+          state_snapshot="$(printf '%s' "$before" | /usr/bin/python3 -c '
+          import json,sys
+          try: d=json.load(sys.stdin)
+          except Exception: raise SystemExit(2)
+          rows=d.get("list", [])
+          by={r.get("name"):r for r in rows}
+          for n in ("vos-worker","fluxion-staging"):
+              if n not in by: raise SystemExit(3)
+          v=by["vos-worker"]; f=by["fluxion-staging"]
+          print("%s|%s|%s|%s" % (v.get("state",""), (v.get("ipv4") or [""])[0], f.get("state",""), (f.get("ipv4") or [""])[0]))
+          ')" || fail MULTIPASS_LIST_PARSE
+          IFS='|' read -r vos_state vos_ip staging_state staging_ip <<<"$state_snapshot"
+          echo "VOS_WORKER_STATE_BEFORE=$vos_state"
+          echo "VOS_WORKER_IP_BEFORE=$vos_ip"
+          echo "FLUXION_STAGING_STATE_BEFORE=$staging_state"
+          echo "FLUXION_STAGING_IP_BEFORE=$staging_ip"
+          [ "$vos_state" = 'Running' ] || fail "VOS_WORKER_NOT_RUNNING=$vos_state"
+          [ "$vos_ip" = '192.168.64.3' ] || fail "VOS_WORKER_IP_UNEXPECTED=$vos_ip"
+          [ "$staging_state" = 'Running' ] || fail "FLUXION_STAGING_NOT_RUNNING=$staging_state"
+          [ "$staging_ip" = '192.168.64.2' ] || fail "FLUXION_STAGING_IP_UNEXPECTED=$staging_ip"
+          pass VM_IDENTITY 'vos-worker=Running@192.168.64.3 staging=Running@192.168.64.2'
+
+          # First try the normal Multipass lifecycle. This mutates only vos-worker.
+          stop_rc=0
+          stop_out="$(bounded 30 "$MP" stop vos-worker 2>&1)" || stop_rc=$?
+          printf '%s\n' "$stop_out"
+          echo "VOS_WORKER_NORMAL_STOP_RC=$stop_rc"
+
+          if [ "$stop_rc" -ne 0 ]; then
+            # Fail closed unless there is exactly one QEMU process whose full command line
+            # names vos-worker. TERM only that exact process; never touch fluxion-staging.
+            qemu_lines="$(ps -axo pid=,command= 2>/dev/null | grep '[q]emu-system' | grep 'vos-worker' || true)"
+            qemu_count="$(printf '%s\n' "$qemu_lines" | awk 'NF{n++} END{print n+0}')"
+            echo "VOS_WORKER_QEMU_MATCH_COUNT=$qemu_count"
+            [ "$qemu_count" -eq 1 ] || fail "NORMAL_STOP_FAILED_AND_QEMU_IDENTITY_AMBIGUOUS_RC_$stop_rc"
+            qemu_pid="$(printf '%s\n' "$qemu_lines" | awk 'NF{print $1; exit}')"
+            [ -n "$qemu_pid" ] || fail QEMU_PID_EMPTY
+            kill -TERM "$qemu_pid" || fail QEMU_TERM_FAILED
+            for _ in $(seq 1 20); do
+              kill -0 "$qemu_pid" 2>/dev/null || break
+              sleep 1
+            done
+            if kill -0 "$qemu_pid" 2>/dev/null; then
+              fail QEMU_TERM_DID_NOT_STOP_EXACT_VOS_WORKER
+            fi
+            pass EXACT_QEMU_TERM "pid=$qemu_pid vos-worker only"
+          fi
+
+          stopped=0
+          for _ in $(seq 1 15); do
+            list_out="$(bounded 10 "$MP" list --format json 2>/dev/null || true)"
+            state="$(printf '%s' "$list_out" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((r.get("state","") for r in d.get("list",[]) if r.get("name")=="vos-worker"),""))' 2>/dev/null || true)"
+            if [ "$state" = 'Stopped' ] || [ -z "$state" ]; then stopped=1; break; fi
+            sleep 1
+          done
+          [ "$stopped" -eq 1 ] || fail VOS_WORKER_DID_NOT_REACH_STOPPED
+          production_green || fail PRODUCTION_AFTER_WORKER_STOP
+          pass CLEAN_STOP 'vos-worker stopped; production unchanged'
+
+          start_rc=0
+          start_out="$(bounded 45 "$MP" start vos-worker 2>&1)" || start_rc=$?
+          printf '%s\n' "$start_out"
+          [ "$start_rc" -eq 0 ] || fail "VOS_WORKER_START_RC_$start_rc"
+
+          running=0
+          for _ in $(seq 1 30); do
+            list_out="$(bounded 10 "$MP" list --format json 2>/dev/null || true)"
+            state="$(printf '%s' "$list_out" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((r.get("state","") for r in d.get("list",[]) if r.get("name")=="vos-worker"),""))' 2>/dev/null || true)"
+            if [ "$state" = 'Running' ]; then running=1; break; fi
+            sleep 2
+          done
+          [ "$running" -eq 1 ] || fail VOS_WORKER_DID_NOT_REACH_RUNNING
+
+          responsive=0
+          for _ in $(seq 1 30); do
+            if bounded 8 "$MP" exec vos-worker -- true >/dev/null 2>&1; then responsive=1; break; fi
+            sleep 2
+          done
+          [ "$responsive" -eq 1 ] || fail VOS_WORKER_GUEST_AGENT_STILL_UNRESPONSIVE
+          pass GUEST_AGENT 'multipass exec responsive after isolated restart'
+
+          owner="$(bounded 10 "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>/dev/null || true)"
+          [ "$owner" = 'VOS_FABRIC_G2' ] || fail "VOS_WORKER_OWNER=${owner:-MISSING}"
+          pass OWNER 'VOS_FABRIC_G2'
+
+          codex_ver="$(bounded 10 "$MP" exec vos-worker -- /usr/local/bin/codex --version 2>/dev/null | head -1 || true)"
+          echo "CODEX_VERSION_AFTER_RECOVERY=$codex_ver"
+          [ -n "$codex_ver" ] || fail CODEX_MISSING_AFTER_RECOVERY
+          bounded 10 "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host >/dev/null || fail CODEX_CODE_MODE_HOST_MISSING
+          bounded 10 "$MP" exec vos-worker -- test -x /usr/local/bin/bwrap >/dev/null || fail BWRAP_MISSING
+          bounded 10 "$MP" exec vos-worker -- test -x /usr/local/lib/vos-fabric/codex_worker_gate.sh >/dev/null || fail FABRIC_GATE_MISSING
+
+          auth_rc=0
+          bounded 15 "$MP" exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
+          echo "CODEX_AUTH_AFTER_RECOVERY_RC=$auth_rc"
+          [ "$auth_rc" -eq 0 ] || fail AUTH_NOT_PERSISTED_AFTER_RECOVERY
+          echo 'CODEX_CHATGPT_AUTH=GREEN'
+
+          after="$(bounded 12 "$MP" list --format json 2>/dev/null)" || fail MULTIPASS_LIST_AFTER
+          after_snapshot="$(printf '%s' "$after" | /usr/bin/python3 -c '
+          import json,sys
+          d=json.load(sys.stdin); by={r.get("name"):r for r in d.get("list",[])}
+          for n in ("vos-worker","fluxion-staging"):
+              if n not in by: raise SystemExit(3)
+          v=by["vos-worker"]; f=by["fluxion-staging"]
+          print("%s|%s|%s|%s" % (v.get("state",""), (v.get("ipv4") or [""])[0], f.get("state",""), (f.get("ipv4") or [""])[0]))
+          ')" || fail MULTIPASS_LIST_AFTER_PARSE
+          IFS='|' read -r vos_state_after vos_ip_after staging_state_after staging_ip_after <<<"$after_snapshot"
+          [ "$vos_state_after" = 'Running' ] || fail "VOS_WORKER_FINAL_STATE=$vos_state_after"
+          [ "$vos_ip_after" = '192.168.64.3' ] || fail "VOS_WORKER_FINAL_IP=$vos_ip_after"
+          [ "$staging_state_after" = "$staging_state" ] || fail FLUXION_STAGING_STATE_CHANGED
+          [ "$staging_ip_after" = "$staging_ip" ] || fail FLUXION_STAGING_IP_CHANGED
+          production_green || fail POST_PRODUCTION_REGRESSION
+          pass POST_PRODUCTION 'Guardian/FLUXION/NAS green'
+          pass STAGING_NON_INTRUSIVITY 'fluxion-staging unchanged'
+          echo 'VOS_WORKER_GUEST_RECOVERY=GREEN'
+          echo 'PRODUCTION_REGRESSION=0'
+          echo 'PAID_API_FALLBACK=0'
+          REMOTE
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-g2-guest-recovery.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-guest-recovery.sh; rc=$?; rm -f /tmp/vos-g2-guest-recovery.sh; exit $rc'

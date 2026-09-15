@@ -1,0 +1,230 @@
+name: VOS Fabric G2 Qualify Codex Worker
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-qualify-proxy.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-qualify
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    env:
+      VOS_CODEX_MODEL: gpt-5.6-terra
+      CODEX_VERSION: 0.154.0
+      FABRIC_SHA: 18752fb147f6700d4dc0633a55b9367d00ef0d91
+      QUALIFIER_REV: 20260914-1940
+    steps:
+      - name: Qualify exact ChatGPT Codex worker end to end
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROXY_PORT=$((20000 + GITHUB_RUN_ID % 20000))
+
+          EXPECTED_GATE="$RUNNER_TEMP/codex-worker-gate-${FABRIC_SHA}.sh"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}/tools/fabric/codex_worker_gate.sh" \
+            -o "$EXPECTED_GATE"
+          bash -n "$EXPECTED_GATE"
+          GATE_SHA="$(shasum -a 256 "$EXPECTED_GATE" | awk '{print $1}')"
+          chmod 755 "$EXPECTED_GATE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$EXPECTED_GATE" imac:/tmp/vos-g2-expected-gate.sh
+
+          PROXY="$RUNNER_TEMP/vos-g2-qualify-proxy-${GITHUB_RUN_ID}.py"
+          cat > "$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import os, select, socket, socketserver
+          BIND = ("192.168.64.1", int(os.environ["VOS_PROXY_PORT"]))
+          ALLOWED_SOURCE = "192.168.64.3"
+          class Handler(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0] != ALLOWED_SOURCE:
+                      return
+                  self.connection.settimeout(30)
+                  line = self.rfile.readline(8192).decode("ascii", "replace").strip()
+                  parts = line.split()
+                  if len(parts) != 3 or parts[0].upper() != "CONNECT" or ":" not in parts[1]:
+                      self.wfile.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n"); return
+                  host, port_s = parts[1].rsplit(":", 1)
+                  try:
+                      port = int(port_s)
+                  except ValueError:
+                      return
+                  if port != 443:
+                      self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n"); return
+                  while True:
+                      header = self.rfile.readline(8192)
+                      if header in (b"\r\n", b"\n", b""):
+                          break
+                  try:
+                      upstream = socket.create_connection((host, port), timeout=20)
+                  except OSError:
+                      self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n"); return
+                  with upstream:
+                      upstream.setblocking(False)
+                      self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      sockets = [self.connection, upstream]
+                      while True:
+                          readable, _, exceptional = select.select(sockets, [], sockets, 120)
+                          if exceptional or not readable:
+                              return
+                          for src in readable:
+                              dst = upstream if src is self.connection else self.connection
+                              try:
+                                  data = src.recv(65536)
+                              except OSError:
+                                  return
+                              if not data:
+                                  return
+                              try:
+                                  dst.sendall(data)
+                              except OSError:
+                                  return
+          class Server(socketserver.ThreadingTCPServer):
+              allow_reuse_address = True
+              daemon_threads = True
+          with Server(BIND, Handler) as server:
+              print(f"READY={BIND[0]}:{BIND[1]}", flush=True)
+              server.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-g2-qualify-proxy.py
+
+          HOST="$RUNNER_TEMP/vos-g2-qualify-${GITHUB_RUN_ID}.sh"
+          cat > "$HOST" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}"; : "${FABRIC_SHA:?}"; : "${GATE_SHA:?}"
+          fail() { printf 'G2_QUALIFY_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')"
+          [ "$owner" = "VOS_FABRIC_G2" ] || fail VOS_WORKER_OWNER
+          [ "$($MP exec vos-worker -- uname -m)" = "x86_64" ] || fail GUEST_ARCH
+          [ "$($MP exec vos-worker -- /usr/local/bin/codex --version | head -1)" = "codex-cli ${CODEX_VERSION}" ] || fail CODEX_VERSION
+          "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host || fail CODEX_CODE_MODE_HOST_MISSING
+          "$MP" exec vos-worker -- test -x /usr/local/bin/bwrap || fail BWRAP_MISSING
+          codex_host_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk '{print $1}')"
+          bwrap_sha="$($MP exec vos-worker -- sha256sum /usr/local/bin/bwrap | awk '{print $1}')"
+          pass CODEX_RUNTIME_BINARIES "host_sha256=$codex_host_sha bwrap_sha256=$bwrap_sha"
+
+          [ -f /tmp/vos-g2-expected-gate.sh ] || fail EXPECTED_GATE_MISSING_ON_HOST
+          "$MP" transfer /tmp/vos-g2-expected-gate.sh vos-worker:/tmp/vos-g2-expected-gate.sh
+          "$MP" exec vos-worker -- sudo install -m 0755 /tmp/vos-g2-expected-gate.sh /usr/local/lib/vos-fabric/codex_worker_gate.sh
+          "$MP" exec vos-worker -- rm -f /tmp/vos-g2-expected-gate.sh
+          installed_gate_sha="$($MP exec vos-worker -- sha256sum /usr/local/lib/vos-fabric/codex_worker_gate.sh | awk '{print $1}')"
+          [ "$installed_gate_sha" = "$GATE_SHA" ] || fail "FABRIC_GATE_SHA_MISMATCH=$installed_gate_sha"
+          pass FABRIC_GATE "fabric_sha=$FABRIC_SHA gate_sha256=$installed_gate_sha"
+          ifconfig bridge100 | grep -q 'inet 192\.168\.64\.1 ' || fail BRIDGE100
+
+          production_green() {
+            uid="$(id -u)"
+            launch_running() {
+              label="$1"
+              for domain in "gui/$uid" "user/$uid" system; do
+                if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+              done
+              launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+            }
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION "Guardian/FLUXION/NAS green"
+
+          proxy_pid=""
+          cleanup() {
+            if [ -n "$proxy_pid" ]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
+            rm -f /tmp/vos-g2-expected-gate.sh /tmp/vos-g2-qualify-proxy.py /tmp/vos-g2-qualify-proxy.log /tmp/vos-g2-guest-qualify.sh
+          }
+          trap cleanup EXIT INT TERM
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-g2-qualify-proxy.py > /tmp/vos-g2-qualify-proxy.log 2>&1 &
+          proxy_pid=$!
+          for _ in 1 2 3 4 5; do
+            grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-qualify-proxy.log 2>/dev/null && break
+            sleep 1
+          done
+          grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-qualify-proxy.log || fail PROXY_NOT_READY
+          pass EPHEMERAL_PROXY "port=$VOS_PROXY_PORT source=192.168.64.3 CONNECT:443 only"
+
+          cat > /tmp/vos-g2-guest-qualify.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C CODEX_HOME=/home/ubuntu/.codex-vos-fabric
+          : "${VOS_PROXY_PORT:?}"
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export HTTP_PROXY="$HTTPS_PROXY" https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY"
+          model="${VOS_CODEX_MODEL:?}"
+          gate=/usr/local/lib/vos-fabric/codex_worker_gate.sh
+          [ -x "$gate" ]
+          auth_rc=0
+          timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
+          [ "$auth_rc" -eq 0 ] || { echo "G2_GUEST_BLOCKED=AUTH_NOT_PERSISTED_RC_$auth_rc"; exit 20; }
+          echo 'CODEX_CHATGPT_AUTH=GREEN'
+          VOS_CODEX_MODEL="$model" VOS_CODEX_TURN_TIMEOUT_SECONDS=120 "$gate" qualify
+          GUEST
+          chmod 700 /tmp/vos-g2-guest-qualify.sh
+          "$MP" transfer /tmp/vos-g2-guest-qualify.sh vos-worker:/tmp/vos-g2-guest-qualify.sh
+          "$MP" exec vos-worker -- chmod 700 /tmp/vos-g2-guest-qualify.sh
+          "$MP" exec vos-worker -- env VOS_CODEX_MODEL="$VOS_CODEX_MODEL" VOS_PROXY_PORT="$VOS_PROXY_PORT" /tmp/vos-g2-guest-qualify.sh
+          "$MP" exec vos-worker -- rm -f /tmp/vos-g2-guest-qualify.sh
+          pass CODEX_RUNTIME "tool/exec/resume/fork verified in three calls"
+
+          "$MP" stop vos-worker
+          "$MP" info vos-worker | grep -q 'State:[[:space:]]*Stopped' || fail VM_STOP
+          production_green || fail PRODUCTION_AFTER_VM_STOP
+          pass CLEAN_STOP "vos-worker stopped; production unchanged"
+          "$MP" start vos-worker
+          started=0
+          for _ in $(seq 1 30); do
+            if "$MP" info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running'; then started=1; break; fi
+            sleep 2
+          done
+          [ "$started" -eq 1 ] || fail VM_RESTART
+          "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || fail AUTH_AFTER_RESTART
+          "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host || fail CODEX_CODE_MODE_HOST_AFTER_RESTART
+          "$MP" exec vos-worker -- test -x /usr/local/bin/bwrap || fail BWRAP_AFTER_RESTART
+          production_green || fail POST_PRODUCTION_REGRESSION
+          pass CLEAN_RESTART "auth/runtime persisted; production unchanged"
+
+          [ "$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner')" = 'VOS_FABRIC_G2' ] || fail ROLLBACK_OWNER
+          mounts="$($MP info vos-worker | awk '/Mounts:/ {print $2}')"
+          [ -z "$mounts" ] || [ "$mounts" = '--' ] || fail "UNEXPECTED_VM_MOUNTS=$mounts"
+          pass ROLLBACK_BOUNDARY "owned vos-worker; no host mounts"
+
+          printf 'FABRIC_SHA=%s\n' "$FABRIC_SHA"
+          printf 'FABRIC_GATE_SHA256=%s\n' "$installed_gate_sha"
+          printf 'CODEX_CODE_MODE_HOST_SHA256=%s\n' "$codex_host_sha"
+          printf 'CODEX_BWRAP_SHA256=%s\n' "$bwrap_sha"
+          printf 'LINUX_CODEX_WORKER=GREEN\n'
+          printf 'G2=GREEN\n'
+          printf 'G2_PAID_API_FALLBACK=0\n'
+          printf 'PRODUCTION_REGRESSION=0\n'
+          REMOTE
+          chmod 700 "$HOST"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g2-qualify.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' CODEX_VERSION='$CODEX_VERSION' FABRIC_SHA='$FABRIC_SHA' GATE_SHA='$GATE_SHA' bash /tmp/vos-g2-qualify.sh; rc=\$?; rm -f /tmp/vos-g2-qualify.sh; exit \$rc"

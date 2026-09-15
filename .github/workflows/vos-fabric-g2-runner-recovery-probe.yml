@@ -1,0 +1,49 @@
+name: VOS Fabric G2 Runner Recovery Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-runner-recovery-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-qualify
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 3
+    steps:
+      - name: Prove runner and iMac control path are responsive
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "RUNNER_RECOVERY_PROBE=START"
+          echo "RUNNER_NAME=${RUNNER_NAME:-unknown}"
+          echo "RUNNER_OS=${RUNNER_OS:-unknown}"
+          /usr/bin/python3 - <<'PY'
+          import subprocess
+          cmd = [
+              "ssh",
+              "-o", "BatchMode=yes",
+              "-o", "ConnectTimeout=8",
+              "-o", "ServerAliveInterval=5",
+              "-o", "ServerAliveCountMax=2",
+              "imac",
+              "printf 'IMAC_SSH=GREEN\\n'; "
+              "printf 'CONSOLE_USER='; /usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true; "
+              "printf 'VOS_WORKER_STATE='; "
+              "(/usr/local/bin/multipass info vos-worker 2>/dev/null | awk '/State:/ {print $2; found=1} END {if (!found) print \"UNKNOWN\"}') || true"
+          ]
+          completed = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=30, check=False)
+          print(completed.stdout, end="")
+          if completed.returncode != 0:
+              raise SystemExit(completed.returncode)
+          PY
+          echo "RUNNER_RECOVERY_PROBE=GREEN"

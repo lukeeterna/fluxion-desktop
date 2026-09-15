@@ -1,0 +1,65 @@
+name: VOS Fabric G2 Guest Network Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-network-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Read-only guest network diagnosis
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCRIPT="$RUNNER_TEMP/vos-g2-net-probe-${GITHUB_RUN_ID}.sh"
+          cat > "$SCRIPT" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ]
+          "$MP" info vos-worker
+          "$MP" exec vos-worker -- bash -lc '
+            set +e
+            export LC_ALL=C LANG=C
+            echo "--- ADDR ---"
+            ip -4 addr show
+            echo "--- ROUTE ---"
+            ip -4 route show
+            echo "--- DNS ---"
+            cat /etc/resolv.conf
+            getent ahostsv4 github.com | head -5
+            getent ahostsv4 archive.ubuntu.com | head -5
+            echo "--- RAW IP ---"
+            ping -4 -c 1 -W 2 1.1.1.1
+            echo "PING_RC=$?"
+            echo "--- HTTPS GITHUB ---"
+            curl -4 -fsSI --connect-timeout 5 --max-time 10 https://github.com/ | head -5
+            echo "GITHUB_HTTPS_RC=${PIPESTATUS[0]}"
+            echo "--- HTTPS RAW ---"
+            curl -4 -fsSI --connect-timeout 5 --max-time 10 https://raw.githubusercontent.com/ | head -5
+            echo "RAW_HTTPS_RC=${PIPESTATUS[0]}"
+            echo "--- HTTP UBUNTU ---"
+            curl -4 -fsSI --connect-timeout 5 --max-time 10 http://archive.ubuntu.com/ubuntu/ | head -5
+            echo "UBUNTU_HTTP_RC=${PIPESTATUS[0]}"
+            echo "--- HTTPS UBUNTU ---"
+            curl -4 -fsSI --connect-timeout 5 --max-time 10 https://archive.ubuntu.com/ubuntu/ | head -5
+            echo "UBUNTU_HTTPS_RC=${PIPESTATUS[0]}"
+            exit 0
+          '
+          REMOTE
+          chmod 700 "$SCRIPT"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SCRIPT" imac:/tmp/vos-g2-net-probe.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-net-probe.sh; rc=$?; rm -f /tmp/vos-g2-net-probe.sh; exit $rc'

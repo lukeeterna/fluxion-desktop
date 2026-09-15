@@ -1,0 +1,195 @@
+# diagnostic-revision: exact-gate-first-call 2026-09-14
+name: VOS Fabric G2 Codex Diagnostic
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-codex-diagnostic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-codex-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  diagnose:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    env:
+      VOS_CODEX_MODEL: gpt-5.6-terra
+      CODEX_VERSION: 0.154.0
+    steps:
+      - name: Diagnose exact G2 gate first Codex call
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROXY_PORT=$((24000 + GITHUB_RUN_ID % 12000))
+
+          PROXY="$RUNNER_TEMP/vos-g2-diag-proxy-${GITHUB_RUN_ID}.py"
+          cat > "$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import os, select, socket, socketserver
+          BIND = ("192.168.64.1", int(os.environ["VOS_PROXY_PORT"]))
+          ALLOWED_SOURCE = "192.168.64.3"
+          class Handler(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0] != ALLOWED_SOURCE: return
+                  self.connection.settimeout(20)
+                  line = self.rfile.readline(8192).decode("ascii", "replace").strip()
+                  parts = line.split()
+                  if len(parts) != 3 or parts[0].upper() != "CONNECT" or ":" not in parts[1]:
+                      self.wfile.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n"); return
+                  host, port_s = parts[1].rsplit(":", 1)
+                  try: port = int(port_s)
+                  except ValueError: return
+                  if port != 443:
+                      self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n"); return
+                  print(f"CONNECT_HOST={host}:443", flush=True)
+                  while True:
+                      h = self.rfile.readline(8192)
+                      if h in (b"\r\n", b"\n", b""): break
+                  try: upstream = socket.create_connection((host, 443), timeout=15)
+                  except OSError as exc:
+                      print(f"UPSTREAM_ERROR={type(exc).__name__}", flush=True)
+                      self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n"); return
+                  with upstream:
+                      upstream.setblocking(False); self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      sockets = [self.connection, upstream]
+                      while True:
+                          readable, _, exceptional = select.select(sockets, [], sockets, 90)
+                          if exceptional or not readable: return
+                          for src in readable:
+                              dst = upstream if src is self.connection else self.connection
+                              try: data = src.recv(65536)
+                              except OSError: return
+                              if not data: return
+                              try: dst.sendall(data)
+                              except OSError: return
+          class Server(socketserver.ThreadingTCPServer):
+              allow_reuse_address = True; daemon_threads = True
+          with Server(BIND, Handler) as server:
+              print(f"READY={BIND[0]}:{BIND[1]}", flush=True); server.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-g2-diag-proxy.py
+
+          HOST="$RUNNER_TEMP/vos-g2-diag-${GITHUB_RUN_ID}.sh"
+          cat > "$HOST" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}"; : "${VOS_CODEX_MODEL:?}"
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ]
+          "$MP" exec vos-worker -- test -x /usr/local/bin/codex-code-mode-host
+          echo "CODE_MODE_HOST_SHA256=$($MP exec vos-worker -- sha256sum /usr/local/bin/codex-code-mode-host | awk '{print $1}')"
+
+          proxy_pid=""
+          cleanup() {
+            if [ -n "$proxy_pid" ]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
+            rm -f /tmp/vos-g2-diag-proxy.py /tmp/vos-g2-diag-proxy.log /tmp/vos-g2-diag-guest.sh
+          }
+          trap cleanup EXIT INT TERM
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-g2-diag-proxy.py > /tmp/vos-g2-diag-proxy.log 2>&1 &
+          proxy_pid=$!
+          for _ in 1 2 3 4 5; do
+            grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-diag-proxy.log 2>/dev/null && break
+            sleep 1
+          done
+          grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g2-diag-proxy.log
+
+          cat > /tmp/vos-g2-diag-guest.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -u
+          export LC_ALL=C LANG=C CODEX_HOME=/home/ubuntu/.codex-vos-fabric
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export HTTP_PROXY="$HTTPS_PROXY" https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY"
+          echo "CODEX_VERSION=$(codex --version | head -1)"
+          auth_rc=0; timeout 15s codex login status >/dev/null 2>&1 || auth_rc=$?
+          echo "CODEX_AUTH_RC=$auth_rc"; [ "$auth_rc" -eq 0 ] || exit 20
+          work="$(mktemp -d -t vos-g2-diag.XXXXXX)"; trap 'rm -rf "$work"' EXIT
+          nonce="VOS_TOOL_NONCE_$(python3 - <<'PY'
+          import secrets
+          print(secrets.token_hex(12))
+          PY
+          )"
+          printf '%s\n' "$nonce" > "$work/probe.txt"
+          cat > "$work/prompt" <<'PROMPT'
+          Use the shell tool to run exactly this command and no other command:
+          cat ./probe.txt
+          The command must exit with status 0. You must read the file; do not infer, guess, or skip the command. After it succeeds, reply with exactly VOS_FABRIC_PING= followed immediately by the exact stdout from that command, with no other text.
+          PROMPT
+          rc=0
+          timeout 120s codex exec --json --sandbox read-only -c 'approval_policy="never"' --model "$VOS_CODEX_MODEL" \
+            --skip-git-repo-check --cd "$work" --output-last-message "$work/last.txt" - \
+            < "$work/prompt" > "$work/events.jsonl" 2> "$work/stderr.txt" || rc=$?
+          echo "CODEX_EXEC_RC=$rc"
+          if [ -f "$work/last.txt" ]; then
+            last="$(cat "$work/last.txt")"
+            if [ "$last" = "VOS_FABRIC_PING=$nonce" ]; then echo 'LAST_MESSAGE_EXACT=GREEN'; else echo 'LAST_MESSAGE_EXACT=MISMATCH'; fi
+          else
+            echo 'LAST_MESSAGE_EXACT=MISSING'
+          fi
+          python3 - "$work/events.jsonl" "$work/stderr.txt" "$nonce" <<'PY'
+          import json, re, sys
+          events, stderr, nonce = sys.argv[1:]
+          def clean(s):
+              s = re.sub(r'(?i)(bearer|token|authorization)[=: ]+[^ ,;]+', r'\1=<redacted>', s)
+              s = re.sub(r'\b[A-Za-z0-9_-]{48,}\b', '<redacted-long>', s)
+              s = s.replace(nonce, '<nonce>')
+              return s[:700]
+          counts={}; diag=[]
+          try:
+              for raw in open(events, encoding='utf-8'):
+                  raw=raw.strip()
+                  if not raw: continue
+                  try: obj=json.loads(raw)
+                  except Exception:
+                      diag.append('NON_JSON_EVENT'); continue
+                  typ=str(obj.get('type','UNKNOWN')); counts[typ]=counts.get(typ,0)+1
+                  item=obj.get('item') or {}
+                  itype=str(item.get('type',''))
+                  if typ in ('item.started','item.completed'):
+                      out=str(item.get('aggregated_output') or '')
+                      diag.append('ITEM type=%s item_type=%s status=%s exit_code=%s nonce_seen=%s keys=%s' % (
+                          typ, itype, item.get('status'), item.get('exit_code'), str(nonce in out).lower(),
+                          ','.join(sorted(str(k) for k in item.keys()))))
+                      if itype == 'agent_message':
+                          diag.append('AGENT_TEXT='+clean(str(item.get('text') or '')))
+                  if typ in ('error','turn.failed'):
+                      err=obj.get('error') or obj.get('message') or obj
+                      diag.append(f'{typ}='+clean(json.dumps(err,ensure_ascii=False)))
+          except FileNotFoundError: pass
+          print('EVENT_COUNTS='+','.join(f'{k}:{counts[k]}' for k in sorted(counts)))
+          for line in diag[:30]: print('EVENT_DIAG='+clean(line))
+          try:
+              for line in open(stderr,encoding='utf-8',errors='replace').read().splitlines()[-20:]: print('STDERR='+clean(line))
+          except FileNotFoundError: pass
+          PY
+          if [ -f "$work/events.jsonl" ]; then printf 'EVENTS_SHA256='; sha256sum "$work/events.jsonl" | awk '{print $1}'; fi
+          if [ -f "$work/last.txt" ]; then printf 'LAST_MESSAGE_SHA256='; sha256sum "$work/last.txt" | awk '{print $1}'; fi
+          exit "$rc"
+          GUEST
+          chmod 700 /tmp/vos-g2-diag-guest.sh
+          "$MP" transfer /tmp/vos-g2-diag-guest.sh vos-worker:/tmp/vos-g2-diag-guest.sh
+          set +e
+          "$MP" exec vos-worker -- env VOS_PROXY_PORT="$VOS_PROXY_PORT" VOS_CODEX_MODEL="$VOS_CODEX_MODEL" /tmp/vos-g2-diag-guest.sh
+          guest_rc=$?
+          set -e
+          echo "GUEST_RC=$guest_rc"
+          echo '--- PROXY TRACE ---'; grep -E '^(READY|CONNECT_HOST|UPSTREAM_ERROR)=' /tmp/vos-g2-diag-proxy.log || true; echo '--- END PROXY TRACE ---'
+          exit "$guest_rc"
+          REMOTE
+          chmod 700 "$HOST"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g2-diag.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' bash /tmp/vos-g2-diag.sh; rc=\$?; rm -f /tmp/vos-g2-diag.sh; exit \$rc"

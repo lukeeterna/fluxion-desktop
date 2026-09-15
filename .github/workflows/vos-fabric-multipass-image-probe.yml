@@ -1,0 +1,35 @@
+name: VOS Fabric Multipass Image Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-multipass-image-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Read-only Multipass image catalogue
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ]
+          "$MP" version
+          echo '--- MULTIPASS FIND ---'
+          "$MP" find
+          echo '--- VOS WORKER STATUS ---'
+          if "$MP" info vos-worker >/dev/null 2>&1; then echo VOS_WORKER=PRESENT; else echo VOS_WORKER=ABSENT; fi
+          REMOTE

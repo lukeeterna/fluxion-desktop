@@ -1,0 +1,131 @@
+name: VOS Fabric G2 Event Schema
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-event-schema.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-event-schema
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    env:
+      VOS_CODEX_MODEL: gpt-5.6-terra
+    steps:
+      - name: Inspect successful Codex JSONL schema without exposing content
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROXY_PORT=$((45000 + GITHUB_RUN_ID % 5000))
+          PROXY="$RUNNER_TEMP/vos-g2-schema-proxy.py"
+          cat > "$PROXY" <<'PY'
+          import os, select, socket, socketserver
+          BIND=("192.168.64.1",int(os.environ["VOS_PROXY_PORT"])); ALLOWED="192.168.64.3"
+          class H(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0] != ALLOWED: return
+                  line=self.rfile.readline(8192).decode("ascii","replace").strip(); parts=line.split()
+                  if len(parts)!=3 or parts[0].upper()!="CONNECT" or ":" not in parts[1]: return
+                  host,ps=parts[1].rsplit(":",1)
+                  try: port=int(ps)
+                  except ValueError: return
+                  while True:
+                      h=self.rfile.readline(8192)
+                      if h in (b"\r\n",b"\n",b""): break
+                  if port!=443: self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n"); return
+                  try: up=socket.create_connection((host,port),timeout=20)
+                  except OSError: self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n"); return
+                  with up:
+                      up.setblocking(False); self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      ss=[self.connection,up]
+                      while True:
+                          r,_,x=select.select(ss,[],ss,120)
+                          if x or not r: return
+                          for src in r:
+                              dst=up if src is self.connection else self.connection
+                              try: data=src.recv(65536)
+                              except OSError: return
+                              if not data: return
+                              try: dst.sendall(data)
+                              except OSError: return
+          class S(socketserver.ThreadingTCPServer): allow_reuse_address=True; daemon_threads=True
+          with S(BIND,H) as s: print("READY",flush=True); s.serve_forever()
+          PY
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-g2-schema-proxy.py
+          HOST="$RUNNER_TEMP/vos-g2-schema-host.sh"
+          cat > "$HOST" <<'HOST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          MP=""
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }; done
+          [ -n "$MP" ]
+          proxy_pid=""
+          cleanup(){ [ -n "$proxy_pid" ] && kill "$proxy_pid" >/dev/null 2>&1 || true; rm -f /tmp/vos-g2-schema-proxy.py /tmp/vos-g2-schema-guest.sh /tmp/vos-g2-schema-proxy.log; }
+          trap cleanup EXIT
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-g2-schema-proxy.py >/tmp/vos-g2-schema-proxy.log 2>&1 & proxy_pid=$!
+          sleep 1; grep -q READY /tmp/vos-g2-schema-proxy.log
+          cat >/tmp/vos-g2-schema-guest.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export CODEX_HOME=/home/ubuntu/.codex-vos-fabric
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" HTTP_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export https_proxy="$HTTPS_PROXY" http_proxy="$HTTP_PROXY" LC_ALL=C LANG=C
+          d="$(mktemp -d -t vos-g2-schema.XXXXXX)"; trap 'rm -rf "$d"' EXIT
+          nonce="VOS_SCHEMA_NONCE_$(date +%s)_$$"
+          mkdir -p "$d/work"; printf '%s\n' "$nonce" >"$d/work/probe.txt"
+          printf '%s\n' 'Use a tool to read ./probe.txt. You must actually read the file. Then reply exactly with the file contents and no other text.' >"$d/prompt"
+          set +e
+          codex exec --json --sandbox read-only -c 'approval_policy="never"' --model "$VOS_CODEX_MODEL" --skip-git-repo-check --cd "$d/work" --output-last-message "$d/last.txt" - <"$d/prompt" >"$d/events.jsonl" 2>"$d/stderr.txt"
+          rc=$?
+          set -e
+          python3 - "$d/events.jsonl" "$d/last.txt" "$nonce" "$rc" <<'PY'
+          import json,sys
+          ep,lp,nonce,rc=sys.argv[1:]
+          print('G2_SCHEMA_RC='+rc)
+          try:
+              last=open(lp,encoding='utf-8').read().strip()
+          except OSError:
+              last=''
+          print('G2_SCHEMA_LAST_MATCH='+('1' if last==nonce else '0'))
+          def paths(v,p=''):
+              out=[]
+              if isinstance(v,str):
+                  if nonce in v: out.append(p or '$')
+              elif isinstance(v,dict):
+                  for k,x in v.items(): out.extend(paths(x,(p+'.'+k) if p else k))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): out.extend(paths(x,f'{p}[{i}]'))
+              return out
+          for raw in open(ep,encoding='utf-8'):
+              raw=raw.strip()
+              if not raw: continue
+              try: e=json.loads(raw)
+              except Exception: continue
+              item=e.get('item')
+              print('G2_SCHEMA_EVENT type=%s keys=%s' % (e.get('type'),','.join(sorted(e.keys()))))
+              if isinstance(item,dict):
+                  print('G2_SCHEMA_ITEM type=%s keys=%s nonce_paths=%s' % (item.get('type'),','.join(sorted(item.keys())),','.join(paths(item)) or '-'))
+              if e.get('type') in ('error','turn.failed'):
+                  print('G2_SCHEMA_ERROR=1')
+          PY
+          exit "$rc"
+          GUEST
+          chmod 700 /tmp/vos-g2-schema-guest.sh
+          "$MP" transfer /tmp/vos-g2-schema-guest.sh vos-worker:/tmp/vos-g2-schema-guest.sh
+          "$MP" exec vos-worker -- chmod 700 /tmp/vos-g2-schema-guest.sh
+          "$MP" exec vos-worker -- env VOS_CODEX_MODEL="$VOS_CODEX_MODEL" VOS_PROXY_PORT="$VOS_PROXY_PORT" /tmp/vos-g2-schema-guest.sh
+          HOST
+          chmod 700 "$HOST"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g2-schema-host.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac "VOS_PROXY_PORT='$PROXY_PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' bash /tmp/vos-g2-schema-host.sh; rc=\$?; rm -f /tmp/vos-g2-schema-host.sh; exit \$rc"

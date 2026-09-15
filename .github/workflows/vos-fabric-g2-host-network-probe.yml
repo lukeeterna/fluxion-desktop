@@ -1,0 +1,84 @@
+name: VOS Fabric G2 Host Network Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-host-network-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 5
+    steps:
+      - name: Read-only iMac vmnet diagnosis
+        shell: bash
+        run: |
+          set -euo pipefail
+          SCRIPT="$RUNNER_TEMP/vos-g2-host-net-probe-${GITHUB_RUN_ID}.sh"
+          cat > "$SCRIPT" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -u
+          export LC_ALL=C LANG=C
+
+          echo '--- HOST IDENTITY ---'
+          sw_vers 2>/dev/null || true
+          sysctl -n hw.model 2>/dev/null || true
+
+          echo '--- MULTIPASS ---'
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          if [ -n "$MP" ]; then
+            "$MP" version 2>/dev/null || true
+            printf 'DRIVER='; "$MP" get local.driver 2>/dev/null || true
+            "$MP" info vos-worker 2>/dev/null || true
+          fi
+
+          echo '--- BRIDGE100 ---'
+          ifconfig bridge100 2>/dev/null || true
+
+          echo '--- IPV4 ROUTES ---'
+          netstat -rn -f inet 2>/dev/null || true
+
+          echo '--- FORWARDING ---'
+          printf 'IP_FORWARDING='; sysctl -n net.inet.ip.forwarding 2>/dev/null || true
+
+          echo '--- INTERNET SHARING SERVICES ---'
+          ps -axo pid=,user=,command= | grep -E '[b]ootpd|[m]DNSResponder|[m]DNSResponderHelper|[s]haringd' || true
+          lsof -nP -iUDP:67 2>/dev/null || true
+          lsof -nP -iUDP:53 2>/dev/null | head -20 || true
+
+          echo '--- VMNET PREFS ---'
+          defaults read /Library/Preferences/SystemConfiguration/com.apple.vmnet 2>/dev/null || true
+          defaults read /Library/Preferences/SystemConfiguration/com.apple.vmnet.plist 2>/dev/null || true
+
+          echo '--- APP FIREWALL ---'
+          /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate 2>/dev/null || true
+          /usr/libexec/ApplicationFirewall/socketfilterfw --getstealthmode 2>/dev/null || true
+
+          echo '--- PF READONLY ---'
+          if sudo -n true 2>/dev/null; then
+            sudo -n pfctl -s info 2>/dev/null || true
+            sudo -n pfctl -sn 2>/dev/null || true
+          else
+            echo 'SUDO_NONINTERACTIVE=NO'
+          fi
+
+          echo '--- TUNNELS / VPN INDICATORS ---'
+          ifconfig 2>/dev/null | awk '/^[a-zA-Z0-9]+:/{iface=$1} /status: active/{print iface " active"}' || true
+          ps -axo pid=,command= | grep -Ei '[v]pn|[a]nyconnect|[u]mbrella|[o]penvpn|[w]ireguard|[t]ailscale|[z]scaler|[g]lobalprotect|[n]ordvpn|[p]rotonvpn' || true
+
+          echo '--- HOST CONNECTIVITY ---'
+          curl -4 -fsSI --connect-timeout 5 --max-time 10 https://github.com/ | head -5 || true
+          echo 'HOST_PROBE_DONE=1'
+          REMOTE
+          chmod 700 "$SCRIPT"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SCRIPT" imac:/tmp/vos-g2-host-net-probe.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-host-net-probe.sh; rc=$?; rm -f /tmp/vos-g2-host-net-probe.sh; exit $rc'

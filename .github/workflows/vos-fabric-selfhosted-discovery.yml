@@ -1,0 +1,33 @@
+name: VOS Fabric Self-hosted Discovery
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-selfhosted-discovery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: self-hosted
+    timeout-minutes: 2
+    steps:
+      - name: Identify available self-hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "SELFHOSTED_DISCOVERY=START"
+          echo "RUNNER_NAME=${RUNNER_NAME:-unknown}"
+          echo "RUNNER_OS=${RUNNER_OS:-unknown}"
+          printf 'HOSTNAME='; hostname
+          printf 'CONSOLE_USER='; /usr/bin/stat -f '%Su' /dev/console 2>/dev/null || true
+          if command -v multipass >/dev/null 2>&1; then
+            echo "MULTIPASS_PRESENT=1"
+          else
+            echo "MULTIPASS_PRESENT=0"
+          fi
+          echo "SELFHOSTED_DISCOVERY=GREEN"

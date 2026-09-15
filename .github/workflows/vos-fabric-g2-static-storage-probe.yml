@@ -1,0 +1,130 @@
+name: VOS Fabric G2 Static Storage Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-static-storage-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-static-storage-probe
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 4
+    steps:
+      - name: Inspect Multipass processes and storage without daemon RPC
+        shell: bash
+        run: |
+          set -euo pipefail
+          REMOTE="$RUNNER_TEMP/vos-g2-static-storage-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail() { printf 'STATIC_STORAGE_PROBE_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          production_green() {
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION 'Guardian/FLUXION/NAS green'
+
+          echo '--- MULTIPASS LAUNCHD ---'
+          launchctl print system/com.canonical.multipassd 2>/dev/null | grep -E '^[[:space:]]*(state|pid|path|program) =' | head -30 || true
+          echo '--- MULTIPASS/QEMU PROCESSES ---'
+          ps -axo pid=,ppid=,state=,etime=,command= 2>/dev/null | grep -E '[m]ultipass|[q]emu-system|vos-worker' || true
+          echo '--- MULTIPASS OPEN FILE HINTS ---'
+          mp_pid="$(ps -axo pid=,comm= | awk '$2 ~ /multipassd$/ {print $1; exit}')"
+          if [ -n "$mp_pid" ]; then
+            echo "MULTIPASSD_PID=$mp_pid"
+            /usr/sbin/lsof -n -p "$mp_pid" 2>/dev/null | grep -Ei 'multipass|vault|instance|qemu|vos-worker' | head -120 || true
+          else
+            echo 'MULTIPASSD_PID=MISSING'
+          fi
+
+          scan_root() {
+            root="$1"
+            [ -e "$root" ] || return 0
+            echo "SCAN_ROOT=$root"
+            /usr/bin/python3 - "$root" <<'PY'
+          import os, sys, time
+          root=sys.argv[1]; deadline=time.time()+8; hits=[]
+          for base, dirs, files in os.walk(root, topdown=True, onerror=lambda e: None):
+              if time.time() > deadline:
+                  print('SCAN_TIMEOUT=1'); break
+              rel=os.path.relpath(base, root)
+              depth=0 if rel=='.' else rel.count(os.sep)+1
+              if depth >= 7:
+                  dirs[:] = []
+              names=list(dirs)+list(files)
+              if 'vos-worker' in base.lower() or any('vos-worker' in n.lower() for n in names):
+                  hits.append(base)
+                  for n in names:
+                      if 'vos-worker' in n.lower(): hits.append(os.path.join(base,n))
+              if len(hits)>=50: break
+          for h in sorted(set(hits))[:50]: print('VOS_WORKER_STORAGE_HINT='+h)
+          print('SCAN_COMPLETE=1')
+          PY
+          }
+
+          scan_root "$HOME/Library/Application Support/multipassd"
+          scan_root "/Library/Application Support/com.canonical.multipass"
+          if sudo -n true >/dev/null 2>&1; then
+            echo 'SUDO_N_READ_ONLY_AVAILABLE=1'
+            sudo -n /usr/bin/python3 - <<'PY'
+          import os, time
+          roots=['/var/root/Library/Application Support/multipassd','/var/root/Library/Application Support/com.canonical.multipass']
+          deadline=time.time()+8; hits=[]
+          for root in roots:
+              if not os.path.exists(root): continue
+              print('ROOT_SCAN='+root)
+              for base, dirs, files in os.walk(root, topdown=True, onerror=lambda e: None):
+                  if time.time()>deadline:
+                      print('ROOT_SCAN_TIMEOUT=1'); break
+                  rel=os.path.relpath(base,root); depth=0 if rel=='.' else rel.count(os.sep)+1
+                  if depth>=8: dirs[:]=[]
+                  names=list(dirs)+list(files)
+                  if 'vos-worker' in base.lower() or any('vos-worker' in n.lower() for n in names):
+                      hits.append(base)
+                      for n in names:
+                          if 'vos-worker' in n.lower(): hits.append(os.path.join(base,n))
+                  if len(hits)>=80: break
+          for h in sorted(set(hits))[:80]: print('VOS_WORKER_ROOT_STORAGE_HINT='+h)
+          print('ROOT_SCAN_COMPLETE=1')
+          PY
+          else
+            echo 'SUDO_N_READ_ONLY_AVAILABLE=0'
+          fi
+
+          echo '--- TEMP/ORPHAN PROBE PROCESSES ---'
+          ps -axo pid=,ppid=,etime=,command= 2>/dev/null | grep -E '[v]os-g2-vm-state|[v]os-g2-qualify|[v]os-g2-static-storage' || true
+          production_green || fail POST_PRODUCTION_REGRESSION
+          pass POST_PRODUCTION 'Guardian/FLUXION/NAS green'
+          echo 'STATIC_STORAGE_PROBE_READ_ONLY=1'
+          REMOTE
+          chmod 700 "$REMOTE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$REMOTE" imac:/tmp/vos-g2-static-storage-probe.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash /tmp/vos-g2-static-storage-probe.sh; rc=$?; rm -f /tmp/vos-g2-static-storage-probe.sh; exit $rc'

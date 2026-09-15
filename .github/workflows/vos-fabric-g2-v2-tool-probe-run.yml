@@ -1,0 +1,29 @@
+name: VOS Fabric G2 V2 Tool Probe Run
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-v2-tool-probe-run.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g2-v2-tool-probe-run
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run isolated worker tool-path diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "VOS_CODEX_MODEL='gpt-5.6-terra' bash -s" \
+            < tools/vos_fabric_g2_tool_probe.sh

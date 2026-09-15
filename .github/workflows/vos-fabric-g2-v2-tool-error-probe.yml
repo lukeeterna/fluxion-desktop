@@ -1,0 +1,130 @@
+name: VOS Fabric G2 V2 Tool Error Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g2-worker-*"
+    paths:
+      - ".github/workflows/vos-fabric-g2-v2-tool-error-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 4
+    env:
+      VOS_CODEX_MODEL: gpt-5.6-terra
+    steps:
+      - name: Reproduce exact first tool turn and print sanitized JSONL
+        shell: bash
+        run: |
+          set -euo pipefail
+          PORT=$((25000 + GITHUB_RUN_ID % 8000))
+          REMOTE="$RUNNER_TEMP/g2-tool-probe-${GITHUB_RUN_ID}.sh"
+          cat > "$REMOTE" <<'REMOTE'
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${PORT:?}"; : "${VOS_CODEX_MODEL:?}"
+          fail(){ echo "G2_TOOL_PROBE_BLOCKED=$*"; exit 2; }
+          production_green(){ curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && mount | grep -q ' on /Volumes/NAS_LOCAL '; }
+          production_green || fail PRE_PRODUCTION
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }; done
+          [ -n "$MP" ] || fail MULTIPASS
+          guest_ip="$($MP exec vos-worker -- sh -c "hostname -I | awk '{print \$1}'" | tail -1)"
+          [ -n "$guest_ip" ] || fail GUEST_IP
+          $MP exec vos-worker -- sh -c 'test -z "${OPENAI_API_KEY:-}"' || fail PAID_API_ENV
+          $MP exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null || fail AUTH
+          nonce="VOS_TOOL_PROBE_${RANDOM}_${PORT}"
+          $MP exec vos-worker -- sh -c "rm -rf /tmp/g2-tool-probe && mkdir -p /tmp/g2-tool-probe && printf '%s\\n' '$nonce' > /tmp/g2-tool-probe/probe.txt && cat > /tmp/g2-tool-probe/prompt.txt <<'EOF'
+Use the shell tool to run exactly this command and no other command:
+cat ./probe.txt
+The command must exit with status 0. You must read the file; do not infer, guess, or skip the command. After it succeeds, reply with exactly VOS_FABRIC_PING= followed immediately by the exact stdout from that command, with no other text.
+EOF"
+
+          PROXY=/tmp/g2-tool-proxy-${PORT}.py; LOG=/tmp/g2-tool-proxy-${PORT}.log
+          cat > "$PROXY" <<'PY'
+          import os,select,socket,socketserver
+          bind=('192.168.64.1',int(os.environ['PORT'])); allowed=os.environ['GUEST_IP']
+          class H(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0]!=allowed:return
+                  p=self.rfile.readline(8192).decode('ascii','replace').strip().split()
+                  if len(p)!=3 or p[0].upper()!='CONNECT' or ':' not in p[1]:return
+                  host,ps=p[1].rsplit(':',1)
+                  try: port=int(ps)
+                  except ValueError:return
+                  if port!=443:return
+                  print('CONNECT_HOST=%s:443'%host,flush=True)
+                  while True:
+                      h=self.rfile.readline(8192)
+                      if h in (b'\r\n',b'\n',b''):break
+                  try:u=socket.create_connection((host,443),timeout=20)
+                  except OSError:return
+                  with u:
+                      u.setblocking(False);self.connection.setblocking(False);self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n')
+                      ss=[self.connection,u]
+                      while True:
+                          r,_,x=select.select(ss,[],ss,90)
+                          if x or not r:return
+                          for s in r:
+                              d=u if s is self.connection else self.connection
+                              try:b=s.recv(65536)
+                              except OSError:return
+                              if not b:return
+                              try:d.sendall(b)
+                              except OSError:return
+          class S(socketserver.ThreadingTCPServer):allow_reuse_address=True;daemon_threads=True
+          with S(bind,H) as s:print('READY=%s:%d'%bind,flush=True);s.serve_forever()
+          PY
+          pid=''; cleanup(){ [ -z "$pid" ] || kill "$pid" >/dev/null 2>&1 || true; rm -f "$PROXY" "$LOG" /tmp/g2-tool-probe.jsonl /tmp/g2-tool-probe.stderr; $MP exec vos-worker -- rm -rf /tmp/g2-tool-probe >/dev/null 2>&1 || true; }; trap cleanup EXIT
+          PORT="$PORT" GUEST_IP="$guest_ip" /usr/bin/python3 "$PROXY" >"$LOG" 2>&1 & pid=$!
+          for _ in 1 2 3 4 5; do grep -q '^READY=' "$LOG" 2>/dev/null && break; sleep 1; done
+          grep -q '^READY=' "$LOG" || fail PROXY
+          proxy="http://192.168.64.1:${PORT}"
+          set +e
+          $MP exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric HTTPS_PROXY="$proxy" HTTP_PROXY="$proxy" https_proxy="$proxy" http_proxy="$proxy" \
+            VOS_CODEX_MODEL="$VOS_CODEX_MODEL" sh -lc 'cd /tmp/g2-tool-probe && timeout 120s /usr/local/bin/codex exec --json --sandbox read-only -c '\''approval_policy="never"'\'' --model "$VOS_CODEX_MODEL" --skip-git-repo-check - < prompt.txt' \
+            > /tmp/g2-tool-probe.jsonl 2>/tmp/g2-tool-probe.stderr
+          rc=$?
+          set -e
+          echo "G2_TOOL_PROBE_CODEX_RC=$rc"
+          python3 - /tmp/g2-tool-probe.jsonl "$nonce" <<'PY'
+          import json,sys
+          path,nonce=sys.argv[1:]
+          for raw in open(path,encoding='utf-8',errors='replace'):
+              raw=raw.strip()
+              if not raw: continue
+              try:o=json.loads(raw)
+              except Exception:
+                  print('G2_TOOL_PROBE_NONJSON=1'); continue
+              t=o.get('type'); print('G2_TOOL_PROBE_EVENT='+str(t))
+              item=o.get('item') or {}
+              if item:
+                  print('G2_TOOL_PROBE_ITEM_TYPE='+str(item.get('type')))
+                  if item.get('type')=='command_execution':
+                      print('G2_TOOL_PROBE_COMMAND='+str(item.get('command'))[:300])
+                      print('G2_TOOL_PROBE_EXIT='+str(item.get('exit_code')))
+                      out=str(item.get('aggregated_output') or '').replace('\n',' ')[:300]
+                      print('G2_TOOL_PROBE_OUTPUT='+out.replace(nonce,'<NONCE>'))
+              def walk(x):
+                  if isinstance(x,dict):
+                      for k,v in x.items():
+                          if str(k).lower() in {'message','code','reason'} and isinstance(v,(str,int,float,bool)):
+                              s=str(v).replace('\n',' ')[:700].replace(nonce,'<NONCE>')
+                              print('G2_TOOL_PROBE_%s=%s'%(str(k).upper(),s))
+                          walk(v)
+                  elif isinstance(x,list):
+                      for v in x: walk(v)
+              if t in {'turn.failed','error'}: walk(o)
+          PY
+          echo "G2_TOOL_PROBE_EVENTS_SHA256=$(shasum -a 256 /tmp/g2-tool-probe.jsonl | awk '{print $1}')"
+          echo "G2_TOOL_PROBE_STDERR_SHA256=$(shasum -a 256 /tmp/g2-tool-probe.stderr | awk '{print $1}')"
+          grep -E '^(READY|CONNECT_HOST)=' "$LOG" || true
+          production_green || fail POST_PRODUCTION
+          echo 'G2_TOOL_PROBE_PRODUCTION_REGRESSION=0'
+          exit "$rc"
+          REMOTE
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac "PORT='$PORT' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' bash -s" < "$REMOTE"
