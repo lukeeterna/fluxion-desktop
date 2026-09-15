@@ -147,7 +147,9 @@ export default defineConfig({
     command: 'npm run dev',
     cwd: path.join(__dirname, '..'), // Run from project root
     url: baseURL,
-    reuseExistingServer: !isCI,
+    // Hosted CI jobs pre-start the built preview server on this same URL.
+    // Reuse it when present; Playwright still starts the command when no server exists.
+    reuseExistingServer: true,
     timeout: 30_000, // 30s for Vite startup
     stdout: 'pipe',
     stderr: 'pipe',
