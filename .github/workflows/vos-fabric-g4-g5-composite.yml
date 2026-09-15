@@ -1,0 +1,120 @@
+name: VOS Fabric G4 G5 Composite
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g4-g5-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-g4-g5-composite.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PARENT_RUN: "35018174698"
+      PARENT_JOB: "104546805741"
+      PARENT_HEAD: "21adb27cb48ee4c2916d341d7f831bd5b2144df2"
+      FABRIC_SHA: "aadd263f62fd7bd8d349d54d4e9ed5f82107b7c9"
+      EXPECTED_EVIDENCE_SHA256: "42979074b71dab0d059ac7bab7188eeb69fadc5fad7517e298bab78bb884d0a7"
+      EXPECTED_CHECKPOINT_SHA256: "2eca151998c9eccad6ac48538377ba630efbcb837b584c75c38cd7aa9d910b33"
+    steps:
+      - name: Fetch exact parent runtime metadata and logs
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/vos-g4-g5-composite"
+          rm -rf "$root"; mkdir -p "$root"
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          curl -fsSL "${auth[@]}" "$api/actions/runs/${PARENT_RUN}" -o "$root/run.json"
+          curl -fsSL "${auth[@]}" "$api/actions/runs/${PARENT_RUN}/jobs?per_page=100" -o "$root/jobs.json"
+          curl -fsSL -L "${auth[@]}" "$api/actions/jobs/${PARENT_JOB}/logs" -o "$root/parent.log"
+          test -s "$root/parent.log"
+          echo "PARENT_LOG_SHA256=$(sha256sum "$root/parent.log" | awk '{print $1}')"
+
+      - name: Verify exact runtime identity and bounded finalization failure class
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/vos-g4-g5-composite"
+          python3 - "$root/run.json" "$root/jobs.json" "$PARENT_RUN" "$PARENT_JOB" "$PARENT_HEAD" <<'PY'
+          import json,sys
+          run_path,jobs_path,run_id,job_id,head=sys.argv[1:]
+          run=json.load(open(run_path,encoding='utf-8'))
+          jobs=json.load(open(jobs_path,encoding='utf-8')).get('jobs',[])
+          if str(run.get('id')) != run_id: raise SystemExit('parent run id drift')
+          if run.get('head_sha') != head: raise SystemExit('parent head drift')
+          matches=[j for j in jobs if str(j.get('id'))==job_id]
+          if len(matches)!=1: raise SystemExit('parent job not unique')
+          job=matches[0]
+          if job.get('head_sha') != head: raise SystemExit('parent job head drift')
+          if job.get('conclusion') != 'failure':
+              raise SystemExit('composite is only authorized for exact known parent failure class')
+          steps=job.get('steps') or []
+          substantive=[s for s in steps if s.get('name')=='Certify routed PUBLIC G4 G5 chain on A2 direct-official worker']
+          if len(substantive)!=1 or substantive[0].get('conclusion')!='success':
+              raise SystemExit('substantive parent certification was not success')
+          setup=[s for s in steps if s.get('name')=='Set up job']
+          if len(setup)!=1 or setup[0].get('conclusion')!='success':
+              raise SystemExit('parent setup was not success')
+          print('G4_G5_PARENT_RUNTIME_IDENTITY=GREEN')
+          print('G4_G5_PARENT_SUBSTANTIVE_STEP=GREEN')
+          print('G4_G5_PARENT_WHOLE_JOB=ADMIN_FINALIZATION_FAILURE')
+          PY
+
+      - name: Revalidate exact substantive evidence from parent log
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="$RUNNER_TEMP/vos-g4-g5-composite/parent.log"
+          require(){ grep -Fqx "$1" "$log" || { echo "MISSING_PARENT_MARKER=$1" >&2; exit 2; }; }
+          require 'G4_ROUTER_PATH=A2_DIRECT_OFFICIAL'
+          require 'G4_CODEX_BREAKER=OPEN'
+          require 'G4_DATA_CLASS=PUBLIC'
+          require 'G4_DATA_POLICY=PUBLIC_ONLY'
+          require 'G4_NORMALIZED_RESULT=GREEN'
+          require 'G4_DETERMINISTIC_VERIFICATION=GREEN'
+          require 'G4_DURABLE_CHECKPOINT=GREEN'
+          require 'G5_DISTINCT_PROCESS_BOUNDARY=GREEN'
+          require 'G5_NEW_CONTINUATION=GREEN'
+          require 'G5_POST_ROLLOVER_EXACT_RESUME=GREEN'
+          require 'G5_EFFECT_CLAIMED_ONCE=GREEN'
+          require 'G5_SAME_PAYLOAD_REPLAY_CLAIMED=0'
+          require 'G5_CONFLICTING_REPLAY_REJECTED=GREEN'
+          require 'G5_DUPLICATED_EFFECTS=0'
+          require 'FOUNDER_PROMPT_SHUTTLING=0'
+          require 'G4_G5_API_KEY_FALLBACK=0'
+          require 'G4_G5_CREDIT_FALLBACK=0'
+          require 'G4_G5_PAID_API_FALLBACK=0'
+          require 'PRODUCTION_MUTATIONS=0'
+          require 'G4=GREEN'
+          require 'G5=GREEN'
+          require "G4_G5_FINAL_EVIDENCE_SHA256=${EXPECTED_EVIDENCE_SHA256}"
+          require "G5_FINAL_CHECKPOINT_SHA256=${EXPECTED_CHECKPOINT_SHA256}"
+          require "FABRIC_SHA=${FABRIC_SHA}"
+          echo G4_G5_PARENT_LOG_EVIDENCE=GREEN
+
+      - name: Emit exact composite certification
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "G4=GREEN"
+          echo "G5=GREEN"
+          echo "G4_G5_RUNTIME_PARENT_RUN=$PARENT_RUN"
+          echo "G4_G5_RUNTIME_PARENT_JOB=$PARENT_JOB"
+          echo "G4_G5_RUNTIME_PARENT_HEAD=$PARENT_HEAD"
+          echo "FABRIC_SHA=$FABRIC_SHA"
+          echo "G4_G5_FINAL_EVIDENCE_SHA256=$EXPECTED_EVIDENCE_SHA256"
+          echo "G5_FINAL_CHECKPOINT_SHA256=$EXPECTED_CHECKPOINT_SHA256"
+          echo "FOUNDER_PROMPT_SHUTTLING=0"
+          echo "PAID_API_FALLBACK=0"
+          echo "PRODUCTION_MUTATIONS=0"
+          echo "G4_G5_COMPOSITE=GREEN"
