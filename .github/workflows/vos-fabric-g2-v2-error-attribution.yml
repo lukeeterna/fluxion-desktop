@@ -24,11 +24,13 @@ jobs:
         run: |
           set -euo pipefail
           PROBE="$RUNNER_TEMP/vos_fabric_g2_tool_probe.sh"
+          REMOTE="/tmp/vos-fabric-g2-tool-probe-${GITHUB_RUN_ID}.sh"
           curl -4 -fsSL --connect-timeout 8 --max-time 30 --retry 4 --retry-delay 2 --retry-all-errors \
             "https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/d81f16cb1f746dff30295624833e8a8dd49dc775/tools/vos_fabric_g2_tool_probe.sh" \
             -o "$PROBE"
           test -s "$PROBE"
           bash -n "$PROBE"
           echo "G2_TOOL_PROBE_SCRIPT_SHA256=$(shasum -a 256 "$PROBE" | awk '{print $1}')"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROBE" "imac:$REMOTE"
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
-            "VOS_CODEX_MODEL='gpt-5.6-terra' bash -s" < "$PROBE"
+            "chmod 700 '$REMOTE'; VOS_CODEX_MODEL='gpt-5.6-terra' bash '$REMOTE' </dev/null; rc=\$?; rm -f '$REMOTE'; exit \$rc"
