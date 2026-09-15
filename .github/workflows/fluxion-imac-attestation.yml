@@ -32,7 +32,9 @@ jobs:
           REPORT="${RUNNER_TEMP}/fluxion-imac-attestation-${GITHUB_RUN_ID}.txt"
           RESULT=0
 
-          {
+          set +e
+          (
+            set -euo pipefail
             echo "SHA=${EXPECTED_SHA}"
             echo "RUN_ID=${GITHUB_RUN_ID}"
 
@@ -47,8 +49,11 @@ jobs:
             test ! -e "${FLUXION_ROOT}/vos/STOP" || { echo 'RED=STOP_PRESENT'; exit 13; }
             echo 'STOP=ABSENT'
 
-            python3 "${FLUXION_ROOT}/bin/vos_machine.py" validate
-            python3 "${FLUXION_ROOT}/bin/vos_machine.py" verify --role runtime_authority
+            (
+              cd "${FLUXION_ROOT}"
+              python3 bin/vos_machine.py validate
+              python3 bin/vos_machine.py verify --role runtime_authority
+            )
 
             TTS_MODE="$(tr -d '\r\n' < "${FLUXION_ROOT}/voice-agent/.tts_mode")"
             echo "TTS_MODE=${TTS_MODE}"
@@ -86,7 +91,9 @@ jobs:
 
             echo "LOCAL_DIRTY_COUNT=$(git -C "${FLUXION_ROOT}" status --porcelain=v1 | wc -l | tr -d ' ')"
             echo 'IMAC_READONLY_ATTESTATION=GREEN'
-          } >"${REPORT}" 2>&1 || RESULT=$?
+          ) >"${REPORT}" 2>&1
+          RESULT=$?
+          set -e
 
           cat "${REPORT}"
 
