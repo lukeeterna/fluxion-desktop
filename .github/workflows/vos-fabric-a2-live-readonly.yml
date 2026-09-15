@@ -12,38 +12,107 @@ permissions:
 
 jobs:
   probe:
-    runs-on: [self-hosted, macbook, fluxion]
+    runs-on: [self-hosted, fluxion-imac-physical]
     timeout-minutes: 5
     steps:
-      - name: Read A2 guest state without invoking provider
+      - name: Inspect residual A2 stream without invoking provider
         shell: bash
         run: |
           set -euo pipefail
-          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
-          set -euo pipefail
-          MP="$(command -v multipass 2>/dev/null || printf "%s" "/Library/Application Support/com.canonical.multipass/bin/multipass")"
-          /usr/bin/python3 - "$MP" <<'PY'
-          import subprocess,sys
-          mp=sys.argv[1]
-          script=r'''
-          echo A2_LIVE_READONLY=1
-          for f in /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.result /tmp/vos-a2-persist.rc; do
-            if [ -f "$f" ]; then
-              echo "=== $f ==="
-              cat "$f"
-            else
-              echo "=== $f MISSING ==="
-            fi
-          done
-          echo '=== runtime unit ==='
-          sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
-          pgrep -af 'agy|vos-a2-runtime' || true
-          '''
-          try:
-              p=subprocess.run([mp,'exec','vos-worker','--','sh','-lc',script],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15)
-          except subprocess.TimeoutExpired:
-              print('A2_LIVE_MP_RC=124'); raise SystemExit(0)
-          print(p.stdout,end='')
-          print('A2_LIVE_MP_RC='+str(p.returncode))
+          MP="$(command -v multipass 2>/dev/null || printf '%s' '/Library/Application Support/com.canonical.multipass/bin/multipass')"
+          DIAG="$RUNNER_TEMP/a2_stream_diag.py"
+          cat >"$DIAG" <<'PY'
+          import glob, hashlib, json, os
+
+          dirs=sorted(glob.glob('/tmp/vos-fabric-a2.*'), key=lambda p: os.path.getmtime(p), reverse=True)
+          if not dirs:
+              print('A2_DIAG_RUN_DIR=NONE')
+              raise SystemExit(0)
+          d=dirs[0]
+          first=os.path.join(d,'first.jsonl')
+          print('A2_DIAG_RUN_DIR_FOUND=1')
+          print('A2_DIAG_FIRST_EXISTS='+('1' if os.path.isfile(first) else '0'))
+          if not os.path.isfile(first): raise SystemExit(0)
+          raw=open(first,'rb').read()
+          print('A2_DIAG_FIRST_SHA256='+hashlib.sha256(raw).hexdigest())
+          init=None; result=None; tools=[]
+          for line in raw.decode('utf-8','replace').splitlines():
+              try: e=json.loads(line)
+              except Exception: continue
+              if e.get('event')=='init': init=e
+              elif e.get('event')=='step_update':
+                  s=e.get('step_update') or {}
+                  if s.get('step_type')=='tool' and s.get('state')=='DONE':
+                      n=s.get('tool_name')
+                      if isinstance(n,str): tools.append(n)
+              elif e.get('event')=='result': result=e.get('result') or {}
+          print('A2_DIAG_INIT_PRESENT='+('1' if isinstance(init,dict) else '0'))
+          print('A2_DIAG_RESULT_PRESENT='+('1' if isinstance(result,dict) else '0'))
+          print('A2_DIAG_TOOL_DONE_COUNT='+str(len(tools)))
+          print('A2_DIAG_TOOL_NAMES='+','.join(tools))
+          expected=None
+          if isinstance(init,dict):
+              schema=init.get('json_schema')
+              if isinstance(schema,dict):
+                  try: expected=schema['properties']['proof']['const']
+                  except Exception: pass
+              print('A2_DIAG_PERMISSION_MODE='+str(init.get('permission_mode','UNKNOWN')))
+          if not isinstance(result,dict): raise SystemExit(0)
+          print('A2_DIAG_STATUS='+str(result.get('status','MISSING')))
+          structured=result.get('structured_output')
+          print('A2_DIAG_STRUCTURED_TYPE='+type(structured).__name__)
+          if isinstance(structured,dict):
+              print('A2_DIAG_STRUCTURED_KEYS='+','.join(sorted(map(str,structured.keys()))))
+              print('A2_DIAG_STRUCTURED_MATCH='+('1' if expected is not None and structured.get('proof')==expected else '0'))
+          else:
+              print('A2_DIAG_STRUCTURED_KEYS=')
+              print('A2_DIAG_STRUCTURED_MATCH=0')
+          response=result.get('response')
+          parsed=None
+          if isinstance(response,str):
+              print('A2_DIAG_RESPONSE_SHA256='+hashlib.sha256(response.encode()).hexdigest())
+              try: parsed=json.loads(response)
+              except Exception: pass
+          print('A2_DIAG_RESPONSE_JSON='+('1' if isinstance(parsed,dict) else '0'))
+          print('A2_DIAG_RESPONSE_MATCH='+('1' if isinstance(parsed,dict) and expected is not None and parsed.get('proof')==expected else '0'))
+          err=result.get('error')
+          text=json.dumps(err,sort_keys=True) if err is not None else ''
+          low=text.lower()
+          cls='NONE'
+          for label, needles in [
+              ('SCHEMA',['schema','structured','const','validation']),
+              ('PERMISSION',['permission','approval','review']),
+              ('QUOTA',['quota','rate limit','usage limit','credit']),
+              ('AUTH',['auth','sign in','unauthorized']),
+              ('TIMEOUT',['timeout','timed out']),
+          ]:
+              if any(n in low for n in needles): cls=label; break
+          print('A2_DIAG_ERROR_CLASS='+cls)
+          if text:
+              print('A2_DIAG_ERROR_SHA256='+hashlib.sha256(text.encode()).hexdigest())
+          proof=os.path.join(d,'work','proof.txt')
+          print('A2_DIAG_WORKSPACE_PROOF_EXISTS='+('1' if os.path.isfile(proof) else '0'))
+          match=False
+          if os.path.isfile(proof) and isinstance(expected,str) and expected.startswith('VOS_ANTIGRAVITY_PING='):
+              want=expected.split('=',1)[1]
+              got=open(proof,encoding='utf-8',errors='replace').read()
+              match=(got==want)
+              print('A2_DIAG_WORKSPACE_PROOF_SHA256='+hashlib.sha256(got.encode()).hexdigest())
+          print('A2_DIAG_WORKSPACE_PROOF_MATCH='+('1' if match else '0'))
           PY
-          REMOTE
+
+          /usr/bin/python3 - "$MP" "$DIAG" <<'PY'
+          import subprocess,sys
+          mp,path=sys.argv[1:]
+          def run(cmd,secs):
+              try: return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=secs)
+              except subprocess.TimeoutExpired: return None
+          p=run([mp,'transfer',path,'vos-worker:/tmp/a2_stream_diag.py'],20)
+          if p is None or p.returncode:
+              print('A2_DIAG_TRANSFER=FAIL'); raise SystemExit(0)
+          q=run([mp,'exec','vos-worker','--','python3','/tmp/a2_stream_diag.py'],20)
+          if q is None:
+              print('A2_DIAG_MP_RC=124'); raise SystemExit(0)
+          print(q.stdout,end='')
+          print('A2_DIAG_MP_RC='+str(q.returncode))
+          PY
