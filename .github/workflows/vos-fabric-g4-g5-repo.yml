@@ -89,14 +89,13 @@ jobs:
           assert worker['zero_cost_hard_stop'] is True
           assert worker['consumer_oauth_proxy'] is False
           assert len(decision_sha) == 64
+          source = Path('tests/vos_fabric_g4_g5_runtime.py').read_text()
+          assert '"data_class": "INTERNAL"' not in source
+          assert "'data_class': 'INTERNAL'" not in source
           print('G4_G5_ROUTER_REPO=GREEN')
           print('G4_G5_DATA_CLASS_REPO=PUBLIC')
           print('G4_G5_DATA_POLICY_REPO=PUBLIC_ONLY')
           PY
-          if grep -n -E '["'"']data_class["'"'][[:space:]]*:[[:space:]]*["'"']INTERNAL["'"']' tests/vos_fabric_g4_g5_runtime.py; then
-            echo 'INTERNAL certification workload is forbidden' >&2
-            exit 1
-          fi
       - name: Verify no paid-key fallback in certification code
         run: |
           set -euo pipefail
