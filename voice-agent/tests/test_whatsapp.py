@@ -5,14 +5,12 @@ Week 5: VOICE-AGENT-RAG.md implementation
 Tests WhatsApp client, rate limiting, templates, and analytics.
 """
 
-import asyncio
 import json
-import os
 import tempfile
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -32,6 +30,7 @@ from src.whatsapp import (
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def temp_dir():
@@ -68,6 +67,7 @@ def rate_limiter():
 # WhatsAppConfig Tests
 # =============================================================================
 
+
 class TestWhatsAppConfig:
     """Tests for WhatsAppConfig."""
 
@@ -87,7 +87,10 @@ class TestWhatsAppConfig:
         )
         assert config.status_file == temp_dir / ".whatsapp-session" / "status.json"
         assert config.messages_log == temp_dir / ".whatsapp-session" / "messages.jsonl"
-        assert config.pending_questions_file == temp_dir / ".whatsapp-session" / "pending_questions.jsonl"
+        assert (
+            config.pending_questions_file
+            == temp_dir / ".whatsapp-session" / "pending_questions.jsonl"
+        )
 
     def test_service_path(self, temp_dir):
         """Test service path calculation."""
@@ -98,6 +101,7 @@ class TestWhatsAppConfig:
 # =============================================================================
 # WhatsAppMessage Tests
 # =============================================================================
+
 
 class TestWhatsAppMessage:
     """Tests for WhatsAppMessage dataclass."""
@@ -165,6 +169,7 @@ class TestWhatsAppMessage:
 # PendingQuestion Tests
 # =============================================================================
 
+
 class TestPendingQuestion:
     """Tests for PendingQuestion dataclass."""
 
@@ -206,6 +211,7 @@ class TestPendingQuestion:
 # =============================================================================
 # WhatsAppRateLimiter Tests
 # =============================================================================
+
 
 class TestWhatsAppRateLimiter:
     """Tests for WhatsAppRateLimiter."""
@@ -270,6 +276,7 @@ class TestWhatsAppRateLimiter:
 # =============================================================================
 # WhatsAppTemplates Tests
 # =============================================================================
+
 
 class TestWhatsAppTemplates:
     """Tests for WhatsAppTemplates."""
@@ -379,6 +386,7 @@ class TestWhatsAppTemplates:
 # WhatsAppClient Tests
 # =============================================================================
 
+
 class TestWhatsAppClient:
     """Tests for WhatsAppClient."""
 
@@ -447,9 +455,26 @@ class TestWhatsAppClient:
 
         # Create message log
         messages_data = [
-            {"from": "393281111111", "name": "User1", "body": "Hello", "timestamp": "2025-01-10T10:00:00", "type": "received"},
-            {"to": "393281111111", "body": "Hi!", "timestamp": "2025-01-10T10:01:00", "type": "sent"},
-            {"from": "393282222222", "name": "User2", "body": "Test", "timestamp": "2025-01-10T10:02:00", "type": "received"},
+            {
+                "from": "393281111111",
+                "name": "User1",
+                "body": "Hello",
+                "timestamp": "2025-01-10T10:00:00",
+                "type": "received",
+            },
+            {
+                "to": "393281111111",
+                "body": "Hi!",
+                "timestamp": "2025-01-10T10:01:00",
+                "type": "sent",
+            },
+            {
+                "from": "393282222222",
+                "name": "User2",
+                "body": "Test",
+                "timestamp": "2025-01-10T10:02:00",
+                "type": "received",
+            },
         ]
 
         with open(whatsapp_config.messages_log, "w") as f:
@@ -464,8 +489,18 @@ class TestWhatsAppClient:
         whatsapp_config.session_dir.mkdir(parents=True, exist_ok=True)
 
         messages_data = [
-            {"from": "393281111111", "body": "Old", "timestamp": "2025-01-09T10:00:00", "type": "received"},
-            {"from": "393281111111", "body": "New", "timestamp": "2025-01-11T10:00:00", "type": "received"},
+            {
+                "from": "393281111111",
+                "body": "Old",
+                "timestamp": "2025-01-09T10:00:00",
+                "type": "received",
+            },
+            {
+                "from": "393281111111",
+                "body": "New",
+                "timestamp": "2025-01-11T10:00:00",
+                "type": "received",
+            },
         ]
 
         with open(whatsapp_config.messages_log, "w") as f:
@@ -482,9 +517,33 @@ class TestWhatsAppClient:
         whatsapp_config.session_dir.mkdir(parents=True, exist_ok=True)
 
         questions = [
-            {"id": "pq_1", "question": "Q1", "fromPhone": "123", "fromName": "User", "category": "test", "timestamp": "2025-01-10T10:00:00", "status": "pending"},
-            {"id": "pq_2", "question": "Q2", "fromPhone": "456", "fromName": "User2", "category": "test", "timestamp": "2025-01-10T11:00:00", "status": "answered"},
-            {"id": "pq_3", "question": "Q3", "fromPhone": "789", "fromName": "User3", "category": "test", "timestamp": "2025-01-10T12:00:00", "status": "pending"},
+            {
+                "id": "pq_1",
+                "question": "Q1",
+                "fromPhone": "123",
+                "fromName": "User",
+                "category": "test",
+                "timestamp": "2025-01-10T10:00:00",
+                "status": "pending",
+            },
+            {
+                "id": "pq_2",
+                "question": "Q2",
+                "fromPhone": "456",
+                "fromName": "User2",
+                "category": "test",
+                "timestamp": "2025-01-10T11:00:00",
+                "status": "answered",
+            },
+            {
+                "id": "pq_3",
+                "question": "Q3",
+                "fromPhone": "789",
+                "fromName": "User3",
+                "category": "test",
+                "timestamp": "2025-01-10T12:00:00",
+                "status": "pending",
+            },
         ]
 
         with open(whatsapp_config.pending_questions_file, "w") as f:
@@ -548,6 +607,7 @@ class TestWhatsAppClient:
 # =============================================================================
 # WhatsAppManager Tests
 # =============================================================================
+
 
 class TestWhatsAppManager:
     """Tests for WhatsAppManager."""
@@ -614,7 +674,20 @@ class TestWhatsAppManager:
 
         # Write pending question
         with open(whatsapp_config.pending_questions_file, "w") as f:
-            f.write(json.dumps({"id": "1", "question": "Q", "fromPhone": "123", "fromName": "U", "category": "t", "timestamp": "2025-01-01T00:00:00", "status": "pending"}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "id": "1",
+                        "question": "Q",
+                        "fromPhone": "123",
+                        "fromName": "U",
+                        "category": "t",
+                        "timestamp": "2025-01-01T00:00:00",
+                        "status": "pending",
+                    }
+                )
+                + "\n"
+            )
 
         manager = WhatsAppManager(whatsapp_config)
         status = manager.get_status()
@@ -628,6 +701,7 @@ class TestWhatsAppManager:
 # =============================================================================
 # Analytics Integration Tests
 # =============================================================================
+
 
 class TestWhatsAppAnalytics:
     """Tests for WhatsApp analytics integration."""
@@ -663,7 +737,9 @@ class TestWhatsAppAnalytics:
         # Log some messages
         logger.log_whatsapp_message(phone="123", body="In1", direction="inbound")
         logger.log_whatsapp_message(phone="123", body="Out1", direction="outbound")
-        logger.log_whatsapp_message(phone="456", body="In2", direction="inbound", passed_to_operator=True)
+        logger.log_whatsapp_message(
+            phone="456", body="In2", direction="inbound", passed_to_operator=True
+        )
 
         metrics = logger.get_whatsapp_metrics()
 
@@ -677,6 +753,7 @@ class TestWhatsAppAnalytics:
 # =============================================================================
 # Connection Status Tests
 # =============================================================================
+
 
 class TestConnectionStatus:
     """Tests for ConnectionStatus enum."""
@@ -694,6 +771,7 @@ class TestConnectionStatus:
 # Message Direction Tests
 # =============================================================================
 
+
 class TestMessageDirection:
     """Tests for MessageDirection enum."""
 
@@ -706,6 +784,7 @@ class TestMessageDirection:
 # =============================================================================
 # Integration Test
 # =============================================================================
+
 
 class TestWhatsAppIntegration:
     """Integration tests for WhatsApp module."""
@@ -725,7 +804,9 @@ class TestWhatsAppIntegration:
 
         # Mock pipeline
         mock_pipeline = MagicMock()
-        mock_pipeline.process_input = AsyncMock(return_value="Ciao! Come posso aiutarti?")
+        mock_pipeline.process_input = AsyncMock(
+            return_value="Ciao! Come posso aiutarti?"
+        )
         mock_pipeline.last_intent_result = MagicMock(
             confidence=0.85,
             intent="greeting",

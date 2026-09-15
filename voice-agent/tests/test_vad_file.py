@@ -9,6 +9,7 @@ Works via SSH without microphone access.
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
@@ -20,7 +21,8 @@ SAMPLE_RATE = 16000
 # Check if Silero model is available
 MODEL_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "models", "silero_vad.onnx"
+    "models",
+    "silero_vad.onnx",
 )
 HAS_MODEL = os.path.exists(MODEL_PATH)
 skip_no_model = pytest.mark.skipif(
@@ -28,14 +30,13 @@ skip_no_model = pytest.mark.skipif(
 )
 
 try:
-    import onnxruntime
+    import onnxruntime  # noqa: F401
+
     HAS_ONNX = True
 except ImportError:
     HAS_ONNX = False
 
-skip_no_onnx = pytest.mark.skipif(
-    not HAS_ONNX, reason="onnxruntime not installed"
-)
+skip_no_onnx = pytest.mark.skipif(not HAS_ONNX, reason="onnxruntime not installed")
 
 
 def generate_test_audio():
@@ -48,16 +49,19 @@ def generate_test_audio():
 
     # 2. Speech simulation (2 seconds) - sine wave with noise
     t = np.linspace(0, 2, SAMPLE_RATE * 2)
-    speech = (np.sin(2 * np.pi * 200 * t) * 15000 +
-              np.random.randn(len(t)) * 3000).astype(np.int16)
+    speech = (
+        np.sin(2 * np.pi * 200 * t) * 15000 + np.random.randn(len(t)) * 3000
+    ).astype(np.int16)
     segments.append(("speech", speech))
 
     # 3. Silence (1 second)
     segments.append(("silence", silence_1s))
 
     # 4. Short speech (0.5 seconds)
-    short_speech = (np.sin(2 * np.pi * 300 * np.linspace(0, 0.5, SAMPLE_RATE // 2)) * 12000 +
-                   np.random.randn(SAMPLE_RATE // 2) * 2000).astype(np.int16)
+    short_speech = (
+        np.sin(2 * np.pi * 300 * np.linspace(0, 0.5, SAMPLE_RATE // 2)) * 12000
+        + np.random.randn(SAMPLE_RATE // 2) * 2000
+    ).astype(np.int16)
     segments.append(("short_speech", short_speech))
 
     # 5. Final silence (1 second)
@@ -129,9 +133,7 @@ class TestSileroVADBasic:
     def test_custom_config(self):
         """Test VAD with custom configuration."""
         config = VADConfig(
-            vad_threshold=0.3,
-            silence_duration_ms=500,
-            prefix_padding_ms=200
+            vad_threshold=0.3, silence_duration_ms=500, prefix_padding_ms=200
         )
         vad = FluxionVAD(config)
         assert vad.config.vad_threshold == 0.3
@@ -171,9 +173,7 @@ class TestSileroVADSegments:
     def test_speech_detection_with_segments(self):
         """Test that VAD detects speech start/end events."""
         config = VADConfig(
-            vad_threshold=0.5,
-            silence_duration_ms=500,
-            prefix_padding_ms=200
+            vad_threshold=0.5, silence_duration_ms=500, prefix_padding_ms=200
         )
         vad = FluxionVAD(config)
         vad.start()
@@ -185,7 +185,7 @@ class TestSileroVADSegments:
         for segment_name, audio_data in segments:
             chunk_size = 1600  # 100ms chunks
             for i in range(0, len(audio_data), chunk_size):
-                chunk = audio_data[i:i+chunk_size]
+                chunk = audio_data[i : i + chunk_size]
                 if len(chunk) < chunk_size:
                     chunk = np.pad(chunk, (0, chunk_size - len(chunk)))
 
@@ -224,14 +224,14 @@ class TestSileroVADSegments:
         vad.start()
 
         silence = np.zeros(1600, dtype=np.int16).tobytes()
-        result = vad.process_audio(silence)
+        vad.process_audio(silence)
         assert vad.is_speaking == (vad.state.name == "SPEAKING")
 
         vad.stop()
 
 
 # Import VADState for type checking
-from src.vad import VADState
+from src.vad import VADState  # noqa: E402
 
 
 if __name__ == "__main__":

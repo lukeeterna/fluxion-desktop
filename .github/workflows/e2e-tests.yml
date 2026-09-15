@@ -29,6 +29,8 @@ concurrency:
 env:
   CI: true
   BASE_URL: http://localhost:1420
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  PYTHON_VERSION: '3.12'
 
 jobs:
   # ============================================
@@ -42,6 +44,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -55,14 +67,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Smoke Tests
@@ -86,16 +98,34 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     needs: smoke-tests
-    if: github.event_name == 'push' || github.event.inputs.test_suite == 'all'
+    if: github.event_name == 'push' || github.event_name == 'pull_request' || github.event.inputs.test_suite == 'all'
 
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            platform: macos-arm
+            executable: voice-agent
+            rust_target: aarch64-apple-darwin
+          - os: windows-latest
+            platform: windows
+            executable: voice-agent.exe
+            rust_target: x86_64-pc-windows-msvc
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -104,7 +134,20 @@ jobs:
           cache: 'npm'
 
       - name: Install Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python for authentic Voice Agent sidecar
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            voice-agent/requirements.txt
+            voice-agent/requirements-windows.txt
+
+      - name: Install Voice Agent native dependencies (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install portaudio
 
       - name: Install Dependencies (macOS)
         if: matrix.os == 'macos-latest'
@@ -117,6 +160,54 @@ jobs:
         run: |
           npm ci
           cd e2e-tests && npm ci
+
+      - name: Build and verify authentic Voice Agent sidecar
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            python -m pip install -r voice-agent/requirements-windows.txt
+            sep=';'
+          else
+            python -m pip install -r voice-agent/requirements.txt
+            sep=':'
+          fi
+          python -m pip install pyinstaller
+          mkdir -p voice-agent/models/tts
+          curl --fail --location --retry 3 -o voice-agent/models/tts/it_IT-paola-medium.onnx \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx"
+          curl --fail --location --retry 3 -o voice-agent/models/tts/it_IT-paola-medium.onnx.json \
+            "https://huggingface.co/rhasspy/piper-voices/resolve/main/it/it_IT/paola/medium/it_IT-paola-medium.onnx.json"
+          cd voice-agent
+          pyinstaller --onefile --name voice-agent \
+            --add-data "models${sep}models" \
+            --hidden-import=piper \
+            --hidden-import=groq \
+            --hidden-import=sounddevice \
+            --hidden-import=numpy \
+            --hidden-import=aiohttp \
+            --hidden-import=onnxruntime \
+            --exclude-module=webrtcvad \
+            --exclude-module=pipecat \
+            --exclude-module=aiortc \
+            main.py
+          cd dist
+          ./${{ matrix.executable }} --version
+          health="$(./${{ matrix.executable }} --health-check)"
+          echo "$health"
+          grep -q '"status": "healthy"' <<<"$health"
+          cd ../..
+          mkdir -p src-tauri/binaries
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp voice-agent/dist/voice-agent.exe "src-tauri/binaries/voice-agent-${{ matrix.rust_target }}.exe"
+            test -s "src-tauri/binaries/voice-agent-${{ matrix.rust_target }}.exe"
+          else
+            cp voice-agent/dist/voice-agent "src-tauri/binaries/voice-agent-${{ matrix.rust_target }}"
+            chmod +x "src-tauri/binaries/voice-agent-${{ matrix.rust_target }}"
+            test -x "src-tauri/binaries/voice-agent-${{ matrix.rust_target }}"
+          fi
+          echo "AUTHENTIC_SIDECAR=PASS target=${{ matrix.rust_target }}"
 
       - name: Install Playwright
         run: cd e2e-tests && npx playwright install --with-deps
@@ -163,6 +254,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -176,14 +277,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Visual Tests
@@ -194,7 +295,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-diff
-          path: e2e-tests/test-results/
+          path: |
+            e2e-tests/test-results/
+            e2e-tests/reports/artifacts/
           retention-days: 7
 
   # ============================================
@@ -209,6 +312,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+
+      - name: Verify candidate SHA
+        shell: bash
+        run: |
+          actual="$(git rev-parse HEAD)"
+          echo "EXPECTED_SHA=${CANDIDATE_SHA}"
+          echo "ACTUAL_SHA=${actual}"
+          test "${actual}" = "${CANDIDATE_SHA}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -222,14 +335,14 @@ jobs:
           cd e2e-tests && npm ci
 
       - name: Install Playwright
-        run: cd e2e-tests && npx playwright install --with-deps chromium
+        run: cd e2e-tests && npx playwright install --with-deps firefox
 
       - name: Build App
         run: npm run build
 
       - name: Start App
         run: |
-          npm run preview &
+          npm run preview -- --host 127.0.0.1 --port 1420 &
           npx wait-on http://localhost:1420 --timeout 60000
 
       - name: Run Accessibility Tests
@@ -255,6 +368,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
 
       - name: Download All Results
         uses: actions/download-artifact@v4
@@ -301,3 +416,9 @@ jobs:
           echo "| E2E Full | ${{ needs.e2e-full.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Visual | ${{ needs.visual-tests.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| A11y | ${{ needs.a11y-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          for result in "${{ needs.smoke-tests.result }}" "${{ needs.e2e-full.result }}" "${{ needs.visual-tests.result }}" "${{ needs.a11y-tests.result }}"; do
+            if [ "$result" != "success" ]; then
+              echo "::error::Required E2E lane is not successful: $result"
+              exit 1
+            fi
+          done

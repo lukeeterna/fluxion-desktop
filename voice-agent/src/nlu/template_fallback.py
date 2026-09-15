@@ -5,23 +5,33 @@ Uses rapidfuzz for fast Levenshtein matching (<1ms per classification).
 No cloud, no training, no regex chaos.
 """
 
+from typing import TYPE_CHECKING
+
 import logging
-from typing import Optional, Tuple, Dict, List
-from dataclasses import dataclass
+from typing import Tuple, Dict, List, Optional
+
+_FUZZY_ENGINE: Optional[str]
 
 logger = logging.getLogger("fluxion.nlu.template_fallback")
 
 # Try rapidfuzz first (C-speed), fall back to fuzzywuzzy, then basic
-try:
+if TYPE_CHECKING:
     from rapidfuzz import fuzz, process as rf_process
-    _FUZZY_ENGINE = "rapidfuzz"
-except ImportError:
+else:
     try:
-        from fuzzywuzzy import fuzz, process as rf_process
-        _FUZZY_ENGINE = "fuzzywuzzy"
+        from rapidfuzz import fuzz, process as rf_process
+
+        _FUZZY_ENGINE = "rapidfuzz"
     except ImportError:
-        _FUZZY_ENGINE = None
-        logger.warning("[NLU] No fuzzy matching library available (install rapidfuzz)")
+        try:
+            from fuzzywuzzy import fuzz, process as rf_process
+
+            _FUZZY_ENGINE = "fuzzywuzzy"
+        except ImportError:
+            _FUZZY_ENGINE = None
+            logger.warning(
+                "[NLU] No fuzzy matching library available (install rapidfuzz)"
+            )
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -188,11 +198,32 @@ for intent, templates in INTENT_TEMPLATES.items():
 
 # Profanity word list (Italian common)
 _PROFANITY_WORDS = {
-    "cazzo", "merda", "minchia", "stronzo", "stronza", "vaffanculo",
-    "fanculo", "puttana", "troia", "bastardo", "bastarda", "coglione",
-    "porco", "madonna", "dio", "porcodio", "dioporco", "porcamadonna",
-    "diocane", "porcatroia", "cazzata", "incazzato", "incazzata",
-    "del cazzo", "di merda", "figlio di puttana",
+    "cazzo",
+    "merda",
+    "minchia",
+    "stronzo",
+    "stronza",
+    "vaffanculo",
+    "fanculo",
+    "puttana",
+    "troia",
+    "bastardo",
+    "bastarda",
+    "coglione",
+    "porco",
+    "madonna",
+    "dio",
+    "porcodio",
+    "dioporco",
+    "porcamadonna",
+    "diocane",
+    "porcatroia",
+    "cazzata",
+    "incazzato",
+    "incazzata",
+    "del cazzo",
+    "di merda",
+    "figlio di puttana",
 }
 
 # Threshold for fuzzy matching
@@ -253,5 +284,7 @@ def classify_template(text: str) -> Tuple[str, float]:
     intent = _ALL_TEMPLATES[idx][1]
     confidence = score / 100.0
 
-    logger.debug(f"[TEMPLATE] '{text_lower}' → {intent} ({score}%) matched='{matched_text}'")
+    logger.debug(
+        f"[TEMPLATE] '{text_lower}' → {intent} ({score}%) matched='{matched_text}'"
+    )
     return intent, confidence

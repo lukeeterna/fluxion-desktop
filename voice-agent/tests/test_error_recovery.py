@@ -9,7 +9,6 @@ import pytest
 import sys
 import time
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -38,7 +37,6 @@ from error_recovery import (
     get_recovery_manager,
     # Constants
     FALLBACK_RESPONSES,
-    DEFAULT_RETRY_CONFIG,
     DEFAULT_TIMEOUT_CONFIG,
 )
 
@@ -46,6 +44,7 @@ from error_recovery import (
 # ==============================================================================
 # Test Fixtures
 # ==============================================================================
+
 
 @pytest.fixture
 def retry_config():
@@ -55,7 +54,7 @@ def retry_config():
         base_delay_ms=10,
         max_delay_ms=100,
         exponential_base=2.0,
-        jitter=False
+        jitter=False,
     )
 
 
@@ -63,9 +62,7 @@ def retry_config():
 def circuit_breaker():
     """Circuit breaker with low thresholds for testing."""
     config = CircuitBreakerConfig(
-        failure_threshold=2,
-        recovery_timeout_ms=100,
-        success_threshold=1
+        failure_threshold=2, recovery_timeout_ms=100, success_threshold=1
     )
     return CircuitBreaker("test_service", config)
 
@@ -79,6 +76,7 @@ def recovery_manager(retry_config):
 # ==============================================================================
 # Test: Fallback Responses
 # ==============================================================================
+
 
 class TestFallbackResponses:
     """Test fallback response generation."""
@@ -100,10 +98,7 @@ class TestFallbackResponses:
 
     def test_fallback_context_substitution(self):
         """Test context variable substitution."""
-        response = get_fallback_response(
-            intent="info",
-            context={"phone": "123456"}
-        )
+        response = get_fallback_response(intent="info", context={"phone": "123456"})
         assert isinstance(response, str)
 
     def test_escalation_response(self):
@@ -113,7 +108,14 @@ class TestFallbackResponses:
 
     def test_all_intents_have_fallbacks(self):
         """Test all common intents have fallback responses."""
-        intents = ["prenotazione", "info", "conferma", "rifiuto", "cortesia", "operatore"]
+        intents = [
+            "prenotazione",
+            "info",
+            "conferma",
+            "rifiuto",
+            "cortesia",
+            "operatore",
+        ]
         for intent in intents:
             assert intent in FALLBACK_RESPONSES
 
@@ -121,6 +123,7 @@ class TestFallbackResponses:
 # ==============================================================================
 # Test: Calculate Delay
 # ==============================================================================
+
 
 class TestCalculateDelay:
     """Test exponential backoff delay calculation."""
@@ -159,6 +162,7 @@ class TestCalculateDelay:
 # ==============================================================================
 # Test: Retry with Backoff (Async)
 # ==============================================================================
+
 
 class TestRetryWithBackoff:
     """Test async retry with exponential backoff."""
@@ -227,9 +231,7 @@ class TestRetryWithBackoff:
             raise ValueError("test error")
 
         await retry_with_backoff(
-            fail_func,
-            config=retry_config,
-            error_handler=error_handler
+            fail_func, config=retry_config, error_handler=error_handler
         )
 
         assert len(errors) == retry_config.max_retries
@@ -237,6 +239,7 @@ class TestRetryWithBackoff:
     @pytest.mark.asyncio
     async def test_supports_sync_functions(self, retry_config):
         """Test retry works with sync functions."""
+
         def sync_func():
             return "sync result"
 
@@ -249,11 +252,13 @@ class TestRetryWithBackoff:
 # Test: Retry with Backoff (Sync)
 # ==============================================================================
 
+
 class TestRetrySyncWithBackoff:
     """Test sync retry with exponential backoff."""
 
     def test_success_on_first_try(self, retry_config):
         """Test successful sync execution."""
+
         def success_func():
             return "success"
 
@@ -281,12 +286,14 @@ class TestRetrySyncWithBackoff:
 # Test: Timeout Handling
 # ==============================================================================
 
+
 class TestTimeoutHandling:
     """Test timeout functionality."""
 
     @pytest.mark.asyncio
     async def test_completes_within_timeout(self):
         """Test operation completing within timeout."""
+
         async def fast_func():
             await asyncio.sleep(0.01)
             return "done"
@@ -297,6 +304,7 @@ class TestTimeoutHandling:
     @pytest.mark.asyncio
     async def test_raises_on_timeout(self):
         """Test timeout error is raised."""
+
         async def slow_func():
             await asyncio.sleep(10)
             return "never"
@@ -309,6 +317,7 @@ class TestTimeoutHandling:
 
     def test_sync_completes_within_timeout(self):
         """Test sync timeout succeeds."""
+
         def fast_func():
             time.sleep(0.01)
             return "done"
@@ -318,6 +327,7 @@ class TestTimeoutHandling:
 
     def test_sync_raises_on_timeout(self):
         """Test sync timeout error is raised."""
+
         def slow_func():
             time.sleep(10)
             return "never"
@@ -329,6 +339,7 @@ class TestTimeoutHandling:
 # ==============================================================================
 # Test: Circuit Breaker
 # ==============================================================================
+
 
 class TestCircuitBreaker:
     """Test circuit breaker pattern."""
@@ -403,12 +414,14 @@ class TestCircuitBreaker:
 # Test: Recovery Manager
 # ==============================================================================
 
+
 class TestRecoveryManager:
     """Test the RecoveryManager orchestrator."""
 
     @pytest.mark.asyncio
     async def test_execute_with_recovery_success(self, recovery_manager):
         """Test successful execution through manager."""
+
         async def success_func():
             return "result"
 
@@ -438,12 +451,12 @@ class TestRecoveryManager:
     @pytest.mark.asyncio
     async def test_returns_fallback_on_failure(self, recovery_manager):
         """Test fallback response on failure."""
+
         async def fail_func():
             raise ValueError("test error")
 
         result = await recovery_manager.execute_with_recovery(
-            fail_func,
-            intent="prenotazione"
+            fail_func, intent="prenotazione"
         )
 
         assert result.success is False
@@ -460,12 +473,14 @@ class TestRecoveryManager:
 # Test: Decorator
 # ==============================================================================
 
+
 class TestWithRecoveryDecorator:
     """Test the @with_recovery decorator."""
 
     @pytest.mark.asyncio
     async def test_async_decorator_success(self):
         """Test async decorator on successful function."""
+
         @with_recovery(fallback_value="fallback")
         async def success_func():
             return "success"
@@ -487,6 +502,7 @@ class TestWithRecoveryDecorator:
 
     def test_sync_decorator_success(self):
         """Test sync decorator on successful function."""
+
         @with_recovery(fallback_value="fallback")
         def success_func():
             return "success"
@@ -510,6 +526,7 @@ class TestWithRecoveryDecorator:
 # Test: Timeout Config
 # ==============================================================================
 
+
 class TestTimeoutConfig:
     """Test timeout configuration."""
 
@@ -526,10 +543,7 @@ class TestTimeoutConfig:
 
     def test_custom_config(self):
         """Test custom timeout configuration."""
-        config = TimeoutConfig(
-            layer_4_groq_ms=1000,
-            total_max_ms=2000
-        )
+        config = TimeoutConfig(layer_4_groq_ms=1000, total_max_ms=2000)
 
         assert config.layer_4_groq_ms == 1000
         assert config.total_max_ms == 2000
@@ -538,6 +552,7 @@ class TestTimeoutConfig:
 # ==============================================================================
 # Test: Recovery Result
 # ==============================================================================
+
 
 class TestRecoveryResult:
     """Test RecoveryResult dataclass."""
@@ -550,7 +565,7 @@ class TestRecoveryResult:
             attempts=1,
             total_time_ms=50.0,
             error=None,
-            recovery_action=RecoveryAction.RETRY
+            recovery_action=RecoveryAction.RETRY,
         )
 
         assert result.success is True
@@ -565,7 +580,7 @@ class TestRecoveryResult:
             attempts=3,
             total_time_ms=500.0,
             error="Connection failed",
-            recovery_action=RecoveryAction.FALLBACK
+            recovery_action=RecoveryAction.FALLBACK,
         )
 
         assert result.success is False
@@ -577,12 +592,14 @@ class TestRecoveryResult:
 # Test: Performance
 # ==============================================================================
 
+
 class TestPerformance:
     """Test performance requirements."""
 
     @pytest.mark.asyncio
     async def test_retry_overhead(self, retry_config):
         """Test retry mechanism has minimal overhead on success."""
+
         async def instant_func():
             return True
 
@@ -608,6 +625,7 @@ class TestPerformance:
 # ==============================================================================
 # Test: Global Instance
 # ==============================================================================
+
 
 class TestGlobalInstance:
     """Test global recovery manager instance."""

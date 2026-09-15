@@ -113,9 +113,10 @@ class TestShouldBackchannel:
         # Turns 2 through COOLDOWN: should be suppressed
         for i in range(_COOLDOWN_TURNS - 1):
             engine.tick()
-            assert engine.should_backchannel(
-                "qualcosa", "booking", "waiting_date"
-            ) is False, f"Should be on cooldown at turn offset {i+1}"
+            assert (
+                engine.should_backchannel("qualcosa", "booking", "waiting_date")
+                is False
+            ), f"Should be on cooldown at turn offset {i + 1}"
 
         # After cooldown: should be allowed again
         engine.tick()
@@ -164,7 +165,9 @@ class TestGetBackchannel:
         for context in BACKCHANNELS:
             engine._last_backchannel_turn = -10  # reset cooldown
             result = engine.get_backchannel(context)
-            assert result in BACKCHANNELS[context], f"'{result}' not in pool for '{context}'"
+            assert result in BACKCHANNELS[context], (
+                f"'{result}' not in pool for '{context}'"
+            )
 
     def test_backchannel_context_selection_info(self, engine):
         """info_provided context returns from info pool."""
@@ -185,9 +188,12 @@ class TestGetBackchannel:
         # Run multiple times to increase chance of catching duplicates
         for _ in range(20):
             engine._last_backchannel_turn = -10
-            bc = engine.get_backchannel("info_provided", response="Perfetto, ho trovato Marco Rossi!")
-            assert bc.split()[0].rstrip(",.!") != "Perfetto", \
+            bc = engine.get_backchannel(
+                "info_provided", response="Perfetto, ho trovato Marco Rossi!"
+            )
+            assert bc.split()[0].rstrip(",.!") != "Perfetto", (
                 f"Backchannel '{bc}' duplicates response start 'Perfetto'"
+            )
 
     def test_backchannel_fallback_when_all_filtered(self, engine):
         """If all phrases would duplicate, fall back to full pool."""

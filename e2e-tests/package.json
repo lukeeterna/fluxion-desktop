@@ -20,7 +20,7 @@
     "test:allure": "npx allure serve .allure-results",
     "test:update-snapshots": "playwright test --update-snapshots",
     "test:trace": "playwright test --trace on",
-    "lint": "eslint . --ext .ts",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

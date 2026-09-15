@@ -9,23 +9,21 @@ Verifies:
 - Groq failure gracefully falls back to a template summary
 """
 
-import asyncio
 import pytest
 import sys
 import os
-import types
-from unittest.mock import AsyncMock, MagicMock, patch
-from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Any
+from unittest.mock import AsyncMock, MagicMock
+from dataclasses import dataclass
 
 # Ensure src is importable
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 # ---------------------------------------------------------------------------
 # Helpers: standalone _generate_call_summary extracted for unit testing
 # (avoids importing orchestrator.py which requires groq SDK)
 # ---------------------------------------------------------------------------
+
 
 async def _generate_call_summary_standalone(groq_client, turns, outcome="completed"):
     """
@@ -39,8 +37,8 @@ async def _generate_call_summary_standalone(groq_client, turns, outcome="complet
 
     transcript_lines = []
     for t in turns:
-        u = getattr(t, 'user_input', '') or ''
-        r = getattr(t, 'response', '') or ''
+        u = getattr(t, "user_input", "") or ""
+        r = getattr(t, "response", "") or ""
         if u:
             transcript_lines.append(f"Cliente: {u}")
         if r:
@@ -49,7 +47,7 @@ async def _generate_call_summary_standalone(groq_client, turns, outcome="complet
     if len(transcript) > 800:
         transcript = transcript[:800] + "..."
 
-    if not getattr(groq_client, 'client', None):
+    if not getattr(groq_client, "client", None):
         return f"Chiamata di {n_turns} turni, esito: {outcome}"
 
     try:
@@ -74,14 +72,16 @@ async def _generate_call_summary_standalone(groq_client, turns, outcome="complet
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_groq_client():
     """GroqClient mock that returns a canned summary."""
     client = MagicMock()
     client.client = MagicMock()  # sync Groq client exists (not None)
 
-    async def fake_generate(messages, system_prompt=None, temperature=0.3,
-                            max_tokens=120):
+    async def fake_generate(
+        messages, system_prompt=None, temperature=0.3, max_tokens=120
+    ):
         return "Cliente Marco Rossi ha prenotato taglio per giovedi ore 15."
 
     client.generate_response = AsyncMock(side_effect=fake_generate)
@@ -109,20 +109,28 @@ class FakeTurn:
 def sample_turns():
     """Minimal turn-like objects with user_input and response."""
     return [
-        FakeTurn(user_input="Buongiorno, vorrei prenotare un taglio",
-                 response="Certamente! A che nome?"),
-        FakeTurn(user_input="Marco Rossi",
-                 response="Per quale giorno desidera, signor Rossi?"),
-        FakeTurn(user_input="Giovedi alle 15",
-                 response="Perfetto, taglio per giovedi 10 aprile ore 15. Confermo?"),
-        FakeTurn(user_input="Si confermo",
-                 response="Prenotazione confermata! Arrivederci."),
+        FakeTurn(
+            user_input="Buongiorno, vorrei prenotare un taglio",
+            response="Certamente! A che nome?",
+        ),
+        FakeTurn(
+            user_input="Marco Rossi",
+            response="Per quale giorno desidera, signor Rossi?",
+        ),
+        FakeTurn(
+            user_input="Giovedi alle 15",
+            response="Perfetto, taglio per giovedi 10 aprile ore 15. Confermo?",
+        ),
+        FakeTurn(
+            user_input="Si confermo", response="Prenotazione confermata! Arrivederci."
+        ),
     ]
 
 
 # ---------------------------------------------------------------------------
 # Test _generate_call_summary logic (isolated, no orchestrator import)
 # ---------------------------------------------------------------------------
+
 
 class TestGenerateCallSummary:
     """Test the summary generation logic in isolation."""
@@ -166,7 +174,9 @@ class TestGenerateCallSummary:
         mock_groq_client.generate_response.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_groq_failure_fallback_template(self, mock_groq_client_failing, sample_turns):
+    async def test_groq_failure_fallback_template(
+        self, mock_groq_client_failing, sample_turns
+    ):
         """On Groq failure, returns template summary."""
         summary = await _generate_call_summary_standalone(
             mock_groq_client_failing, sample_turns, outcome="completed"
@@ -193,8 +203,7 @@ class TestGenerateCallSummary:
     async def test_transcript_truncated_for_long_conversations(self, mock_groq_client):
         """Very long conversations have their transcript truncated to 800 chars."""
         long_turns = [
-            FakeTurn(user_input="A" * 200, response="B" * 200)
-            for _ in range(10)
+            FakeTurn(user_input="A" * 200, response="B" * 200) for _ in range(10)
         ]
         summary = await _generate_call_summary_standalone(
             mock_groq_client, long_turns, outcome="completed"
@@ -218,19 +227,22 @@ class TestGenerateCallSummary:
 # Test analytics.py summary field
 # ---------------------------------------------------------------------------
 
+
 class TestAnalyticsSummary:
     """Test summary field in ConversationSession and DB persistence."""
 
     def test_conversation_session_has_summary_field(self):
         """ConversationSession dataclass has a summary field."""
         from analytics import ConversationSession
+
         session = ConversationSession()
-        assert hasattr(session, 'summary')
+        assert hasattr(session, "summary")
         assert session.summary == ""
 
     def test_summary_stored_in_session(self):
         """Summary can be set on ConversationSession."""
         from analytics import ConversationSession
+
         session = ConversationSession()
         session.summary = "Cliente ha prenotato taglio."
         assert session.summary == "Cliente ha prenotato taglio."
@@ -276,6 +288,7 @@ class TestAnalyticsSummary:
 # Test session_manager.py summary field
 # ---------------------------------------------------------------------------
 
+
 class TestSessionManagerSummary:
     """Test summary field in VoiceSession and session_manager DB."""
 
@@ -295,7 +308,7 @@ class TestSessionManagerSummary:
             updated_at=now.isoformat(),
             expires_at=(now + timedelta(minutes=30)).isoformat(),
         )
-        assert hasattr(session, 'summary')
+        assert hasattr(session, "summary")
         assert session.summary == ""
 
     def test_summary_in_to_dict(self):
@@ -338,7 +351,7 @@ class TestSessionManagerSummary:
         with mgr._get_db_conn() as conn:
             row = conn.execute(
                 "SELECT summary FROM voice_sessions WHERE session_id = ?",
-                (session.session_id,)
+                (session.session_id,),
             ).fetchone()
             assert row is not None
             assert row[0] == "Chiamata per info orari."
@@ -361,7 +374,7 @@ class TestSessionManagerSummary:
         with mgr._get_db_conn() as conn:
             row = conn.execute(
                 "SELECT summary FROM voice_sessions WHERE session_id = ?",
-                (session.session_id,)
+                (session.session_id,),
             ).fetchone()
             assert row is not None
             assert row[0] == ""

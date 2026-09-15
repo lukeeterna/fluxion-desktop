@@ -55,6 +55,7 @@ export const Header: FC<HeaderProps> = ({ className }) => {
           <input
             ref={inputRef}
             type="text"
+            aria-label="Ricerca globale"
             placeholder="Cerca clienti, servizi..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}

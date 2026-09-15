@@ -1,4 +1,5 @@
 """GAP-P1-4: Operator gender preference extraction from Italian utterances."""
+
 import re
 from typing import Optional
 

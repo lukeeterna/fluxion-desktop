@@ -16,14 +16,19 @@ Features:
 Note: File retains original name for import compatibility.
 """
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import os
-import struct
+import tempfile
 from enum import Enum, auto
 from dataclasses import dataclass
 from typing import Optional, Callable, List
 import logging
 import collections
+
+HAS_WEBRTC = False
+HAS_ONNX = False
 
 logger = logging.getLogger(__name__)
 
@@ -42,30 +47,42 @@ WEBRTC_CHUNK_SAMPLES = 480  # 30ms at 16kHz
 WEBRTC_CHUNK_BYTES = WEBRTC_CHUNK_SAMPLES * BYTES_PER_SAMPLE  # 960
 
 # Try to import VAD backends
-try:
-    import onnxruntime
-    HAS_ONNX = True
-except ImportError:
-    HAS_ONNX = False
+if TYPE_CHECKING:
+    import onnxruntime  # noqa: F401
+else:
+    try:
+        import onnxruntime  # noqa: F401
 
-try:
+        HAS_ONNX = True
+    except ImportError:
+        HAS_ONNX = False
+
+if TYPE_CHECKING:
     import webrtcvad
-    HAS_WEBRTC = True
-except ImportError:
-    HAS_WEBRTC = False
+else:
+    try:
+        import webrtcvad
 
-logger.info("VAD backends available: webrtcvad=%s, onnxruntime=%s", HAS_WEBRTC, HAS_ONNX)
+        HAS_WEBRTC = True
+    except ImportError:
+        HAS_WEBRTC = False
+
+logger.info(
+    "VAD backends available: webrtcvad=%s, onnxruntime=%s", HAS_WEBRTC, HAS_ONNX
+)
 
 
 class VADState(Enum):
     """VAD state machine states."""
-    IDLE = auto()       # Waiting for speech
-    SPEAKING = auto()   # User is speaking
+
+    IDLE = auto()  # Waiting for speech
+    SPEAKING = auto()  # User is speaking
 
 
 @dataclass
 class VADConfig:
     """Configuration for VAD processing."""
+
     # Frame processing (hop_size_ms kept for backwards compat, internally uses 32ms)
     hop_size_ms: int = 10
     sample_rate: int = 16000
@@ -82,12 +99,13 @@ class VADConfig:
 
     # Debug
     dump_audio: bool = False
-    dump_path: str = os.path.join(os.environ.get("TEMP", "/tmp"), "vad_debug")
+    dump_path: str = os.path.join(tempfile.gettempdir(), "vad_debug")
 
 
 @dataclass
 class VADResult:
     """Result from VAD processing."""
+
     is_speech: bool
     probability: float
     state: VADState
@@ -127,15 +145,21 @@ class FluxionVAD:
         # webrtcvad state
         self._webrtc_vad = None
         self._webrtc_buffer = bytearray()
-        self._webrtc_probs = collections.deque(maxlen=8)  # ~240ms (was 30/~1s — too sticky)
+        self._webrtc_probs: collections.deque[float] = collections.deque(
+            maxlen=8
+        )  # ~240ms (was 30/~1s — too sticky)
 
         # State machine
         self.state = VADState.IDLE
         self.probe_window: List[float] = []
 
         # Window sizes in Silero chunks (32ms each) — recalculated for webrtcvad in _start_webrtc()
-        self.silence_window_size = max(1, self.config.silence_duration_ms // SILERO_CHUNK_MS)
-        self.prefix_window_size = max(1, self.config.prefix_padding_ms // SILERO_CHUNK_MS)
+        self.silence_window_size = max(
+            1, self.config.silence_duration_ms // SILERO_CHUNK_MS
+        )
+        self.prefix_window_size = max(
+            1, self.config.prefix_padding_ms // SILERO_CHUNK_MS
+        )
         self.window_size = max(self.silence_window_size, self.prefix_window_size)
 
         # Backwards compat: hop_size used by vad_pipeline_integration.py
@@ -159,6 +183,7 @@ class FluxionVAD:
     def _find_model() -> str:
         """Find the Silero VAD ONNX model file."""
         from resource_path import get_bundle_root
+
         return str(get_bundle_root() / "models" / "silero_vad.onnx")
 
     def start(self) -> None:
@@ -191,7 +216,9 @@ class FluxionVAD:
         if new_window != self.silence_window_size:
             self.silence_window_size = new_window
             self.window_size = max(self.silence_window_size, self.prefix_window_size)
-            logger.debug(f"[F1-3b] VAD silence updated: {silence_ms}ms ({new_window} chunks of {chunk_ms}ms)")
+            logger.debug(
+                f"[F1-3b] VAD silence updated: {silence_ms}ms ({new_window} chunks of {chunk_ms}ms)"
+            )
 
     def _start_silero(self) -> None:
         """Initialize Silero VAD (ONNX Runtime)."""
@@ -205,8 +232,7 @@ class FluxionVAD:
             )
 
         self._session = onnxruntime.InferenceSession(
-            self.config.model_path,
-            providers=['CPUExecutionProvider']
+            self.config.model_path, providers=["CPUExecutionProvider"]
         )
         self._vad_type = "silero"
 
@@ -239,8 +265,12 @@ class FluxionVAD:
         self.state = VADState.IDLE
         self.probe_window.clear()
         self.audio_buffer.clear()
-        logger.info("FluxionVAD (webrtcvad) started — silence_window=%d, prefix_window=%d (chunk ~%dms)",
-                    self.silence_window_size, self.prefix_window_size, chunk_ms)
+        logger.info(
+            "FluxionVAD (webrtcvad) started — silence_window=%d, prefix_window=%d (chunk ~%dms)",
+            self.silence_window_size,
+            self.prefix_window_size,
+            chunk_ms,
+        )
 
     def stop(self) -> None:
         """Stop VAD engine."""
@@ -301,7 +331,7 @@ class FluxionVAD:
             return VADResult(
                 is_speech=self.state == VADState.SPEAKING,
                 probability=0.0,
-                state=self.state
+                state=self.state,
             )
 
         # Extract one chunk
@@ -309,16 +339,17 @@ class FluxionVAD:
         self.audio_buffer = self.audio_buffer[SILERO_CHUNK_BYTES:]
 
         # Convert int16 PCM to float32 normalized [-1.0, 1.0]
-        samples_int16 = np.frombuffer(audio_chunk, dtype=np.int16)
+        samples_int16: np.ndarray = np.frombuffer(audio_chunk, dtype=np.int16)
         samples_float = samples_int16.astype(np.float32) / 32768.0
 
         # Run Silero model: input [1, 512], state [2, 1, 128], sr scalar
         ort_inputs = {
-            'input': samples_float.reshape(1, -1),
-            'state': self._h_state,
-            'sr': self._sr_tensor,
+            "input": samples_float.reshape(1, -1),
+            "state": self._h_state,
+            "sr": self._sr_tensor,
         }
 
+        assert self._session is not None
         ort_outputs = self._session.run(None, ort_inputs)
         prob = float(ort_outputs[0].item())
         self._h_state = ort_outputs[1]  # Updated hidden state
@@ -341,7 +372,7 @@ class FluxionVAD:
             return VADResult(
                 is_speech=self.state == VADState.SPEAKING,
                 probability=1.0 if self.state == VADState.SPEAKING else 0.0,
-                state=self.state
+                state=self.state,
             )
 
         # Process all complete chunks in buffer
@@ -350,6 +381,7 @@ class FluxionVAD:
             self._webrtc_buffer = self._webrtc_buffer[WEBRTC_CHUNK_BYTES:]
 
             # webrtcvad expects bytes, returns bool
+            assert self._webrtc_vad is not None
             is_speech = self._webrtc_vad.is_speech(audio_chunk, SAMPLE_RATE)
             # Convert to probability (webrtcvad is binary)
             prob = 0.9 if is_speech else 0.1
@@ -377,7 +409,7 @@ class FluxionVAD:
         if self.state == VADState.IDLE:
             # Need enough probes to check prefix window
             if len(self.probe_window) >= self.prefix_window_size:
-                prefix_probes = self.probe_window[-self.prefix_window_size:]
+                prefix_probes = self.probe_window[-self.prefix_window_size :]
                 if all(p >= self.config.vad_threshold for p in prefix_probes):
                     self.state = VADState.SPEAKING
                     event = "start_of_speech"
@@ -391,7 +423,7 @@ class FluxionVAD:
         elif self.state == VADState.SPEAKING:
             # Need enough probes to check silence window
             if len(self.probe_window) >= self.silence_window_size:
-                silence_probes = self.probe_window[-self.silence_window_size:]
+                silence_probes = self.probe_window[-self.silence_window_size :]
                 if all(p < self.config.vad_threshold for p in silence_probes):
                     self.state = VADState.IDLE
                     event = "end_of_speech"
@@ -407,7 +439,7 @@ class FluxionVAD:
             probability=current_probe,
             state=self.state,
             state_changed=self.state != old_state,
-            event=event
+            event=event,
         )
 
     @property
@@ -418,15 +450,13 @@ class FluxionVAD:
 
 # Convenience function for quick testing
 def create_vad(
-    threshold: float = 0.5,
-    silence_ms: int = 700,
-    prefix_ms: int = 300
+    threshold: float = 0.5, silence_ms: int = 700, prefix_ms: int = 300
 ) -> FluxionVAD:
     """Create a configured VAD instance."""
     config = VADConfig(
         vad_threshold=threshold,
         silence_duration_ms=silence_ms,
-        prefix_padding_ms=prefix_ms
+        prefix_padding_ms=prefix_ms,
     )
     return FluxionVAD(config)
 

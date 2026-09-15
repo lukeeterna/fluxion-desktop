@@ -19,6 +19,7 @@ from italian_regex import check_vertical_guardrail, GuardrailResult
 # SALONE GUARDRAILS
 # =============================================================================
 
+
 class TestSaloneGuardrails:
     """Salone blocks auto, palestra, medical out-of-scope queries."""
 
@@ -33,7 +34,9 @@ class TestSaloneGuardrails:
         assert r.blocked is True
 
     def test_salone_blocks_tagliando_auto(self):
-        r = check_vertical_guardrail("quando posso portare l'auto per la revisione auto?", "salone")
+        r = check_vertical_guardrail(
+            "quando posso portare l'auto per la revisione auto?", "salone"
+        )
         assert r.blocked is True
 
     def test_salone_blocks_abbonamento_palestra(self):
@@ -67,12 +70,16 @@ class TestSaloneGuardrails:
     def test_salone_redirect_response_contains_salone(self):
         r = check_vertical_guardrail("cambio olio motore", "salone")
         assert r.blocked is True
-        assert "salone" in r.redirect_response.lower() or "capell" in r.redirect_response.lower()
+        assert (
+            "salone" in r.redirect_response.lower()
+            or "capell" in r.redirect_response.lower()
+        )
 
 
 # =============================================================================
 # PALESTRA GUARDRAILS
 # =============================================================================
+
 
 class TestPalestraGuardrails:
     """Palestra blocks salone, auto, medical out-of-scope queries."""
@@ -86,7 +93,9 @@ class TestPalestraGuardrails:
         assert r.blocked is True
 
     def test_palestra_blocks_cambio_olio(self):
-        r = check_vertical_guardrail("cambio olio motore per la mia macchina", "palestra")
+        r = check_vertical_guardrail(
+            "cambio olio motore per la mia macchina", "palestra"
+        )
         assert r.blocked is True
 
     def test_palestra_blocks_visita_medica(self):
@@ -105,6 +114,7 @@ class TestPalestraGuardrails:
 # =============================================================================
 # MEDICAL GUARDRAILS
 # =============================================================================
+
 
 class TestMedicalGuardrails:
     """Medical blocks salone, palestra, auto out-of-scope queries."""
@@ -138,6 +148,7 @@ class TestMedicalGuardrails:
 # AUTO GUARDRAILS
 # =============================================================================
 
+
 class TestAutoGuardrails:
     """Auto blocks salone, palestra, medical out-of-scope queries."""
 
@@ -162,13 +173,16 @@ class TestAutoGuardrails:
         assert r.blocked is False
 
     def test_auto_allows_tagliando(self):
-        r = check_vertical_guardrail("quando posso portare l'auto per il tagliando?", "auto")
+        r = check_vertical_guardrail(
+            "quando posso portare l'auto per il tagliando?", "auto"
+        )
         assert r.blocked is False
 
 
 # =============================================================================
 # EDGE CASES
 # =============================================================================
+
 
 class TestGuardrailEdgeCases:
     """Edge cases: unknown vertical, empty text, matched_pattern populated."""
@@ -195,6 +209,7 @@ class TestGuardrailEdgeCases:
 # BUG 6: VERB-FORM GUARDRAILS — SALONE
 # =============================================================================
 
+
 class TestSaloneVerbFormGuardrails:
     """Bug 6: Verb-form auto service patterns must block in salone vertical."""
 
@@ -211,7 +226,9 @@ class TestSaloneVerbFormGuardrails:
         assert r.blocked
 
     def test_portare_macchina_tagliando_blocked(self):
-        r = check_vertical_guardrail("devo portare la macchina per il tagliando", "salone")
+        r = check_vertical_guardrail(
+            "devo portare la macchina per il tagliando", "salone"
+        )
         assert r.blocked
 
     def test_cambiare_olio_blocked(self):
@@ -233,7 +250,9 @@ class TestSaloneVerbFormGuardrails:
     def test_cambiare_orario_not_blocked(self):
         """'cambiare orario' is a reschedule request — must NOT be blocked."""
         r = check_vertical_guardrail("vorrei cambiare l'orario", "salone")
-        assert not r.blocked, "Reschedule 'cambiare orario' must NOT be blocked by guardrail"
+        assert not r.blocked, (
+            "Reschedule 'cambiare orario' must NOT be blocked by guardrail"
+        )
 
     def test_taglio_capelli_not_blocked(self):
         """Legitimate salone service must not be blocked."""
@@ -248,6 +267,7 @@ class TestSaloneVerbFormGuardrails:
 # =============================================================================
 # BUG 6: VERB-FORM GUARDRAILS — PALESTRA
 # =============================================================================
+
 
 class TestPalestraVerbFormGuardrails:
     """Bug 6 cross-vertical: verb-form auto patterns must block in palestra too."""
@@ -269,6 +289,7 @@ class TestPalestraVerbFormGuardrails:
 # =============================================================================
 # BUG 6: VERB-FORM GUARDRAILS — MEDICAL
 # =============================================================================
+
 
 class TestMedicalVerbFormGuardrails:
     """Bug 6 cross-vertical: verb-form auto patterns must block in medical too."""

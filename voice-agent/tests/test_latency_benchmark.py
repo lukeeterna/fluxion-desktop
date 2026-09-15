@@ -16,14 +16,11 @@ Python 3.9 compatible — uses typing.Optional[], List[], Dict[].
 
 import sys
 import time
-import sqlite3
-import statistics
 import tempfile
 import os
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock
-from typing import List, Dict, Any, Optional
+from typing import List, Any
 
 # ---------------------------------------------------------------------------
 # Path setup — supports both package and direct pytest execution
@@ -48,6 +45,7 @@ RUNS_PER_UTTERANCE = 5  # warm runs after one cold discard
 # ===========================================================================
 # Test 1: NLU-only P50/P95 (no Groq, no TTS, no DB)
 # ===========================================================================
+
 
 class TestLatencyP95:
     """
@@ -78,7 +76,9 @@ class TestLatencyP95:
                 elapsed_ms = (time.perf_counter() - t0) * 1000.0
                 latencies_ms.append(elapsed_ms)
                 # Basic sanity: result must be an IntentResult
-                assert result is not None, f"classify_intent returned None for '{utterance}'"
+                assert result is not None, (
+                    f"classify_intent returned None for '{utterance}'"
+                )
 
         latencies_ms.sort()
         n = len(latencies_ms)
@@ -103,6 +103,7 @@ class TestLatencyP95:
 # ===========================================================================
 # Test 2: LRU cache hit speed
 # ===========================================================================
+
 
 class TestIntentCacheHit:
     """
@@ -155,6 +156,7 @@ class TestIntentCacheHit:
 # Test 3: Analytics get_percentile_stats() structure
 # ===========================================================================
 
+
 class TestAnalyticsGetPercentileStats:
     """
     Insert 10 synthetic turns into an in-memory ConversationLogger,
@@ -165,6 +167,7 @@ class TestAnalyticsGetPercentileStats:
     def _make_logger(self) -> Any:
         """Return a ConversationLogger backed by a temp file DB."""
         from analytics import ConversationLogger
+
         fd, path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
         return ConversationLogger(db_path=path), path
@@ -181,8 +184,7 @@ class TestAnalyticsGetPercentileStats:
 
             # Start a session
             session_id = logger.start_session(
-                verticale_id="salone",
-                client_name="Benchmark Test"
+                verticale_id="salone", client_name="Benchmark Test"
             )
 
             # Insert 10 synthetic turns with known latencies: 100..1000ms step 100
@@ -194,7 +196,7 @@ class TestAnalyticsGetPercentileStats:
                     intent="prenotazione",
                     response=f"risposta {i}",
                     latency_ms=latency,
-                    layer_used="L2_intent"
+                    layer_used="L2_intent",
                 )
 
             logger.end_session(session_id, ConversationOutcome.COMPLETED)
@@ -229,6 +231,7 @@ class TestAnalyticsGetPercentileStats:
 # Test 4: Live /api/metrics/latency endpoint (skipped if unreachable)
 # ===========================================================================
 
+
 class TestP95ViaMetricsEndpoint:
     """
     Live endpoint test — calls http://192.168.1.12:3002/api/metrics/latency
@@ -240,8 +243,8 @@ class TestP95ViaMetricsEndpoint:
 
     IMAC_HOST = "192.168.1.12"
     IMAC_PORT = 3002
-    ENDPOINT = f"http://192.168.1.12:3002/api/metrics/latency"
-    HEALTH_URL = f"http://192.168.1.12:3002/health"
+    ENDPOINT = "http://192.168.1.12:3002/api/metrics/latency"
+    HEALTH_URL = "http://192.168.1.12:3002/health"
     TIMEOUT_S = 3.0
 
     def _is_reachable(self) -> bool:
@@ -249,6 +252,7 @@ class TestP95ViaMetricsEndpoint:
         try:
             import urllib.request
             import urllib.error
+
             req = urllib.request.urlopen(self.HEALTH_URL, timeout=self.TIMEOUT_S)
             return req.status == 200
         except Exception:
@@ -257,7 +261,9 @@ class TestP95ViaMetricsEndpoint:
     def test_p95_via_metrics_endpoint(self):
         """GET /api/metrics/latency returns JSON with p95_ms field."""
         if not self._is_reachable():
-            pytest.skip("iMac voice pipeline not reachable (192.168.1.12:3002) — skipping live endpoint test")
+            pytest.skip(
+                "iMac voice pipeline not reachable (192.168.1.12:3002) — skipping live endpoint test"
+            )
 
         import json
         import urllib.request
@@ -285,7 +291,9 @@ class TestP95ViaMetricsEndpoint:
         if data["count"] > 0:
             print(f"[Live] Pipeline has {data['count']} turns in window — p95={p95}ms")
         else:
-            print("[Live] No turns logged yet (pipeline just restarted) — count=0 is valid")
+            print(
+                "[Live] No turns logged yet (pipeline just restarted) — count=0 is valid"
+            )
 
 
 if __name__ == "__main__":

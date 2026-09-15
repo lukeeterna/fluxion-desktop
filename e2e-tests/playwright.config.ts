@@ -14,6 +14,7 @@ import path from 'path';
 // Environment detection
 const isCI = !!process.env.CI;
 const baseURL = process.env.TAURI_DEV_URL || 'http://localhost:1420';
+const storageState = path.join(__dirname, '.auth/user.json');
 
 export default defineConfig({
   // =============================================================================
@@ -133,6 +134,7 @@ export default defineConfig({
       name: 'firefox',
       use: {
         ...devices['Desktop Firefox'],
+        storageState,
       },
       dependencies: ['setup'],
     },
@@ -147,8 +149,6 @@ export default defineConfig({
     command: 'npm run dev',
     cwd: path.join(__dirname, '..'), // Run from project root
     url: baseURL,
-    // Hosted CI jobs pre-start the built preview server on this same URL.
-    // Reuse it when present; Playwright still starts the command when no server exists.
     reuseExistingServer: true,
     timeout: 30_000, // 30s for Vite startup
     stdout: 'pipe',

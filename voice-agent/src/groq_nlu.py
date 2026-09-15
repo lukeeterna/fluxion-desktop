@@ -50,6 +50,7 @@ class GroqNLU:
                 return None
             try:
                 from groq import Groq
+
                 self._client = Groq(api_key=self.api_key)
                 logger.info("[GroqNLU] Client initialized")
             except ImportError:
@@ -193,9 +194,7 @@ Regole:
 
         return self._call_groq(prompt)
 
-    def extract_time_preference(
-        self, utterance: str
-    ) -> Optional[Dict[str, Any]]:
+    def extract_time_preference(self, utterance: str) -> Optional[Dict[str, Any]]:
         """
         Extract time preference from conversational text.
 

@@ -3,14 +3,14 @@ FLUXION Voice Agent — NLU Schemas
 Dataclasses and JSON schema for LLM-based NLU extraction.
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, asdict
 from typing import Optional, Dict, Any
 from enum import Enum
-import json
 
 
 class SaraIntent(str, Enum):
     """All intents Sara can handle."""
+
     PRENOTAZIONE = "PRENOTAZIONE"
     CANCELLAZIONE = "CANCELLAZIONE"
     SPOSTAMENTO = "SPOSTAMENTO"
@@ -36,11 +36,12 @@ class Sentiment(str, Enum):
 @dataclass
 class NLUEntities:
     """Entities extracted from user utterance."""
+
     nome: Optional[str] = None
     cognome: Optional[str] = None
     servizio: Optional[str] = None
-    data: Optional[str] = None          # YYYY-MM-DD or relative ("domani")
-    ora: Optional[str] = None           # HH:MM
+    data: Optional[str] = None  # YYYY-MM-DD or relative ("domani")
+    ora: Optional[str] = None  # HH:MM
     operatore: Optional[str] = None
     telefono: Optional[str] = None
 
@@ -54,14 +55,15 @@ class NLUEntities:
 @dataclass
 class NLUResult:
     """Result of NLU extraction — used by FSM for slot filling."""
+
     intent: SaraIntent
     entities: NLUEntities
     sentiment: Sentiment
     correction_field: Optional[str] = None  # which field user wants to correct
     confidence: float = 0.0
-    provider: str = "unknown"               # which provider answered
+    provider: str = "unknown"  # which provider answered
     latency_ms: float = 0.0
-    raw_text: str = ""                      # original user input
+    raw_text: str = ""  # original user input
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -75,8 +77,13 @@ class NLUResult:
         }
 
     @classmethod
-    def from_llm_json(cls, data: Dict[str, Any], provider: str = "unknown",
-                      latency_ms: float = 0.0, raw_text: str = "") -> "NLUResult":
+    def from_llm_json(
+        cls,
+        data: Dict[str, Any],
+        provider: str = "unknown",
+        latency_ms: float = 0.0,
+        raw_text: str = "",
+    ) -> "NLUResult":
         """Parse LLM structured output into NLUResult."""
         # Intent
         intent_str = data.get("intent", "ALTRO").upper()

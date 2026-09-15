@@ -27,6 +27,7 @@ from sentiment import (
 # Test Fixtures
 # ==============================================================================
 
+
 @pytest.fixture
 def analyzer():
     """Fresh analyzer for each test."""
@@ -47,39 +48,43 @@ def analyzer_with_history():
 # Test: Sentiment Classification
 # ==============================================================================
 
+
 class TestSentimentClassification:
     """Test sentiment classification accuracy."""
 
-    @pytest.mark.parametrize("text,expected", [
-        # Positive sentiment
-        ("Grazie mille!", Sentiment.POSITIVE),
-        ("Perfetto, ottimo!", Sentiment.POSITIVE),
-        ("Benissimo, va bene così", Sentiment.POSITIVE),
-        ("Fantastico, sei stato gentilissimo", Sentiment.POSITIVE),
-        ("Ok capito, grazie", Sentiment.POSITIVE),
-        ("Sì perfetto, confermo", Sentiment.POSITIVE),
-        ("Eccellente servizio", Sentiment.POSITIVE),
-        ("Sono contento", Sentiment.POSITIVE),
-
-        # Negative sentiment
-        ("Non mi piace", Sentiment.NEGATIVE),
-        ("Male, molto male", Sentiment.NEGATIVE),
-        ("Sono deluso", Sentiment.NEGATIVE),
-        ("Purtroppo non va bene", Sentiment.NEGATIVE),
-        ("Sono arrabbiato", Sentiment.NEGATIVE),
-        ("Brutto servizio", Sentiment.NEGATIVE),
-
-        # Neutral sentiment
-        ("Vorrei prenotare un taglio", Sentiment.NEUTRAL),
-        ("A che ora aprite?", Sentiment.NEUTRAL),
-        ("Domani alle 15", Sentiment.NEUTRAL),
-        ("Il mio nome è Mario", Sentiment.NEUTRAL),
-        ("Quanto costa?", Sentiment.NEUTRAL),
-    ])
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            # Positive sentiment
+            ("Grazie mille!", Sentiment.POSITIVE),
+            ("Perfetto, ottimo!", Sentiment.POSITIVE),
+            ("Benissimo, va bene così", Sentiment.POSITIVE),
+            ("Fantastico, sei stato gentilissimo", Sentiment.POSITIVE),
+            ("Ok capito, grazie", Sentiment.POSITIVE),
+            ("Sì perfetto, confermo", Sentiment.POSITIVE),
+            ("Eccellente servizio", Sentiment.POSITIVE),
+            ("Sono contento", Sentiment.POSITIVE),
+            # Negative sentiment
+            ("Non mi piace", Sentiment.NEGATIVE),
+            ("Male, molto male", Sentiment.NEGATIVE),
+            ("Sono deluso", Sentiment.NEGATIVE),
+            ("Purtroppo non va bene", Sentiment.NEGATIVE),
+            ("Sono arrabbiato", Sentiment.NEGATIVE),
+            ("Brutto servizio", Sentiment.NEGATIVE),
+            # Neutral sentiment
+            ("Vorrei prenotare un taglio", Sentiment.NEUTRAL),
+            ("A che ora aprite?", Sentiment.NEUTRAL),
+            ("Domani alle 15", Sentiment.NEUTRAL),
+            ("Il mio nome è Mario", Sentiment.NEUTRAL),
+            ("Quanto costa?", Sentiment.NEUTRAL),
+        ],
+    )
     def test_sentiment_classification(self, analyzer, text, expected):
         """Test basic sentiment classification."""
         result = analyzer.analyze(text)
-        assert result.sentiment == expected, f"Expected {expected} for '{text}', got {result.sentiment}"
+        assert result.sentiment == expected, (
+            f"Expected {expected} for '{text}', got {result.sentiment}"
+        )
 
     def test_sentiment_confidence_range(self, analyzer):
         """Test that confidence is always in valid range."""
@@ -91,57 +96,74 @@ class TestSentimentClassification:
         ]
         for text in test_texts:
             result = analyzer.analyze(text)
-            assert 0.0 <= result.confidence <= 1.0, f"Invalid confidence: {result.confidence}"
+            assert 0.0 <= result.confidence <= 1.0, (
+                f"Invalid confidence: {result.confidence}"
+            )
 
 
 # ==============================================================================
 # Test: Frustration Detection
 # ==============================================================================
 
+
 class TestFrustrationDetection:
     """Test frustration detection accuracy - target >90% precision."""
 
-    @pytest.mark.parametrize("text,min_level", [
-        # No frustration
-        ("Buongiorno", FrustrationLevel.NONE),
-        ("Grazie mille", FrustrationLevel.NONE),
-        ("Vorrei prenotare", FrustrationLevel.NONE),
-        ("Ok perfetto", FrustrationLevel.NONE),
-
-        # Low frustration
-        ("Ma non ho capito", FrustrationLevel.LOW),
-        ("Aspetta un attimo", FrustrationLevel.LOW),
-        ("No, non va bene", FrustrationLevel.LOW),
-
-        # Medium frustration
-        ("Scusi, c'è un problema", FrustrationLevel.MEDIUM),
-        ("È sbagliato", FrustrationLevel.MEDIUM),
-        ("Sono confuso", FrustrationLevel.MEDIUM),
-        ("È complicato", FrustrationLevel.MEDIUM),
-
-        # High frustration (multiple keywords or strong keywords)
-        ("Non capisco niente!", FrustrationLevel.MEDIUM),  # "non capisco" = 3
-        ("È sempre sbagliato!", FrustrationLevel.MEDIUM),  # "sempre sbagliato" = 3
-        ("Non funziona mai", FrustrationLevel.HIGH),  # "non funziona" + "mai" = 6
-        ("È ridicolo, impossibile!", FrustrationLevel.HIGH),  # "ridicolo" + "impossibile" = 6
-        ("Questo è assurdo", FrustrationLevel.MEDIUM),  # "assurdo" = 3
-
-        # Critical frustration (multiple high-weight keywords)
-        ("Basta! Voglio parlare con un operatore!", FrustrationLevel.HIGH),  # "basta" + "operatore" = 8
-        ("Non ne posso più di questo robot", FrustrationLevel.MEDIUM),  # "non ne posso più" = 4
-        ("Passami un umano!", FrustrationLevel.MEDIUM),  # "umano" = 4 (escalates via pattern anyway)
-    ])
+    @pytest.mark.parametrize(
+        "text,min_level",
+        [
+            # No frustration
+            ("Buongiorno", FrustrationLevel.NONE),
+            ("Grazie mille", FrustrationLevel.NONE),
+            ("Vorrei prenotare", FrustrationLevel.NONE),
+            ("Ok perfetto", FrustrationLevel.NONE),
+            # Low frustration
+            ("Ma non ho capito", FrustrationLevel.LOW),
+            ("Aspetta un attimo", FrustrationLevel.LOW),
+            ("No, non va bene", FrustrationLevel.LOW),
+            # Medium frustration
+            ("Scusi, c'è un problema", FrustrationLevel.MEDIUM),
+            ("È sbagliato", FrustrationLevel.MEDIUM),
+            ("Sono confuso", FrustrationLevel.MEDIUM),
+            ("È complicato", FrustrationLevel.MEDIUM),
+            # High frustration (multiple keywords or strong keywords)
+            ("Non capisco niente!", FrustrationLevel.MEDIUM),  # "non capisco" = 3
+            ("È sempre sbagliato!", FrustrationLevel.MEDIUM),  # "sempre sbagliato" = 3
+            ("Non funziona mai", FrustrationLevel.HIGH),  # "non funziona" + "mai" = 6
+            (
+                "È ridicolo, impossibile!",
+                FrustrationLevel.HIGH,
+            ),  # "ridicolo" + "impossibile" = 6
+            ("Questo è assurdo", FrustrationLevel.MEDIUM),  # "assurdo" = 3
+            # Critical frustration (multiple high-weight keywords)
+            (
+                "Basta! Voglio parlare con un operatore!",
+                FrustrationLevel.HIGH,
+            ),  # "basta" + "operatore" = 8
+            (
+                "Non ne posso più di questo robot",
+                FrustrationLevel.MEDIUM,
+            ),  # "non ne posso più" = 4
+            (
+                "Passami un umano!",
+                FrustrationLevel.MEDIUM,
+            ),  # "umano" = 4 (escalates via pattern anyway)
+        ],
+    )
     def test_frustration_level_detection(self, analyzer, text, min_level):
         """Test frustration level is at least the expected minimum."""
         result = analyzer.analyze(text)
-        assert result.frustration_level.value >= min_level.value, \
+        assert result.frustration_level.value >= min_level.value, (
             f"Expected at least {min_level} for '{text}', got {result.frustration_level}"
+        )
 
     def test_frustration_keywords_found(self, analyzer):
         """Test that frustration keywords are correctly identified."""
         result = analyzer.analyze("Non capisco, è sempre sbagliato")
-        assert "non capisco" in result.frustration_keywords_found or \
-               "sempre sbagliato" in result.frustration_keywords_found
+        assert (
+            "non capisco" in result.frustration_keywords_found
+            or "sempre sbagliato" in result.frustration_keywords_found
+        )
 
     def test_no_false_positives_on_neutral(self, analyzer):
         """Test no frustration detected on clearly neutral text."""
@@ -167,29 +189,33 @@ class TestFrustrationDetection:
 # Test: Escalation Logic
 # ==============================================================================
 
+
 class TestEscalationLogic:
     """Test escalation decision making."""
 
-    @pytest.mark.parametrize("text,should_escalate", [
-        # Should escalate - explicit requests
-        ("Voglio parlare con un operatore", True),
-        ("Mi passa un operatore?", True),
-        ("Posso parlare con una persona vera?", True),
-        ("Basta con questo robot!", True),
-        ("Non voglio parlare con un robot", True),
-        ("Passami un umano", True),
-
-        # Should NOT escalate - normal conversation
-        ("Buongiorno", False),
-        ("Vorrei prenotare", False),
-        ("Grazie mille", False),
-        ("A che ora?", False),
-    ])
+    @pytest.mark.parametrize(
+        "text,should_escalate",
+        [
+            # Should escalate - explicit requests
+            ("Voglio parlare con un operatore", True),
+            ("Mi passa un operatore?", True),
+            ("Posso parlare con una persona vera?", True),
+            ("Basta con questo robot!", True),
+            ("Non voglio parlare con un robot", True),
+            ("Passami un umano", True),
+            # Should NOT escalate - normal conversation
+            ("Buongiorno", False),
+            ("Vorrei prenotare", False),
+            ("Grazie mille", False),
+            ("A che ora?", False),
+        ],
+    )
     def test_escalation_on_explicit_request(self, analyzer, text, should_escalate):
         """Test escalation is triggered on explicit user requests."""
         result = analyzer.analyze(text, include_history=False)
-        assert result.should_escalate == should_escalate, \
+        assert result.should_escalate == should_escalate, (
             f"Expected should_escalate={should_escalate} for '{text}'"
+        )
 
     def test_escalation_reason_user_requested(self, analyzer):
         """Test escalation reason is correctly set."""
@@ -206,12 +232,17 @@ class TestEscalationLogic:
         result = analyzer.analyze("Basta! Non ne posso più!")
 
         assert result.should_escalate is True
-        assert result.escalation_reason in ["critical_frustration", "cumulative_frustration", "user_requested"]
+        assert result.escalation_reason in [
+            "critical_frustration",
+            "cumulative_frustration",
+            "user_requested",
+        ]
 
 
 # ==============================================================================
 # Test: Cumulative Frustration
 # ==============================================================================
+
 
 class TestCumulativeFrustration:
     """Test conversation history and cumulative frustration tracking."""
@@ -259,17 +290,21 @@ class TestCumulativeFrustration:
 # Test: Repeat/Clarification Patterns
 # ==============================================================================
 
+
 class TestRepeatPatterns:
     """Test detection of repeat/clarification requests."""
 
-    @pytest.mark.parametrize("text", [
-        "Puoi ripetere?",
-        "Non ho capito, può ripetere?",
-        "Cosa hai detto?",
-        "Come?",
-        "Scusi?",
-        "Non ho sentito",
-    ])
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Puoi ripetere?",
+            "Non ho capito, può ripetere?",
+            "Cosa hai detto?",
+            "Come?",
+            "Scusi?",
+            "Non ho sentito",
+        ],
+    )
     def test_repeat_patterns_detected(self, analyzer, text):
         """Test repeat patterns add to frustration."""
         result = analyzer.analyze(text, include_history=False)
@@ -280,6 +315,7 @@ class TestRepeatPatterns:
 # ==============================================================================
 # Test: Edge Cases
 # ==============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases and special scenarios."""
@@ -325,6 +361,7 @@ class TestEdgeCases:
 # Test: Convenience Functions
 # ==============================================================================
 
+
 class TestConvenienceFunctions:
     """Test module-level convenience functions."""
 
@@ -360,6 +397,7 @@ class TestConvenienceFunctions:
 # Test: Performance
 # ==============================================================================
 
+
 class TestPerformance:
     """Test performance requirements."""
 
@@ -376,7 +414,9 @@ class TestPerformance:
         elapsed = time.perf_counter() - start
 
         avg_latency_ms = (elapsed / iterations) * 1000
-        assert avg_latency_ms < 5, f"Average latency {avg_latency_ms:.2f}ms exceeds 5ms target"
+        assert avg_latency_ms < 5, (
+            f"Average latency {avg_latency_ms:.2f}ms exceeds 5ms target"
+        )
 
     def test_memory_efficiency(self, analyzer):
         """Test memory usage stays reasonable with history."""
@@ -392,36 +432,40 @@ class TestPerformance:
 # Test: Italian Language Specifics
 # ==============================================================================
 
+
 class TestItalianLanguage:
     """Test Italian language handling."""
 
-    @pytest.mark.parametrize("text,expected_sentiment", [
-        # Common Italian expressions
-        ("Buongiorno", Sentiment.NEUTRAL),
-        ("Buonasera", Sentiment.NEUTRAL),
-        ("Arrivederci", Sentiment.NEUTRAL),
-        ("Prego", Sentiment.NEUTRAL),
-        ("Per favore", Sentiment.NEUTRAL),
-
-        # Italian positive expressions
-        ("Grazie tante", Sentiment.POSITIVE),
-        ("Molto gentile", Sentiment.POSITIVE),
-        ("Benissimo", Sentiment.POSITIVE),
-
-        # Italian negative expressions
-        ("Che schifo", Sentiment.NEGATIVE),
-        ("Che peccato", Sentiment.NEGATIVE),
-    ])
+    @pytest.mark.parametrize(
+        "text,expected_sentiment",
+        [
+            # Common Italian expressions
+            ("Buongiorno", Sentiment.NEUTRAL),
+            ("Buonasera", Sentiment.NEUTRAL),
+            ("Arrivederci", Sentiment.NEUTRAL),
+            ("Prego", Sentiment.NEUTRAL),
+            ("Per favore", Sentiment.NEUTRAL),
+            # Italian positive expressions
+            ("Grazie tante", Sentiment.POSITIVE),
+            ("Molto gentile", Sentiment.POSITIVE),
+            ("Benissimo", Sentiment.POSITIVE),
+            # Italian negative expressions
+            ("Che schifo", Sentiment.NEGATIVE),
+            ("Che peccato", Sentiment.NEGATIVE),
+        ],
+    )
     def test_italian_expressions(self, analyzer, text, expected_sentiment):
         """Test common Italian expressions."""
         result = analyzer.analyze(text, include_history=False)
-        assert result.sentiment == expected_sentiment, \
+        assert result.sentiment == expected_sentiment, (
             f"Expected {expected_sentiment} for '{text}', got {result.sentiment}"
+        )
 
 
 # ==============================================================================
 # Test: Precision Measurement
 # ==============================================================================
+
 
 class TestPrecisionMeasurement:
     """Measure overall precision to verify >90% target."""
@@ -439,7 +483,6 @@ class TestPrecisionMeasurement:
             ("Non funziona", True),
             ("Ridicolo", True),
             ("Non ne posso più", True),
-
             # True negatives - should NOT detect frustration
             ("Buongiorno", False),
             ("Grazie", False),
@@ -473,7 +516,6 @@ class TestPrecisionMeasurement:
             ("Mi passa una persona?", True),
             ("Basta con questo robot", True),
             ("Non voglio parlare con un robot", True),
-
             # Should NOT escalate
             ("Buongiorno", False),
             ("Grazie", False),
@@ -491,7 +533,9 @@ class TestPrecisionMeasurement:
             analyzer.reset_history()
 
         precision = correct / len(test_cases)
-        assert precision >= 0.9, f"Escalation precision {precision:.1%} below 90% target"
+        assert precision >= 0.9, (
+            f"Escalation precision {precision:.1%} below 90% target"
+        )
 
 
 if __name__ == "__main__":

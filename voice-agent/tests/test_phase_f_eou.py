@@ -43,6 +43,7 @@ from eou import (
 # F1-1: Adaptive Silence Duration
 # ===========================================================================
 
+
 class TestAdaptiveSilenceWordCount:
     """Word-count buckets — no FSM state, no completion probability."""
 
@@ -68,12 +69,18 @@ class TestAdaptiveSilenceWordCount:
 
     def test_six_words_on_boundary(self):
         # Exactly 6 words → MEDIUM bucket
-        assert get_adaptive_silence_ms("vorrei un taglio capelli per domani") == SILENCE_MEDIUM_MS
+        assert (
+            get_adaptive_silence_ms("vorrei un taglio capelli per domani")
+            == SILENCE_MEDIUM_MS
+        )
 
     def test_seven_words_enters_long(self):
-        assert get_adaptive_silence_ms(
-            "vorrei prenotare un taglio capelli per domani mattina"
-        ) == SILENCE_LONG_MS
+        assert (
+            get_adaptive_silence_ms(
+                "vorrei prenotare un taglio capelli per domani mattina"
+            )
+            == SILENCE_LONG_MS
+        )
 
     def test_long_utterance_stays_long(self):
         long = " ".join(["parola"] * 20)
@@ -108,7 +115,9 @@ class TestAdaptiveSilenceFSMStates:
 
     def test_medium_transcript_plus_thinking_state_lifted(self):
         # 4 words → MEDIUM (600ms) < THINKING (800ms) → lifted to 800ms
-        result = get_adaptive_silence_ms("alle tre di mercoledì", fsm_state="waiting_date")
+        result = get_adaptive_silence_ms(
+            "alle tre di mercoledì", fsm_state="waiting_date"
+        )
         assert result == SILENCE_THINKING_STATE_MS
 
     def test_non_thinking_state_no_override(self):
@@ -137,7 +146,9 @@ class TestAdaptiveSilenceCompletionProbability:
         # 1 word → 400ms base; prob=0.95 (>0.8) → -100ms = 300ms (clamped to min)
         result = get_adaptive_silence_ms("sì", completion_probability=0.95)
         # 400 - 100 = 300 == SILENCE_MIN_MS
-        assert result == max(SILENCE_MIN_MS, SILENCE_SHORT_MS - SILENCE_COMPLETE_REDUCTION_MS)
+        assert result == max(
+            SILENCE_MIN_MS, SILENCE_SHORT_MS - SILENCE_COMPLETE_REDUCTION_MS
+        )
 
     def test_neutral_probability_no_change(self):
         # prob=0.5 → no adjustment
@@ -210,6 +221,7 @@ class TestAdaptiveSilencePublicExport:
 # F1-2: Italian Sentence-Completion Heuristics
 # ===========================================================================
 
+
 class TestSentenceCompletionIncomplete:
     """Patterns that should yield probability ~0.2 (incomplete)."""
 
@@ -220,16 +232,24 @@ class TestSentenceCompletionIncomplete:
         assert sentence_complete_probability("Verrei domani ma") == pytest.approx(0.2)
 
     def test_ends_with_oppure(self):
-        assert sentence_complete_probability("Taglio o piega oppure") == pytest.approx(0.2)
+        assert sentence_complete_probability("Taglio o piega oppure") == pytest.approx(
+            0.2
+        )
 
     def test_ends_with_perche_accented(self):
-        assert sentence_complete_probability("Non posso venire perché") == pytest.approx(0.2)
+        assert sentence_complete_probability(
+            "Non posso venire perché"
+        ) == pytest.approx(0.2)
 
     def test_ends_with_perche_no_accent(self):
-        assert sentence_complete_probability("Voglio sapere perche") == pytest.approx(0.2)
+        assert sentence_complete_probability("Voglio sapere perche") == pytest.approx(
+            0.2
+        )
 
     def test_ends_with_quando(self):
-        assert sentence_complete_probability("Voglio sapere quando") == pytest.approx(0.2)
+        assert sentence_complete_probability("Voglio sapere quando") == pytest.approx(
+            0.2
+        )
 
     def test_ends_with_dove(self):
         assert sentence_complete_probability("Non so dove") == pytest.approx(0.2)
@@ -270,10 +290,14 @@ class TestSentenceCompletionComplete:
         assert sentence_complete_probability("Ok") == pytest.approx(0.9)
 
     def test_per_favore(self):
-        assert sentence_complete_probability("Alle tre per favore") == pytest.approx(0.9)
+        assert sentence_complete_probability("Alle tre per favore") == pytest.approx(
+            0.9
+        )
 
     def test_per_piacere(self):
-        assert sentence_complete_probability("Domani mattina per piacere") == pytest.approx(0.9)
+        assert sentence_complete_probability(
+            "Domani mattina per piacere"
+        ) == pytest.approx(0.9)
 
     def test_ends_with_period(self):
         assert sentence_complete_probability("Vorrei prenotare per domani.") >= 0.9
@@ -399,6 +423,7 @@ class TestSentenceCompletionPublicExport:
 # Integration: adaptive silence + sentence completion together
 # ===========================================================================
 
+
 class TestEOUIntegration:
     """Simulate how orchestrator.py would use both modules together."""
 
@@ -436,6 +461,8 @@ class TestEOUIntegration:
     def test_empty_transcript_with_thinking_state(self):
         # No words yet, but in waiting_name state
         prob = sentence_complete_probability("")
-        silence = get_adaptive_silence_ms("", fsm_state="waiting_name", completion_probability=prob)
+        silence = get_adaptive_silence_ms(
+            "", fsm_state="waiting_name", completion_probability=prob
+        )
         # default (700ms) < thinking (800ms) → lifted to 800ms; prob=0.5 → no adj
         assert silence == SILENCE_THINKING_STATE_MS

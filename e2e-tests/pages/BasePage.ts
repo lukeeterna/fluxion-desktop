@@ -95,7 +95,7 @@ export abstract class BasePage {
   }
 
   async closeModal(): Promise<void> {
-    const closeButton = this.modal.getByRole('button', { name: /close|chiudi|annulla|×/i });
+    const closeButton = this.modal.getByRole('button', { name: /^annulla$/i });
     await closeButton.click();
     await expect(this.modal).toBeHidden();
   }
@@ -104,12 +104,19 @@ export abstract class BasePage {
   // FORM HELPERS
   // =============================================================================
 
+  private labelPattern(label: string): RegExp {
+    const escaped = label.replace(/[.*+?^$()|[\]\\]/g, '\\$&');
+    return new RegExp('^' + escaped + '\\s*\\*?$', 'i');
+  }
+
   async fillInput(label: string, value: string): Promise<void> {
-    await this.page.getByLabel(label).fill(value);
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByLabel(this.labelPattern(label)).fill(value);
   }
 
   async selectOption(label: string, value: string): Promise<void> {
-    await this.page.getByLabel(label).selectOption(value);
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByLabel(this.labelPattern(label)).selectOption(value);
   }
 
   async checkCheckbox(label: string): Promise<void> {
@@ -125,7 +132,8 @@ export abstract class BasePage {
   }
 
   async submitForm(): Promise<void> {
-    await this.page.getByRole('button', { name: /salva|conferma|invia|submit/i }).click();
+    const scope = (await this.modal.isVisible()) ? this.modal : this.page;
+    await scope.getByRole('button', { name: /crea cliente|aggiorna cliente|salva|conferma|invia|submit/i }).click();
   }
 
   // =============================================================================
@@ -157,8 +165,8 @@ export abstract class BasePage {
   }
 
   async clickTableRowAction(rowText: string, actionName: string): Promise<void> {
-    const row = this.page.getByRole('row').filter({ hasText: rowText });
-    await row.getByRole('button', { name: actionName }).click();
+    const row = this.page.getByRole('table').locator('tbody tr').filter({ hasText: rowText });
+    await row.getByRole('button', { name: actionName }).first().click();
   }
 
   async expectTableContains(text: string): Promise<void> {

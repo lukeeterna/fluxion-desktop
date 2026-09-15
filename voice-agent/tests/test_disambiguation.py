@@ -9,6 +9,7 @@ fuzzy date matching, max attempts, and edge cases.
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
@@ -16,14 +17,13 @@ from datetime import date
 from src.disambiguation_handler import (
     DisambiguationHandler,
     DisambiguationState,
-    DisambiguationResult,
-    DisambiguationContext,
 )
 
 
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def handler():
@@ -35,14 +35,20 @@ def two_marios():
     """Two clients named Mario with different birth dates and one soprannome."""
     return [
         {
-            "id": "1", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1985-03-15", "soprannome": None,
-            "telefono": "3331111111"
+            "id": "1",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1985-03-15",
+            "soprannome": None,
+            "telefono": "3331111111",
         },
         {
-            "id": "2", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1990-07-22", "soprannome": "Marione",
-            "telefono": "3332222222"
+            "id": "2",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1990-07-22",
+            "soprannome": "Marione",
+            "telefono": "3332222222",
         },
     ]
 
@@ -52,12 +58,18 @@ def two_marios_no_soprannome():
     """Two Mario Rossi without soprannome - hardest case."""
     return [
         {
-            "id": "1", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1985-03-15", "soprannome": None
+            "id": "1",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1985-03-15",
+            "soprannome": None,
         },
         {
-            "id": "2", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1990-07-22", "soprannome": None
+            "id": "2",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1990-07-22",
+            "soprannome": None,
         },
     ]
 
@@ -67,12 +79,18 @@ def two_marios_different_cognome():
     """Two Mario with different surnames."""
     return [
         {
-            "id": "1", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1985-03-15", "soprannome": None
+            "id": "1",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1985-03-15",
+            "soprannome": None,
         },
         {
-            "id": "2", "nome": "Mario", "cognome": "Bianchi",
-            "data_nascita": "1990-07-22", "soprannome": None
+            "id": "2",
+            "nome": "Mario",
+            "cognome": "Bianchi",
+            "data_nascita": "1990-07-22",
+            "soprannome": None,
         },
     ]
 
@@ -82,16 +100,25 @@ def three_clients():
     """Three clients with same name."""
     return [
         {
-            "id": "1", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1985-03-15", "soprannome": None
+            "id": "1",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1985-03-15",
+            "soprannome": None,
         },
         {
-            "id": "2", "nome": "Mario", "cognome": "Rossi",
-            "data_nascita": "1990-07-22", "soprannome": "Marione"
+            "id": "2",
+            "nome": "Mario",
+            "cognome": "Rossi",
+            "data_nascita": "1990-07-22",
+            "soprannome": "Marione",
         },
         {
-            "id": "3", "nome": "Mario", "cognome": "Bianchi",
-            "data_nascita": "1978-11-03", "soprannome": None
+            "id": "3",
+            "nome": "Mario",
+            "cognome": "Bianchi",
+            "data_nascita": "1978-11-03",
+            "soprannome": None,
         },
     ]
 
@@ -99,6 +126,7 @@ def three_clients():
 # ============================================================================
 # Test: Birth Date Extraction
 # ============================================================================
+
 
 class TestBirthDateExtraction:
     """Test extract_birth_date() with various Italian date formats."""
@@ -151,9 +179,18 @@ class TestBirthDateExtraction:
     def test_all_months(self, handler):
         """Test all 12 Italian month names."""
         months_expected = [
-            ("gennaio", 1), ("febbraio", 2), ("marzo", 3), ("aprile", 4),
-            ("maggio", 5), ("giugno", 6), ("luglio", 7), ("agosto", 8),
-            ("settembre", 9), ("ottobre", 10), ("novembre", 11), ("dicembre", 12),
+            ("gennaio", 1),
+            ("febbraio", 2),
+            ("marzo", 3),
+            ("aprile", 4),
+            ("maggio", 5),
+            ("giugno", 6),
+            ("luglio", 7),
+            ("agosto", 8),
+            ("settembre", 9),
+            ("ottobre", 10),
+            ("novembre", 11),
+            ("dicembre", 12),
         ]
         for month_name, month_num in months_expected:
             result = handler.extract_birth_date(f"1 {month_name} 1990")
@@ -184,6 +221,7 @@ class TestBirthDateExtraction:
 # ============================================================================
 # Test: Start Disambiguation
 # ============================================================================
+
 
 class TestStartDisambiguation:
     """Test start_disambiguation() with various client lists."""
@@ -224,6 +262,7 @@ class TestStartDisambiguation:
 # Test: Birth Date Resolution
 # ============================================================================
 
+
 class TestBirthDateResolution:
     """Test process_birth_date() flow."""
 
@@ -249,7 +288,9 @@ class TestBirthDateResolution:
         assert result.state == DisambiguationState.WAITING_NICKNAME
         assert "Marione" in result.response_text
 
-    def test_wrong_date_no_nickname_proposes_registration(self, handler, two_marios_no_soprannome):
+    def test_wrong_date_no_nickname_proposes_registration(
+        self, handler, two_marios_no_soprannome
+    ):
         """Wrong date + no nickname -> propose registration."""
         handler.start_disambiguation("Mario", two_marios_no_soprannome)
         result = handler.process_birth_date("10 gennaio 1980")
@@ -276,6 +317,7 @@ class TestBirthDateResolution:
 # ============================================================================
 # Test: Nickname Resolution
 # ============================================================================
+
 
 class TestNicknameResolution:
     """Test process_nickname_choice() flow."""
@@ -326,10 +368,13 @@ class TestNicknameResolution:
 # Test: Cognome-Based Disambiguation
 # ============================================================================
 
+
 class TestCognomeDisambiguation:
     """Test disambiguation when clients have different surnames."""
 
-    def test_different_cognome_used_as_identifier(self, handler, two_marios_different_cognome):
+    def test_different_cognome_used_as_identifier(
+        self, handler, two_marios_different_cognome
+    ):
         """Clients with different cognome use cognome for disambiguation."""
         handler.start_disambiguation("Mario", two_marios_different_cognome)
         result = handler.process_birth_date("10 gennaio 1980")  # Wrong date
@@ -340,13 +385,14 @@ class TestCognomeDisambiguation:
         # With the cognome improvement, it should use full names
         assert result.state in (
             DisambiguationState.WAITING_NICKNAME,
-            DisambiguationState.PROPOSE_REGISTRATION
+            DisambiguationState.PROPOSE_REGISTRATION,
         )
 
 
 # ============================================================================
 # Test: Max Attempts
 # ============================================================================
+
 
 class TestMaxAttempts:
     """Test max attempt enforcement."""
@@ -366,7 +412,9 @@ class TestMaxAttempts:
         handler.process_birth_date("10 gennaio 1980")  # Falls to nickname
         for _ in range(3):
             handler.process_nickname_choice("Giovanni")
-        result = handler.process_nickname_choice("Giovanni")  # 5th total (1 bd + 4 nick)
+        result = handler.process_nickname_choice(
+            "Giovanni"
+        )  # 5th total (1 bd + 4 nick)
         # Attempts counted: 1 (birth_date) + 3 (nickname) = exceeds max=3 after nick #3
         assert result.state == DisambiguationState.FAILED
 
@@ -374,6 +422,7 @@ class TestMaxAttempts:
 # ============================================================================
 # Test: Properties and Reset
 # ============================================================================
+
 
 class TestPropertiesAndReset:
     """Test handler properties and reset."""
@@ -433,6 +482,7 @@ class TestPropertiesAndReset:
 # Test: Full Disambiguation Flows
 # ============================================================================
 
+
 class TestFullFlows:
     """Test complete end-to-end disambiguation flows."""
 
@@ -482,6 +532,7 @@ class TestFullFlows:
 # ============================================================================
 # Test: Edge Cases
 # ============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases and boundary conditions."""

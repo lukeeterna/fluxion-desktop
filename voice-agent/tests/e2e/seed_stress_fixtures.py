@@ -19,24 +19,24 @@ import sys
 # 13 clienti dal test stress (nome, cognome, telefono dummy unique, vertical_tag)
 STRESS_CLIENTI = [
     # SALONE
-    ("Marco",       "Rossi",     "3339000001", "stress:salone"),
-    ("Luca",        "Verdi",     "3339000002", "stress:salone"),
+    ("Marco", "Rossi", "3339000001", "stress:salone"),
+    ("Luca", "Verdi", "3339000002", "stress:salone"),
     # AUTO
-    ("Giuseppe",    "Ferrari",   "3339000003", "stress:auto"),
-    ("Paolo",       "Neri",      "3339000004", "stress:auto"),
-    ("Roberto",     "Colombo",   "3339000005", "stress:auto"),
+    ("Giuseppe", "Ferrari", "3339000003", "stress:auto"),
+    ("Paolo", "Neri", "3339000004", "stress:auto"),
+    ("Roberto", "Colombo", "3339000005", "stress:auto"),
     # MEDICAL
-    ("Francesca",   "Russo",     "3339000006", "stress:medical"),
-    ("Davide",      "Esposito",  "3339000007", "stress:medical"),
+    ("Francesca", "Russo", "3339000006", "stress:medical"),
+    ("Davide", "Esposito", "3339000007", "stress:medical"),
     # PALESTRA
-    ("Simone",      "Conti",     "3339000008", "stress:palestra"),
-    ("Chiara",      "Mancini",   "3339000009", "stress:palestra"),
+    ("Simone", "Conti", "3339000008", "stress:palestra"),
+    ("Chiara", "Mancini", "3339000009", "stress:palestra"),
     # BEAUTY
-    ("Elena",       "Moretti",   "3339000010", "stress:beauty"),
-    ("Sara",        "Romano",    "3339000011", "stress:beauty"),
+    ("Elena", "Moretti", "3339000010", "stress:beauty"),
+    ("Sara", "Romano", "3339000011", "stress:beauty"),
     # STUDIO PROFESSIONALE
-    ("Alessandro",  "Gentile",   "3339000012", "stress:studio"),
-    ("Maria",       "Fontana",   "3339000013", "stress:studio"),
+    ("Alessandro", "Gentile", "3339000012", "stress:studio"),
+    ("Maria", "Fontana", "3339000013", "stress:studio"),
 ]
 
 
@@ -48,7 +48,9 @@ def resolve_db_path():
         return db_path
     home = os.path.expanduser("~")
     candidates = [
-        os.path.join(home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"),
+        os.path.join(
+            home, "Library", "Application Support", "com.fluxion.desktop", "fluxion.db"
+        ),
         os.path.join(home, "Library", "Application Support", "fluxion", "fluxion.db"),
         "fluxion.db",
     ]
@@ -97,8 +99,13 @@ def seed_stress_clienti(verbose=False):
     finally:
         conn.close()
 
-    return {"db": db_path, "inserted": inserted, "skipped": skipped, "errors": errors,
-            "total": len(STRESS_CLIENTI)}
+    return {
+        "db": db_path,
+        "inserted": inserted,
+        "skipped": skipped,
+        "errors": errors,
+        "total": len(STRESS_CLIENTI),
+    }
 
 
 if __name__ == "__main__":

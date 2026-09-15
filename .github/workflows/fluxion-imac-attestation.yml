@@ -1,0 +1,121 @@
+name: FLUXION iMac Read-only Attestation
+
+on:
+  issue_comment:
+    types: [created]
+
+concurrency:
+  group: fluxion-imac-physical-attestation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  attest:
+    if: >-
+      github.event.issue.number == 68 &&
+      github.event.comment.body == 'FLUXION_IMAC_ATTEST_V1' &&
+      github.actor == github.repository_owner
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 10
+    env:
+      EXPECTED_SHA: ${{ github.sha }}
+      FLUXION_ROOT: /Volumes/MacSSD - Dati/FLUXION
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Exact-SHA runtime attestation
+        shell: bash
+        run: |
+          set -uo pipefail
+          REPORT="${RUNNER_TEMP}/fluxion-imac-attestation-${GITHUB_RUN_ID}.txt"
+          RESULT=0
+
+          {
+            echo "SHA=${EXPECTED_SHA}"
+            echo "RUN_ID=${GITHUB_RUN_ID}"
+
+            test -d "${FLUXION_ROOT}/.git" || { echo 'RED=REPOSITORY_MISSING'; exit 10; }
+            LOCAL_SHA="$(git -C "${FLUXION_ROOT}" rev-parse HEAD)"
+            REMOTE_SHA="$(git -C "${FLUXION_ROOT}" ls-remote origin refs/heads/master | awk '{print $1}')"
+            echo "LOCAL_SHA=${LOCAL_SHA}"
+            echo "REMOTE_SHA=${REMOTE_SHA}"
+            test "${LOCAL_SHA}" = "${EXPECTED_SHA}" || { echo 'RED=LOCAL_SHA_DRIFT'; exit 11; }
+            test "${REMOTE_SHA}" = "${EXPECTED_SHA}" || { echo 'RED=REMOTE_SHA_DRIFT'; exit 12; }
+
+            test ! -e "${FLUXION_ROOT}/vos/STOP" || { echo 'RED=STOP_PRESENT'; exit 13; }
+            echo 'STOP=ABSENT'
+
+            python3 "${FLUXION_ROOT}/bin/vos_machine.py" validate
+            python3 "${FLUXION_ROOT}/bin/vos_machine.py" verify --role runtime_authority
+
+            TTS_MODE="$(tr -d '\r\n' < "${FLUXION_ROOT}/voice-agent/.tts_mode")"
+            echo "TTS_MODE=${TTS_MODE}"
+            test "${TTS_MODE}" = 'fast' || { echo 'RED=TTS_MODE_DRIFT'; exit 14; }
+
+            LISTENER_PID="$(lsof -nP -tiTCP:3002 -sTCP:LISTEN | head -1)"
+            echo "LISTENER_PID=${LISTENER_PID}"
+            test -n "${LISTENER_PID}" || { echo 'RED=LISTENER_MISSING'; exit 15; }
+            ps -p "${LISTENER_PID}" -o pid=,ppid=,lstart=,command=
+
+            python3 - <<'PY'
+          import json
+          import urllib.request
+
+          def get_json(url):
+              with urllib.request.urlopen(url, timeout=10) as response:
+                  return json.load(response)
+
+          health = get_json('http://127.0.0.1:3002/health')
+          voip = get_json('http://127.0.0.1:3002/api/voice/voip/status')
+          sip = voip.get('sip', {})
+
+          print('HEALTH_STATUS=' + str(health.get('status')))
+          print('VOICE_ENGINE=' + str(voip.get('engine')))
+          print('SIP_RUNNING=' + str(voip.get('running')))
+          print('SIP_REGISTERED=' + str(sip.get('registered')))
+          print('SIP_REG_STATUS=' + str(sip.get('reg_status')))
+
+          assert health.get('status') == 'ok'
+          assert voip.get('engine') == 'go'
+          assert voip.get('running') is True
+          assert sip.get('registered') is True
+          assert sip.get('reg_status') == 200
+          PY
+
+            echo "LOCAL_DIRTY_COUNT=$(git -C "${FLUXION_ROOT}" status --porcelain=v1 | wc -l | tr -d ' ')"
+            echo 'IMAC_READONLY_ATTESTATION=GREEN'
+          } >"${REPORT}" 2>&1 || RESULT=$?
+
+          cat "${REPORT}"
+
+          BODY_FILE="${RUNNER_TEMP}/fluxion-imac-comment-${GITHUB_RUN_ID}.md"
+          {
+            echo '## iMac read-only attestation'
+            echo
+            echo '~~~text'
+            cat "${REPORT}"
+            echo '~~~'
+            echo
+            if [ "${RESULT}" -eq 0 ]; then
+              echo 'IMAC_READONLY_ATTESTATION=GREEN'
+            else
+              echo "IMAC_READONLY_ATTESTATION=RED exit=${RESULT}"
+            fi
+          } >"${BODY_FILE}"
+
+          python3 - "${BODY_FILE}" >"${RUNNER_TEMP}/comment.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          print(json.dumps({'body': pathlib.Path(sys.argv[1]).read_text()}))
+          PY
+
+          gh api --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            "repos/${GITHUB_REPOSITORY}/issues/68/comments" \
+            --input "${RUNNER_TEMP}/comment.json" >/dev/null
+
+          rm -f "${REPORT}" "${BODY_FILE}" "${RUNNER_TEMP}/comment.json"
+          exit "${RESULT}"

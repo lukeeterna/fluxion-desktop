@@ -22,7 +22,7 @@ def get_bundle_root() -> Path:
     - Source: voice-agent/ directory
     """
     if _frozen:
-        return Path(sys._MEIPASS)
+        return Path(getattr(sys, "_MEIPASS"))
     return Path(__file__).parent.parent
 
 
@@ -34,9 +34,17 @@ def get_writable_root() -> Path:
     """
     if _frozen:
         if sys.platform == "darwin":
-            base = Path.home() / "Library" / "Application Support" / "Fluxion" / "voice-agent"
+            base = (
+                Path.home()
+                / "Library"
+                / "Application Support"
+                / "Fluxion"
+                / "voice-agent"
+            )
         elif sys.platform == "win32":
-            appdata = os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))
+            appdata = os.environ.get(
+                "LOCALAPPDATA", str(Path.home() / "AppData" / "Local")
+            )
             base = Path(appdata) / "Fluxion" / "voice-agent"
         else:
             base = Path.home() / ".fluxion" / "voice-agent"

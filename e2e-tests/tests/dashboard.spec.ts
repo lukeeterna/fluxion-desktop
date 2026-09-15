@@ -29,9 +29,9 @@ test.describe('Dashboard @dashboard', () => {
 
     // Verify all 4 stat cards are visible using data-testid
     const statCards = [
-      'stat-appuntamenti-oggi',
-      'stat-clienti-totali',
-      'stat-fatturato-mese',
+      'stats-appuntamenti',
+      'stats-clienti',
+      'stats-fatturato',
       'stat-servizio-top'
     ];
 
@@ -79,15 +79,8 @@ test.describe('Dashboard Quick Actions @dashboard', () => {
   });
 
   test('should display quick actions section', async ({ page }) => {
-    const quickActions = page.getByTestId('quick-actions');
-    // Quick actions might not exist in all versions
-    const isVisible = await quickActions.isVisible().catch(() => false);
-
-    if (isVisible) {
-      await expect(quickActions).toBeVisible();
-    } else {
-      test.skip();
-    }
+    await expect(page.getByTestId('section-riepilogo-veloce')).toBeVisible();
+    await expect(page.getByTestId('btn-vai-calendario')).toBeEnabled();
   });
 });
 
@@ -100,9 +93,9 @@ test.describe('Dashboard Statistics @dashboard @stats', () => {
   test('should display numeric values in stats cards', async ({ page }) => {
     // Use actual data-testid from Dashboard.tsx
     const statTestIds = [
-      'stat-appuntamenti-oggi',
-      'stat-clienti-totali',
-      'stat-fatturato-mese',
+      'stats-appuntamenti',
+      'stats-clienti',
+      'stats-fatturato',
       'stat-servizio-top'
     ];
 

@@ -14,7 +14,6 @@ Usage:
     python tests/e2e/test_voip_audio_e2e.py
 """
 
-import asyncio
 import json
 import os
 import subprocess
@@ -22,7 +21,7 @@ import sys
 import tempfile
 import time
 import urllib.request
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 
 # Pipeline endpoint (iMac local)
 PIPELINE_URL = os.environ.get("PIPELINE_URL", "http://127.0.0.1:3002")
@@ -35,8 +34,18 @@ def generate_audio(text: str, output_path: str) -> bool:
     """Generate Italian WAV audio using Edge-TTS."""
     try:
         result = subprocess.run(
-            ["edge-tts", "--voice", CALLER_VOICE, "--text", text, "--write-media", output_path],
-            capture_output=True, text=True, timeout=15
+            [
+                "edge-tts",
+                "--voice",
+                CALLER_VOICE,
+                "--text",
+                text,
+                "--write-media",
+                output_path,
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
         return result.returncode == 0 and os.path.exists(output_path)
     except Exception as e:
@@ -58,7 +67,7 @@ def send_audio(wav_path: str, session_id: Optional[str] = None) -> Dict:
         f"{PIPELINE_URL}/api/voice/process",
         data=data,
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
     resp = urllib.request.urlopen(req, timeout=30)
     return json.loads(resp.read())
@@ -75,7 +84,7 @@ def send_text(text: str, session_id: Optional[str] = None) -> Dict:
         f"{PIPELINE_URL}/api/voice/process",
         data=data,
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
     resp = urllib.request.urlopen(req, timeout=30)
     return json.loads(resp.read())
@@ -87,7 +96,7 @@ def reset_session() -> Dict:
         f"{PIPELINE_URL}/api/voice/reset",
         data=b"{}",
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
     resp = urllib.request.urlopen(req, timeout=10)
     return json.loads(resp.read())
@@ -100,7 +109,7 @@ def set_vertical(vertical: str) -> Dict:
         f"{PIPELINE_URL}/api/voice/set-vertical",
         data=data,
         headers={"Content-Type": "application/json"},
-        method="POST"
+        method="POST",
     )
     resp = urllib.request.urlopen(req, timeout=10)
     return json.loads(resp.read())
@@ -120,6 +129,7 @@ def check_health() -> bool:
 # ============================================================================
 # TEST SCENARIOS
 # ============================================================================
+
 
 class TestResult:
     def __init__(self):
@@ -148,9 +158,11 @@ class TestResult:
 
     def summary(self):
         total = self.passed + self.failed + self.warnings
-        print(f"\n{'='*60}")
-        print(f"RESULTS: {self.passed} OK / {self.warnings} WARN / {self.failed} FAIL (total {total})")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print(
+            f"RESULTS: {self.passed} OK / {self.warnings} WARN / {self.failed} FAIL (total {total})"
+        )
+        print(f"{'=' * 60}")
         return self.failed == 0
 
 
@@ -158,11 +170,11 @@ def run_tests():
     """Run all VoIP-equivalent E2E tests."""
     tr = TestResult()
     tmpdir = tempfile.mkdtemp(prefix="fluxion_voip_test_")
-    print(f"\n{'='*60}")
-    print(f"FLUXION VoIP Audio E2E Test — S135")
+    print(f"\n{'=' * 60}")
+    print("FLUXION VoIP Audio E2E Test — S135")
     print(f"Pipeline: {PIPELINE_URL}")
     print(f"Temp dir: {tmpdir}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     # Pre-check
     if not check_health():
@@ -200,7 +212,11 @@ def run_tests():
         resp = r.get("response", "").lower()
         fsm = r.get("fsm_state", "")
         if "opzioni" in resp or "quale" in resp or "preferisce" in resp:
-            tr.ok("DISAMB", "Bare-word taglio", f"Sara asks disambiguation → '{resp[:80]}'")
+            tr.ok(
+                "DISAMB",
+                "Bare-word taglio",
+                f"Sara asks disambiguation → '{resp[:80]}'",
+            )
         elif fsm == "waiting_service":
             tr.warn("DISAMB", "Taglio — waiting but no question", f"'{resp[:80]}'")
         else:
@@ -221,9 +237,15 @@ def run_tests():
         all_variants = ["taglio donna", "taglio uomo", "taglio bambino"]
         listed_count = sum(1 for v in all_variants if v in resp)
         if listed_count >= 3:
-            tr.fail("MULTI", "Lists all taglio variants", f"Found {listed_count} variants in '{resp[:100]}'")
+            tr.fail(
+                "MULTI",
+                "Lists all taglio variants",
+                f"Found {listed_count} variants in '{resp[:100]}'",
+            )
         elif fsm in ("waiting_name", "waiting_date"):
-            tr.ok("MULTI", "Services accepted cleanly", f"fsm={fsm}, resp='{resp[:80]}'")
+            tr.ok(
+                "MULTI", "Services accepted cleanly", f"fsm={fsm}, resp='{resp[:80]}'"
+            )
         elif "quale" in resp or "tipo" in resp:
             tr.ok("MULTI", "Asks taglio type (mixed disamb)", f"resp='{resp[:80]}'")
         else:
@@ -240,12 +262,10 @@ def run_tests():
         ("Mi chiamo Marco Rossi", "waiting_date", ["quando", "giorno", "data"]),
         ("Domani alle dieci", "confirming", ["riepilogo", "conferma", "taglio"]),
     ]
-    booking_ok = True
     for i, (phrase, expected_fsm, expected_words) in enumerate(steps):
         wav = os.path.join(tmpdir, f"t4_step{i}.wav")
         if not generate_audio(phrase, wav):
             tr.fail("BOOKING", f"Step {i} audio gen", "Edge-TTS failed")
-            booking_ok = False
             break
         r = send_audio(wav)
         fsm = r.get("fsm_state", "")
@@ -254,18 +274,26 @@ def run_tests():
 
         # Check FSM state
         if fsm == expected_fsm:
-            tr.ok("BOOKING", f"Step {i}: '{phrase[:40]}'",
-                   f"fsm={fsm} ✓ | STT='{trans[:50]}' | Sara='{resp[:60]}'")
+            tr.ok(
+                "BOOKING",
+                f"Step {i}: '{phrase[:40]}'",
+                f"fsm={fsm} ✓ | STT='{trans[:50]}' | Sara='{resp[:60]}'",
+            )
         else:
             # Some flexibility — STT may garble the phrase
             has_keywords = any(w in resp for w in expected_words)
             if has_keywords:
-                tr.warn("BOOKING", f"Step {i}: fsm={fsm}≠{expected_fsm}",
-                        f"But keywords present. STT='{trans[:50]}'")
+                tr.warn(
+                    "BOOKING",
+                    f"Step {i}: fsm={fsm}≠{expected_fsm}",
+                    f"But keywords present. STT='{trans[:50]}'",
+                )
             else:
-                tr.fail("BOOKING", f"Step {i}: '{phrase[:40]}'",
-                        f"fsm={fsm}≠{expected_fsm} | STT='{trans[:50]}' | Sara='{resp[:60]}'")
-                booking_ok = False
+                tr.fail(
+                    "BOOKING",
+                    f"Step {i}: '{phrase[:40]}'",
+                    f"fsm={fsm}≠{expected_fsm} | STT='{trans[:50]}' | Sara='{resp[:60]}'",
+                )
                 break
 
     # ── TEST 5: NLU Timing (no timeout) ──
@@ -318,8 +346,11 @@ def run_tests():
         if text_fsm == audio_fsm:
             tr.ok("CONSIST", "Text vs Audio same FSM", f"both={text_fsm}")
         else:
-            tr.warn("CONSIST", "Different FSM states",
-                    f"text={text_fsm}, audio={audio_fsm} (STT may differ)")
+            tr.warn(
+                "CONSIST",
+                "Different FSM states",
+                f"text={text_fsm}, audio={audio_fsm} (STT may differ)",
+            )
     else:
         tr.fail("CONSIST", "Audio generation", "Edge-TTS failed")
 

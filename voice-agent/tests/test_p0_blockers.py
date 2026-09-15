@@ -9,20 +9,19 @@ Tests for P0 Blocker Features (S96):
 import pytest
 import sqlite3
 import os
-import tempfile
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, patch, MagicMock
 
 # Add parent path for imports
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from entity_extractor import detect_solito, extract_all, ExtractionResult
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+
+from entity_extractor import detect_solito, extract_all
 
 
 # =============================================================================
 # P0-1: Buffer automatico tra servizi
 # =============================================================================
+
 
 class TestBufferMinuti:
     """P0-1: buffer_minuti must be included in slot availability calculations."""
@@ -113,6 +112,7 @@ class TestBufferMinuti:
 # P0-2: Pausa pranzo / blocchi orario
 # =============================================================================
 
+
 class TestBlocchiOrario:
     """P0-2: blocchi_orario table must block slot availability."""
 
@@ -164,7 +164,7 @@ class TestBlocchiOrario:
                )
                AND ora_inizio < ?
                AND ora_fine > ?""",
-            (giorno_settimana, date, slot_time_end, slot_time_start)
+            (giorno_settimana, date, slot_time_end, slot_time_start),
         ).fetchone()[0]
         assert block_count > 0, "Lunch break should block slot at 13:30"
         conn.close()
@@ -222,6 +222,7 @@ class TestBlocchiOrario:
 # P0-3: Multi-servizio combo
 # =============================================================================
 
+
 class TestMultiServizio:
     """P0-3: Multi-service should sum durations for slot calculation."""
 
@@ -251,7 +252,7 @@ class TestMultiServizio:
         for svc in services:
             row = conn.execute(
                 "SELECT durata_minuti, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
-                (f"%{svc}%",)
+                (f"%{svc}%",),
             ).fetchone()
             if row:
                 total_durata += row[0]
@@ -286,7 +287,7 @@ class TestMultiServizio:
         for svc in services:
             row = conn.execute(
                 "SELECT durata_minuti, COALESCE(buffer_minuti, 0) FROM servizi WHERE nome LIKE ? LIMIT 1",
-                (f"%{svc}%",)
+                (f"%{svc}%",),
             ).fetchone()
             if row:
                 total += row[0] + row[1]
@@ -299,26 +300,30 @@ class TestMultiServizio:
 # P0-4: "Il solito" entity detection
 # =============================================================================
 
+
 class TestIlSolito:
     """P0-4: detect_solito must recognize all Italian 'repeat' patterns."""
 
-    @pytest.mark.parametrize("text,expected", [
-        ("Vorrei il solito", True),
-        ("Vorrei fare il solito per favore", True),
-        ("Come l'ultima volta", True),
-        ("come l\u2019ultima volta", True),  # curly apostrophe
-        ("Faccio come sempre", True),
-        ("Quello di sempre", True),
-        ("La stessa cosa", True),
-        ("Come l'altra volta", True),
-        ("Stessa cosa", True),
-        ("Vorrei un taglio", False),
-        ("Buongiorno", False),
-        ("Vorrei prenotare", False),
-        ("Alle 15 come al solito", True),
-        ("Uguale a sempre", True),
-        ("Uguale all'ultima volta", True),
-    ])
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("Vorrei il solito", True),
+            ("Vorrei fare il solito per favore", True),
+            ("Come l'ultima volta", True),
+            ("come l\u2019ultima volta", True),  # curly apostrophe
+            ("Faccio come sempre", True),
+            ("Quello di sempre", True),
+            ("La stessa cosa", True),
+            ("Come l'altra volta", True),
+            ("Stessa cosa", True),
+            ("Vorrei un taglio", False),
+            ("Buongiorno", False),
+            ("Vorrei prenotare", False),
+            ("Alle 15 come al solito", True),
+            ("Uguale a sempre", True),
+            ("Uguale all'ultima volta", True),
+        ],
+    )
     def test_detect_solito(self, text, expected):
         result = detect_solito(text)
         assert result == expected, f"detect_solito('{text}') should be {expected}"
@@ -345,6 +350,7 @@ class TestIlSolito:
 # Migration 034: blocchi_orario schema
 # =============================================================================
 
+
 class TestMigration034:
     """Verify migration 034 creates correct schema."""
 
@@ -355,7 +361,12 @@ class TestMigration034:
 
         # Read and execute migration
         migration_path = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'src-tauri', 'migrations', '034_blocchi_orario.sql'
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src-tauri",
+            "migrations",
+            "034_blocchi_orario.sql",
         )
         with open(migration_path) as f:
             sql = f.read()
@@ -387,7 +398,12 @@ class TestMigration034:
         db_path = str(tmp_path / "test_idempotent.db")
         conn = sqlite3.connect(db_path)
         migration_path = os.path.join(
-            os.path.dirname(__file__), '..', '..', 'src-tauri', 'migrations', '034_blocchi_orario.sql'
+            os.path.dirname(__file__),
+            "..",
+            "..",
+            "src-tauri",
+            "migrations",
+            "034_blocchi_orario.sql",
         )
         with open(migration_path) as f:
             sql = f.read()

@@ -168,23 +168,17 @@ test.describe('Screen Reader Compatibility @a11y @screen-reader', () => {
     await clientiPage.navigate();
     await clientiPage.openNewClienteForm();
 
-    const inputs = page.locator('input:not([type="hidden"])');
+    const inputs = page
+      .getByRole('dialog')
+      .locator('input:not([type="hidden"]):not([aria-hidden="true"])');
     const count = await inputs.count();
 
     for (let i = 0; i < count; i++) {
       const input = inputs.nth(i);
-      const id = await input.getAttribute('id');
-      const ariaLabel = await input.getAttribute('aria-label');
-      const ariaLabelledBy = await input.getAttribute('aria-labelledby');
-
-      // Check for associated label or aria attributes
-      const hasLabel = id
-        ? (await page.locator(`label[for="${id}"]`).count()) > 0
-        : false;
-      const hasAriaLabel = ariaLabel !== null && ariaLabel.length > 0;
-      const hasAriaLabelledBy = ariaLabelledBy !== null;
-
-      expect(hasLabel || hasAriaLabel || hasAriaLabelledBy).toBe(true);
+      // Assert the browser-computed accessible name. This covers native
+      // label associations and aria-label/aria-labelledby without reimplementing
+      // the accessibility tree with brittle selector logic.
+      await expect(input).toHaveAccessibleName(/\S+/);
     }
   });
 
