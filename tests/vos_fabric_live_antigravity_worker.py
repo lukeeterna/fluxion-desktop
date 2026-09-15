@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
@@ -32,6 +33,55 @@ def sha256_path(path: Path) -> str:
 
 def write_json(path: Path, value: Dict[str, Any]) -> None:
     path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+
+def classify_failure(events: bytes, stderr: bytes) -> str:
+    """Return a narrow, non-secret failure class equivalent to the A2 qualifier."""
+    text = (events + b"\n" + stderr).decode("utf-8", "replace").lower()
+    if re.search(r"quota|rate[ -]?limit|resource[_ -]?exhausted|out of credits|usage limit", text):
+        return "BLOCKED_QUOTA"
+    if re.search(r"authentication required|sign[ -]?in|required.*auth|unauthorized|invalid_grant", text):
+        return "BLOCKED_AUTH"
+    if re.search(r"model.*(not available|not found|unsupported)|requested model", text):
+        return "BLOCKED_MODEL"
+    if re.search(r"timed? out|timeout", text):
+        return "BLOCKED_TIMEOUT"
+    return "RUNTIME_ERROR"
+
+
+def failure_evidence(
+    *,
+    mode: str,
+    phase: str,
+    failure_class: str,
+    model: str,
+    prompt: bytes,
+    events: bytes,
+    stderr: bytes,
+    settings_before: str,
+    settings_after: str,
+    exit_code: Optional[int],
+) -> Dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "mode": mode,
+        "phase": phase,
+        "failure_class": failure_class,
+        "model": model,
+        "antigravity_version": AGY_VERSION,
+        "antigravity_binary_sha256": AGY_BINARY_SHA256,
+        "exit_code": exit_code,
+        "events_sha256": sha256_bytes(events),
+        "stderr_sha256": sha256_bytes(stderr),
+        "prompt_sha256": sha256_bytes(prompt),
+        "settings_before_sha256": settings_before,
+        "settings_after_sha256": settings_after,
+        "structured_output_verified": False,
+        "api_key_fallback": 0,
+        "credit_fallback": 0,
+        "paid_api_fallback": 0,
+        "production_mutations": 0,
+    }
 
 
 def enforce_zero_cost_profile(home: Path) -> str:
@@ -58,6 +108,48 @@ def enforce_zero_cost_profile(home: Path) -> str:
     if check.get("modelProvider") == "gemini":
         raise RuntimeError("Gemini API provider override appeared")
     return sha256_path(settings)
+
+
+def require_exact_model(agy: Path, expected_model: str, home: Path) -> Tuple[str, str]:
+    """Refresh direct-account eligibility exactly as the canonical qualifier does."""
+    before = enforce_zero_cost_profile(home)
+    completed = subprocess.run(
+        [str(agy), "models"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=60,
+        check=False,
+    )
+    after = enforce_zero_cost_profile(home)
+    stdout = completed.stdout or b""
+    stderr = completed.stderr or b""
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "MODEL_PREFLIGHT:%s:%d:%s:%s:%s:%s"
+            % (
+                classify_failure(stdout, stderr),
+                completed.returncode,
+                sha256_bytes(stdout),
+                sha256_bytes(stderr),
+                before,
+                after,
+            )
+        )
+    available = []
+    for raw in stdout.decode("utf-8", "replace").splitlines():
+        fields = raw.strip().split()
+        if not fields:
+            continue
+        first = fields[0]
+        if first.upper() in ("MODEL", "NAME") or set(first) == {"-"}:
+            continue
+        available.append(first)
+    if expected_model not in available:
+        raise RuntimeError(
+            "MODEL_PREFLIGHT:BLOCKED_MODEL:0:%s:%s:%s:%s"
+            % (sha256_bytes(stdout), sha256_bytes(stderr), before, after)
+        )
+    return before, after
 
 
 def parse_stream(
@@ -136,11 +228,42 @@ def main() -> int:
     if args.timeout_seconds <= 0 or args.timeout_seconds > 300:
         raise RuntimeError("timeout outside bounded certification range")
 
-    prompt = Path(args.prompt_file).read_text(encoding="utf-8")
-    if not prompt or len(prompt.encode("utf-8")) > 8192:
+    prompt = Path(args.prompt_file).read_bytes()
+    if not prompt or len(prompt) > 8192:
         raise RuntimeError("PUBLIC prompt is empty or unexpectedly large")
+    evidence_path = Path(args.evidence_file)
+    events_path = Path(args.events_file)
+    stderr_path = Path(args.stderr_file)
 
-    settings_before = enforce_zero_cost_profile(home)
+    try:
+        settings_before, _ = require_exact_model(agy, args.model, home)
+    except RuntimeError as exc:
+        text = str(exc)
+        if text.startswith("MODEL_PREFLIGHT:"):
+            fields = text.split(":")
+            failure_class = fields[1] if len(fields) > 1 else "RUNTIME_ERROR"
+            exit_code = int(fields[2]) if len(fields) > 2 and fields[2].isdigit() else None
+            settings_before = fields[-2] if len(fields) >= 6 else enforce_zero_cost_profile(home)
+            settings_after = fields[-1] if len(fields) >= 6 else settings_before
+            write_json(
+                evidence_path,
+                failure_evidence(
+                    mode=args.mode,
+                    phase="model_preflight",
+                    failure_class=failure_class,
+                    model=args.model,
+                    prompt=prompt,
+                    events=b"",
+                    stderr=b"",
+                    settings_before=settings_before,
+                    settings_after=settings_after,
+                    exit_code=exit_code,
+                ),
+            )
+            print("A2_G4_G5_BLOCKED=" + failure_class)
+            return 20
+        raise
+
     schema = json.dumps(
         {
             "type": "object",
@@ -154,7 +277,7 @@ def main() -> int:
     command = [
         str(agy),
         "-p",
-        prompt,
+        prompt.decode("utf-8"),
         "--model",
         args.model,
         "--output-format",
@@ -177,33 +300,66 @@ def main() -> int:
     )
     events = completed.stdout or b""
     stderr = completed.stderr or b""
-    events_path = Path(args.events_file)
-    stderr_path = Path(args.stderr_file)
     events_path.write_bytes(events)
     stderr_path.write_bytes(stderr)
     settings_after = enforce_zero_cost_profile(home)
 
     if completed.returncode != 0:
-        raise RuntimeError(
-            "Antigravity runtime failed rc=%d events_sha256=%s stderr_sha256=%s"
-            % (completed.returncode, sha256_bytes(events), sha256_bytes(stderr))
+        failure_class = classify_failure(events, stderr)
+        write_json(
+            evidence_path,
+            failure_evidence(
+                mode=args.mode,
+                phase="inference",
+                failure_class=failure_class,
+                model=args.model,
+                prompt=prompt,
+                events=events,
+                stderr=stderr,
+                settings_before=settings_before,
+                settings_after=settings_after,
+                exit_code=completed.returncode,
+            ),
         )
+        print("A2_G4_G5_BLOCKED=" + failure_class)
+        return 21
 
-    conversation, parsed = parse_stream(
-        events,
-        args.expected_proof,
-        args.conversation_id if args.mode == "resume" else None,
-    )
+    try:
+        conversation, parsed = parse_stream(
+            events,
+            args.expected_proof,
+            args.conversation_id if args.mode == "resume" else None,
+        )
+    except Exception:
+        write_json(
+            evidence_path,
+            failure_evidence(
+                mode=args.mode,
+                phase="stream_validation",
+                failure_class="STREAM_VALIDATION_FAILED",
+                model=args.model,
+                prompt=prompt,
+                events=events,
+                stderr=stderr,
+                settings_before=settings_before,
+                settings_after=settings_after,
+                exit_code=completed.returncode,
+            ),
+        )
+        print("A2_G4_G5_BLOCKED=STREAM_VALIDATION_FAILED")
+        return 22
+
     evidence = {
         "schema_version": 1,
         "mode": args.mode,
+        "phase": "complete",
         "model": args.model,
         "antigravity_version": AGY_VERSION,
         "antigravity_binary_sha256": AGY_BINARY_SHA256,
         "observed_conversation_id": conversation,
         "events_sha256": sha256_bytes(events),
         "stderr_sha256": sha256_bytes(stderr),
-        "prompt_sha256": sha256_bytes(prompt.encode("utf-8")),
+        "prompt_sha256": sha256_bytes(prompt),
         "settings_before_sha256": settings_before,
         "settings_after_sha256": settings_after,
         "event_count": parsed["event_count"],
@@ -213,7 +369,8 @@ def main() -> int:
         "paid_api_fallback": 0,
         "production_mutations": 0,
     }
-    write_json(Path(args.evidence_file), evidence)
+    write_json(evidence_path, evidence)
+    print("A2_G4_G5_MODEL_PREFLIGHT=GREEN")
     print("A2_G4_G5_DIRECT_OFFICIAL=GREEN")
     print("A2_G4_G5_STRUCTURED_OUTPUT=GREEN")
     print("A2_G4_G5_API_KEY_FALLBACK=0")
