@@ -22,97 +22,109 @@ jobs:
           MP="$(command -v multipass 2>/dev/null || printf '%s' '/Library/Application Support/com.canonical.multipass/bin/multipass')"
           DIAG="$RUNNER_TEMP/a2_stream_diag.py"
           cat >"$DIAG" <<'PY'
-          import glob, hashlib, json, os
-
+          import glob, hashlib, json, os, re
           dirs=sorted(glob.glob('/tmp/vos-fabric-a2.*'), key=lambda p: os.path.getmtime(p), reverse=True)
           if not dirs:
-              print('A2_DIAG_RUN_DIR=NONE')
-              raise SystemExit(0)
-          d=dirs[0]
-          first=os.path.join(d,'first.jsonl')
+              print('A2_DIAG_RUN_DIR=NONE'); raise SystemExit(0)
+          d=dirs[0]; first=os.path.join(d,'first.jsonl')
           print('A2_DIAG_RUN_DIR_FOUND=1')
-          print('A2_DIAG_FIRST_EXISTS='+('1' if os.path.isfile(first) else '0'))
-          if not os.path.isfile(first): raise SystemExit(0)
-          raw=open(first,'rb').read()
-          print('A2_DIAG_FIRST_SHA256='+hashlib.sha256(raw).hexdigest())
-          init=None; result=None; tools=[]
+          if not os.path.isfile(first): print('A2_DIAG_FIRST_EXISTS=0'); raise SystemExit(0)
+          raw=open(first,'rb').read(); print('A2_DIAG_FIRST_EXISTS=1'); print('A2_DIAG_FIRST_SHA256='+hashlib.sha256(raw).hexdigest())
+          init_event=None; result=None; tool_steps=[]
           for line in raw.decode('utf-8','replace').splitlines():
               try: e=json.loads(line)
               except Exception: continue
-              if e.get('event')=='init': init=e
+              if e.get('event')=='init': init_event=e
               elif e.get('event')=='step_update':
                   s=e.get('step_update') or {}
-                  if s.get('step_type')=='tool' and s.get('state')=='DONE':
-                      n=s.get('tool_name')
-                      if isinstance(n,str): tools.append(n)
+                  if s.get('step_type')=='tool' and s.get('state')=='DONE': tool_steps.append(s)
               elif e.get('event')=='result': result=e.get('result') or {}
-          print('A2_DIAG_INIT_PRESENT='+('1' if isinstance(init,dict) else '0'))
-          print('A2_DIAG_RESULT_PRESENT='+('1' if isinstance(result,dict) else '0'))
-          print('A2_DIAG_TOOL_DONE_COUNT='+str(len(tools)))
-          print('A2_DIAG_TOOL_NAMES='+','.join(tools))
+          init=(init_event or {}).get('init') or {}
+          cwd=init.get('cwd') if isinstance(init,dict) else None
+          schema=init.get('json_schema') if isinstance(init,dict) else None
           expected=None
-          if isinstance(init,dict):
-              schema=init.get('json_schema')
-              if isinstance(schema,dict):
-                  try: expected=schema['properties']['proof']['const']
-                  except Exception: pass
-              print('A2_DIAG_PERMISSION_MODE='+str(init.get('permission_mode','UNKNOWN')))
-          if not isinstance(result,dict): raise SystemExit(0)
+          if isinstance(schema,dict):
+              try: expected=schema['properties']['proof']['const']
+              except Exception: pass
+          print('A2_DIAG_INIT_PRESENT='+('1' if init_event else '0'))
+          print('A2_DIAG_CWD_IS_EXPECTED='+('1' if isinstance(cwd,str) and os.path.normpath(cwd)==os.path.normpath(os.path.join(d,'work')) else '0'))
+          print('A2_DIAG_PERMISSION_MODE='+str(init.get('permission_mode','UNKNOWN')))
+          print('A2_DIAG_SCHEMA_PRESENT='+('1' if isinstance(schema,dict) else '0'))
+          print('A2_DIAG_EXPECTED_CONST_PRESENT='+('1' if isinstance(expected,str) else '0'))
+          print('A2_DIAG_TOOL_DONE_COUNT='+str(len(tool_steps)))
+          tool_names=[]; tool_error_count=0; write_rel='NONE'; write_error='NONE'; write_output_class='NONE'
+          for s in tool_steps:
+              n=s.get('tool_name');
+              if isinstance(n,str): tool_names.append(n)
+              ti=s.get('tool_info') or {}
+              err=ti.get('error')
+              if err: tool_error_count+=1
+              if n=='write_to_file':
+                  params=ti.get('parameters') or {}
+                  path=None
+                  for k,v in params.items():
+                      if isinstance(v,str) and ('path' in k.lower() or 'file' in k.lower()) and ('/' in v or v.endswith('.txt')):
+                          path=v; break
+                  if isinstance(path,str):
+                      try: write_rel=os.path.relpath(os.path.abspath(path if os.path.isabs(path) else os.path.join(cwd or '',path)),cwd or '/')
+                      except Exception: write_rel='UNRESOLVED'
+                  if err:
+                      msg=json.dumps(err,sort_keys=True).lower()
+                      if any(x in msg for x in ['permission','approval','review','denied']): write_error='PERMISSION'
+                      elif any(x in msg for x in ['sandbox','outside','workspace']): write_error='BOUNDARY'
+                      else: write_error='OTHER'
+                  else: write_error='NONE'
+                  out=ti.get('output')
+                  if isinstance(out,str):
+                      lo=out.lower()
+                      if any(x in lo for x in ['denied','permission','approval','review']): write_output_class='PERMISSION'
+                      elif any(x in lo for x in ['error','failed','failure']): write_output_class='ERROR'
+                      else: write_output_class='NONERROR_TEXT'
+                  elif out is not None: write_output_class=type(out).__name__
+          print('A2_DIAG_TOOL_NAMES='+','.join(tool_names))
+          print('A2_DIAG_TOOL_ERROR_COUNT='+str(tool_error_count))
+          print('A2_DIAG_WRITE_REL='+write_rel)
+          print('A2_DIAG_WRITE_ERROR='+write_error)
+          print('A2_DIAG_WRITE_OUTPUT_CLASS='+write_output_class)
+          if not isinstance(result,dict): print('A2_DIAG_RESULT_PRESENT=0'); raise SystemExit(0)
+          print('A2_DIAG_RESULT_PRESENT=1')
           print('A2_DIAG_STATUS='+str(result.get('status','MISSING')))
           structured=result.get('structured_output')
           print('A2_DIAG_STRUCTURED_TYPE='+type(structured).__name__)
-          if isinstance(structured,dict):
-              print('A2_DIAG_STRUCTURED_KEYS='+','.join(sorted(map(str,structured.keys()))))
-              print('A2_DIAG_STRUCTURED_MATCH='+('1' if expected is not None and structured.get('proof')==expected else '0'))
-          else:
-              print('A2_DIAG_STRUCTURED_KEYS=')
-              print('A2_DIAG_STRUCTURED_MATCH=0')
-          response=result.get('response')
-          parsed=None
-          if isinstance(response,str):
-              print('A2_DIAG_RESPONSE_SHA256='+hashlib.sha256(response.encode()).hexdigest())
-              try: parsed=json.loads(response)
-              except Exception: pass
-          print('A2_DIAG_RESPONSE_JSON='+('1' if isinstance(parsed,dict) else '0'))
-          print('A2_DIAG_RESPONSE_MATCH='+('1' if isinstance(parsed,dict) and expected is not None and parsed.get('proof')==expected else '0'))
+          print('A2_DIAG_STRUCTURED_KEYS='+(','.join(sorted(map(str,structured.keys()))) if isinstance(structured,dict) else ''))
+          print('A2_DIAG_STRUCTURED_MATCH='+('1' if isinstance(structured,dict) and isinstance(expected,str) and structured.get('proof')==expected else '0'))
           err=result.get('error')
-          text=json.dumps(err,sort_keys=True) if err is not None else ''
-          low=text.lower()
-          cls='NONE'
-          for label, needles in [
-              ('SCHEMA',['schema','structured','const','validation']),
-              ('PERMISSION',['permission','approval','review']),
-              ('QUOTA',['quota','rate limit','usage limit','credit']),
-              ('AUTH',['auth','sign in','unauthorized']),
-              ('TIMEOUT',['timeout','timed out']),
-          ]:
+          msg=''
+          etype='NONE'
+          if isinstance(err,dict):
+              etype=str(err.get('type') or err.get('code') or 'DICT')
+              msg=str(err.get('message') or '')
+          elif err is not None:
+              etype=type(err).__name__; msg=str(err)
+          low=msg.lower(); cls='NONE'
+          for label,needles in [('SCHEMA',['schema','structured','validation','const']),('PERMISSION',['permission','approval','review','denied']),('BOUNDARY',['workspace','sandbox','outside']),('QUOTA',['quota','rate limit','usage limit','credit']),('AUTH',['auth','sign in','unauthorized']),('TIMEOUT',['timeout','timed out'])]:
               if any(n in low for n in needles): cls=label; break
-          print('A2_DIAG_ERROR_CLASS='+cls)
-          if text:
-              print('A2_DIAG_ERROR_SHA256='+hashlib.sha256(text.encode()).hexdigest())
+          print('A2_DIAG_RESULT_ERROR_TYPE='+etype)
+          print('A2_DIAG_RESULT_ERROR_CLASS='+cls)
+          if msg: print('A2_DIAG_RESULT_ERROR_SHA256='+hashlib.sha256(msg.encode()).hexdigest())
           proof=os.path.join(d,'work','proof.txt')
           print('A2_DIAG_WORKSPACE_PROOF_EXISTS='+('1' if os.path.isfile(proof) else '0'))
-          match=False
-          if os.path.isfile(proof) and isinstance(expected,str) and expected.startswith('VOS_ANTIGRAVITY_PING='):
-              want=expected.split('=',1)[1]
+          if os.path.isfile(proof):
               got=open(proof,encoding='utf-8',errors='replace').read()
-              match=(got==want)
+              want=expected.split('=',1)[1] if isinstance(expected,str) and expected.startswith('VOS_ANTIGRAVITY_PING=') else None
+              print('A2_DIAG_WORKSPACE_PROOF_MATCH='+('1' if want is not None and got==want else '0'))
               print('A2_DIAG_WORKSPACE_PROOF_SHA256='+hashlib.sha256(got.encode()).hexdigest())
-          print('A2_DIAG_WORKSPACE_PROOF_MATCH='+('1' if match else '0'))
+          else: print('A2_DIAG_WORKSPACE_PROOF_MATCH=0')
           PY
-
           /usr/bin/python3 - "$MP" "$DIAG" <<'PY'
           import subprocess,sys
           mp,path=sys.argv[1:]
           def run(cmd,secs):
-              try: return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=secs)
-              except subprocess.TimeoutExpired: return None
+              try:return subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=secs)
+              except subprocess.TimeoutExpired:return None
           p=run([mp,'transfer',path,'vos-worker:/tmp/a2_stream_diag.py'],20)
-          if p is None or p.returncode:
-              print('A2_DIAG_TRANSFER=FAIL'); raise SystemExit(0)
+          if p is None or p.returncode: print('A2_DIAG_TRANSFER=FAIL'); raise SystemExit(0)
           q=run([mp,'exec','vos-worker','--','python3','/tmp/a2_stream_diag.py'],20)
-          if q is None:
-              print('A2_DIAG_MP_RC=124'); raise SystemExit(0)
-          print(q.stdout,end='')
-          print('A2_DIAG_MP_RC='+str(q.returncode))
+          if q is None: print('A2_DIAG_MP_RC=124'); raise SystemExit(0)
+          print(q.stdout,end=''); print('A2_DIAG_MP_RC='+str(q.returncode))
           PY
