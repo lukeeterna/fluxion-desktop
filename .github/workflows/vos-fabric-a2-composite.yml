@@ -1,0 +1,237 @@
+name: VOS Fabric A2 Antigravity Composite
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a2-antigravity-runtime-20260915"
+    paths:
+      - ".github/workflows/vos-fabric-a2-composite.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vos-fabric-a2-composite
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 18
+    env:
+      CORE_RUN_ID: 35001277172
+      CORE_JOB_ID: 104489983602
+      CORE_HEAD_SHA: 404700158ce0effbf79015c43861dc610ea49c09
+      FABRIC_A2_SHA: 443d285caff4631de6d0f94d3a28cc765f6b914a
+      GATE_SHA256: 38b8cabbf3a660fcbf697365a9652d9f8aeb070daa35140280739fdbcd443237
+      AGY_VERSION: 1.2.3
+      AGY_BINARY_SHA256: c4c8a6722f9b570e370941b0953ba29051336307d7999ec842bdf7500b0ca7c8
+      AGY_MODEL: gemini-3.8-flash-high
+      AGY_CONVERSATION_ID: a3ff795f-838f-4bdd-aba8-335e5d4c1d4c
+      FIRST_EVENTS_SHA256: 6907bbf506de35666d373cad39848eadbac3b8150026c35b5cbf39b51b711811
+      RESUME_EVENTS_SHA256: 041c9b20b06c09691cd08cc703f48ead9437ddd4ee8cd86d3c2a7b275f1cd21b
+    steps:
+      - name: Revalidate exact A2 runtime core evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          meta="$RUNNER_TEMP/a2-core-run.json"
+          log="$RUNNER_TEMP/a2-core-job.log"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$api/actions/runs/$CORE_RUN_ID" -o "$meta"
+          python3 - "$meta" "$CORE_HEAD_SHA" <<'PY'
+          import json,sys
+          p,head=sys.argv[1:]
+          d=json.load(open(p,encoding='utf-8'))
+          assert str(d['id']) == '35001277172'
+          assert d['head_sha'] == head
+          assert d['status'] == 'completed'
+          assert d['conclusion'] == 'failure'  # expected: post-core persistence helper was in /tmp
+          PY
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H 'X-GitHub-Api-Version: 2022-11-28' "$api/actions/jobs/$CORE_JOB_ID/logs" -o "$log"
+          need(){ grep -Fq -- "$1" "$log" || { echo "A2_COMPOSITE_BLOCKED=MISSING_CORE_MARKER:$1"; exit 2; }; }
+          need "A2_FINAL_V2_PRE_PRODUCTION=GREEN"
+          need "A2_FINAL_V2_GATE_SHA256=$GATE_SHA256"
+          need "ANTIGRAVITY_VERSION=$AGY_VERSION"
+          need "ANTIGRAVITY_BINARY_SHA256=$AGY_BINARY_SHA256"
+          need "ANTIGRAVITY_MODEL_REQUESTED=$AGY_MODEL"
+          need "ANTIGRAVITY_CONVERSATION_ID=$AGY_CONVERSATION_ID"
+          need "ANTIGRAVITY_TOOL_NAMES=write_to_file,view_file"
+          need "ANTIGRAVITY_FIRST_EVENTS_SHA256=$FIRST_EVENTS_SHA256"
+          need "ANTIGRAVITY_RESUME_EVENTS_SHA256=$RESUME_EVENTS_SHA256"
+          need "ANTIGRAVITY_API_KEY_FALLBACK=0"
+          need "ANTIGRAVITY_CREDIT_FALLBACK=0"
+          need "ANTIGRAVITY_HEADLESS_JSON=GREEN"
+          need "ANTIGRAVITY_STRUCTURED_OUTPUT=GREEN"
+          need "ANTIGRAVITY_WORKSPACE_TOOL_EXECUTION=GREEN"
+          need "ANTIGRAVITY_EXACT_RESUME=GREEN"
+          need "ANTIGRAVITY_SANDBOX_REQUESTED=GREEN"
+          need "ANTIGRAVITY_DIRECT_OFFICIAL_WORKER_LOCAL_QUALIFICATION=GREEN"
+          need "A2_FINAL_V2_POST_QUALIFICATION_PRODUCTION=GREEN"
+          need "A2_FINAL_V2_STOP_CLI_RC=0"
+          need "A2_FINAL_V2_STOP_STATE=GREEN"
+          need "A2_FINAL_V2_BLOCKED=PERSIST_LAUNCH"
+          echo A2_RUNTIME_CORE=GREEN
+          echo A2_CORE_FAILURE_CLASS=POST_RESTART_TMP_HELPER_LOSS
+
+      - name: Certify bounded restart and persisted direct auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail(){ printf 'A2_COMPOSITE_BLOCKED=%s\n' "$*"; exit 2; }
+          MP=""
+          for c in "$(command -v multipass 2>/dev/null||true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            [ -z "$c" ] || [ ! -x "$c" ] || { MP="$c"; break; }
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          mpb(){
+            local secs="$1"; shift
+            /usr/bin/python3 - "$secs" "$MP" "$@" <<'PY'
+          import subprocess,sys
+          try:
+              p=subprocess.run([sys.argv[2],*sys.argv[3:]],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=float(sys.argv[1]))
+          except subprocess.TimeoutExpired as e:
+              if e.stdout: sys.stdout.write(e.stdout if isinstance(e.stdout,str) else e.stdout.decode('utf-8','replace'))
+              if e.stderr: sys.stderr.write(e.stderr if isinstance(e.stderr,str) else e.stderr.decode('utf-8','replace'))
+              raise SystemExit(124)
+          sys.stdout.write(p.stdout); sys.stderr.write(p.stderr); raise SystemExit(p.returncode)
+          PY
+          }
+          prod(){
+            local uid="$(id -u)"
+            run(){ local l="$1"; for d in "gui/$uid" "user/$uid" system; do launchctl print "$d/$l" 2>/dev/null|grep -Eq 'state = running|pid = [0-9]+'&&return 0; done; launchctl list 2>/dev/null|awk -v l="$l" '$3==l&&$1~/^[0-9]+$/{ok=1}END{exit ok?0:1}'; }
+            run com.zeroclaw.fall-detector && run com.go2rtc && run com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null|grep -q ':3002' || return 1
+            { lsof -nP -iUDP:5080 2>/dev/null|grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null|grep -q ':5080'; } || return 1
+            mount|grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          prod || fail PRE_PRODUCTION_REGRESSION
+          echo A2_COMPOSITE_PRE_PRODUCTION=GREEN
+
+          if ! mpb 15 info vos-worker|grep -q 'State:[[:space:]]*Running'; then
+            start0=0; mpb 30 start vos-worker >/dev/null 2>&1 || start0=$?; echo "A2_PREP_START_CLI_RC=$start0"
+          fi
+          running=0
+          for _ in $(seq 1 50); do mpb 10 info vos-worker 2>/dev/null|grep -q 'State:[[:space:]]*Running'&&{ running=1;break; }; sleep 2; done
+          [ "$running" = 1 ] || fail PREP_RUNNING_STATE
+          [ "$(mpb 15 exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null||true')" = VOS_FABRIC_G2 ] || fail OWNER_BEFORE
+          [ "$(mpb 15 exec vos-worker -- uname -m)" = x86_64 ] || fail ARCH_BEFORE
+          mpb 15 exec vos-worker -- sh -lc "mount|grep -Eq 'type 9p|fuse\.sshfs|/Users/|/Volumes/' && exit 1 || exit 0" || fail HOST_MOUNT_BEFORE
+
+          stop_rc=0; mpb 25 stop vos-worker >/dev/null 2>&1 || stop_rc=$?
+          echo "A2_COMPOSITE_STOP_CLI_RC=$stop_rc"
+          stopped=0
+          for _ in $(seq 1 35); do mpb 10 info vos-worker 2>/dev/null|grep -q 'State:[[:space:]]*Stopped'&&{ stopped=1;break; }; sleep 2; done
+          [ "$stopped" = 1 ] || fail STOP_STATE
+          prod || fail AFTER_STOP_PRODUCTION_REGRESSION
+          echo A2_COMPOSITE_STOP_STATE=GREEN
+
+          start_rc=0; mpb 30 start vos-worker >/dev/null 2>&1 || start_rc=$?
+          echo "A2_COMPOSITE_START_CLI_RC=$start_rc"
+          running=0
+          for _ in $(seq 1 60); do mpb 10 info vos-worker 2>/dev/null|grep -q 'State:[[:space:]]*Running'&&{ running=1;break; }; sleep 2; done
+          [ "$running" = 1 ] || fail START_STATE
+          echo A2_COMPOSITE_START_STATE=GREEN
+          [ "$(mpb 15 exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null||true')" = VOS_FABRIC_G2 ] || fail OWNER_AFTER
+          mpb 15 exec vos-worker -- sh -lc "mount|grep -Eq 'type 9p|fuse\.sshfs|/Users/|/Volumes/' && exit 1 || exit 0" || fail HOST_MOUNT_AFTER
+          guest_ip="$(mpb 15 exec vos-worker -- hostname -I|awk '{print $1}')" || fail GUEST_IP
+          [ "$guest_ip" = 192.168.64.3 ] || fail "GUEST_IP_$guest_ip"
+
+          PORT=$((28000 + GITHUB_RUN_ID % 6000))
+          PROXY="$RUNNER_TEMP/a2-composite-proxy.py"; PLOG="$RUNNER_TEMP/a2-composite-proxy.log"
+          cat >"$PROXY" <<PY
+          import select,socket,socketserver
+          class H(socketserver.StreamRequestHandler):
+            def handle(self):
+              if self.client_address[0] != "192.168.64.3": return
+              p=self.rfile.readline(8192).decode('ascii','replace').strip().split()
+              if len(p)!=3 or p[0].upper()!='CONNECT' or ':' not in p[1]: return
+              host,ps=p[1].rsplit(':',1)
+              try: port=int(ps)
+              except ValueError: return
+              if port != 443: return
+              while True:
+                x=self.rfile.readline(8192)
+                if x in (b'\r\n',b'\n',b''): break
+              try: up=socket.create_connection((host,port),20)
+              except OSError: return
+              with up:
+                self.wfile.write(b'HTTP/1.1 200 Connection Established\r\n\r\n')
+                up.setblocking(False); self.connection.setblocking(False); socks=[self.connection,up]
+                while True:
+                  r,_,x=select.select(socks,[],socks,90)
+                  if x or not r: return
+                  for src in r:
+                    dst=up if src is self.connection else self.connection
+                    try: data=src.recv(65536)
+                    except OSError: return
+                    if not data: return
+                    try: dst.sendall(data)
+                    except OSError: return
+          class S(socketserver.ThreadingTCPServer): allow_reuse_address=True; daemon_threads=True
+          with S(('192.168.64.1',$PORT),H) as s: print('READY',flush=True); s.serve_forever()
+          PY
+          /usr/bin/python3 "$PROXY" >"$PLOG" 2>&1 & PROXY_PID=$!
+          cleanup(){ kill "$PROXY_PID" >/dev/null 2>&1||true; rm -f "$PROXY" "$PLOG" "$RUNNER_TEMP/a2-auth-persist.sh"; }
+          trap cleanup EXIT INT TERM
+          for _ in 1 2 3 4 5; do grep -q '^READY$' "$PLOG"&&break; sleep 1; done
+          grep -q '^READY$' "$PLOG" || fail PROXY_NOT_READY
+
+          PROBE="$RUNNER_TEMP/a2-auth-persist.sh"
+          cat >"$PROBE" <<'PROBE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export HOME=/home/ubuntu PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
+          HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export HTTPS_PROXY HTTP_PROXY="$HTTPS_PROXY" https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY"
+          S="$HOME/.gemini/antigravity-cli/settings.json"
+          [ -f "$S" ] || { echo A2_AUTH_PERSISTENCE=BLOCKED_AUTH; exit 20; }
+          harden(){
+            python3 - "$S" <<'PY'
+          import json,os,sys
+          p=sys.argv[1]
+          with open(p,encoding='utf-8') as f:d=json.load(f)
+          d.pop('modelProvider',None); d['useG1Credits']=False
+          q=p+'.vos-composite.tmp'
+          with open(q,'w',encoding='utf-8') as f: json.dump(d,f,sort_keys=True,indent=2); f.write('\n')
+          os.chmod(q,0o600); os.replace(q,p)
+          PY
+          }
+          verify(){
+            python3 - "$S" <<'PY'
+          import json,sys
+          with open(sys.argv[1],encoding='utf-8') as f:d=json.load(f)
+          if d.get('useG1Credits') is not False: raise SystemExit(31)
+          if d.get('modelProvider')=='gemini': raise SystemExit(31)
+          PY
+          }
+          harden; verify
+          /home/ubuntu/.local/bin/agy --version | grep -F '1.2.3' >/dev/null
+          timeout -k 10s 60s /home/ubuntu/.local/bin/agy models >/tmp/vos-a2-composite-models.txt 2>&1
+          harden; verify
+          grep -F 'gemini-3.8-flash-high' /tmp/vos-a2-composite-models.txt >/dev/null || exit 32
+          echo A2_AUTH_PERSISTENCE_AFTER_RESTART=GREEN
+          echo A2_ZERO_COST_AFTER_RESTART=GREEN
+          PROBE
+          chmod 700 "$PROBE"
+          mpb 30 transfer "$PROBE" vos-worker:/tmp/vos-a2-auth-persist.sh >/dev/null || fail PROBE_TRANSFER_AFTER_RESTART
+          mpb 15 exec vos-worker -- chmod 700 /tmp/vos-a2-auth-persist.sh || fail PROBE_CHMOD
+          probe_out="$(mpb 90 exec vos-worker -- env VOS_PROXY_PORT="$PORT" /tmp/vos-a2-auth-persist.sh)" || fail AUTH_PERSISTENCE_PROBE
+          printf '%s\n' "$probe_out"
+          printf '%s\n' "$probe_out"|grep -q '^A2_AUTH_PERSISTENCE_AFTER_RESTART=GREEN$' || fail AUTH_MARKER
+          printf '%s\n' "$probe_out"|grep -q '^A2_ZERO_COST_AFTER_RESTART=GREEN$' || fail ZERO_COST_MARKER
+
+          prod || fail POST_RESTART_PRODUCTION_REGRESSION
+          echo A2_COMPOSITE_POST_RESTART_PRODUCTION=GREEN
+          echo A2_RUNTIME_CORE=GREEN
+          echo A2_LIFECYCLE=GREEN
+          echo A2=GREEN
+          echo "A2_QUALIFICATION_REF=A2=GREEN;runtime_run=$CORE_RUN_ID;runtime_job=$CORE_JOB_ID;runtime_head=$CORE_HEAD_SHA;fabric_a2=$FABRIC_A2_SHA;composite_run=$GITHUB_RUN_ID;composite_head=$GITHUB_SHA"
+          echo PAID_API_FALLBACK=0
+          echo ANTIGRAVITY_CREDIT_FALLBACK=0
+          echo PRODUCTION_MUTATIONS=0

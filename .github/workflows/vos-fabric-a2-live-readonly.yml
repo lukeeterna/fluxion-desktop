@@ -1,0 +1,58 @@
+name: VOS Fabric A2 Live Readonly Probe
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a2-antigravity-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a2-live-readonly.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 5
+    steps:
+      - name: Identify failing A2 tool without invoking provider
+        shell: bash
+        run: |
+          set -euo pipefail
+          MP="$(command -v multipass 2>/dev/null || printf '%s' '/Library/Application Support/com.canonical.multipass/bin/multipass')"
+          DIAG="$RUNNER_TEMP/a2_tool_error_diag.py"
+          cat >"$DIAG" <<'PY'
+          import glob,json,os
+          dirs=sorted(glob.glob('/tmp/vos-fabric-a2.*'),key=lambda p:os.path.getmtime(p),reverse=True)
+          if not dirs: print('A2_TOOL_DIAG=NO_RUN'); raise SystemExit(0)
+          first=os.path.join(dirs[0],'first.jsonl')
+          if not os.path.isfile(first): print('A2_TOOL_DIAG=NO_STREAM'); raise SystemExit(0)
+          errors=[]
+          for raw in open(first,encoding='utf-8',errors='replace'):
+              try:e=json.loads(raw)
+              except Exception:continue
+              if e.get('event')!='step_update':continue
+              s=e.get('step_update') or {}
+              if s.get('step_type')!='tool' or s.get('state')!='DONE':continue
+              ti=s.get('tool_info') or {}; err=ti.get('error')
+              if err:
+                  msg=json.dumps(err,sort_keys=True).lower()
+                  cls='OTHER'
+                  if any(x in msg for x in ['permission','approval','review','denied']):cls='PERMISSION'
+                  elif any(x in msg for x in ['workspace','sandbox','outside']):cls='BOUNDARY'
+                  elif any(x in msg for x in ['not found','missing','no such']):cls='NOT_FOUND'
+                  errors.append((str(s.get('tool_name','UNKNOWN')),cls))
+          print('A2_TOOL_ERROR_COUNT='+str(len(errors)))
+          print('A2_TOOL_ERROR_NAMES='+','.join(n for n,_ in errors))
+          print('A2_TOOL_ERROR_CLASSES='+','.join(c for _,c in errors))
+          PY
+          /usr/bin/python3 - "$MP" "$DIAG" <<'PY'
+          import subprocess,sys
+          mp,path=sys.argv[1:]
+          try:p=subprocess.run([mp,'transfer',path,'vos-worker:/tmp/a2_tool_error_diag.py'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=20)
+          except subprocess.TimeoutExpired: print('A2_TOOL_DIAG_TRANSFER=TIMEOUT'); raise SystemExit(0)
+          if p.returncode: print('A2_TOOL_DIAG_TRANSFER=FAIL'); raise SystemExit(0)
+          try:q=subprocess.run([mp,'exec','vos-worker','--','python3','/tmp/a2_tool_error_diag.py'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=20)
+          except subprocess.TimeoutExpired: print('A2_TOOL_DIAG_MP_RC=124'); raise SystemExit(0)
+          print(q.stdout,end=''); print('A2_TOOL_DIAG_MP_RC='+str(q.returncode))
+          PY
