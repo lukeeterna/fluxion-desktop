@@ -25,6 +25,8 @@ jobs:
   repo-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      FABRIC_SHA: 18752fb147f6700d4dc0633a55b9367d00ef0d91
     steps:
       - uses: actions/checkout@v4
       - name: Compile runtime harness
@@ -49,8 +51,52 @@ jobs:
           assert manifest['quota_circumvention'] is False
           assert manifest['production_mutation'] is False
           assert manifest['base_certified_g3_sha'] == '1f16ab2505480adab67b20411cf0b5819179a2b2'
+          text = md.read_text()
+          assert 'PUBLIC only' in text
+          assert 'DIRECT_OFFICIAL' in text
+          assert 'PUBLIC_ONLY' in text
           print('G4_G5_MANDATE_REPO=GREEN')
           PY
+      - name: Verify real Fabric router contract and PUBLIC-only path
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/vos-fabric"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}/components/fabric/router.py" \
+            -o "$RUNNER_TEMP/vos-fabric/router.py"
+          python3 - "$RUNNER_TEMP/vos-fabric" "$FABRIC_SHA" <<'PY'
+          import sys
+          from pathlib import Path
+
+          fabric_dir = Path(sys.argv[1])
+          expected_sha = sys.argv[2]
+          sys.path.insert(0, str(fabric_dir))
+          sys.path.insert(0, str(Path.cwd() / 'tests'))
+
+          import router
+          import vos_fabric_g4_g5_runtime as harness
+
+          assert harness.FABRIC_CERTIFICATION_SHA == expected_sha
+          assert harness.DATA_CLASS == 'PUBLIC'
+          assert harness.DATA_POLICY == 'PUBLIC_ONLY'
+          ref = 'G2=GREEN;run=1;job=2;fabric=' + expected_sha
+          worker, decision_sha = harness.select_worker(router, 'gpt-5.6-terra', ref)
+          assert worker['worker_id'] == 'codex-g2-live'
+          assert worker['kind'] == 'DIRECT_OFFICIAL'
+          assert worker['data_classes'] == ['PUBLIC']
+          assert worker['data_policy'] == 'PUBLIC_ONLY'
+          assert worker['max_cost_usd'] == 0.0
+          assert worker['zero_cost_hard_stop'] is True
+          assert worker['consumer_oauth_proxy'] is False
+          assert len(decision_sha) == 64
+          print('G4_G5_ROUTER_REPO=GREEN')
+          print('G4_G5_DATA_CLASS_REPO=PUBLIC')
+          print('G4_G5_DATA_POLICY_REPO=PUBLIC_ONLY')
+          PY
+          if grep -n -E '["'"']data_class["'"'][[:space:]]*:[[:space:]]*["'"']INTERNAL["'"']' tests/vos_fabric_g4_g5_runtime.py; then
+            echo 'INTERNAL certification workload is forbidden' >&2
+            exit 1
+          fi
       - name: Verify no paid-key fallback in certification code
         run: |
           set -euo pipefail
