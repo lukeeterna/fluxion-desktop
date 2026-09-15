@@ -102,9 +102,6 @@ jobs:
           done
           [ -n "$MP" ] || fail MULTIPASS_MISSING
 
-          # Bound every host-side Multipass client call. The guest command may have
-          # completed even if the macOS multipass client fails to return; long-lived
-          # A2 work therefore runs as a guest systemd transient unit and writes an RC.
           mpb(){
             local secs="$1"; shift
             /usr/bin/python3 - "$secs" "$MP" "$@" <<'PY'
@@ -125,13 +122,8 @@ jobs:
           mpb 15 info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
           owner="$(mpb 15 exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null||true')" || fail OWNER_READ
           [ "$owner" = VOS_FABRIC_G2 ] || fail OWNER
-          if ! mpb 15 info vos-worker | grep -q 'State:[[:space:]]*Running'; then
-            mpb 30 start vos-worker >/dev/null 2>&1 || true
-          fi
-          for _ in $(seq 1 30); do
-            if mpb 10 info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running'; then break; fi
-            sleep 2
-          done
+          if ! mpb 15 info vos-worker | grep -q 'State:[[:space:]]*Running'; then mpb 30 start vos-worker >/dev/null 2>&1 || true; fi
+          for _ in $(seq 1 30); do mpb 10 info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running' && break; sleep 2; done
           mpb 10 info vos-worker | grep -q 'State:[[:space:]]*Running' || fail VM_NOT_RUNNING
           [ "$(mpb 15 exec vos-worker -- uname -m)" = x86_64 ] || fail GUEST_ARCH
           guest_ip="$(mpb 15 exec vos-worker -- hostname -I | awk '{print $1}')" || fail GUEST_IP_READ
@@ -141,13 +133,7 @@ jobs:
 
           prod(){
             uid="$(id -u)"
-            run(){
-              l="$1"
-              for d in "gui/$uid" "user/$uid" system; do
-                launchctl print "$d/$l" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0
-              done
-              launchctl list 2>/dev/null | awk -v l="$l" '$3==l&&$1~/^[0-9]+$/{ok=1}END{exit ok?0:1}'
-            }
+            run(){ l="$1"; for d in "gui/$uid" "user/$uid" system; do launchctl print "$d/$l" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0; done; launchctl list 2>/dev/null | awk -v l="$l" '$3==l&&$1~/^[0-9]+$/{ok=1}END{exit ok?0:1}'; }
             run com.zeroclaw.fall-detector && run com.go2rtc && run com.mosquitto.broker || return 1
             curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
             lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
@@ -157,34 +143,33 @@ jobs:
 
           prod || fail PRE_PRODUCTION_REGRESSION
           echo A2_PRE_PRODUCTION=GREEN
-
           mpb 30 transfer /tmp/vos-a2-gate.sh vos-worker:/tmp/vos-a2-gate.sh >/dev/null || fail GATE_TRANSFER
           mpb 30 transfer /tmp/vos-a2-package.tar.gz vos-worker:/tmp/vos-a2-package.tar.gz >/dev/null || fail PACKAGE_TRANSFER
 
           pid=''
-          cleanup(){
-            [ -z "$pid" ] || kill "$pid" >/dev/null 2>&1 || true
-            rm -f /tmp/vos-a2-runtime-proxy.py /tmp/vos-a2-runtime-proxy.log /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh /tmp/vos-a2-gate.sh /tmp/vos-a2-package.tar.gz
-          }
+          cleanup(){ [ -z "$pid" ] || kill "$pid" >/dev/null 2>&1 || true; rm -f /tmp/vos-a2-runtime-proxy.py /tmp/vos-a2-runtime-proxy.log /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh /tmp/vos-a2-systemd-smoke.sh /tmp/vos-a2-gate.sh /tmp/vos-a2-package.tar.gz; }
           trap cleanup EXIT INT TERM
           VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-a2-runtime-proxy.py >/tmp/vos-a2-runtime-proxy.log 2>&1 & pid=$!
           for _ in 1 2 3 4 5; do grep -q '^READY$' /tmp/vos-a2-runtime-proxy.log 2>/dev/null && break; sleep 1; done
           grep -q '^READY$' /tmp/vos-a2-runtime-proxy.log || fail PROXY_NOT_READY
+
+          cat >/tmp/vos-a2-systemd-smoke.sh <<'SMOKE'
+          #!/usr/bin/env bash
+          printf '0\n' >/tmp/vos-a2-systemd-smoke.rc.tmp
+          mv /tmp/vos-a2-systemd-smoke.rc.tmp /tmp/vos-a2-systemd-smoke.rc
+          SMOKE
+          chmod 700 /tmp/vos-a2-systemd-smoke.sh
 
           cat >/tmp/vos-a2-runtime-guest.sh <<'GUEST'
           #!/usr/bin/env bash
           set -euo pipefail
           export LC_ALL=C LANG=C
           : "${VOS_PROXY_PORT:?}" "${AGY_VERSION:?}"
-          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
-          export HTTP_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" HTTP_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
           export https_proxy="$HTTPS_PROXY" http_proxy="$HTTP_PROXY"
           export PATH="$HOME/.local/bin:$PATH"
           if ! test -x "$HOME/.local/bin/agy"; then
-            t="$(mktemp -d -t agy.XXXXXX)"
-            tar -xzf /tmp/vos-a2-package.tar.gz -C "$t"
-            install -m0755 "$t/antigravity" "$HOME/.local/bin/agy"
-            rm -rf "$t"
+            t="$(mktemp -d -t agy.XXXXXX)"; tar -xzf /tmp/vos-a2-package.tar.gz -C "$t"; install -m0755 "$t/antigravity" "$HOME/.local/bin/agy"; rm -rf "$t"
           fi
           agy --version | grep -F "$AGY_VERSION" >/dev/null || { echo A2=VERSION_MISMATCH; exit 2; }
           settings="$HOME/.gemini/antigravity-cli/settings.json"
@@ -196,15 +181,11 @@ jobs:
           if d.get('useG1Credits') is not False: raise SystemExit('credit fallback not disabled')
           if d.get('modelProvider')=='gemini': raise SystemExit('Gemini API provider forbidden')
           PY
-          models="$(timeout 60s agy models 2>/dev/null)" || { echo A2=BLOCKED_AUTH_OR_MODELS_TIMEOUT; exit 20; }
+          models="$(timeout -k 10s 60s agy models 2>/dev/null)" || { echo A2=BLOCKED_AUTH_OR_MODELS_TIMEOUT; exit 20; }
           model="$(printf '%s\n' "$models" | awk 'NF&&$1!~/^MODEL|^NAME|^-+$/{print $1;exit}')"
           [ -n "$model" ] || { echo A2=MODEL_LIST_EMPTY; exit 2; }
           chmod 755 /tmp/vos-a2-gate.sh
-          timeout 480s env \
-            VOS_AGY_MODEL="$model" \
-            VOS_AGY_ZERO_COST_EVIDENCE_REF=firstparty:antigravity-individual-zero-dollar:2026-09-15 \
-            VOS_AGY_TURN_TIMEOUT_SECONDS=180 \
-            /tmp/vos-a2-gate.sh qualify
+          timeout -k 15s 480s env VOS_AGY_MODEL="$model" VOS_AGY_ZERO_COST_EVIDENCE_REF=firstparty:antigravity-individual-zero-dollar:2026-09-15 VOS_AGY_TURN_TIMEOUT_SECONDS=180 /tmp/vos-a2-gate.sh qualify
           GUEST
           chmod 700 /tmp/vos-a2-runtime-guest.sh
 
@@ -213,8 +194,7 @@ jobs:
           set +e
           export HOME=/home/ubuntu
           export PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-          export VOS_PROXY_PORT="$VOS_PROXY_PORT"
-          export AGY_VERSION="$AGY_VERSION"
+          export VOS_PROXY_PORT="$VOS_PROXY_PORT" AGY_VERSION="$AGY_VERSION"
           /tmp/vos-a2-runtime-guest.sh >/tmp/vos-a2-runtime.result 2>&1
           rc=\$?
           printf '%s\n' "\$rc" >/tmp/vos-a2-runtime.rc.tmp
@@ -228,11 +208,9 @@ jobs:
           set +e
           export HOME=/home/ubuntu
           export PATH=/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin
-          export HTTPS_PROXY="http://192.168.64.1:$VOS_PROXY_PORT"
-          export HTTP_PROXY="http://192.168.64.1:$VOS_PROXY_PORT"
-          export https_proxy="\$HTTPS_PROXY" http_proxy="\$HTTP_PROXY"
-          export SSH_CONNECTION='127.0.0.1 22000 127.0.0.1 22'
-          timeout 60s /home/ubuntu/.local/bin/agy models >/tmp/vos-a2-persist.result 2>&1
+          export HTTPS_PROXY="http://192.168.64.1:$VOS_PROXY_PORT" HTTP_PROXY="http://192.168.64.1:$VOS_PROXY_PORT"
+          export https_proxy="\$HTTPS_PROXY" http_proxy="\$HTTP_PROXY" SSH_CONNECTION='127.0.0.1 22000 127.0.0.1 22'
+          timeout -k 10s 60s /home/ubuntu/.local/bin/agy models >/tmp/vos-a2-persist.result 2>&1
           rc=\$?
           printf '%s\n' "\$rc" >/tmp/vos-a2-persist.rc.tmp
           mv /tmp/vos-a2-persist.rc.tmp /tmp/vos-a2-persist.rc
@@ -240,15 +218,35 @@ jobs:
           UNIT
           chmod 700 /tmp/vos-a2-persist-unit.sh
 
+          mpb 30 transfer /tmp/vos-a2-systemd-smoke.sh vos-worker:/tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_TRANSFER
           mpb 30 transfer /tmp/vos-a2-runtime-guest.sh vos-worker:/tmp/vos-a2-runtime-guest.sh >/dev/null || fail GUEST_TRANSFER
           mpb 30 transfer /tmp/vos-a2-runtime-unit.sh vos-worker:/tmp/vos-a2-runtime-unit.sh >/dev/null || fail UNIT_TRANSFER
           mpb 30 transfer /tmp/vos-a2-persist-unit.sh vos-worker:/tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_TRANSFER
-          mpb 15 exec vos-worker -- chmod 700 /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh || fail GUEST_CHMOD
+          mpb 15 exec vos-worker -- chmod 700 /tmp/vos-a2-systemd-smoke.sh /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh || fail GUEST_CHMOD
+
+          # Prove the detached systemd execution mechanism before spending a model turn.
+          mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-systemd-smoke.rc*; sudo systemctl stop vos-a2-systemd-smoke.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-systemd-smoke.service >/dev/null 2>&1 || true' || fail SMOKE_RESET
+          mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-systemd-smoke --property=Type=exec --property=User=ubuntu -- /tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_LAUNCH
+          smoke=''
+          for _ in $(seq 1 10); do smoke="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-systemd-smoke.rc 2>/dev/null || true' || true)"; [ -n "$smoke" ] && break; sleep 1; done
+          if [ "$smoke" != 0 ]; then
+            mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-systemd-smoke.service 2>/dev/null || true
+            fail SYSTEMD_DETACH_SMOKE_FAILED
+          fi
+          echo A2_SYSTEMD_DETACH_SMOKE=GREEN
+
           mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.rc.tmp /tmp/vos-a2-runtime.result; sudo systemctl stop vos-a2-runtime.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-runtime.service >/dev/null 2>&1 || true' || fail QUALIFIER_RESET
-          mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-runtime --collect --property=User=ubuntu -- /tmp/vos-a2-runtime-unit.sh >/dev/null || fail QUALIFIER_LAUNCH
+          mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-runtime --property=Type=exec --property=User=ubuntu -- /tmp/vos-a2-runtime-unit.sh >/dev/null || fail QUALIFIER_LAUNCH
+          sleep 2
+          unit_state="$(mpb 10 exec vos-worker -- sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainStatus 2>/dev/null || true)"
+          printf '%s\n' "$unit_state" | sed 's/^/A2_QUALIFIER_UNIT_/'
+          if printf '%s\n' "$unit_state" | grep -q '^ActiveState=failed$'; then
+            mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-runtime.service 2>/dev/null || true
+            fail QUALIFIER_UNIT_FAILED_EARLY
+          fi
 
           grc=''
-          for _ in $(seq 1 200); do
+          for _ in $(seq 1 180); do
             poll_rc=0
             candidate="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-runtime.rc 2>/dev/null || true')" || poll_rc=$?
             if [ "$poll_rc" -eq 124 ]; then sleep 3; continue; fi
@@ -257,8 +255,8 @@ jobs:
             sleep 3
           done
           [ -n "$grc" ] || {
-            mpb 10 exec vos-worker -- sudo systemctl --no-pager --full status vos-a2-runtime.service 2>/dev/null || true
-            fail QUALIFIER_NO_RESULT_AFTER_600S
+            mpb 10 exec vos-worker -- sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
+            fail QUALIFIER_NO_RESULT_AFTER_540S
           }
           case "$grc" in ''|*[!0-9]*) fail "QUALIFIER_BAD_RC_$grc";; esac
           qout="$(mpb 15 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-runtime.result 2>/dev/null || true')" || fail QUALIFIER_RESULT_READ
@@ -271,39 +269,26 @@ jobs:
           printf '%s\n' "$qout" | grep -q '^ANTIGRAVITY_EXACT_RESUME=GREEN$' || fail RESUME_GREEN_MARKER_MISSING
           printf '%s\n' "$qout" | grep -q '^ANTIGRAVITY_WORKSPACE_TOOL_EXECUTION=GREEN$' || fail TOOL_GREEN_MARKER_MISSING
 
-          stop_cli_rc=0
-          mpb 25 stop vos-worker >/dev/null 2>&1 || stop_cli_rc=$?
-          echo "A2_STOP_CLI_RC=$stop_cli_rc"
+          stop_cli_rc=0; mpb 25 stop vos-worker >/dev/null 2>&1 || stop_cli_rc=$?; echo "A2_STOP_CLI_RC=$stop_cli_rc"
           stopped=0
-          for _ in $(seq 1 30); do
-            state="$(mpb 10 info vos-worker 2>/dev/null || true)"
-            if printf '%s\n' "$state" | grep -q 'State:[[:space:]]*Stopped'; then stopped=1; break; fi
-            sleep 2
-          done
+          for _ in $(seq 1 30); do state="$(mpb 10 info vos-worker 2>/dev/null || true)"; if printf '%s\n' "$state" | grep -q 'State:[[:space:]]*Stopped'; then stopped=1; break; fi; sleep 2; done
           [ "$stopped" -eq 1 ] || fail VM_STOP_STATE_NOT_REACHED
           prod || fail AFTER_STOP_REGRESSION
           echo A2_STOP_STATE=GREEN
 
-          start_cli_rc=0
-          mpb 30 start vos-worker >/dev/null 2>&1 || start_cli_rc=$?
-          echo "A2_START_CLI_RC=$start_cli_rc"
+          start_cli_rc=0; mpb 30 start vos-worker >/dev/null 2>&1 || start_cli_rc=$?; echo "A2_START_CLI_RC=$start_cli_rc"
           running=0
-          for _ in $(seq 1 45); do
-            state="$(mpb 10 info vos-worker 2>/dev/null || true)"
-            if printf '%s\n' "$state" | grep -q 'State:[[:space:]]*Running'; then running=1; break; fi
-            sleep 2
-          done
+          for _ in $(seq 1 45); do state="$(mpb 10 info vos-worker 2>/dev/null || true)"; if printf '%s\n' "$state" | grep -q 'State:[[:space:]]*Running'; then running=1; break; fi; sleep 2; done
           [ "$running" -eq 1 ] || fail VM_START_STATE_NOT_REACHED
           owner_after="$(mpb 15 exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null||true')" || fail OWNER_AFTER_READ
           [ "$owner_after" = VOS_FABRIC_G2 ] || fail OWNER_AFTER
           mpb 15 exec vos-worker -- sh -lc "mount | grep -Eq 'type 9p|fuse\.sshfs|/Users/|/Volumes/' && exit 1 || exit 0" || fail HOST_MOUNT_AFTER_RESTART
 
           mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-persist.rc /tmp/vos-a2-persist.rc.tmp /tmp/vos-a2-persist.result; sudo systemctl stop vos-a2-persist.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-persist.service >/dev/null 2>&1 || true' || fail PERSIST_RESET
-          mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-persist --collect --property=User=ubuntu -- /tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_LAUNCH
+          mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-persist --property=Type=exec --property=User=ubuntu -- /tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_LAUNCH
           prc=''
           for _ in $(seq 1 40); do
-            poll_rc=0
-            candidate="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-persist.rc 2>/dev/null || true')" || poll_rc=$?
+            poll_rc=0; candidate="$(mpb 10 exec vos-worker -- sh -lc 'cat /tmp/vos-a2-persist.rc 2>/dev/null || true')" || poll_rc=$?
             if [ "$poll_rc" -eq 124 ]; then sleep 3; continue; fi
             [ "$poll_rc" -eq 0 ] || fail "PERSIST_POLL_RC_$poll_rc"
             if [ -n "$candidate" ]; then prc="$candidate"; break; fi
@@ -326,3 +311,56 @@ jobs:
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac "env VOS_PROXY_PORT='$PROXY_PORT' FABRIC_A2_SHA='$FABRIC_A2_SHA' AGY_VERSION='$AGY_VERSION' bash /tmp/vos-a2-runtime-host.sh" || rc=$?
           ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'rm -f /tmp/vos-a2-runtime-host.sh' || true
           exit "$rc"
+
+      - name: Collect sanitized A2 terminal evidence
+        if: always()
+        shell: bash
+        run: |
+          set -u
+          OUT="$RUNNER_TEMP/a2-terminal-evidence.txt"
+          {
+            echo "RUN_ID=$GITHUB_RUN_ID"
+            echo "HEAD_SHA=$GITHUB_SHA"
+            echo "FABRIC_A2_SHA=$FABRIC_A2_SHA"
+            ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'bash -s' <<'REMOTE'
+          set -u
+          MP=""
+          for c in "$(command -v multipass 2>/dev/null||true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do [ -z "$c" ] || [ ! -x "$c" ] || { MP="$c"; break; }; done
+          [ -n "$MP" ] || { echo DIAG_MULTIPASS_MISSING; exit 0; }
+          /usr/bin/python3 - "$MP" <<'PY'
+          import subprocess,sys
+          mp=sys.argv[1]
+          script=r'''
+          for f in /tmp/vos-a2-systemd-smoke.rc /tmp/vos-a2-runtime.rc /tmp/vos-a2-runtime.result /tmp/vos-a2-persist.rc; do
+            if [ -f "$f" ]; then
+              echo "=== $f ==="
+              cat "$f"
+            else
+              echo "=== $f MISSING ==="
+            fi
+          done
+          echo '=== runtime unit ==='
+          sudo systemctl show vos-a2-runtime.service -p ActiveState -p SubState -p Result -p ExecMainCode -p ExecMainStatus 2>/dev/null || true
+          echo '=== smoke unit ==='
+          sudo systemctl show vos-a2-systemd-smoke.service -p ActiveState -p SubState -p Result -p ExecMainStatus 2>/dev/null || true
+          '''
+          try:
+              p=subprocess.run([mp,'exec','vos-worker','--','sh','-lc',script],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,timeout=15)
+              sys.stdout.write(p.stdout)
+              if p.stderr: sys.stderr.write(p.stderr)
+              print('DIAG_MP_RC='+str(p.returncode))
+          except subprocess.TimeoutExpired:
+              print('DIAG_MP_RC=124')
+          PY
+          REMOTE
+          } >"$OUT" 2>&1 || true
+          cat "$OUT"
+
+      - name: Upload sanitized A2 terminal evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: a2-terminal-evidence-${{ github.run_id }}
+          path: ${{ runner.temp }}/a2-terminal-evidence.txt
+          if-no-files-found: warn
+          retention-days: 7
