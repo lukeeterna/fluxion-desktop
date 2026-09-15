@@ -1,0 +1,239 @@
+name: VOS Fabric A2 Antigravity Runtime v2
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a2-antigravity-*"
+    paths:
+      - ".github/workflows/vos-fabric-a2-antigravity-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-a2-antigravity
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 35
+    env:
+      FABRIC_A2_SHA: 9e7b2ecaea8541a10b1d1bd818aee262b17ba376
+      AGY_VERSION: 1.2.3
+      AGY_PACKAGE_URL: https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.3-5101874907578368/linux-x64/cli_linux_x64.tar.gz
+    steps:
+      - name: Download exact official Antigravity package on runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          PKG="$RUNNER_TEMP/cli_linux_x64-${AGY_VERSION}.tar.gz"
+          curl -fL --retry 5 --retry-all-errors --retry-delay 2 "$AGY_PACKAGE_URL" -o "$PKG"
+          tar -tzf "$PKG" >/dev/null
+          echo "ANTIGRAVITY_PACKAGE_SHA256=$(shasum -a 256 "$PKG" | awk '{print $1}')"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PKG" imac:/tmp/vos-a2-antigravity-package.tar.gz
+
+      - name: Qualify exact A2 worker with host-transferred package
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROXY_PORT=$((24000 + GITHUB_RUN_ID % 12000))
+          GATE="$RUNNER_TEMP/antigravity-worker-gate-${FABRIC_A2_SHA}.sh"
+          curl -fsSL --retry 3 --retry-delay 2 \
+            "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_A2_SHA}/tools/fabric/antigravity_worker_gate.sh" \
+            -o "$GATE"
+          bash -n "$GATE"
+          GATE_SHA="$(shasum -a 256 "$GATE" | awk '{print $1}')"
+          chmod 755 "$GATE"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$GATE" imac:/tmp/vos-a2-antigravity-gate.sh
+
+          PROXY="$RUNNER_TEMP/vos-a2-proxy-${GITHUB_RUN_ID}.py"
+          cat > "$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import os, select, socket, socketserver
+          BIND=("192.168.64.1",int(os.environ["VOS_PROXY_PORT"])); ALLOWED_SOURCE="192.168.64.3"
+          class Handler(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0] != ALLOWED_SOURCE: return
+                  self.connection.settimeout(30)
+                  parts=self.rfile.readline(8192).decode("ascii","replace").strip().split()
+                  if len(parts)!=3 or parts[0].upper()!="CONNECT":
+                      self.wfile.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n"); return
+                  target=parts[1]
+                  if ":" not in target: return
+                  host,port_s=target.rsplit(":",1)
+                  try: port=int(port_s)
+                  except ValueError: return
+                  if port!=443:
+                      self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n"); return
+                  while True:
+                      h=self.rfile.readline(8192)
+                      if h in (b"\r\n",b"\n",b""): break
+                  try: upstream=socket.create_connection((host,port),timeout=20)
+                  except OSError:
+                      self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n"); return
+                  with upstream:
+                      upstream.setblocking(False); self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      socks=[self.connection,upstream]
+                      while True:
+                          readable,_,exceptional=select.select(socks,[],socks,120)
+                          if exceptional or not readable: return
+                          for src in readable:
+                              dst=upstream if src is self.connection else self.connection
+                              try: data=src.recv(65536)
+                              except OSError: return
+                              if not data: return
+                              try: dst.sendall(data)
+                              except OSError: return
+          class Server(socketserver.ThreadingTCPServer):
+              allow_reuse_address=True; daemon_threads=True
+          with Server(BIND,Handler) as s:
+              print(f"READY={BIND[0]}:{BIND[1]}",flush=True); s.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-a2-proxy.py
+
+          HOST="$RUNNER_TEMP/vos-a2-v2-host-${GITHUB_RUN_ID}.sh"
+          cat > "$HOST" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}" "${FABRIC_A2_SHA:?}" "${GATE_SHA:?}" "${AGY_VERSION:?}"
+          fail(){ printf 'A2_RUNTIME_BLOCKED=%s\n' "$*"; exit 2; }
+          pass(){ printf 'PASS %-32s %s\n' "$1" "${2:-}"; }
+          MP=""
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$c" ] && [ -x "$c" ]; then MP="$c"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          owner="$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')"
+          [ "$owner" = VOS_FABRIC_G2 ] || fail "VOS_WORKER_OWNER=$owner"
+          if ! "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running'; then "$MP" start vos-worker; fi
+          [ "$($MP exec vos-worker -- uname -m)" = x86_64 ] || fail GUEST_ARCH
+          ifconfig bridge100 | grep -q 'inet 192\.168\.64\.1 ' || fail BRIDGE100
+
+          production_green(){
+            uid="$(id -u)"
+            running(){
+              l="$1"; for d in "gui/$uid" "user/$uid" system; do launchctl print "$d/$l" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0; done
+              launchctl list 2>/dev/null | awk -v l="$l" '$3==l && $1~/^[0-9]+$/{ok=1} END{exit ok?0:1}'
+            }
+            running com.zeroclaw.fall-detector || return 1
+            running com.go2rtc || return 1
+            running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            { lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; } || return 1
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION "Guardian/FLUXION/NAS green"
+
+          [ -s /tmp/vos-a2-antigravity-package.tar.gz ] || fail PACKAGE_MISSING
+          [ -s /tmp/vos-a2-antigravity-gate.sh ] || fail GATE_MISSING
+          "$MP" transfer /tmp/vos-a2-antigravity-package.tar.gz vos-worker:/tmp/vos-a2-antigravity-package.tar.gz
+          "$MP" transfer /tmp/vos-a2-antigravity-gate.sh vos-worker:/tmp/vos-a2-antigravity-gate.sh
+          [ "$($MP exec vos-worker -- sha256sum /tmp/vos-a2-antigravity-gate.sh | awk '{print $1}')" = "$GATE_SHA" ] || fail GATE_SHA_MISMATCH
+          pass FABRIC_A2_GATE "fabric_sha=$FABRIC_A2_SHA"
+
+          proxy_pid=""
+          cleanup(){
+            [ -z "$proxy_pid" ] || kill "$proxy_pid" >/dev/null 2>&1 || true
+            rm -f /tmp/vos-a2-antigravity-package.tar.gz /tmp/vos-a2-antigravity-gate.sh /tmp/vos-a2-proxy.py /tmp/vos-a2-proxy.log /tmp/vos-a2-v2-guest.sh
+          }
+          trap cleanup EXIT INT TERM
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-a2-proxy.py >/tmp/vos-a2-proxy.log 2>&1 & proxy_pid=$!
+          for _ in 1 2 3 4 5; do grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-a2-proxy.log 2>/dev/null && break; sleep 1; done
+          grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-a2-proxy.log || fail PROXY_NOT_READY
+          pass EPHEMERAL_PROXY "source=192.168.64.3 CONNECT:443 only"
+
+          cat >/tmp/vos-a2-v2-guest.sh <<'GUEST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}" "${AGY_VERSION:?}"
+          export HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" HTTP_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}"
+          export https_proxy="$HTTPS_PROXY" http_proxy="$HTTPS_PROXY"
+          export PATH="$HOME/.local/bin:$PATH"
+
+          pkg=/tmp/vos-a2-antigravity-package.tar.gz
+          echo "ANTIGRAVITY_PACKAGE_SHA256=$(sha256sum "$pkg"|awk '{print $1}')"
+          tmp="$(mktemp -d -t agy-package.XXXXXX)"; trap 'rm -rf "$tmp"' EXIT
+          tar -xzf "$pkg" -C "$tmp"
+          candidate="$(find "$tmp" -type f -name agy -perm -u+x | head -1)"
+          if [ -z "$candidate" ]; then candidate="$(find "$tmp" -type f -name agy | head -1)"; fi
+          [ -n "$candidate" ] || { echo 'A2_GUEST_BLOCKED=AGY_BINARY_NOT_FOUND_IN_OFFICIAL_PACKAGE'; exit 2; }
+          mkdir -p "$HOME/.local/bin"
+          install -m 0755 "$candidate" "$HOME/.local/bin/agy"
+          [ "$(agy --version | head -1)" = "Antigravity CLI $AGY_VERSION" ] || { agy --version; echo 'A2_GUEST_BLOCKED=VERSION_MISMATCH'; exit 2; }
+          echo "ANTIGRAVITY_VERSION=$(agy --version | head -1)"
+          echo "ANTIGRAVITY_BINARY_SHA256=$(sha256sum "$HOME/.local/bin/agy"|awk '{print $1}')"
+
+          settings="$HOME/.gemini/antigravity-cli/settings.json"
+          mkdir -p "$(dirname "$settings")"
+          python3 - "$settings" <<'PY'
+          import json,os,sys
+          p=sys.argv[1]; data={}
+          if os.path.exists(p):
+              with open(p,encoding='utf-8') as f: data=json.load(f)
+          data['useG1Credits']=False
+          tmp=p+'.tmp'
+          with open(tmp,'w',encoding='utf-8') as f: json.dump(data,f,sort_keys=True,indent=2); f.write('\n')
+          os.chmod(tmp,0o600); os.replace(tmp,p)
+          PY
+          echo "ANTIGRAVITY_SETTINGS_SHA256=$(sha256sum "$settings"|awk '{print $1}')"
+          echo 'ANTIGRAVITY_CREDIT_FALLBACK=0'
+
+          out="$(mktemp)"; err="$(mktemp)"; rc=0
+          timeout 90s agy -p 'Reply exactly: VOS_A2_AUTH_PROBE=OK' --output-format json --sandbox --print-timeout 60s >"$out" 2>"$err" || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            if cat "$out" "$err" | grep -Eqi 'authentication required|sign[ -]?in|required.*auth|unauthorized'; then
+              echo 'A2=BLOCKED_AUTH'
+              echo "A2_AUTH_PROBE_STDOUT_SHA256=$(sha256sum "$out"|awk '{print $1}')"
+              echo "A2_AUTH_PROBE_STDERR_SHA256=$(sha256sum "$err"|awk '{print $1}')"
+              rm -f "$out" "$err"; exit 20
+            fi
+            echo "A2_AUTH_PROBE_RC=$rc"; cat "$err" >&2; rm -f "$out" "$err"; exit 2
+          fi
+          echo "A2_AUTH_PROBE_SHA256=$(sha256sum "$out"|awk '{print $1}')"; rm -f "$out" "$err"
+          echo 'ANTIGRAVITY_DIRECT_AUTH=GREEN'
+
+          models="$(agy models 2>/dev/null)"; [ -n "$models" ] || { echo 'A2_GUEST_BLOCKED=MODEL_LIST_EMPTY'; exit 2; }
+          model="$(printf '%s\n' "$models" | awk 'NF && $1 !~ /^MODEL|^NAME|^-+$/ {print $1;exit}')"
+          [ -n "$model" ] || { echo 'A2_GUEST_BLOCKED=MODEL_SLUG_NOT_RESOLVED'; exit 2; }
+          echo "ANTIGRAVITY_MODEL_SELECTED=$model"
+          VOS_AGY_MODEL="$model" VOS_AGY_ZERO_COST_EVIDENCE_REF="firstparty:antigravity-individual-zero-dollar:2026-09-15" /tmp/vos-a2-antigravity-gate.sh qualify
+          echo 'A2_LOCAL_QUALIFICATION=GREEN'
+          GUEST
+          chmod 700 /tmp/vos-a2-v2-guest.sh
+          "$MP" transfer /tmp/vos-a2-v2-guest.sh vos-worker:/tmp/vos-a2-v2-guest.sh
+          "$MP" exec vos-worker -- chmod 700 /tmp/vos-a2-v2-guest.sh
+          guest_rc=0
+          "$MP" exec vos-worker -- env VOS_PROXY_PORT="$VOS_PROXY_PORT" AGY_VERSION="$AGY_VERSION" /tmp/vos-a2-v2-guest.sh || guest_rc=$?
+          production_green || fail POST_GUEST_PRODUCTION_REGRESSION
+          pass POST_GUEST_PRODUCTION "Guardian/FLUXION/NAS green"
+          if [ "$guest_rc" -eq 20 ]; then echo 'A2=BLOCKED_AUTH'; echo 'A2_NEXT_ACTION=ONE_TIME_DIRECT_GOOGLE_AUTH_INSIDE_VOS_WORKER'; exit 20; fi
+          [ "$guest_rc" -eq 0 ] || fail "GUEST_RC_$guest_rc"
+
+          "$MP" stop vos-worker
+          "$MP" info vos-worker | grep -q 'State:[[:space:]]*Stopped' || fail VM_STOP
+          production_green || fail PRODUCTION_AFTER_VM_STOP
+          "$MP" start vos-worker
+          for _ in $(seq 1 30); do "$MP" info vos-worker 2>/dev/null|grep -q 'State:[[:space:]]*Running' && break; sleep 2; done
+          "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running' || fail VM_RESTART
+          "$MP" exec vos-worker -- env HTTPS_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" HTTP_PROXY="http://192.168.64.1:${VOS_PROXY_PORT}" PATH="/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" timeout 60s agy models >/dev/null 2>&1 || fail AUTH_AFTER_RESTART
+          production_green || fail POST_RESTART_PRODUCTION_REGRESSION
+          echo 'A2=GREEN'
+          echo 'PRODUCTION_MUTATIONS=0'
+          echo 'PAID_API_FALLBACK=0'
+          echo 'ANTIGRAVITY_CREDIT_FALLBACK=0'
+          REMOTE
+          chmod 700 "$HOST"
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-a2-v2-host.sh
+          rc=0
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac "env VOS_PROXY_PORT='$PROXY_PORT' FABRIC_A2_SHA='$FABRIC_A2_SHA' GATE_SHA='$GATE_SHA' AGY_VERSION='$AGY_VERSION' bash /tmp/vos-a2-v2-host.sh" || rc=$?
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac 'rm -f /tmp/vos-a2-v2-host.sh' || true
+          exit "$rc"
