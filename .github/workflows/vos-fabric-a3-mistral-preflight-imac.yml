@@ -1,0 +1,156 @@
+name: VOS Fabric A3 Mistral Preflight iMac
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a3-mistral-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a3-mistral-preflight-imac.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-a3-mistral-preflight-imac
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 10
+    steps:
+      - name: Inspect isolated worker without inference
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail(){ printf 'A3_PREFLIGHT_BLOCKED=%s\n' "$*"; exit 2; }
+          bounded(){
+            local seconds="$1"; shift
+            /usr/bin/python3 - "$seconds" "$@" <<'PY'
+          import subprocess,sys
+          secs=float(sys.argv[1]); cmd=sys.argv[2:]
+          try:
+              p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=secs)
+          except subprocess.TimeoutExpired as exc:
+              out=exc.stdout or ''
+              if isinstance(out,bytes): out=out.decode('utf-8','replace')
+              if out: print(out,end='')
+              raise SystemExit(124)
+          if p.stdout: print(p.stdout,end='')
+          raise SystemExit(p.returncode)
+          PY
+          }
+          production_green(){
+            uid="$(id -u)"
+            launch_running(){
+              label="$1"
+              for domain in "gui/$uid" "user/$uid" system; do
+                launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0
+              done
+              launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+            }
+            launch_running com.zeroclaw.fall-detector && launch_running com.go2rtc && launch_running com.mosquitto.broker && \
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && \
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && \
+            { lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; } && \
+            mount | grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          echo A3_PRE_PRODUCTION=GREEN
+
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          bounded 15 "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          if ! bounded 15 "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running'; then bounded 35 "$MP" start vos-worker >/dev/null 2>&1 || true; fi
+          for _ in 1 2 3 4 5 6 7 8 9 10; do bounded 10 "$MP" info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running' && break; sleep 2; done
+          bounded 10 "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running' || fail VOS_WORKER_NOT_RUNNING
+          guest_ip="$(bounded 20 "$MP" exec vos-worker -- sh -c "hostname -I | awk '{print \$1}'" | tail -1)"
+          [ "$(bounded 20 "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' | tail -1)" = VOS_FABRIC_G2 ] || fail VOS_WORKER_OWNER
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT
+          echo "A3_WORKER_BOUNDARY=GREEN guest=$guest_ip"
+
+          GUEST="$RUNNER_TEMP/vos-a3-mistral-guest-${GITHUB_RUN_ID}.sh"
+          cat >"$GUEST" <<'GUEST'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          echo A3_INFERENCE_CALLS=0
+          echo A3_MAX_COST_USD=0
+          echo A3_PAID_API_FALLBACK=0
+          echo A3_DATA_CLASS=PUBLIC
+          echo "A3_PYTHON=$(python3 --version 2>&1 || true)"
+          if command -v uv >/dev/null 2>&1; then echo "A3_UV=$(uv --version 2>&1 | head -1)"; else echo A3_UV=MISSING; fi
+          VIBE="$(command -v vibe 2>/dev/null || true)"
+          if [ -z "$VIBE" ]; then
+            echo A3_VIBE_PRESENT=0
+            echo A3_AUTH_LOCAL_STATE=UNKNOWN
+            echo A3_ACCOUNT_PLAN=UNKNOWN
+            echo A3_PAYG_OFF_PROVEN=0
+            echo A3_PREFLIGHT=GREEN
+            echo A3=BLOCKED_CLI_MISSING
+            exit 0
+          fi
+          echo A3_VIBE_PRESENT=1
+          echo "A3_VIBE_PATH=$VIBE"
+          echo "A3_VIBE_VERSION=$(vibe --version 2>&1 | head -1)"
+          echo "A3_VIBE_ENTRYPOINT_SHA256=$(sha256sum "$VIBE" | awk '{print $1}')"
+          help="$(vibe --help 2>&1 || true)"
+          for pair in 'PROMPT:--prompt' 'RESUME:--resume' 'MAX_TURNS:--max-turns' 'ENABLED_TOOLS:--enabled-tools' 'OUTPUT:--output' 'TRUST:--trust'; do
+            key="${pair%%:*}"; flag="${pair#*:}"; if printf '%s\n' "$help" | grep -F -- "$flag" >/dev/null; then echo "A3_CAP_${key}=1"; else echo "A3_CAP_${key}=0"; fi
+          done
+          home="${VIBE_HOME:-$HOME/.vibe}"
+          echo "A3_VIBE_HOME=$home"
+          [ -f "$home/config.toml" ] && echo A3_CONFIG_PRESENT=1 || echo A3_CONFIG_PRESENT=0
+          [ -f "$home/.env" ] && echo A3_CREDENTIAL_FILE_PRESENT=1 || echo A3_CREDENTIAL_FILE_PRESENT=0
+          python3 - "$home/config.toml" "$home/.env" <<'PY'
+          import re,sys
+          from pathlib import Path
+          config=Path(sys.argv[1]); envp=Path(sys.argv[2])
+          try: import tomllib
+          except Exception: tomllib=None
+          custom=False; providers=[]; active='UNKNOWN'; logging='UNKNOWN'; telemetry='UNKNOWN'; browser='DEFAULT_OR_UNKNOWN'
+          if config.is_file() and tomllib:
+              try:
+                  d=tomllib.loads(config.read_text(encoding='utf-8'))
+                  active=str(d.get('active_model','UNKNOWN')); logging=str(d.get('log_interactions','UNKNOWN')).lower(); telemetry=str(d.get('enable_telemetry','UNKNOWN')).lower()
+                  ps=d.get('providers',[]) or []; ps=[ps] if isinstance(ps,dict) else ps
+                  if isinstance(ps,list):
+                      for p in ps:
+                          if isinstance(p,dict):
+                              if isinstance(p.get('name'),str): providers.append(p['name'])
+                              for k in ('api_base','base_url','browser_auth_base_url'):
+                                  v=p.get(k)
+                                  if isinstance(v,str) and v:
+                                      if k=='browser_auth_base_url': browser=v.split('://')[-1].split('/')[0]
+                                      if 'mistral.ai' not in v: custom=True
+              except Exception: print('A3_CONFIG_PARSE=BLOCKED')
+          print('A3_ACTIVE_MODEL='+active); print('A3_LOG_INTERACTIONS='+logging); print('A3_TELEMETRY='+telemetry)
+          print('A3_PROVIDER_NAMES='+(','.join(sorted(set(providers))) if providers else 'DEFAULT_OR_UNKNOWN'))
+          print('A3_BROWSER_AUTH_HOST='+browser); print('A3_CUSTOM_PROVIDER_BASE='+('1' if custom else '0'))
+          keys=[]
+          if envp.is_file():
+              for raw in envp.read_text(encoding='utf-8',errors='replace').splitlines():
+                  m=re.match(r'\s*([A-Za-z_][A-Za-z0-9_]*)\s*=',raw)
+                  if m: keys.append(m.group(1))
+          print('A3_CREDENTIAL_KEY_NAMES='+(','.join(sorted(set(keys))) if keys else 'NONE'))
+          print('A3_MISTRAL_CREDENTIAL_PRESENT='+('1' if 'MISTRAL_API_KEY' in keys else '0'))
+          PY
+          echo A3_ACCOUNT_PLAN=UNKNOWN
+          echo A3_PAYG_OFF_PROVEN=0
+          echo A3_INFERENCE_CALLS=0
+          echo A3_PREFLIGHT=GREEN
+          echo A3=BLOCKED_ACCOUNT_PLAN_EVIDENCE
+          GUEST
+          chmod 700 "$GUEST"
+          bounded 30 "$MP" transfer "$GUEST" vos-worker:/tmp/vos-a3-mistral-preflight.sh >/dev/null || fail GUEST_SCRIPT_TRANSFER
+          bounded 90 "$MP" exec vos-worker -- bash /tmp/vos-a3-mistral-preflight.sh
+          bounded 20 "$MP" exec vos-worker -- rm -f /tmp/vos-a3-mistral-preflight.sh >/dev/null || true
+          production_green || fail POST_PRODUCTION_REGRESSION
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT_AFTER
+          echo A3_POST_PRODUCTION=GREEN
+          echo PRODUCTION_MUTATIONS=0
