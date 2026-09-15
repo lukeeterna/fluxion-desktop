@@ -1,0 +1,271 @@
+name: VOS Fabric G4 G5 Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      g2_qualification_ref:
+        description: Exact G2 GREEN evidence ref
+        required: true
+        type: string
+      g2_source_thread_id:
+        description: Exact CODEX_SOURCE_THREAD_ID from G2 GREEN
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g4-g5-runtime
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 15
+    env:
+      FABRIC_SHA: 18752fb147f6700d4dc0633a55b9367d00ef0d91
+      G3_SHA: 1f16ab2505480adab67b20411cf0b5819179a2b2
+      MANDATE_SHA256: 9a7785af557da76405dfd2b28f9a9b481603f51a8e6bd77057132722a36ad46c
+      VOS_CODEX_MODEL: gpt-5.6-terra
+      G2_QUALIFICATION_REF: ${{ inputs.g2_qualification_ref }}
+      G2_SOURCE_THREAD_ID: ${{ inputs.g2_source_thread_id }}
+    steps:
+      - name: Certify routed PUBLIC-only G4 G5 chain on isolated worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${G2_QUALIFICATION_REF:?}"
+          : "${G2_SOURCE_THREAD_ID:?}"
+          case "$G2_QUALIFICATION_REF" in
+            *"G2=GREEN"*"run="*"job="*"fabric=${FABRIC_SHA}"*) ;;
+            *) echo 'G4_G5_BLOCKED=G2_QUALIFICATION_REF_INVALID' >&2; exit 2 ;;
+          esac
+
+          SRC="$RUNNER_TEMP/vos-g4-g5-${GITHUB_RUN_ID}"
+          rm -rf "$SRC"
+          mkdir -p "$SRC/fabric" "$SRC/runtime"
+          cleanup_local() { rm -rf "$SRC"; }
+          trap cleanup_local EXIT INT TERM
+
+          fluxion_base="https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/${GITHUB_SHA}"
+          fabric_base="https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}"
+          for path in \
+            bridge.py checkpoint.py rollover.py router.py worker_adapter.py
+          do
+            curl -4 -fsSL --connect-timeout 8 --max-time 30 --retry 4 --retry-delay 2 --retry-all-errors \
+              "$fabric_base/components/fabric/$path" -o "$SRC/fabric/$path"
+            test -s "$SRC/fabric/$path"
+          done
+          for path in \
+            tests/vos_fabric_g4_g5_runtime.py \
+            tests/vos_fabric_live_codex_worker.py \
+            docs/judge/mandati/T-VOS-FABRIC-G4-G5.md \
+            docs/judge/mandati/T-VOS-FABRIC-G4-G5.json
+          do
+            out="$SRC/runtime/$(basename "$path")"
+            curl -4 -fsSL --connect-timeout 8 --max-time 30 --retry 4 --retry-delay 2 --retry-all-errors \
+              "$fluxion_base/$path" -o "$out"
+            test -s "$out"
+          done
+
+          python3 - "$SRC/runtime/T-VOS-FABRIC-G4-G5.md" "$SRC/runtime/T-VOS-FABRIC-G4-G5.json" "$MANDATE_SHA256" <<'PY'
+          import hashlib, json, sys
+          md, manifest_path, expected = sys.argv[1:]
+          actual = hashlib.sha256(open(md,'rb').read()).hexdigest()
+          manifest = json.load(open(manifest_path,encoding='utf-8'))
+          assert actual == expected == manifest['mandate_sha256']
+          assert manifest['max_cost_usd'] == 0
+          assert manifest['paid_api_fallback'] is False
+          assert manifest['quota_circumvention'] is False
+          assert manifest['production_mutation'] is False
+          print('G4_G5_MANDATE_EXACT_SHA=GREEN')
+          PY
+          python3 -m py_compile "$SRC/runtime/vos_fabric_g4_g5_runtime.py" "$SRC/runtime/vos_fabric_live_codex_worker.py" "$SRC/fabric/"*.py
+
+          tar -C "$SRC" -czf "$SRC/bundle.tgz" fabric runtime
+          BUNDLE_SHA="$(shasum -a 256 "$SRC/bundle.tgz" | awk '{print $1}')"
+          PROXY_PORT=$((26000 + GITHUB_RUN_ID % 10000))
+          AUTH_REF="mandate_sha256=${MANDATE_SHA256};g3=${G3_SHA};fabric=${FABRIC_SHA};g2=${G2_QUALIFICATION_REF}"
+
+          PROXY="$SRC/proxy.py"
+          cat > "$PROXY" <<'PY'
+          #!/usr/bin/env python3
+          import os, select, socket, socketserver
+          bind = ("192.168.64.1", int(os.environ["VOS_PROXY_PORT"]))
+          allowed_source = "192.168.64.3"
+          class Handler(socketserver.StreamRequestHandler):
+              def handle(self):
+                  if self.client_address[0] != allowed_source:
+                      return
+                  self.connection.settimeout(30)
+                  line = self.rfile.readline(8192).decode("ascii", "replace").strip()
+                  parts = line.split()
+                  if len(parts) != 3 or parts[0].upper() != "CONNECT" or ":" not in parts[1]:
+                      self.wfile.write(b"HTTP/1.1 405 Method Not Allowed\r\n\r\n"); return
+                  host, port_s = parts[1].rsplit(":", 1)
+                  try: port = int(port_s)
+                  except ValueError: return
+                  if port != 443:
+                      self.wfile.write(b"HTTP/1.1 403 Forbidden\r\n\r\n"); return
+                  print("CONNECT_HOST=%s:443" % host, flush=True)
+                  while True:
+                      header = self.rfile.readline(8192)
+                      if header in (b"\r\n", b"\n", b""):
+                          break
+                  try:
+                      upstream = socket.create_connection((host, 443), timeout=20)
+                  except OSError as exc:
+                      print("UPSTREAM_ERROR=%s" % type(exc).__name__, flush=True)
+                      self.wfile.write(b"HTTP/1.1 502 Bad Gateway\r\n\r\n"); return
+                  with upstream:
+                      upstream.setblocking(False); self.connection.setblocking(False)
+                      self.wfile.write(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                      sockets = [self.connection, upstream]
+                      while True:
+                          readable, _, exceptional = select.select(sockets, [], sockets, 120)
+                          if exceptional or not readable: return
+                          for src in readable:
+                              dst = upstream if src is self.connection else self.connection
+                              try: data = src.recv(65536)
+                              except OSError: return
+                              if not data: return
+                              try: dst.sendall(data)
+                              except OSError: return
+          class Server(socketserver.ThreadingTCPServer):
+              allow_reuse_address = True; daemon_threads = True
+          with Server(bind, Handler) as server:
+              print("READY=%s:%d" % bind, flush=True)
+              server.serve_forever()
+          PY
+          chmod 700 "$PROXY"
+
+          HOST="$SRC/host.sh"
+          cat > "$HOST" <<'REMOTE'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          : "${VOS_PROXY_PORT:?}"; : "${FABRIC_SHA:?}"; : "${G3_SHA:?}"; : "${MANDATE_SHA256:?}"
+          : "${VOS_CODEX_MODEL:?}"; : "${G2_QUALIFICATION_REF:?}"; : "${G2_SOURCE_THREAD_ID:?}"
+          : "${BUNDLE_SHA:?}"; : "${AUTH_REF:?}"
+          fail() { printf 'G4_G5_BLOCKED=%s\n' "$*"; exit 2; }
+          pass() { printf 'PASS %-34s %s\n' "$1" "${2:-}"; }
+
+          production_green() {
+            uid="$(id -u)"
+            launch_running() {
+              label="$1"
+              for domain in "gui/$uid" "user/$uid" system; do
+                if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+              done
+              launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+            }
+            launch_running com.zeroclaw.fall-detector || return 1
+            launch_running com.go2rtc || return 1
+            launch_running com.mosquitto.broker || return 1
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null || return 1
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' || return 1
+            if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then return 1; fi
+            mount | grep -q ' on /Volumes/NAS_LOCAL ' || return 1
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          pass PRE_PRODUCTION 'Guardian/FLUXION/NAS green'
+
+          MP=""
+          for candidate in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            if [ -n "$candidate" ] && [ -x "$candidate" ]; then MP="$candidate"; break; fi
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          [ "$($MP exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true')" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER
+          mounts="$($MP info vos-worker | awk '/Mounts:/ {print $2}')"
+          [ -z "$mounts" ] || [ "$mounts" = '--' ] || fail "UNEXPECTED_VM_MOUNTS=$mounts"
+          "$MP" exec vos-worker -- timeout 15s env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || fail CODEX_AUTH_NOT_PERSISTED
+          pass VOS_WORKER_BOUNDARY 'owner/auth/no-host-mounts green'
+
+          actual_bundle="$(shasum -a 256 /tmp/vos-g4-g5-bundle.tgz | awk '{print $1}')"
+          [ "$actual_bundle" = "$BUNDLE_SHA" ] || fail BUNDLE_SHA_MISMATCH
+
+          guest_root="/tmp/vos-fabric-g4-g5-${GITHUB_RUN_ID}"
+          "$MP" exec vos-worker -- rm -rf "$guest_root"
+          "$MP" exec vos-worker -- mkdir -p "$guest_root"
+          "$MP" transfer /tmp/vos-g4-g5-bundle.tgz "vos-worker:$guest_root/bundle.tgz"
+          "$MP" exec vos-worker -- tar -C "$guest_root" -xzf "$guest_root/bundle.tgz"
+          "$MP" exec vos-worker -- rm -f "$guest_root/bundle.tgz"
+
+          proxy_pid=""
+          cleanup() {
+            if [ -n "$proxy_pid" ]; then kill "$proxy_pid" >/dev/null 2>&1 || true; fi
+            "$MP" exec vos-worker -- rm -rf "$guest_root" >/dev/null 2>&1 || true
+            rm -f /tmp/vos-g4-g5-bundle.tgz /tmp/vos-g4-g5-proxy.py /tmp/vos-g4-g5-proxy.log
+          }
+          trap cleanup EXIT INT TERM
+          VOS_PROXY_PORT="$VOS_PROXY_PORT" /usr/bin/python3 /tmp/vos-g4-g5-proxy.py > /tmp/vos-g4-g5-proxy.log 2>&1 &
+          proxy_pid=$!
+          for _ in 1 2 3 4 5; do
+            grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g4-g5-proxy.log 2>/dev/null && break
+            sleep 1
+          done
+          grep -q "^READY=192.168.64.1:${VOS_PROXY_PORT}$" /tmp/vos-g4-g5-proxy.log || fail PROXY_NOT_READY
+          pass EPHEMERAL_PROXY "port=$VOS_PROXY_PORT source=192.168.64.3 CONNECT:443 only"
+
+          common=(
+            --fabric-dir "$guest_root/fabric"
+            --runtime-dir "$guest_root/runtime"
+            --live-worker "$guest_root/runtime/vos_fabric_live_codex_worker.py"
+            --mandate-md "$guest_root/runtime/T-VOS-FABRIC-G4-G5.md"
+            --mandate-json "$guest_root/runtime/T-VOS-FABRIC-G4-G5.json"
+            --authorization-ref "$AUTH_REF"
+            --fabric-sha "$FABRIC_SHA"
+            --model "$VOS_CODEX_MODEL"
+            --proxy-url "http://192.168.64.1:${VOS_PROXY_PORT}"
+            --g2-qualification-ref "$G2_QUALIFICATION_REF"
+          )
+          "$MP" exec vos-worker -- /usr/bin/python3 "$guest_root/runtime/vos_fabric_g4_g5_runtime.py" stage1 \
+            "${common[@]}" --g2-source-thread-id "$G2_SOURCE_THREAD_ID"
+          pass G4_STAGE1 'router -> bridge -> exact G2 continuation -> checkpoint'
+
+          "$MP" exec vos-worker -- /usr/bin/python3 "$guest_root/runtime/vos_fabric_g4_g5_runtime.py" stage2 \
+            "${common[@]}"
+          pass G5_STAGE2 'durable reload -> fork -> exactly-once replay guard -> resume'
+
+          "$MP" exec vos-worker -- python3 - "$guest_root/runtime/g4-g5-runtime-evidence.json" <<'PY'
+          import json, sys
+          p=sys.argv[1]
+          e=json.load(open(p,encoding='utf-8'))
+          assert e['g4']=='GREEN' and e['g5']=='GREEN' and e['router']=='GREEN'
+          assert e['data_class']=='PUBLIC' and e['data_policy']=='PUBLIC_ONLY'
+          assert e['founder_prompt_shuttling']==0
+          assert e['paid_api_fallback']==0 and e['production_mutations']==0
+          assert e['effect_claimed_once'] is True and e['effect_replay_claimed_now'] is False
+          print('G4_G5_FINAL_EVIDENCE_SHA256_PENDING_HOST_HASH=1')
+          PY
+          evidence_sha="$($MP exec vos-worker -- sha256sum "$guest_root/runtime/g4-g5-runtime-evidence.json" | awk '{print $1}')"
+          checkpoint_sha="$($MP exec vos-worker -- sha256sum "$guest_root/runtime/g5.checkpoint.json" | awk '{print $1}')"
+          pass EVIDENCE_HASHES "final=$evidence_sha checkpoint=$checkpoint_sha"
+
+          production_green || fail POST_PRODUCTION_REGRESSION
+          mounts_after="$($MP info vos-worker | awk '/Mounts:/ {print $2}')"
+          [ -z "$mounts_after" ] || [ "$mounts_after" = '--' ] || fail "UNEXPECTED_VM_MOUNTS_AFTER=$mounts_after"
+          pass POST_PRODUCTION 'Guardian/FLUXION/NAS green; no host mounts'
+
+          echo "FABRIC_SHA=$FABRIC_SHA"
+          echo "G3_SHA=$G3_SHA"
+          echo "G2_QUALIFICATION_REF_SHA256=$(printf '%s' "$G2_QUALIFICATION_REF" | shasum -a 256 | awk '{print $1}')"
+          echo "G2_SOURCE_THREAD_ID_SHA256=$(printf '%s' "$G2_SOURCE_THREAD_ID" | shasum -a 256 | awk '{print $1}')"
+          echo "G4_G5_FINAL_EVIDENCE_SHA256=$evidence_sha"
+          echo "G5_FINAL_CHECKPOINT_SHA256=$checkpoint_sha"
+          echo 'FOUNDER_PROMPT_SHUTTLING=0'
+          echo 'G5_DUPLICATED_EFFECTS=0'
+          echo 'G4_G5_PAID_API_FALLBACK=0'
+          echo 'PRODUCTION_MUTATIONS=0'
+          echo 'G4=GREEN'
+          echo 'G5=GREEN'
+          REMOTE
+          chmod 700 "$HOST"
+
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$SRC/bundle.tgz" imac:/tmp/vos-g4-g5-bundle.tgz
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$PROXY" imac:/tmp/vos-g4-g5-proxy.py
+          scp -q -o BatchMode=yes -o ConnectTimeout=8 "$HOST" imac:/tmp/vos-g4-g5-host.sh
+          ssh -o BatchMode=yes -o ConnectTimeout=8 imac \
+            "GITHUB_RUN_ID='$GITHUB_RUN_ID' VOS_PROXY_PORT='$PROXY_PORT' FABRIC_SHA='$FABRIC_SHA' G3_SHA='$G3_SHA' MANDATE_SHA256='$MANDATE_SHA256' VOS_CODEX_MODEL='$VOS_CODEX_MODEL' BUNDLE_SHA='$BUNDLE_SHA' AUTH_REF='$AUTH_REF' G2_QUALIFICATION_REF='$G2_QUALIFICATION_REF' G2_SOURCE_THREAD_ID='$G2_SOURCE_THREAD_ID' bash /tmp/vos-g4-g5-host.sh; rc=\$?; rm -f /tmp/vos-g4-g5-host.sh; exit \$rc"
