@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "unit_id": "T-VOS-FABRIC-G4-G5",
+  "label": "CONFIRM_FIRST",
+  "risk": "B",
+  "lane": "WEB",
+  "base_certified_g3_sha": "1f16ab2505480adab67b20411cf0b5819179a2b2",
+  "mandate_md": "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md",
+  "mandate_sha256": "7845430422aa33fc85320d0d0dd6062fc681726dea1c7b374b6d89f2f875c071",
+  "key": "T-VOS-FABRIC-G4-G5@1f16ab2505480adab67b20411cf0b5819179a2b2:7845430422aa33fc",
+  "founder_go": true,
+  "authorization_class": "FOUNDER_CONFIRMED_RUNTIME_CERTIFICATION",
+  "max_cost_usd": 0,
+  "paid_api_fallback": false,
+  "quota_circumvention": false,
+  "production_mutation": false,
+  "isolated_effect_scope": "vos-worker-temporary",
+  "gates": ["G4", "G5"]
+}

@@ -1,0 +1,42 @@
+name: VOS Fabric A2 Environment Presence
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g4-g5-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a2-env-presence.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 5
+    steps:
+      - name: Emit presence only for bounded non-secret guest environment names
+        shell: bash
+        run: |
+          set -euo pipefail
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }
+          done
+          [ -n "$MP" ] || { echo A2_ENV_PRESENCE=BLOCKED_MULTIPASS; exit 2; }
+          "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running' || { echo A2_ENV_PRESENCE=BLOCKED_VM_NOT_RUNNING; exit 2; }
+          "$MP" exec vos-worker -- /usr/bin/python3 - <<'PY'
+          import os
+          names=(
+              'SHELL','PWD','OLDPWD','TERM','COLORTERM',
+              'XDG_RUNTIME_DIR','XDG_SESSION_TYPE','XDG_SESSION_CLASS','XDG_SESSION_ID',
+              'DBUS_SESSION_BUS_ADDRESS','SSH_CLIENT','SSH_CONNECTION','SSH_TTY','SHLVL',
+          )
+          for name in names:
+              print('A2_ENV_PRESENT_%s=%d' % (name, 1 if name in os.environ else 0))
+          print('A2_ENV_VALUES_EXPOSED=0')
+          PY
+          echo MAX_COST_USD=0
+          echo PAID_API_FALLBACK=0
+          echo PRODUCTION_MUTATIONS=0

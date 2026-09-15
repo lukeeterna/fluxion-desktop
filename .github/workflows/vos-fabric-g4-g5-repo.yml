@@ -1,0 +1,160 @@
+name: VOS Fabric G4 G5 Repo
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g4-g5-runtime-*"
+    paths:
+      - "tests/vos_fabric_live_antigravity_worker.py"
+      - "tests/vos_fabric_g4_g5_runtime.py"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
+      - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+      - ".github/workflows/vos-fabric-g4-g5-runtime.yml"
+  pull_request:
+    paths:
+      - "tests/vos_fabric_live_antigravity_worker.py"
+      - "tests/vos_fabric_g4_g5_runtime.py"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.md"
+      - "docs/judge/mandati/T-VOS-FABRIC-G4-G5.json"
+      - ".github/workflows/vos-fabric-g4-g5-repo.yml"
+      - ".github/workflows/vos-fabric-g4-g5-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  repo-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FABRIC_SHA: aadd263f62fd7bd8d349d54d4e9ed5f82107b7c9
+      MANDATE_SHA256: 7845430422aa33fc85320d0d0dd6062fc681726dea1c7b374b6d89f2f875c071
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile runtime harness
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            tests/vos_fabric_live_antigravity_worker.py \
+            tests/vos_fabric_g4_g5_runtime.py
+      - name: Verify sealed founder-confirmed mandate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          md = Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.md')
+          manifest = json.loads(Path('docs/judge/mandati/T-VOS-FABRIC-G4-G5.json').read_text())
+          actual = hashlib.sha256(md.read_bytes()).hexdigest()
+          assert actual == manifest['mandate_sha256'] == os.environ['MANDATE_SHA256']
+          assert manifest['founder_go'] is True
+          assert manifest['label'] == 'CONFIRM_FIRST'
+          assert manifest['risk'] == 'B'
+          assert manifest['max_cost_usd'] == 0
+          assert manifest['paid_api_fallback'] is False
+          assert manifest['quota_circumvention'] is False
+          assert manifest['production_mutation'] is False
+          assert manifest['base_certified_g3_sha'] == '1f16ab2505480adab67b20411cf0b5819179a2b2'
+          text = md.read_text()
+          assert 'PUBLIC only' in text
+          assert 'A2 DIRECT_OFFICIAL' in text
+          assert 'PUBLIC_ONLY' in text
+          assert '34964855224 / job 104366796337' in text
+          print('G4_G5_MANDATE_REPO=GREEN')
+          PY
+      - name: Verify certified Fabric registry routes OPEN Codex to A2
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/vos-fabric"
+          for path in router.py worker_registry.py; do
+            curl -fsSL --retry 3 --retry-delay 2 \
+              "https://raw.githubusercontent.com/lukeeterna/venture-os/${FABRIC_SHA}/components/fabric/$path" \
+              -o "$RUNNER_TEMP/vos-fabric/$path"
+          done
+          python3 - "$RUNNER_TEMP/vos-fabric" "$FABRIC_SHA" <<'PY'
+          import sys
+          from pathlib import Path
+
+          fabric_dir = Path(sys.argv[1])
+          expected_sha = sys.argv[2]
+          sys.path.insert(0, str(fabric_dir))
+          sys.path.insert(0, str(Path.cwd() / 'tests'))
+
+          import worker_registry
+          import vos_fabric_g4_g5_runtime as harness
+
+          assert harness.FABRIC_CERTIFICATION_SHA == expected_sha
+          assert harness.DATA_CLASS == 'PUBLIC'
+          assert harness.DATA_POLICY == 'PUBLIC_ONLY'
+          worker, routed, decision_sha = harness.select_a2(worker_registry)
+          assert worker['worker_id'] == 'antigravity-a2-live'
+          assert worker['kind'] == 'DIRECT_OFFICIAL'
+          assert worker['data_classes'] == ['PUBLIC']
+          assert worker['data_policy'] == 'PUBLIC_ONLY'
+          assert worker['max_cost_usd'] == 0.0
+          assert worker['zero_cost_hard_stop'] is True
+          assert worker['consumer_oauth_proxy'] is False
+          assert routed['capacity']['breakers']['codex-g2-live']['state'] == 'OPEN'
+          assert 'run=34964855224' in routed['capacity']['evidence']['codex-g2-live']
+          assert 'job=104366796337' in routed['capacity']['evidence']['codex-g2-live']
+          assert 'runtime_run=35001277172' in worker['qualification_ref']
+          assert 'composite_run=35001894829' in worker['qualification_ref']
+          assert len(decision_sha) == 64
+          source = Path('tests/vos_fabric_g4_g5_runtime.py').read_text()
+          assert '"data_class": "INTERNAL"' not in source
+          assert "'data_class': 'INTERNAL'" not in source
+          print('G4_G5_ROUTER_REPO=GREEN')
+          print('G4_G5_CODEX_BREAKER_REPO=OPEN')
+          print('G4_G5_SELECTED_WORKER_REPO=A2_DIRECT_OFFICIAL')
+          print('G4_G5_DATA_CLASS_REPO=PUBLIC')
+          PY
+      - name: Verify G5 process and exactly-once boundaries are explicit
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path('tests/vos_fabric_g4_g5_runtime.py').read_text()
+          assert 'checkpoint.read_checkpoint' in source
+          assert 'same-payload effect replay was incorrectly claimed again' in source
+          assert 'conflicting effect replay was not rejected fail-closed' in source
+          assert 'rollover.complete_rollover' in source
+          assert 'G5_POST_ROLLOVER_EXACT_RESUME=GREEN' in source
+          assert 'G5_DUPLICATED_EFFECTS=0' in source
+          assert 'VOS_MANDATE_PROCESS_BOUNDARY' in source
+          print('G4_G5_EXACTLY_ONCE_REPO=GREEN')
+          PY
+      - name: Verify staged runtime workflow boundaries
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          text = Path('.github/workflows/vos-fabric-g4-g5-runtime.yml').read_text()
+          assert os.environ['FABRIC_SHA'] in text
+          assert os.environ['MANDATE_SHA256'] in text
+          assert 'runs-on: [self-hosted, macbook, fluxion]' in text
+          assert 'vos_fabric_live_antigravity_worker.py' in text
+          assert 'worker_registry.py' in text
+          assert 'G5_DUPLICATED_EFFECTS=0' in text
+          assert 'PRODUCTION_MUTATIONS=0' in text
+          assert 'ANTIGRAVITY_API_KEY_FALLBACK=0' in text
+          assert 'ANTIGRAVITY_CREDIT_FALLBACK=0' in text
+          print('G4_G5_RUNTIME_WORKFLOW_REPO=GREEN')
+          PY
+      - name: Verify no paid credential injection in certification workflow
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/vos-fabric-g4-g5-runtime.yml').read_text()
+          helper = Path('tests/vos_fabric_live_antigravity_worker.py').read_text()
+          # Names are allowed only as explicit deny-list checks in the helper; the
+          # workflow must never inject any API key or paid-provider credential.
+          for marker in ('OPENAI_API_KEY:', 'ANTHROPIC_API_KEY:', 'GOOGLE_API_KEY:', 'GEMINI_API_KEY:'):
+              assert marker not in workflow
+          assert 'GOOGLE_API_KEY' in helper and 'GEMINI_API_KEY' in helper
+          assert 'BANNED_ENV' in helper
+          assert 'useG1Credits' in helper and 'False' in helper
+          print('G4_G5_PAID_API_FALLBACK_REPO=0')
+          PY

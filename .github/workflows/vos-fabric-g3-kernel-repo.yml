@@ -1,0 +1,67 @@
+name: VOS Fabric G3 Kernel Repo
+
+on:
+  pull_request:
+    paths:
+      - "bin/vos_common.py"
+      - "bin/vos_apply.py"
+      - "bin/vos_apply.sh"
+      - "bin/vos_machine.py"
+      - "docs/judge/MACHINES.json"
+      - "tests/test_vos_apply.py"
+      - "tests/test_vos_kernel_cert.py"
+      - ".github/workflows/vos-fabric-g3-kernel-repo.yml"
+  push:
+    branches:
+      - "sol/vos-fabric-g3-*"
+    paths:
+      - "bin/vos_common.py"
+      - "bin/vos_apply.py"
+      - "bin/vos_apply.sh"
+      - "bin/vos_machine.py"
+      - "docs/judge/MACHINES.json"
+      - "tests/test_vos_apply.py"
+      - "tests/test_vos_kernel_cert.py"
+      - ".github/workflows/vos-fabric-g3-kernel-repo.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  portable-kernel:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile control plane
+        run: |
+          python -m py_compile \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_machine.py \
+            tests/test_vos_apply.py \
+            tests/test_vos_kernel_cert.py
+
+      - name: Shell syntax
+        run: bash -n bin/vos_apply.sh bin/vos_check.sh
+
+      - name: Validate enrolled machine registry structure
+        run: python bin/vos_machine.py validate --registry docs/judge/MACHINES.json
+
+      - name: Existing executor fixtures
+        run: python -m unittest tests.test_vos_apply -v
+
+      - name: G3 fail-closed certification fixtures
+        run: python -m unittest tests.test_vos_kernel_cert -v
+
+      - name: Portable verdict
+        run: |
+          echo "G3_REPO_FIXTURES=GREEN"
+          echo "VOS_KERNEL_CERTIFIED=NOT_CLAIMED_MACHINE_RUNTIME_PENDING"
