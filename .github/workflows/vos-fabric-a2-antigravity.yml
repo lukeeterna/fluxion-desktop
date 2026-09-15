@@ -56,9 +56,6 @@ jobs:
           done
           [ -n "$MP" ] || fail MULTIPASS_MISSING
 
-          # Bound every macOS Multipass client call. Long work is detached inside
-          # vos-worker and commits an RC file, so a client-return bug cannot hide
-          # the real guest result.
           mpb(){
             local secs="$1"; shift
             /usr/bin/python3 - "$secs" "$MP" "$@" <<'PY'
@@ -172,13 +169,25 @@ jobs:
           agy --version | grep -F "$AGY_VERSION" >/dev/null || { echo A2=VERSION_MISMATCH; exit 2; }
           settings="$HOME/.gemini/antigravity-cli/settings.json"
           [ -f "$settings" ] || { echo A2=BLOCKED_AUTH; exit 20; }
+          # OAuth can rewrite settings.json after the pre-login hardening. Reassert
+          # the zero-cost policy atomically immediately before any model request.
           python3 - "$settings" <<'PY'
-          import json,sys
+          import json,os,sys
           p=sys.argv[1]
           with open(p,encoding='utf-8') as f:d=json.load(f)
+          d.pop('modelProvider',None)
+          d['useG1Credits']=False
+          q=p+'.vos-zero-cost.tmp'
+          with open(q,'w',encoding='utf-8') as f: json.dump(d,f,sort_keys=True,indent=2); f.write('\n')
+          os.chmod(q,0o600); os.replace(q,p)
+          PY
+          python3 - "$settings" <<'PY'
+          import json,sys
+          with open(sys.argv[1],encoding='utf-8') as f:d=json.load(f)
           if d.get('useG1Credits') is not False: raise SystemExit('credit fallback not disabled')
           if d.get('modelProvider')=='gemini': raise SystemExit('Gemini API provider forbidden')
           PY
+          echo A2_ZERO_COST_SETTINGS=GREEN
           models="$(timeout -k 10s 60s agy models 2>/dev/null)" || { echo A2=BLOCKED_AUTH_OR_MODELS_TIMEOUT; exit 20; }
           model="$(printf '%s\n' "$models" | awk 'NF&&$1!~/^MODEL|^NAME|^-+$/{print $1;exit}')"
           [ -n "$model" ] || { echo A2=MODEL_LIST_EMPTY; exit 2; }
@@ -224,7 +233,6 @@ jobs:
           mpb 30 transfer "$PERSIST" vos-worker:/tmp/vos-a2-persist-unit.sh >/dev/null || fail PERSIST_TRANSFER
           mpb 15 exec vos-worker -- chmod 700 /tmp/vos-a2-systemd-smoke.sh /tmp/vos-a2-runtime-guest.sh /tmp/vos-a2-runtime-unit.sh /tmp/vos-a2-persist-unit.sh || fail GUEST_CHMOD
 
-          # Cheap detach smoke: no model turn until this passes.
           mpb 15 exec vos-worker -- sh -lc 'rm -f /tmp/vos-a2-systemd-smoke.rc*; sudo systemctl stop vos-a2-systemd-smoke.service >/dev/null 2>&1 || true; sudo systemctl reset-failed vos-a2-systemd-smoke.service >/dev/null 2>&1 || true' || fail SMOKE_RESET
           mpb 20 exec vos-worker -- sudo systemd-run --unit=vos-a2-systemd-smoke --property=Type=exec --property=User=ubuntu -- /tmp/vos-a2-systemd-smoke.sh >/dev/null || fail SMOKE_LAUNCH
           smoke=''
