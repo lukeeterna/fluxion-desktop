@@ -117,7 +117,7 @@ jobs:
                   while True:
                       line=self.rfile.readline(8192)
                       if line in (b"\r\n",b"\n",b""): break
-                  try: upstream=socket.create_connection((host,443),timeout=20)
+                  try: upstream=socket.create_connection((host,port),timeout=20)
                   except OSError: return
                   with upstream:
                       upstream.setblocking(False); self.connection.setblocking(False)
@@ -155,8 +155,7 @@ jobs:
           bounded 30 "$MP" transfer "$prompt" "vos-worker:$root/prompt.txt" >/dev/null || fail PROMPT_TRANSFER
 
           set +e
-          bounded 240 "$MP" exec vos-worker -- env \
-            -u GEMINI_API_KEY -u GOOGLE_API_KEY -u GOOGLE_GEMINI_BASE_URL \
+          bounded 240 "$MP" exec vos-worker -- env -i \
             HOME=/home/ubuntu USER=ubuntu LOGNAME=ubuntu \
             PATH=/home/ubuntu/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
             HTTPS_PROXY="http://192.168.64.1:${port}" HTTP_PROXY="http://192.168.64.1:${port}" \
@@ -178,6 +177,7 @@ jobs:
           bounded 20 "$MP" exec vos-worker -- test -s "$root/evidence.json" >/dev/null || fail DIAGNOSTIC_EVIDENCE_MISSING
           bounded 20 "$MP" exec vos-worker -- python3 -c 'import json,sys;e=json.load(open(sys.argv[1]));allow=("schema_version","mode","phase","failure_class","model","antigravity_version","antigravity_binary_sha256","exit_code","events_sha256","stderr_sha256","prompt_sha256","settings_before_sha256","settings_after_sha256","structured_output_verified","api_key_fallback","credit_fallback","paid_api_fallback","production_mutations");print("A2_G4_BOUNDED_EVIDENCE="+json.dumps({k:e.get(k) for k in allow if k in e},sort_keys=True,separators=(",",":")))' "$root/evidence.json"
           echo "A2_G4_HELPER_RC=$rc"
+          echo A2_G4_ENV_MODE=EMPTY_PLUS_EXACT_ALLOWLIST
           echo A2_G4_RAW_PROVIDER_OUTPUT_EXPOSED=0
           echo PAID_API_FALLBACK=0
           echo PRODUCTION_MUTATIONS=0
