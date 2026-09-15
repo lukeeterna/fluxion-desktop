@@ -1,4 +1,4 @@
-# retrigger-read-only: 2026-09-14 post-qualifier-failure
+# retrigger-read-only: 2026-09-15 after G2 lifecycle start hang
 name: VOS Fabric G2 VM State Probe
 
 on:
@@ -102,14 +102,20 @@ jobs:
           echo "VOS_WORKER_INFO_RC=$info_rc"
           if [ "$info_rc" -eq 0 ]; then
             echo 'VOS_WORKER_PRESENT=1'
-            owner_rc=0
-            owner="$(bounded "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>&1)" || owner_rc=$?
-            echo "VOS_WORKER_OWNER_RC=$owner_rc"
-            echo "VOS_WORKER_OWNER=${owner:-MISSING}"
-            [ "$owner_rc" -eq 0 ] && [ "$owner" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER_MISMATCH
-            auth_rc=0
-            bounded "$MP" exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
-            echo "VOS_WORKER_AUTH_STATUS_RC=$auth_rc"
+            state="$(printf '%s\n' "$info_out" | awk -F: '/^[[:space:]]*State:/ {gsub(/^[[:space:]]+/,"",$2); print $2; exit}')"
+            echo "VOS_WORKER_STATE=$state"
+            if [ "$state" = 'Running' ]; then
+              owner_rc=0
+              owner="$(bounded "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' 2>&1)" || owner_rc=$?
+              echo "VOS_WORKER_OWNER_RC=$owner_rc"
+              echo "VOS_WORKER_OWNER=${owner:-MISSING}"
+              [ "$owner_rc" -eq 0 ] && [ "$owner" = 'VOS_FABRIC_G2' ] || fail VOS_WORKER_OWNER_MISMATCH
+              auth_rc=0
+              bounded "$MP" exec vos-worker -- env CODEX_HOME=/home/ubuntu/.codex-vos-fabric /usr/local/bin/codex login status >/dev/null 2>&1 || auth_rc=$?
+              echo "VOS_WORKER_AUTH_STATUS_RC=$auth_rc"
+            else
+              echo 'VOS_WORKER_RUNTIME_PROBES_SKIPPED=NOT_RUNNING'
+            fi
           else
             echo 'VOS_WORKER_PRESENT=0'
           fi
