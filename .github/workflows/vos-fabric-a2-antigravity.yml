@@ -21,7 +21,7 @@ jobs:
     runs-on: [self-hosted, fluxion-imac-physical]
     timeout-minutes: 30
     env:
-      FABRIC_A2_SHA: 2ab51da079fb0389492853034d71825c67a1c55f
+      FABRIC_A2_SHA: 3cc65cc2b56a22035a45c62be44558b48c669b12
       AGY_VERSION: 1.2.3
       AGY_PACKAGE_URL: https://storage.googleapis.com/antigravity-public/antigravity-cli/1.2.3-5101874907578368/linux-x64/cli_linux_x64.tar.gz
     steps:
