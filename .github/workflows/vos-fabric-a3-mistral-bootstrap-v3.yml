@@ -1,0 +1,140 @@
+name: VOS Fabric A3 Mistral Bootstrap v3
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-a3-mistral-runtime-*"
+    paths:
+      - ".github/workflows/vos-fabric-a3-mistral-bootstrap-v3.yml"
+      - "tools/vos_fabric_a3_bootstrap_proxy.py"
+      - "tools/vos_fabric_a3_mistral_bootstrap_guest.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-a3-mistral-bootstrap-v3
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    runs-on: [self-hosted, fluxion-imac-physical]
+    timeout-minutes: 15
+    env:
+      UV_VERSION: "0.11.26"
+      UV_INSTALLER_SHA256: "92fa9085d24c214bb4445cc1da8c15ca9cca8cffb34726240fa08c5302e94ccc"
+      VIBE_VERSION: "2.25.4"
+      VIBE_WHEEL_SHA256: "d43aa028e1931f3d05d735111384eadc937b4d47b7a05eb2ee04313fd860662f"
+    steps:
+      - name: Bootstrap exact Vibe toolchain in isolated worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          export LC_ALL=C LANG=C
+          fail(){ printf 'A3_BOOTSTRAP_BLOCKED=%s\n' "$*"; exit 2; }
+          bounded(){
+            local seconds="$1"; shift
+            /usr/bin/python3 - "$seconds" "$@" <<'PY'
+          import subprocess,sys
+          secs=float(sys.argv[1]); cmd=sys.argv[2:]
+          try:
+              p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=secs)
+          except subprocess.TimeoutExpired as exc:
+              out=exc.stdout or ''
+              if isinstance(out,bytes): out=out.decode('utf-8','replace')
+              if out: print(out,end='')
+              raise SystemExit(124)
+          if p.stdout: print(p.stdout,end='')
+          raise SystemExit(p.returncode)
+          PY
+          }
+          production_green(){
+            uid="$(id -u)"
+            launch_running(){
+              label="$1"
+              for domain in "gui/$uid" "user/$uid" system; do
+                launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+' && return 0
+              done
+              launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+            }
+            launch_running com.zeroclaw.fall-detector && \
+            launch_running com.go2rtc && \
+            launch_running com.mosquitto.broker && \
+            curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null && \
+            lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002' && \
+            { lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' || lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; } && \
+            mount | grep -q ' on /Volumes/NAS_LOCAL '
+          }
+          production_green || fail PRE_PRODUCTION_REGRESSION
+          echo A3_BOOTSTRAP_PRE_PRODUCTION=GREEN
+
+          MP=''
+          for c in "$(command -v multipass 2>/dev/null || true)" /usr/local/bin/multipass /opt/homebrew/bin/multipass "/Library/Application Support/com.canonical.multipass/bin/multipass"; do
+            [ -n "$c" ] && [ -x "$c" ] && { MP="$c"; break; }
+          done
+          [ -n "$MP" ] || fail MULTIPASS_MISSING
+          bounded 15 "$MP" info vos-worker >/dev/null 2>&1 || fail VOS_WORKER_MISSING
+          if ! bounded 15 "$MP" info vos-worker | grep -q 'State:[[:space:]]*Running'; then
+            bounded 35 "$MP" start vos-worker >/dev/null 2>&1 || true
+          fi
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            bounded 10 "$MP" info vos-worker 2>/dev/null | grep -q 'State:[[:space:]]*Running' && break
+            sleep 2
+          done
+          guest_ip="$(bounded 20 "$MP" exec vos-worker -- sh -c "hostname -I | awk '{print \$1}'" | tail -1)"
+          printf '%s\n' "$guest_ip" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' || fail GUEST_IP_FORMAT
+          [ "$(bounded 20 "$MP" exec vos-worker -- sh -c 'cat /var/lib/vos-fabric/worker-owner 2>/dev/null || true' | tail -1)" = VOS_FABRIC_G2 ] || fail VOS_WORKER_OWNER
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT
+          echo "A3_BOOTSTRAP_BOUNDARY=GREEN guest=$guest_ip"
+
+          ROOT="$RUNNER_TEMP/vos-a3-bootstrap-v3-${GITHUB_RUN_ID}"
+          rm -rf "$ROOT"; mkdir -p "$ROOT"
+          cleanup(){
+            [ -z "${proxy_pid:-}" ] || kill "$proxy_pid" >/dev/null 2>&1 || true
+            rm -rf "$ROOT"
+          }
+          trap cleanup EXIT INT TERM
+          base="https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/${GITHUB_SHA}"
+          curl -4 -fsSL --retry 4 --retry-delay 2 "$base/tools/vos_fabric_a3_bootstrap_proxy.py" -o "$ROOT/proxy.py"
+          curl -4 -fsSL --retry 4 --retry-delay 2 "$base/tools/vos_fabric_a3_mistral_bootstrap_guest.sh" -o "$ROOT/guest.sh"
+          python3 -m py_compile "$ROOT/proxy.py"
+          bash -n "$ROOT/guest.sh"
+          chmod 700 "$ROOT/proxy.py" "$ROOT/guest.sh"
+          echo "A3_PROXY_SHA256=$(shasum -a 256 "$ROOT/proxy.py" | awk '{print $1}')"
+          echo "A3_GUEST_BOOTSTRAP_SHA256=$(shasum -a 256 "$ROOT/guest.sh" | awk '{print $1}')"
+
+          PROXY_PORT=$((27000 + GITHUB_RUN_ID % 10000))
+          VOS_PROXY_PORT="$PROXY_PORT" VOS_GUEST_IP="$guest_ip" /usr/bin/python3 "$ROOT/proxy.py" >"$ROOT/proxy.log" 2>&1 & proxy_pid=$!
+          for _ in 1 2 3 4 5; do
+            grep -q "^READY=192.168.64.1:${PROXY_PORT} source=${guest_ip}$" "$ROOT/proxy.log" 2>/dev/null && break
+            sleep 1
+          done
+          grep -q "^READY=192.168.64.1:${PROXY_PORT} source=${guest_ip}$" "$ROOT/proxy.log" || fail PROXY_NOT_READY
+          bounded 30 "$MP" transfer "$ROOT/guest.sh" vos-worker:/tmp/vos-a3-bootstrap-v3.sh >/dev/null || fail GUEST_SCRIPT_TRANSFER
+          set +e
+          bootstrap_out="$(bounded 540 "$MP" exec vos-worker -- env \
+            VOS_PROXY_PORT="$PROXY_PORT" \
+            UV_VERSION="$UV_VERSION" \
+            UV_INSTALLER_SHA256="$UV_INSTALLER_SHA256" \
+            VIBE_VERSION="$VIBE_VERSION" \
+            VIBE_WHEEL_SHA256="$VIBE_WHEEL_SHA256" \
+            bash /tmp/vos-a3-bootstrap-v3.sh 2>&1)"
+          bootstrap_rc=$?
+          set -e
+          printf '%s\n' "$bootstrap_out"
+          bounded 20 "$MP" exec vos-worker -- rm -f /tmp/vos-a3-bootstrap-v3.sh >/dev/null || true
+          if [ "$bootstrap_rc" -ne 0 ]; then
+            echo '--- A3_BOOTSTRAP_PROXY_TRACE ---'
+            grep -E '^(READY|CONNECT_HOST|UPSTREAM_ERROR)=' "$ROOT/proxy.log" || true
+            echo '--- END_A3_BOOTSTRAP_PROXY_TRACE ---'
+            fail "GUEST_BOOTSTRAP_RC=$bootstrap_rc"
+          fi
+          grep -q '^A3_BOOTSTRAP=GREEN$' <<<"$bootstrap_out" || fail BOOTSTRAP_MARKER
+          grep -q '^A3_INFERENCE_CALLS=0$' <<<"$bootstrap_out" || fail INFERENCE_MARKER
+          grep -q '^A3=BLOCKED_ACCOUNT_PLAN_EVIDENCE$' <<<"$bootstrap_out" || fail ACCOUNT_EVIDENCE_BOUNDARY
+
+          production_green || fail POST_PRODUCTION_REGRESSION
+          bounded 20 "$MP" exec vos-worker -- sh -c 'if mount | grep -Eq " type (9p|virtiofs|fuse\.multipass-sshfs|fuse\.sshfs) "; then exit 9; fi' >/dev/null || fail UNEXPECTED_HOST_MOUNT_AFTER
+          echo A3_BOOTSTRAP_POST_PRODUCTION=GREEN
+          echo PRODUCTION_MUTATIONS=0
