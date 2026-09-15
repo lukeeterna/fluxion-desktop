@@ -1,0 +1,105 @@
+name: VOS Fabric G3 Kernel Runtime
+
+on:
+  push:
+    branches:
+      - "sol/vos-fabric-g3-kernel-cert-*"
+    paths:
+      - ".github/workflows/vos-fabric-g3-kernel-runtime.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vos-fabric-g3-kernel-runtime
+  cancel-in-progress: true
+
+jobs:
+  certify:
+    runs-on: [self-hosted, macbook, fluxion]
+    timeout-minutes: 10
+    steps:
+      - name: Certify exact kernel on real self-hosted machine
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="$RUNNER_TEMP/vos-g3-runtime-${GITHUB_RUN_ID}"
+          rm -rf "$SRC"
+          mkdir -p "$SRC/bin" "$SRC/tests" "$SRC/docs/judge"
+          trap 'rm -rf "$SRC"' EXIT INT TERM
+
+          base="https://raw.githubusercontent.com/lukeeterna/fluxion-desktop/${GITHUB_SHA}"
+          for path in \
+            bin/vos_common.py \
+            bin/vos_apply.py \
+            bin/vos_machine.py \
+            bin/vos_apply.sh \
+            bin/vos_check.sh \
+            docs/judge/MACHINES.json \
+            tests/test_vos_apply.py \
+            tests/test_vos_kernel_cert.py
+          do
+            mkdir -p "$SRC/$(dirname "$path")"
+            curl -4 -fsSL --connect-timeout 8 --max-time 30 \
+              --retry 4 --retry-delay 2 --retry-all-errors \
+              "$base/$path" -o "$SRC/$path"
+            test -s "$SRC/$path"
+          done
+
+          cd "$SRC"
+          echo "G3_EXACT_SHA=$GITHUB_SHA"
+          echo "G3_SOURCE_TRANSPORT=RAW_EXACT_SHA"
+          echo "G3_RUNNER_HOST=$(hostname)"
+          echo "G3_RUNNER_OS=$(uname -srm)"
+
+          production_green() {
+            local remote_file="$RUNNER_TEMP/vos-g3-prod-${GITHUB_RUN_ID}.sh"
+            cat > "$remote_file" <<'REMOTE'
+          set -euo pipefail
+          uid="$(id -u)"
+          launch_running() {
+            label="$1"
+            for domain in "gui/$uid" "user/$uid" system; do
+              if launchctl print "$domain/$label" 2>/dev/null | grep -Eq 'state = running|pid = [0-9]+'; then return 0; fi
+            done
+            launchctl list 2>/dev/null | awk -v label="$label" '$3==label && $1 ~ /^[0-9]+$/ {ok=1} END{exit ok?0:1}'
+          }
+          launch_running com.zeroclaw.fall-detector
+          launch_running com.go2rtc
+          launch_running com.mosquitto.broker
+          curl -fsS --max-time 3 http://127.0.0.1:3002/health >/dev/null
+          lsof -nP -iTCP:3002 -sTCP:LISTEN 2>/dev/null | grep -q ':3002'
+          if ! lsof -nP -iUDP:5080 2>/dev/null | grep -q ':5080' && ! lsof -nP -iTCP:5080 -sTCP:LISTEN 2>/dev/null | grep -q ':5080'; then exit 1; fi
+          mount | grep -q ' on /Volumes/NAS_LOCAL '
+          echo 'IMAC_PRODUCTION=GREEN'
+          REMOTE
+            python3 - "$remote_file" <<'PY'
+          import subprocess, sys
+          script=open(sys.argv[1],encoding='utf-8').read()
+          p=subprocess.run(["ssh","-o","BatchMode=yes","-o","ConnectTimeout=8","imac","bash -s"],input=script,text=True,timeout=25)
+          raise SystemExit(p.returncode)
+          PY
+            rm -f "$remote_file"
+          }
+
+          production_green
+          echo 'G3_PRE_PRODUCTION_REGRESSION=GREEN'
+
+          python3 -m py_compile \
+            bin/vos_common.py bin/vos_apply.py bin/vos_machine.py \
+            tests/test_vos_apply.py tests/test_vos_kernel_cert.py
+          bash -n bin/vos_apply.sh bin/vos_check.sh
+          python3 bin/vos_machine.py validate --registry docs/judge/MACHINES.json
+
+          python3 - <<'PY'
+          import subprocess
+          for module in ("tests.test_vos_apply", "tests.test_vos_kernel_cert"):
+              subprocess.run(["python3","-m","unittest",module,"-v"],check=True,timeout=120)
+          PY
+
+          production_green
+          echo 'G3_POST_PRODUCTION_REGRESSION=GREEN'
+          echo 'G3_MACHINE_RUNTIME_FIXTURES=GREEN'
+          echo 'VOS_KERNEL_CERTIFIED=GREEN'
+          echo 'PRODUCTION_MUTATIONS=0'
